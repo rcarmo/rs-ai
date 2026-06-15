@@ -1663,6 +1663,33 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_anthropic_cloudflare_gateway_auth_header() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/messages"))
+            .and(header("cf-aig-authorization", "Bearer cf-key"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\n\
+                     event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n\
+                     event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let mut model = test_model("anthropic-messages", "cloudflare-ai-gateway", &server.uri());
+        model.api_key = Some("cf-key".into());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_anthropic(&model, &ctx, &opts);
+        let mut done = false;
+        while let Some(evt) = stream.next().await {
+            if matches!(evt, Event::Done { .. }) { done = true; }
+        }
+        // Missing cf-aig-authorization would fail the wiremock match -> no Done.
+        assert!(done);
+    }
+
+    #[tokio::test]
     async fn test_anthropic_timeout_ms_aborts_slow_request() {
         use std::time::Duration;
         let server = MockServer::start().await;

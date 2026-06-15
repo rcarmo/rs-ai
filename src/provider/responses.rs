@@ -139,6 +139,11 @@ fn stream_responses_inner<'a>(
         }
     } else {
         headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+        // Cloudflare AI Gateway also requires cf-aig-authorization.
+        if model.provider == "cloudflare-ai-gateway"
+            && let Ok(val) = HeaderValue::from_str(&format!("Bearer {}", api_key)) {
+            headers.insert("cf-aig-authorization", val);
+        }
         // Session headers (non-Azure): upstream sends both `session_id`
         // (gated on compat.sendSessionIdHeader, default true) and `x-client-request-id`.
         if let Some(ref session_id) = opts.session_id

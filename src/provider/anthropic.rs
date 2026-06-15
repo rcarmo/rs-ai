@@ -48,7 +48,12 @@ pub fn stream_anthropic<'a>(
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
 
     let is_oauth = api_key.contains("sk-ant-oat");
-    if is_oauth {
+    if model.provider == "cloudflare-ai-gateway" {
+        // Cloudflare AI Gateway: authenticate via cf-aig-authorization, not x-api-key.
+        if let Ok(val) = HeaderValue::from_str(&format!("Bearer {}", api_key)) {
+            headers.insert("cf-aig-authorization", val);
+        }
+    } else if is_oauth {
         headers.insert(reqwest::header::AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
         headers.insert("user-agent", HeaderValue::from_static("claude-cli/2.1.75"));
         headers.insert("x-app", HeaderValue::from_static("cli"));
