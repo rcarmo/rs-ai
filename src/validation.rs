@@ -113,9 +113,17 @@ pub fn validate_tool_arguments(tool: &crate::types::Tool, args: &serde_json::Val
     if check_schema(&coerced, &tool.parameters) {
         Ok(coerced)
     } else {
+        let mut errors = Vec::new();
+        collect_schema_errors(&coerced, &tool.parameters, "", &mut errors);
+        let detail = if errors.is_empty() {
+            "Unknown validation error".to_string()
+        } else {
+            errors.join("\n")
+        };
         Err(format!(
-            "Validation failed for tool \"{}\":\n\nReceived arguments:\n{}",
+            "Validation failed for tool \"{}\":\n{}\n\nReceived arguments:\n{}",
             tool.name,
+            detail,
             serde_json::to_string_pretty(args).unwrap_or_default()
         ))
     }
@@ -127,7 +135,7 @@ pub fn validate_tool_call(ctx: &crate::types::Context, name: &str, args: &serde_
     let tool = ctx.tools.iter().find(|t| t.name == name);
     match tool {
         Some(t) => validate_tool_arguments(t, args),
-        None => Err(format!("tool '{}' not found in context", name)),
+        None => Err(format!("Tool \"{}\" not found", name)),
     }
 }
 
@@ -378,6 +386,65 @@ pub fn check_schema(value: &Value, schema: &Value) -> bool {
     true
 }
 
+/// Collect human-readable `  - path: message` validation errors for a value against
+/// a JSON schema (mirrors the error list in validateToolArguments). Messages are
+/// approximate; the structure (header + error lines + received args) matches upstream.
+fn collect_schema_errors(value: &Value, schema: &Value, path: &str, out: &mut Vec<String>) {
+    let here = if path.is_empty() { "root".to_string() } else { path.to_string() };
+
+    // Composition keywords: only an error when no branch matches.
+    if let Some(Value::Array(any_of)) = schema.get("anyOf")
+        && !any_of.iter().any(|s| check_schema(value, s)) {
+        out.push(format!("  - {here}: does not match any allowed schema"));
+        return;
+    }
+    if let Some(Value::Array(one_of)) = schema.get("oneOf")
+        && one_of.iter().filter(|s| check_schema(value, s)).count() != 1 {
+        out.push(format!("  - {here}: must match exactly one allowed schema"));
+        return;
+    }
+    if let Some(Value::Array(all_of)) = schema.get("allOf") {
+        for nested in all_of {
+            collect_schema_errors(value, nested, path, out);
+        }
+    }
+
+    let types = schema_types(schema);
+    if !types.is_empty() && !types.iter().any(|t| matches_json_type(value, t)) {
+        out.push(format!("  - {}: Expected {}", here, types.join(" or ")));
+        return;
+    }
+    if types.iter().any(|t| t == "object")
+        && let Some(obj) = value.as_object() {
+        if let Some(Value::Array(required)) = schema.get("required") {
+            for req in required {
+                if let Some(key) = req.as_str()
+                    && !obj.contains_key(key) {
+                    let p = if path.is_empty() { key.to_string() } else { format!("{path}.{key}") };
+                    out.push(format!("  - {p}: Required property missing"));
+                }
+            }
+        }
+        if let Some(Value::Object(props)) = schema.get("properties") {
+            for (key, prop_schema) in props {
+                if let Some(v) = obj.get(key) {
+                    let p = if path.is_empty() { key.clone() } else { format!("{path}.{key}") };
+                    collect_schema_errors(v, prop_schema, &p, out);
+                }
+            }
+        }
+    }
+    if types.iter().any(|t| t == "array")
+        && let Some(arr) = value.as_array()
+        && let Some(items) = schema.get("items")
+        && items.is_object() {
+        for (i, item) in arr.iter().enumerate() {
+            let p = format!("{path}.{i}");
+            collect_schema_errors(item, items, &p, out);
+        }
+    }
+}
+
 #[cfg(test)]
 mod coercion_tests {
     use super::*;
@@ -408,6 +475,22 @@ mod coercion_tests {
         }) };
         assert!(validate_tool_arguments(&t, &json!({})).is_err());
         assert_eq!(validate_tool_arguments(&t, &json!({"q": 5})).unwrap()["q"], json!("5"));
+    }
+
+    #[test]
+    fn test_validation_error_message_includes_detail() {
+        // Missing required + type mismatch should be listed; the message structure
+        // mirrors upstream (header + `  - path: message` lines + received args).
+        let t = Tool { name: "search".into(), description: "d".into(), parameters: json!({
+            "type": "object",
+            "properties": {"q": {"type": "string"}, "n": {"type": "object"}},
+            "required": ["q"],
+        }) };
+        let err = validate_tool_arguments(&t, &json!({"n": 5})).unwrap_err();
+        assert!(err.starts_with("Validation failed for tool \"search\":"), "{err}");
+        assert!(err.contains("  - q: Required property missing"), "{err}");
+        assert!(err.contains("  - n: Expected object"), "{err}");
+        assert!(err.contains("Received arguments:"), "{err}");
     }
 
     #[test]
