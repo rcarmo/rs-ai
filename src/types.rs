@@ -294,6 +294,12 @@ pub struct Model {
 pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub allow_empty_signature: Option<bool>,
+    /// OpenRouter provider-routing preferences, sent verbatim as `provider`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub open_router_routing: Option<serde_json::Value>,
+    /// Vercel AI Gateway routing (`{only?, order?}`), sent as `providerOptions.gateway`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vercel_gateway_routing: Option<serde_json::Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force_adaptive_thinking: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

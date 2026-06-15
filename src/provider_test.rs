@@ -622,6 +622,29 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_provider_routing_params() {
+        // OpenRouter routing -> provider; Vercel gateway routing -> providerOptions.gateway.
+        let ctx = test_context();
+
+        let mut or_model = test_model("openai-completions", "openrouter", "https://openrouter.ai/api/v1");
+        or_model.compat.open_router_routing = Some(serde_json::json!({"order": ["openai", "azure"]}));
+        let p1 = crate::provider::openai::build_payload(&or_model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&or_model));
+        assert_eq!(p1["provider"], serde_json::json!({"order": ["openai", "azure"]}));
+
+        let mut vg_model = test_model("openai-completions", "vercel", "https://ai-gateway.vercel.sh/v1");
+        vg_model.compat.vercel_gateway_routing = Some(serde_json::json!({"only": ["bedrock"], "order": ["bedrock"]}));
+        let p2 = crate::provider::openai::build_payload(&vg_model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&vg_model));
+        assert_eq!(p2["providerOptions"]["gateway"]["only"], serde_json::json!(["bedrock"]));
+        assert_eq!(p2["providerOptions"]["gateway"]["order"], serde_json::json!(["bedrock"]));
+
+        // Vercel routing is ignored when the base URL is not the Vercel gateway.
+        let mut non_vg = test_model("openai-completions", "openai", "https://example.com");
+        non_vg.compat.vercel_gateway_routing = Some(serde_json::json!({"only": ["x"]}));
+        let p3 = crate::provider::openai::build_payload(&non_vg, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&non_vg));
+        assert!(p3.get("providerOptions").is_none());
+    }
+
+    #[test]
     fn test_openai_developer_role_only_for_reasoning_models() {
         // Upstream uses the `developer` system role only when model.reasoning &&
         // supportsDeveloperRole; a non-reasoning model must use `system`.

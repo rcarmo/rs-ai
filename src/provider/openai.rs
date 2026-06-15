@@ -781,6 +781,23 @@ pub(crate) fn build_payload(
         payload["tool_choice"] = tool_choice.clone();
     }
 
+    // OpenRouter provider-routing preferences (sent verbatim as `provider`).
+    if let Some(ref routing) = model.compat.open_router_routing {
+        payload["provider"] = routing.clone();
+    }
+    // Vercel AI Gateway routing preferences -> providerOptions.gateway.
+    if model.base_url.contains("ai-gateway.vercel.sh")
+        && let Some(ref routing) = model.compat.vercel_gateway_routing {
+        let only = routing.get("only");
+        let order = routing.get("order");
+        if only.is_some() || order.is_some() {
+            let mut gateway = json!({});
+            if let Some(o) = only { gateway["only"] = o.clone(); }
+            if let Some(o) = order { gateway["order"] = o.clone(); }
+            payload["providerOptions"] = json!({ "gateway": gateway });
+        }
+    }
+
     // OpenRouter Anthropic models use Anthropic-style cache_control on system/last-message/last-tool.
     if compat.cache_control_format.as_deref() == Some("anthropic") && retention != CacheRetention::None {
         let ttl_long = retention == CacheRetention::Long && compat.supports_long_cache_retention != Some(false);
