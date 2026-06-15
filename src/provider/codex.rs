@@ -559,14 +559,36 @@ impl CodexWsState {
                 }
                 return true;
             }
-            "error" | "response.failed" => {
+            "error" => {
+                // SSE error event: "Error Code <code>: <message>" (mirrors the shared decoder).
                 let msg = data.pointer("/message").and_then(|v| v.as_str())
                     .or_else(|| data.pointer("/error/message").and_then(|v| v.as_str()))
-                    .or_else(|| data.pointer("/response/error/message").and_then(|v| v.as_str()))
                     .map(|s| s.to_string())
-                    .unwrap_or_else(|| "Codex stream error".to_string());
+                    .unwrap_or_else(|| "Unknown error".to_string());
                 let code = data.get("code").and_then(|v| v.as_str()).map(|c| format!("Error Code {}: ", c)).unwrap_or_default();
                 let full = format!("{}{}", code, msg);
+                self.partial.stop_reason = Some(StopReason::Error);
+                self.partial.error_message = Some(full.clone());
+                self.events.push(Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(full)),
+                    message: Some(self.partial.clone()),
+                });
+                return true;
+            }
+            "response.failed" => {
+                // response.failed: "<error.code>: <error.message>", else "incomplete: <reason>",
+                // else a generic message (mirrors the shared decoder).
+                let resp = data.get("response");
+                let full = if let Some(err) = resp.and_then(|r| r.get("error")).filter(|e| !e.is_null()) {
+                    let code = err.get("code").and_then(|v| v.as_str()).unwrap_or("unknown");
+                    let m = err.get("message").and_then(|v| v.as_str()).unwrap_or("no message");
+                    format!("{code}: {m}")
+                } else if let Some(reason) = resp.and_then(|r| r.pointer("/incomplete_details/reason")).and_then(|v| v.as_str()) {
+                    format!("incomplete: {reason}")
+                } else {
+                    "Unknown error (no error details in response)".to_string()
+                };
                 self.partial.stop_reason = Some(StopReason::Error);
                 self.partial.error_message = Some(full.clone());
                 self.events.push(Event::Error {

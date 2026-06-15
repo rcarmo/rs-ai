@@ -1421,6 +1421,20 @@ mod tests {
         assert!(!replayed.iter().any(|e| matches!(e, Event::Done { .. })));
     }
 
+    #[test]
+    fn test_codex_ws_response_failed_format() {
+        // response.failed surfaces "<error.code>: <error.message>" (no "Error Code" prefix),
+        // matching the shared decoder.
+        let model = test_model("openai-codex-responses", "openai", "https://example.com");
+        let events = vec![
+            serde_json::json!({"type":"response.created","response":{"id":"c1","model":"codex"}}),
+            serde_json::json!({"type":"response.failed","response":{"error":{"code":"server_error","message":"boom"}}}),
+        ];
+        let replayed = replay_codex_ws_events(&model, &events);
+        let err = replayed.iter().find_map(|e| match e { Event::Error { error, .. } => Some(error.to_string()), _ => None }).unwrap();
+        assert_eq!(err, "server_error: boom");
+    }
+
     #[tokio::test]
     async fn test_codex_ws_failure_falls_back_to_sse_with_diagnostic() {
         use crate::provider::codex::stream_codex;
