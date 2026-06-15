@@ -377,6 +377,10 @@ pub fn stream_anthropic<'a>(
                                 if let Some(v) = usage.get("cache_creation_input_tokens").and_then(|v| v.as_u64()) {
                                     u.cache_write = v as u32;
                                 }
+                                u.cache_write_1h = Some(
+                                    usage.pointer("/cache_creation/ephemeral_1h_input_tokens")
+                                        .and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+                                );
                                 u.total_tokens = u.input + u.output + u.cache_read + u.cache_write;
                             }
                     }
@@ -747,6 +751,7 @@ fn parse_anthropic_usage(usage: &Value) -> Usage {
         output: usage.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
         cache_read: usage.get("cache_read_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
         cache_write: usage.get("cache_creation_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+        cache_write_1h: Some(usage.pointer("/cache_creation/ephemeral_1h_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32),
         total_tokens: 0,
         cost: CostBreakdown::default(),
     }

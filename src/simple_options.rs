@@ -117,7 +117,11 @@ pub fn calculate_cost(model: &Model, usage: &crate::types::Usage) -> crate::type
     let input = f64::from(usage.input) * model.cost.input / m;
     let output = f64::from(usage.output) * model.cost.output / m;
     let cache_read = f64::from(usage.cache_read) * model.cost.cache_read / m;
-    let cache_write = f64::from(usage.cache_write) * model.cost.cache_write / m;
+    // Anthropic charges 2x base input for 1h cache writes; the rest at the cacheWrite rate.
+    let long_write = usage.cache_write_1h.unwrap_or(0);
+    let short_write = usage.cache_write.saturating_sub(long_write);
+    let cache_write = (model.cost.cache_write * f64::from(short_write)
+        + model.cost.input * 2.0 * f64::from(long_write)) / m;
     crate::types::CostBreakdown {
         input, output, cache_read, cache_write,
         total: input + output + cache_read + cache_write,
@@ -156,6 +160,7 @@ pub fn parse_openai_usage(raw: &serde_json::Value, model: &Model) -> crate::type
         output,
         cache_read,
         cache_write,
+        cache_write_1h: None,
         total_tokens: input + output + cache_read + cache_write,
         cost: Default::default(),
     };
@@ -172,7 +177,7 @@ pub fn parse_responses_usage(raw: &serde_json::Value, model: &Model) -> crate::t
     let output = raw.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let total = raw.get("total_tokens").and_then(|v| v.as_u64()).unwrap_or((input + output + cached) as u64) as u32;
     let mut usage = crate::types::Usage {
-        input, output, cache_read: cached, cache_write: 0, total_tokens: total, cost: Default::default(),
+        input, output, cache_read: cached, cache_write: 0, cache_write_1h: None, total_tokens: total, cost: Default::default(),
     };
     usage.cost = calculate_cost(model, &usage);
     usage

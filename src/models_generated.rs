@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: models.generated.js (966 models, 35 providers)
-//! Generated: 2026-06-13T09:57:25.573329Z
+//! Source: models.generated.js (971 models, 35 providers)
+//! Generated: 2026-06-15T10:37:31.744944Z
 
 #![allow(clippy::approx_constant)]
 
@@ -4200,7 +4200,8 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.individual.githubcopilot.com".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("xhigh".into(), Some("xhigh".into()))
+                ("xhigh".into(), Some("xhigh".into())),
+                ("minimal".into(), Some("low".into()))
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64 },
@@ -4222,7 +4223,8 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.individual.githubcopilot.com".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("xhigh".into(), Some("xhigh".into()))
+                ("xhigh".into(), Some("xhigh".into())),
+                ("minimal".into(), Some("low".into()))
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64 },
@@ -4281,7 +4283,10 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "github-copilot".into(),
             base_url: "https://api.individual.githubcopilot.com".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("minimal".into(), Some("low".into())),
+                ("xhigh".into(), Some("max".into()))
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 3_f64, output: 15_f64, cache_read: 0.3_f64, cache_write: 3.75_f64 },
             context_window: 1000000,
@@ -4868,6 +4873,50 @@ pub fn builtin_models() -> Vec<Model> {
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
             context_window: 262144,
             max_tokens: 32768,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "gemma-4-E2B-it".into(),
+            name: "Gemma 4 E2B IT".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), Some("MINIMAL".into())),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), Some("HIGH".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            context_window: 131072,
+            max_tokens: 8192,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "gemma-4-E4B-it".into(),
+            name: "Gemma 4 E4B IT".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), Some("MINIMAL".into())),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), Some("HIGH".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            context_window: 131072,
+            max_tokens: 8192,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
@@ -8093,6 +8142,7 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat {
                 max_tokens_field: Some("max_tokens".into()),
                 requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_long_cache_retention: Some(false),
                 thinking_format: Some("deepseek".into()),
                 ..Default::default()
             },
@@ -8147,6 +8197,7 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat {
                 max_tokens_field: Some("max_tokens".into()),
                 requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_long_cache_retention: Some(false),
                 thinking_format: Some("deepseek".into()),
                 ..Default::default()
             },
@@ -8587,6 +8638,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 max_tokens_field: Some("max_tokens".into()),
+                supports_long_cache_retention: Some(false),
                 ..Default::default()
             },
         },
@@ -8606,6 +8658,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 max_tokens_field: Some("max_tokens".into()),
+                supports_long_cache_retention: Some(false),
                 supports_reasoning_effort: Some(false),
                 thinking_format: Some("deepseek".into()),
                 ..Default::default()
@@ -8665,6 +8718,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 max_tokens_field: Some("max_tokens".into()),
+                supports_long_cache_retention: Some(false),
                 ..Default::default()
             },
         },
@@ -8850,6 +8904,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 max_tokens_field: Some("max_tokens".into()),
+                supports_long_cache_retention: Some(false),
                 supports_reasoning_effort: Some(false),
                 thinking_format: Some("deepseek".into()),
                 ..Default::default()
@@ -9666,9 +9721,9 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.098_f64, output: 0.196_f64, cache_read: 0.02_f64, cache_write: 0_f64 },
+            cost: ModelCost { input: 0.09_f64, output: 0.18_f64, cache_read: 0.02_f64, cache_write: 0_f64 },
             context_window: 1048576,
-            max_tokens: 4096,
+            max_tokens: 65536,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -10660,9 +10715,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.95_f64, output: 4_f64, cache_read: 0.19_f64, cache_write: 0_f64 },
+            cost: ModelCost { input: 0.75_f64, output: 3.5_f64, cache_read: 0.16_f64, cache_write: 0_f64 },
             context_window: 262144,
-            max_tokens: 4096,
+            max_tokens: 262144,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
@@ -13451,6 +13506,35 @@ pub fn builtin_models() -> Vec<Model> {
             cost: ModelCost { input: 1.2_f64, output: 4.5_f64, cache_read: 0.2_f64, cache_write: 0_f64 },
             context_window: 262144,
             max_tokens: 131000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                supports_developer_role: Some(false),
+                supports_long_cache_retention: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(false),
+                thinking_format: Some("together".into()),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "moonshotai/Kimi-K2.7-Code".into(),
+            name: "Kimi K2.7 Code".into(),
+            api: "openai-completions".into(),
+            provider: "together".into(),
+            base_url: "https://api.together.ai/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), None)
+            ])),
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0.95_f64, output: 4_f64, cache_read: 0.19_f64, cache_write: 0_f64 },
+            context_window: 262144,
+            max_tokens: 131072,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -16926,6 +17010,27 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
+            id: "glm-5.2".into(),
+            name: "GLM-5.2".into(),
+            api: "openai-completions".into(),
+            provider: "zai".into(),
+            base_url: "https://api.z.ai/api/coding/paas/v4".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            context_window: 1000000,
+            max_tokens: 131072,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                thinking_format: Some("zai".into()),
+                zai_tool_stream: Some(true),
+                ..Default::default()
+            },
+        },
+        Model {
             id: "glm-5v-turbo".into(),
             name: "GLM-5V-Turbo".into(),
             api: "openai-completions".into(),
@@ -17019,6 +17124,27 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
             context_window: 200000,
+            max_tokens: 131072,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                thinking_format: Some("zai".into()),
+                zai_tool_stream: Some(true),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "glm-5.2".into(),
+            name: "GLM-5.2".into(),
+            api: "openai-completions".into(),
+            provider: "zai-coding-cn".into(),
+            base_url: "https://open.bigmodel.cn/api/coding/paas/v4".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            context_window: 1000000,
             max_tokens: 131072,
             headers: None,
             api_key: None,

@@ -125,6 +125,28 @@ mod tests {
     }
 
     #[test]
+    fn test_calculate_cost_1h_cache_write() {
+        // 1h cache writes are charged at 2x base input; the remaining cacheWrite at the cacheWrite rate.
+        let model = reasoning_model(None);
+        let model = Model {
+            cost: ModelCost { input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3 },
+            ..model
+        };
+        // 1000 total cache-write tokens, of which 400 are 1h writes.
+        let usage = crate::types::Usage {
+            cache_write: 1000,
+            cache_write_1h: Some(400),
+            ..Default::default()
+        };
+        let cost = calculate_cost(&model, &usage);
+        // short = 600 @ 3.75 + long = 400 @ (3.0*2) = (2250 + 2400)/1e6
+        let expected = (3.75 * 600.0 + 3.0 * 2.0 * 400.0) / 1_000_000.0;
+        assert!((cost.cache_write - expected).abs() < 1e-9, "got {}", cost.cache_write);
+        // Without the 1h split it would have been the flat 1000 @ 3.75.
+        assert!((cost.cache_write - 1000.0 * 3.75 / 1_000_000.0).abs() > 1e-9);
+    }
+
+    #[test]
     fn test_map_openai_finish_reason() {
         use crate::types::StopReason;
         assert_eq!(map_openai_finish_reason("stop").0, StopReason::Stop);
@@ -178,6 +200,7 @@ mod tests {
         model.cost = ModelCost { input: 1.0, output: 2.0, cache_read: 0.5, cache_write: 0.0 };
         let base = crate::types::Usage {
             input: 1_000_000, output: 1_000_000, cache_read: 1_000_000, cache_write: 0,
+            cache_write_1h: None,
             total_tokens: 3_000_000, cost: Default::default(),
         };
         // flex halves the cost.

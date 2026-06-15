@@ -235,6 +235,7 @@ fn parse_usage(raw: &Value, model: &ImagesModel) -> Usage {
         output: completion,
         cache_read,
         cache_write,
+        cache_write_1h: None,
         total_tokens: input + completion + cache_read + cache_write,
         cost: CostBreakdown { total, ..cost },
     }

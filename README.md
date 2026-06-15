@@ -67,7 +67,7 @@ rs-ai/
 
 ## Known limitations
 
-Tracks `@earendil-works/pi-ai` `0.79.2`. Known divergences from upstream:
+Tracks `@earendil-works/pi-ai` `0.79.4`. Known divergences from upstream:
 
 - **Google Vertex AI auth**: response decoding matches Gemini, but production Vertex
   auth (GCP Application Default Credentials / service-account token exchange and the
