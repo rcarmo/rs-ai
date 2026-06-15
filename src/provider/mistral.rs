@@ -417,10 +417,23 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
                 }
             }
             Role::Assistant => {
-                let text = msg.content.iter().filter_map(|b| match b {
-                    ContentBlock::Text { text, .. } if !text.trim().is_empty() => Some(text.clone()),
-                    _ => None,
-                }).collect::<Vec<_>>().join("");
+                // Build content parts: text and thinking (magistral reasoning replay),
+                // mirroring upstream toChatMessages contentParts.
+                let mut content_parts: Vec<Value> = Vec::new();
+                for b in &msg.content {
+                    match b {
+                        ContentBlock::Text { text, .. } if !text.trim().is_empty() => {
+                            content_parts.push(json!({"type": "text", "text": text}));
+                        }
+                        ContentBlock::Thinking { thinking, .. } if !thinking.trim().is_empty() => {
+                            content_parts.push(json!({
+                                "type": "thinking",
+                                "thinking": [{"type": "text", "text": thinking}]
+                            }));
+                        }
+                        _ => {}
+                    }
+                }
                 let tool_calls: Vec<Value> = msg.content.iter().filter_map(|b| match b {
                     ContentBlock::ToolCall { id, name, arguments, .. } => Some(json!({
                         "id": id_normalizer.normalize(id),
@@ -429,10 +442,10 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
                     })),
                     _ => None,
                 }).collect();
-                if text.is_empty() && tool_calls.is_empty() { continue; }
+                if content_parts.is_empty() && tool_calls.is_empty() { continue; }
                 let mut m = json!({"role": "assistant"});
-                if !text.is_empty() {
-                    m["content"] = json!(text);
+                if !content_parts.is_empty() {
+                    m["content"] = json!(content_parts);
                 }
                 if !tool_calls.is_empty() {
                     m["tool_calls"] = json!(tool_calls);
@@ -446,9 +459,21 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
                 }).collect::<Vec<_>>().join("\n");
                 let has_images = msg.content.iter().any(|b| matches!(b, ContentBlock::Image { .. }));
                 let tool_text = build_tool_result_text(&text_result, has_images, supports_images, msg.is_error);
+                // Content is an array: the text part plus any image parts (vision models).
+                let mut content_parts = vec![json!({"type": "text", "text": tool_text})];
+                if supports_images {
+                    for b in &msg.content {
+                        if let ContentBlock::Image { data, mime_type } = b {
+                            content_parts.push(json!({
+                                "type": "image_url",
+                                "image_url": format!("data:{};base64,{}", mime_type, data)
+                            }));
+                        }
+                    }
+                }
                 let mut m = json!({
                     "role": "tool",
-                    "content": tool_text,
+                    "content": content_parts,
                 });
                 if let Some(ref id) = msg.tool_call_id {
                     m["tool_call_id"] = json!(id_normalizer.normalize(id));

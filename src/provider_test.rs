@@ -3017,6 +3017,55 @@ mod tests {
     }
 
     #[test]
+    fn test_mistral_assistant_thinking_and_tool_result_images() {
+        use crate::provider::mistral::build_mistral_payload;
+        let mut model = test_model("mistral-conversations", "mistral", "https://example.com");
+        model.reasoning = true;
+        model.input = vec!["text".into(), "image".into()];
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![
+                Message {
+                    role: Role::Assistant,
+                    content: vec![
+                        ContentBlock::Thinking { thinking: "reasoning".into(), thinking_signature: None, redacted: false },
+                        ContentBlock::Text { text: "answer".into(), text_signature: None },
+                    ],
+                    timestamp: 0,
+                    api: Some("mistral-conversations".into()), provider: Some("mistral".into()), model: Some("test-model".into()),
+                    response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
+                    stop_reason: Some(StopReason::Stop), error_message: None,
+                    tool_call_id: None, tool_name: None, is_error: false, details: None,
+                },
+                Message {
+                    role: Role::ToolResult,
+                    content: vec![
+                        ContentBlock::Text { text: "ok".into(), text_signature: None },
+                        ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() },
+                    ],
+                    timestamp: 0,
+                    api: None, provider: None, model: None, response_id: None, response_model: None,
+                    diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+                    tool_call_id: Some("c1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+                },
+            ],
+            tools: vec![],
+        };
+        let payload = build_mistral_payload(&model, &ctx, &StreamOptions::default());
+        let msgs = payload["messages"].as_array().unwrap();
+        // Assistant content is an array with a thinking part then a text part.
+        let parts = msgs[0]["content"].as_array().unwrap();
+        assert_eq!(parts[0]["type"], "thinking");
+        assert_eq!(parts[0]["thinking"][0]["text"], "reasoning");
+        assert_eq!(parts[1]["type"], "text");
+        assert_eq!(parts[1]["text"], "answer");
+        // Tool result content array carries the text and the image.
+        let tparts = msgs[1]["content"].as_array().unwrap();
+        assert_eq!(tparts[0]["text"], "ok");
+        assert!(tparts.iter().any(|p| p["type"] == "image_url"));
+    }
+
+    #[test]
     fn test_mistral_payload_serializes_tool_history() {
         use crate::provider::mistral::build_mistral_payload;
         let model = test_model("mistral-conversations", "mistral", "https://example.com");
@@ -3058,7 +3107,9 @@ mod tests {
         assert_eq!(msgs[0]["tool_calls"][0]["function"]["name"], "search");
         assert_eq!(msgs[1]["role"], "tool");
         assert_eq!(msgs[1]["tool_call_id"], norm_id);
-        assert_eq!(msgs[1]["content"], "found");
+        // Tool content is an array of content parts (matches upstream toChatMessages).
+        assert_eq!(msgs[1]["content"][0]["type"], "text");
+        assert_eq!(msgs[1]["content"][0]["text"], "found");
     }
 
     #[test]
