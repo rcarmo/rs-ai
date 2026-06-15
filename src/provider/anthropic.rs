@@ -453,6 +453,16 @@ const CLAUDE_CODE_TOOLS: &[&str] = &[
     "WebFetch", "WebSearch",
 ];
 
+/// Normalize a tool-call id for Anthropic (mirrors upstream `normalizeToolCallId`):
+/// replace any character outside `[a-zA-Z0-9_-]` with `_` and truncate to 64.
+fn normalize_anthropic_tool_call_id(id: &str) -> String {
+    let sanitized: String = id
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+        .collect();
+    if sanitized.len() > 64 { sanitized[..64].to_string() } else { sanitized }
+}
+
 /// Canonicalize a tool name to its Claude Code casing if it matches (mirrors toClaudeCodeName).
 fn to_claude_code_name(name: &str) -> String {
     let lower = name.to_lowercase();
@@ -556,7 +566,7 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
                 }).collect();
                 let mut tool_result = json!({
                     "type": "tool_result",
-                    "tool_use_id": tr.tool_call_id.clone().unwrap_or_default(),
+                    "tool_use_id": normalize_anthropic_tool_call_id(&tr.tool_call_id.clone().unwrap_or_default()),
                     "content": result_content,
                 });
                 if tr.is_error {
@@ -593,7 +603,7 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
                 }
             }
             ContentBlock::ToolCall { id, name, arguments, .. } => json!({
-                "type": "tool_use", "id": id,
+                "type": "tool_use", "id": normalize_anthropic_tool_call_id(id),
                 "name": if is_oauth { to_claude_code_name(name) } else { name.clone() },
                 "input": arguments
             }),

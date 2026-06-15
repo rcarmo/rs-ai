@@ -1952,6 +1952,45 @@ mod tests {
     }
 
     #[test]
+    fn test_anthropic_normalizes_tool_call_ids() {
+        use crate::provider::anthropic::build_anthropic_payload;
+        // An id from the OpenAI Responses API: contains `|` and exceeds 64 chars.
+        let raw_id = "call_abcDEF123|fc_0123456789012345678901234567890123456789012345678901234567890123456789";
+        let model = test_model("anthropic-messages", "anthropic", "https://example.com");
+        let assistant = Message {
+            role: Role::Assistant,
+            content: vec![ContentBlock::ToolCall {
+                id: raw_id.into(), name: "search".into(),
+                arguments: std::collections::HashMap::new(), thought_signature: None,
+            }],
+            timestamp: 0,
+            api: Some("openai-responses".into()), provider: Some("openai".into()), model: Some("gpt-5".into()),
+            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: Some(StopReason::ToolUse), error_message: None,
+            tool_call_id: None, tool_name: None, is_error: false, details: None,
+        };
+        let tool_result = Message {
+            role: Role::ToolResult,
+            content: vec![ContentBlock::Text { text: "ok".into(), text_signature: None }],
+            timestamp: 0,
+            api: None, provider: None, model: None, response_id: None, response_model: None,
+            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+            tool_call_id: Some(raw_id.into()), tool_name: Some("search".into()), is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, messages: vec![assistant, tool_result], tools: vec![] };
+        let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
+        let use_id = payload["messages"][0]["content"][0]["id"].as_str().unwrap();
+        // tool_result is folded into a following user message.
+        let result_id = payload["messages"][1]["content"][0]["tool_use_id"].as_str().unwrap();
+        // Normalized: no `|`, max 64 chars, only [a-zA-Z0-9_-].
+        assert!(!use_id.contains('|'));
+        assert!(use_id.len() <= 64);
+        assert!(use_id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-'));
+        // Both sides must match so Anthropic can correlate the result to the call.
+        assert_eq!(use_id, result_id);
+    }
+
+    #[test]
     fn test_anthropic_beta_features() {
         use crate::provider::anthropic::anthropic_beta_features;
         let tool = Tool { name: "t".into(), description: "d".into(), parameters: serde_json::json!({"type":"object"}) };
