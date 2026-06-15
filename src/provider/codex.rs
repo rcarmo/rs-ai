@@ -506,9 +506,15 @@ impl CodexWsState {
                         };
                         u.cost.total = u.cost.input + u.cost.output + u.cost.cache_read + u.cost.cache_write;
                         // Apply service-tier cost multiplier (flex 0.5x, priority 2x/2.5x),
-                        // resolving the response's tier over the requested one.
-                        let tier = response.get("service_tier").and_then(|v| v.as_str())
-                            .or(self.service_tier.as_deref());
+                        // resolving the response's tier over the requested one (resolveCodexServiceTier:
+                        // a "default" response keeps an explicitly requested flex/priority tier).
+                        let request_tier = self.service_tier.as_deref();
+                        let response_tier = response.get("service_tier").and_then(|v| v.as_str());
+                        let tier = match (response_tier, request_tier) {
+                            (Some("default"), Some(rt @ ("flex" | "priority"))) => Some(rt),
+                            (Some(rt), _) => Some(rt),
+                            (None, rt) => rt,
+                        };
                         let multiplier = match tier {
                             Some("flex") => 0.5,
                             Some("priority") => if self.model_id == "gpt-5.5" { 2.5 } else { 2.0 },
@@ -623,7 +629,13 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
 
 #[cfg(test)]
 pub(crate) fn replay_codex_ws_events(model: &Model, events: &[Value]) -> Vec<Event> {
+    replay_codex_ws_events_with_tier(model, events, None)
+}
+
+#[cfg(test)]
+pub(crate) fn replay_codex_ws_events_with_tier(model: &Model, events: &[Value], service_tier: Option<&str>) -> Vec<Event> {
     let mut state = CodexWsState::new(model);
+    state.service_tier = service_tier.map(|s| s.to_string());
     for event in events {
         if state.process_event(event) {
             break;

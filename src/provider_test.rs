@@ -1552,6 +1552,24 @@ mod tests {
     }
 
     #[test]
+    fn test_codex_service_tier_default_keeps_requested_priority() {
+        use crate::provider::codex::replay_codex_ws_events_with_tier;
+        let mut model = test_model("openai-codex-responses", "openai", "https://example.com");
+        model.cost = ModelCost { input: 10.0, output: 20.0, cache_read: 0.0, cache_write: 0.0 };
+        let events = vec![
+            serde_json::json!({"type":"response.created","response":{"id":"r","model":"codex-mini"}}),
+            serde_json::json!({"type":"response.completed","response":{"id":"r","model":"codex-mini","service_tier":"default","usage":{"input_tokens":1000,"output_tokens":0,"total_tokens":1000}}}),
+        ];
+        // Requested priority but the response reports "default": bill at priority (2x),
+        // not default (1x), matching resolveCodexServiceTier.
+        let replayed = replay_codex_ws_events_with_tier(&model, &events, Some("priority"));
+        let done = replayed.iter().find_map(|e| match e { Event::Done { message, .. } => Some(message), _ => None }).expect("done");
+        let usage = done.usage.as_ref().expect("usage");
+        // base input cost = 1000 * 10 / 1e6 = 0.01; priority 2x -> 0.02.
+        assert!((usage.cost.input - 0.02).abs() < 1e-9, "got {}", usage.cost.input);
+    }
+
+    #[test]
     fn test_codex_ws_captures_message_text_signature() {
         let model = test_model("openai-codex-responses", "openai", "https://example.com");
         let events = vec![
