@@ -530,7 +530,19 @@ impl CodexWsState {
                         self.partial.usage = Some(u);
                     }
                 }
-                self.partial.stop_reason = Some(if self.partial.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. })) { StopReason::ToolUse } else { StopReason::Stop });
+                // Map the response status, then override to toolUse only on `stop` when
+                // tool calls are present (mirrors the shared processResponsesStream).
+                let status = data.pointer("/response/status").and_then(|v| v.as_str()).unwrap_or("completed");
+                let mut reason = match status {
+                    "incomplete" => StopReason::Length,
+                    "failed" | "cancelled" => StopReason::Error,
+                    _ => StopReason::Stop,
+                };
+                if reason == StopReason::Stop
+                    && self.partial.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. })) {
+                    reason = StopReason::ToolUse;
+                }
+                self.partial.stop_reason = Some(reason);
                 if !self.current_text.is_empty() && !self.partial.content.iter().any(|b| matches!(b, ContentBlock::Text { .. })) {
                     self.partial.content.push(ContentBlock::Text { text: self.current_text.clone(), text_signature: None });
                 }

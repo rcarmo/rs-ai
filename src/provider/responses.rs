@@ -531,7 +531,9 @@ fn stream_responses_inner<'a>(
                                     .unwrap_or(status);
                                 partial.error_message = Some(format!("response {}: {}", status, detail));
                             }
-                            if reason != StopReason::Error
+                            // Override to toolUse only when the status mapped to `stop`
+                            // and tool calls are present (mirrors upstream's stopReason==="stop" guard).
+                            if reason == StopReason::Stop
                                 && partial.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. })) {
                                 reason = StopReason::ToolUse;
                             }

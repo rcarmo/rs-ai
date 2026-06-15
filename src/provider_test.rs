@@ -346,6 +346,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_responses_toolcall_with_incomplete_stays_length() {
+        use crate::provider::responses::stream_responses;
+        // Upstream overrides to toolUse only when the status maps to `stop`. A tool call
+        // that hits `incomplete` must stay Length, not become ToolUse.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\n\
+                     data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"c1\",\"name\":\"s\",\"arguments\":\"\"}}\n\n\
+                     data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"c1\",\"name\":\"s\",\"arguments\":\"{}\"}}\n\n\
+                     data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"incomplete\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-responses", "openai", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_responses(&model, &ctx, &opts);
+        let mut reason = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { reason: r, .. } = evt { reason = Some(r); }
+        }
+        assert_eq!(reason, Some(StopReason::Length));
+    }
+
+    #[tokio::test]
     async fn test_responses_incomplete_maps_to_length_without_error_message() {
         use crate::provider::responses::stream_responses;
         // An incomplete response.completed maps to Length and must NOT carry an
@@ -1549,6 +1577,19 @@ mod tests {
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "ponder")));
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search")));
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "answer")));
+    }
+
+    #[test]
+    fn test_codex_incomplete_status_maps_to_length() {
+        let model = test_model("openai-codex-responses", "openai", "https://example.com");
+        let events = vec![
+            serde_json::json!({"type":"response.created","response":{"id":"r","model":"codex-mini"}}),
+            serde_json::json!({"type":"response.output_text.delta","delta":"partial"}),
+            serde_json::json!({"type":"response.completed","response":{"id":"r","status":"incomplete","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}),
+        ];
+        let replayed = replay_codex_ws_events(&model, &events);
+        let reason = replayed.iter().find_map(|e| match e { Event::Done { reason, .. } => Some(reason.clone()), _ => None }).expect("done");
+        assert_eq!(reason, StopReason::Length);
     }
 
     #[test]
