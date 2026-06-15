@@ -671,10 +671,9 @@ pub(crate) fn build_payload(
         payload[max_tokens_field] = json!(max);
     }
 
-    if let Some(temp) = opts.temperature
-        && compat.supports_temperature != Some(false) {
-            payload["temperature"] = json!(temp);
-        }
+    if let Some(temp) = opts.temperature {
+        payload["temperature"] = json!(temp);
+    }
 
     // Reasoning/thinking (clamped to the model's supported levels).
     // Mirrors upstream buildParams thinking-format handling, gated on model.reasoning.

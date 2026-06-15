@@ -842,6 +842,19 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_temperature_always_sent() {
+        // Upstream completions always sends temperature when provided (no
+        // supportsTemperature gate); a compat flag must not suppress it.
+        let model = test_model("openai-completions", "openai", "https://example.com");
+        let ctx = test_context();
+        let opts = StreamOptions { temperature: Some(0.7), ..Default::default() };
+        let mut compat = crate::compat::detect_compat(&model);
+        compat.supports_temperature = Some(false);
+        let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
+        assert_eq!(payload["temperature"], 0.7);
+    }
+
+    #[test]
     fn test_openai_developer_role_only_for_reasoning_models() {
         // Upstream uses the `developer` system role only when model.reasoning &&
         // supportsDeveloperRole; a non-reasoning model must use `system`.
