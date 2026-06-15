@@ -53,6 +53,40 @@ pub(crate) fn normalize_azure_base_url(base: &str) -> String {
     trimmed.to_string()
 }
 
+/// Resolve the Azure base URL, mirroring resolveAzureConfig's priority:
+/// AZURE_OPENAI_BASE_URL env, else AZURE_OPENAI_RESOURCE_NAME env (→ default host),
+/// else model.baseUrl. Returns None when none is configured. The result is normalized.
+fn resolve_azure_base_url(model_base_url: &str) -> Option<String> {
+    resolve_azure_base_url_from(
+        std::env::var("AZURE_OPENAI_BASE_URL").ok().as_deref(),
+        std::env::var("AZURE_OPENAI_RESOURCE_NAME").ok().as_deref(),
+        model_base_url,
+    )
+}
+
+pub(crate) fn resolve_azure_base_url_from(
+    base_env: Option<&str>,
+    resource_env: Option<&str>,
+    model_base_url: &str,
+) -> Option<String> {
+    if let Some(b) = base_env {
+        let t = b.trim();
+        if !t.is_empty() {
+            return Some(normalize_azure_base_url(t));
+        }
+    }
+    if let Some(name) = resource_env {
+        let t = name.trim();
+        if !t.is_empty() {
+            return Some(normalize_azure_base_url(&format!("https://{t}.openai.azure.com/openai/v1")));
+        }
+    }
+    if !model_base_url.trim().is_empty() {
+        return Some(normalize_azure_base_url(model_base_url));
+    }
+    None
+}
+
 /// Resolve the Azure deployment name from AZURE_OPENAI_DEPLOYMENT_NAME_MAP
 /// ("modelId=deployment,..."), defaulting to the model id (mirrors resolveDeploymentName).
 fn resolve_azure_deployment(model_id: &str) -> String {
@@ -110,7 +144,19 @@ fn stream_responses_inner<'a>(
         }
     }
     let url = if is_azure {
-        let base = normalize_azure_base_url(&model.base_url);
+        let base = match resolve_azure_base_url(&model.base_url) {
+            Some(b) => b,
+            None => {
+                let err = Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Azure OpenAI base URL is required. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or model.baseUrl.".to_string(),
+                    )),
+                    message: None,
+                };
+                return Box::pin(stream::once(async { err }));
+            }
+        };
         let api_version = std::env::var("AZURE_OPENAI_API_VERSION").unwrap_or_else(|_| "v1".to_string());
         format!("{}/responses?api-version={}", base, api_version)
     } else {

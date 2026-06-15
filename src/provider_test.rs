@@ -255,6 +255,31 @@ mod tests {
     }
 
     #[test]
+    fn test_resolve_azure_base_url_from() {
+        use crate::provider::responses::resolve_azure_base_url_from;
+        // AZURE_OPENAI_BASE_URL wins, normalized.
+        assert_eq!(
+            resolve_azure_base_url_from(Some("https://a.openai.azure.com"), Some("res"), "https://m.openai.azure.com/openai/v1"),
+            Some("https://a.openai.azure.com/openai/v1".to_string())
+        );
+        // Resource name builds the default host when no base URL.
+        assert_eq!(
+            resolve_azure_base_url_from(None, Some("myres"), ""),
+            Some("https://myres.openai.azure.com/openai/v1".to_string())
+        );
+        // Falls back to model base URL.
+        assert_eq!(
+            resolve_azure_base_url_from(None, None, "https://m.openai.azure.com"),
+            Some("https://m.openai.azure.com/openai/v1".to_string())
+        );
+        // Nothing configured -> None.
+        assert_eq!(resolve_azure_base_url_from(None, None, ""), None);
+        // Empty/whitespace env values are ignored.
+        assert_eq!(resolve_azure_base_url_from(Some("  "), None, "https://m.openai.azure.com"),
+            Some("https://m.openai.azure.com/openai/v1".to_string()));
+    }
+
+    #[test]
     fn test_resolve_azure_deployment_from_map() {
         use crate::provider::responses::resolve_azure_deployment_from_map;
         // No map -> model id.
