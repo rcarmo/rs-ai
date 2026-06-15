@@ -1186,6 +1186,20 @@ mod tests {
     }
 
     #[test]
+    fn test_codex_text_verbosity_option() {
+        use crate::provider::codex::build_codex_payload;
+        let model = test_model("openai-codex-responses", "openai", "https://chatgpt.com/backend-api");
+        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        // Defaults to "low".
+        let p1 = build_codex_payload(&model, &ctx, &StreamOptions::default());
+        assert_eq!(p1["text"]["verbosity"], "low");
+        // Honors an explicit verbosity (mirrors upstream textVerbosity).
+        let opts = StreamOptions { text_verbosity: Some("high".into()), ..Default::default() };
+        let p2 = build_codex_payload(&model, &ctx, &opts);
+        assert_eq!(p2["text"]["verbosity"], "high");
+    }
+
+    #[test]
     fn test_codex_payload_tool_strict_null() {
         use crate::provider::codex::build_codex_payload;
         let model = test_model("openai-codex-responses", "openai", "https://chatgpt.com/backend-api");

@@ -371,6 +371,8 @@ pub struct StreamOptions {
     pub thinking_budgets: Option<ThinkingBudgets>,
     pub tool_choice: Option<serde_json::Value>,
     pub service_tier: Option<String>,
+    /// OpenAI Codex `text.verbosity` (defaults to "low" when unset).
+    pub text_verbosity: Option<String>,
     pub on_payload: Option<PayloadHook>,
     pub on_response: Option<ResponseHook>,
 }
@@ -395,6 +397,7 @@ impl std::fmt::Debug for StreamOptions {
             .field("reasoning_summary", &self.reasoning_summary)
             .field("tool_choice", &self.tool_choice)
             .field("service_tier", &self.service_tier)
+            .field("text_verbosity", &self.text_verbosity)
             .field("thinking_budgets", &self.thinking_budgets.as_ref().map(|_| "..."))
             .finish()
     }
