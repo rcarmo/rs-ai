@@ -580,7 +580,7 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
 
     let mut payload = json!({"contents": contents});
 
-    if let Some(ref prompt) = context.system_prompt {
+    if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
         payload["systemInstruction"] = json!({"parts": [{"text": prompt}]});
     }
 

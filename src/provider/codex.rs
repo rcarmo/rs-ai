@@ -660,7 +660,7 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
         });
     }
 
-    let instructions = context.system_prompt.clone().unwrap_or_else(|| "You are a helpful assistant.".to_string());
+    let instructions = context.system_prompt.clone().filter(|p| !p.is_empty()).unwrap_or_else(|| "You are a helpful assistant.".to_string());
     let mut body = json!({
         "model": model.id,
         "store": false,

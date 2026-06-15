@@ -696,7 +696,7 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
         }
         system_blocks.push(identity);
     }
-    if let Some(ref prompt) = context.system_prompt {
+    if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
         let mut system_block = json!({"type": "text", "text": prompt});
         if let Some(ref cc) = cache_control {
             system_block["cache_control"] = cc.clone();

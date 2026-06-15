@@ -388,7 +388,7 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
     let mut messages = Vec::new();
     let mut id_normalizer = MistralIdNormalizer::default();
 
-    if let Some(ref prompt) = context.system_prompt {
+    if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
         messages.push(json!({"role": "system", "content": prompt}));
     }
 

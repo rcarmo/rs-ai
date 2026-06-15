@@ -724,7 +724,7 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
     let compat = detect_compat(model);
     let mut input = Vec::new();
 
-    if let Some(ref prompt) = context.system_prompt {
+    if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
         // Reasoning models use the developer role (matching upstream).
         let role = if model.reasoning && compat.supports_developer_role != Some(false) {
             "developer"

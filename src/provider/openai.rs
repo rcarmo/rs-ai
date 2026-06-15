@@ -450,7 +450,7 @@ pub(crate) fn build_payload(
     let mut messages = Vec::new();
 
     // System prompt
-    if let Some(ref prompt) = context.system_prompt {
+    if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
         // Developer role only for reasoning models that support it (mirrors upstream
         // useDeveloperRole = model.reasoning && compat.supportsDeveloperRole).
         let role = if model.reasoning && compat.supports_developer_role == Some(true) {

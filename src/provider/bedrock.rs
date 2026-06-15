@@ -320,8 +320,8 @@ pub fn stream_bedrock<'a>(
             .model_id(&model.id)
             .set_messages(Some(messages));
 
-        if let Some(ref prompt) = context.system_prompt {
-            req = req.system(SystemContentBlock::Text(prompt.clone()));
+        if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
+            req = req.system(SystemContentBlock::Text(prompt.to_string()));
             if cache_enabled {
                 req = req.system(SystemContentBlock::CachePoint(bedrock_cache_point(cache_long)));
             }

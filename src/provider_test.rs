@@ -2540,6 +2540,33 @@ mod tests {
     }
 
     #[test]
+    fn test_empty_system_prompt_omitted() {
+        use crate::provider::anthropic::build_anthropic_payload;
+        use crate::provider::responses::build_responses_payload;
+        use crate::provider::codex::build_codex_payload;
+        // Empty-string system prompt is treated as absent (upstream `if (systemPrompt)`).
+        let ctx_empty = Context { system_prompt: Some("".into()), messages: vec![user_message("hi")], tools: vec![] };
+        let ctx_some = Context { system_prompt: Some("sys".into()), messages: vec![user_message("hi")], tools: vec![] };
+        let opts = StreamOptions::default();
+
+        // Anthropic: no `system` field for an empty prompt.
+        let amodel = test_model("anthropic-messages", "anthropic", "https://example.com");
+        assert!(build_anthropic_payload(&amodel, &ctx_empty, &opts).get("system").is_none());
+        assert!(build_anthropic_payload(&amodel, &ctx_some, &opts).get("system").is_some());
+
+        // Responses: no developer/system input item for an empty prompt.
+        let rmodel = test_model("openai-responses", "openai", "https://example.com");
+        let rp = build_responses_payload(&rmodel, &ctx_empty, &opts);
+        assert!(!rp["input"].as_array().unwrap().iter().any(|m|
+            matches!(m.get("role").and_then(|r| r.as_str()), Some("system") | Some("developer"))));
+
+        // Codex: empty prompt falls back to the default instructions.
+        let cmodel = test_model("openai-codex-responses", "openai", "https://chatgpt.com/backend-api");
+        let cp = build_codex_payload(&cmodel, &ctx_empty, &opts);
+        assert_eq!(cp["instructions"], "You are a helpful assistant.");
+    }
+
+    #[test]
     fn test_anthropic_beta_features() {
         use crate::provider::anthropic::anthropic_beta_features;
         let tool = Tool { name: "t".into(), description: "d".into(), parameters: serde_json::json!({"type":"object"}) };
