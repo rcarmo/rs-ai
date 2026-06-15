@@ -69,6 +69,15 @@ fn non_blank_text(text: &str) -> Option<BedrockContent> {
     }
 }
 
+/// First image with a mime type Bedrock doesn't support (jpeg/png/gif/webp), if any.
+pub(crate) fn bedrock_unsupported_image_mime(messages: &[crate::types::Message]) -> Option<String> {
+    messages.iter().flat_map(|m| m.content.iter()).find_map(|b| match b {
+        ContentBlock::Image { mime_type, .. } if !matches!(mime_type.as_str(),
+            "image/jpeg" | "image/jpg" | "image/png" | "image/gif" | "image/webp") => Some(mime_type.clone()),
+        _ => None,
+    })
+}
+
 /// Build a Bedrock image block from a base64 data string.
 fn bedrock_image_block(mime_type: &str, data: &str) -> Option<ImageBlock> {
     use base64::Engine;
@@ -185,6 +194,16 @@ pub fn stream_bedrock<'a>(
 
         let supports_signature = is_anthropic_claude_model(model);
         let transformed = crate::transform::transform_messages(&context.messages, model);
+        // Bedrock only supports jpeg/png/gif/webp images; an unknown type is a hard
+        // error (mirrors createImageBlock's throw), not a silent drop.
+        if let Some(bad) = bedrock_unsupported_image_mime(&transformed) {
+            yield Event::Error {
+                reason: StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!("Unknown image type: {bad}"))),
+                message: None,
+            };
+            return;
+        }
         let mut messages = Vec::new();
         let mut i = 0;
         while i < transformed.len() {
@@ -708,6 +727,27 @@ mod tests {
         assert_eq!(normalize_bedrock_tool_call_id("call:1|x"), "call_1_x");
         assert_eq!(normalize_bedrock_tool_call_id("abc-123_OK"), "abc-123_OK");
         assert_eq!(normalize_bedrock_tool_call_id(&"a".repeat(80)).len(), 64);
+    }
+
+    #[test]
+    fn test_bedrock_unsupported_image_mime() {
+        use super::bedrock_unsupported_image_mime;
+        use crate::types::{Message, Role, ContentBlock};
+        fn img_msg(mime: &str) -> Message {
+            Message {
+                role: Role::User,
+                content: vec![ContentBlock::Image { data: "x".into(), mime_type: mime.into() }],
+                timestamp: 0, api: None, provider: None, model: None, response_id: None,
+                response_model: None, diagnostics: Vec::new(), usage: None, stop_reason: None,
+                error_message: None, tool_call_id: None, tool_name: None, is_error: false, details: None,
+            }
+        }
+        // Supported formats -> None.
+        for ok in ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"] {
+            assert_eq!(bedrock_unsupported_image_mime(&[img_msg(ok)]), None, "{ok}");
+        }
+        // Unknown format -> Some(mime) (would become "Unknown image type" error).
+        assert_eq!(bedrock_unsupported_image_mime(&[img_msg("image/bmp")]), Some("image/bmp".to_string()));
     }
 
     #[test]
