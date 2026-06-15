@@ -2,6 +2,7 @@
 
 use std::time::Duration;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use serde_json::{json, Value};
@@ -10,14 +11,35 @@ use super::types::*;
 use crate::env::get_env_api_key;
 use crate::types::{StopReason, Usage, CostBreakdown};
 
+/// Hook to inspect/modify the image request payload before sending (mirrors onPayload).
+pub type ImagesPayloadHook = Arc<dyn Fn(Value, &ImagesModel) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>;
+/// Hook invoked with the HTTP status and headers of the image response (mirrors onResponse).
+pub type ImagesResponseHook = Arc<dyn Fn(u16, &HashMap<String, String>, &ImagesModel) + Send + Sync>;
+
 /// Options for image generation.
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct ImagesOptions {
     pub api_key: Option<String>,
     pub headers: Option<HashMap<String, String>>,
     pub timeout: Option<Duration>,
     pub max_retries: u32,
     pub max_retry_delay_ms: u64,
+    pub on_payload: Option<ImagesPayloadHook>,
+    pub on_response: Option<ImagesResponseHook>,
+}
+
+impl std::fmt::Debug for ImagesOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ImagesOptions")
+            .field("api_key", &self.api_key.as_ref().map(|_| "<redacted>"))
+            .field("headers", &self.headers)
+            .field("timeout", &self.timeout)
+            .field("max_retries", &self.max_retries)
+            .field("max_retry_delay_ms", &self.max_retry_delay_ms)
+            .field("on_payload", &self.on_payload.as_ref().map(|_| "<hook>"))
+            .field("on_response", &self.on_response.as_ref().map(|_| "<hook>"))
+            .finish()
+    }
 }
 
 /// Generate images via OpenRouter.
@@ -55,7 +77,18 @@ pub async fn generate_openrouter(
         return out;
     }
 
-    let payload = build_payload(model, context);
+    let mut payload = build_payload(model, context);
+    // onPayload hook: allow the caller to inspect/replace the request body.
+    if let Some(ref hook) = opts.on_payload {
+        match hook(payload.clone(), model) {
+            Ok(next) => payload = next,
+            Err(e) => {
+                out.stop_reason = StopReason::Error;
+                out.error_message = Some(e.to_string());
+                return out;
+            }
+        }
+    }
     let body = match serde_json::to_vec(&payload) {
         Ok(b) => b,
         Err(e) => {
@@ -107,7 +140,13 @@ pub async fn generate_openrouter(
         };
 
         let status = resp.status().as_u16();
-        if status == 429 || status >= 500 {
+        if let Some(ref hook) = opts.on_response {
+            let hdrs: HashMap<String, String> = resp.headers().iter()
+                .filter_map(|(k, v)| v.to_str().ok().map(|s| (k.as_str().to_string(), s.to_string())))
+                .collect();
+            hook(status, &hdrs, model);
+        }
+        if crate::retry::is_retryable_status(status) {
             last_err = format!("HTTP {}", status);
             if attempt < opts.max_retries {
                 tokio::time::sleep(Duration::from_millis(250 * (attempt as u64 + 1))).await;
@@ -288,5 +327,34 @@ mod tests {
         parse_response(&raw, &img_model(), &mut out);
         assert_eq!(out.stop_reason, StopReason::Error);
         assert_eq!(out.error_message.as_deref(), Some("content policy"));
+    }
+
+    #[tokio::test]
+    async fn test_on_payload_hook_modifies_request() {
+        use wiremock::{MockServer, Mock, ResponseTemplate};
+        use wiremock::matchers::{method, path, body_string_contains};
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .and(body_string_contains("\"injected\":true"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "id": "img-1",
+                "choices": [{"message": {"content": "ok", "images": []}}]
+            })))
+            .mount(&server)
+            .await;
+        let mut model = img_model();
+        model.base_url = server.uri();
+        let ctx = ImagesContext { input: vec![ImageInput::Text { text: "draw".into() }] };
+        let hook: ImagesPayloadHook = Arc::new(|mut p: Value, _m: &ImagesModel| {
+            p["injected"] = serde_json::json!(true);
+            Ok(p)
+        });
+        let opts = ImagesOptions { api_key: Some("k".into()), on_payload: Some(hook), ..Default::default() };
+        let out = generate_openrouter(&model, &ctx, &opts).await;
+        // The mock only matches when the injected field is present, so a non-error
+        // result confirms the hook's modified payload was actually sent.
+        assert_eq!(out.stop_reason, StopReason::Stop);
+        assert_eq!(out.response_id.as_deref(), Some("img-1"));
     }
 }
