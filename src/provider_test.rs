@@ -2540,6 +2540,26 @@ mod tests {
     }
 
     #[test]
+    fn test_responses_reasoning_summary_empty_handling() {
+        use crate::provider::responses::build_responses_payload;
+        let model = Model { reasoning: true, ..test_model("openai-responses", "openai", "https://example.com") };
+        let ctx = test_context();
+        // Empty summary with an effort -> falls back to "auto" (reasoningSummary || "auto").
+        let opts = StreamOptions { reasoning: Some(ThinkingLevel::Medium), reasoning_summary: Some("".into()), ..Default::default() };
+        let p = build_responses_payload(&model, &ctx, &opts);
+        assert_eq!(p["reasoning"]["summary"], "auto");
+        // Empty summary alone (no effort) -> does NOT trigger the reasoning block.
+        let opts2 = StreamOptions { reasoning_summary: Some("".into()), ..Default::default() };
+        let p2 = build_responses_payload(&model, &ctx, &opts2);
+        assert_ne!(p2["reasoning"]["effort"], "medium");
+        // Non-empty summary alone -> medium effort + that summary.
+        let opts3 = StreamOptions { reasoning_summary: Some("detailed".into()), ..Default::default() };
+        let p3 = build_responses_payload(&model, &ctx, &opts3);
+        assert_eq!(p3["reasoning"]["effort"], "medium");
+        assert_eq!(p3["reasoning"]["summary"], "detailed");
+    }
+
+    #[test]
     fn test_max_tokens_zero_handling() {
         // completions/responses use a truthy gate (skip 0); google uses !== undefined (include 0).
         let ctx = test_context();

@@ -907,14 +907,15 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
             .unwrap_or(key);
         payload["reasoning"] = json!({
             "effort": effort,
-            "summary": opts.reasoning_summary.clone().unwrap_or_else(|| "auto".to_string()),
+            // reasoningSummary || "auto": an empty string falls back to "auto".
+            "summary": opts.reasoning_summary.clone().filter(|s| !s.is_empty()).unwrap_or_else(|| "auto".to_string()),
         });
         payload["include"] = json!(["reasoning.encrypted_content"]);
-    } else if opts.reasoning_summary.is_some() {
-        // Summary requested without an explicit effort: default to medium (mirrors upstream).
+    } else if opts.reasoning_summary.as_deref().is_some_and(|s| !s.is_empty()) {
+        // Non-empty summary requested without an explicit effort: default to medium (mirrors upstream).
         payload["reasoning"] = json!({
             "effort": "medium",
-            "summary": opts.reasoning_summary.clone().unwrap_or_else(|| "auto".to_string()),
+            "summary": opts.reasoning_summary.clone().filter(|s| !s.is_empty()).unwrap_or_else(|| "auto".to_string()),
         });
         payload["include"] = json!(["reasoning.encrypted_content"]);
     } else if model.reasoning && model.provider != "github-copilot" {
