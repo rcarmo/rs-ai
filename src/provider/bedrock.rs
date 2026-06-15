@@ -119,6 +119,34 @@ fn convert_tool_result_content(content: &[ContentBlock]) -> Vec<ToolResultConten
     result
 }
 
+/// Whether a Bedrock Claude model supports adaptive thinking, detected by id/name
+/// pattern (mirrors supportsAdaptiveThinking) rather than a compat flag.
+pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
+    let collapse = |s: &str| -> String {
+        let mut out = String::new();
+        let mut prev_sep = false;
+        for c in s.chars() {
+            if c.is_whitespace() || c == '_' || c == '.' || c == ':' {
+                if !prev_sep { out.push('-'); prev_sep = true; }
+            } else {
+                out.push(c);
+                prev_sep = false;
+            }
+        }
+        out
+    };
+    let mut candidates: Vec<String> = Vec::new();
+    for value in [model.id.as_str(), model.name.as_str()] {
+        let lower = value.to_lowercase();
+        candidates.push(collapse(&lower));
+        candidates.push(lower);
+    }
+    candidates.iter().any(|s| {
+        s.contains("opus-4-6") || s.contains("opus-4-7") || s.contains("opus-4-8")
+            || s.contains("sonnet-4-6") || s.contains("fable-5")
+    })
+}
+
 /// Build the Bedrock `additionalModelRequestFields` thinking config for Anthropic
 /// Claude models (mirrors buildAdditionalModelRequestFields).
 fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde_json::Value, Option<u32>)> {
@@ -128,7 +156,7 @@ fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde
     let level = opts.reasoning.as_ref()?;
     let key = format!("{level:?}").to_lowercase();
     let display = opts.thinking_display.as_deref().unwrap_or("summarized");
-    if model.compat.force_adaptive_thinking == Some(true) {
+    if bedrock_supports_adaptive_thinking(model) {
         // Adaptive-thinking models: effort-based config, no interleaved beta, no max adjustment.
         let default_effort = match key.as_str() {
             "minimal" | "low" => "low",
@@ -724,6 +752,28 @@ mod tests {
         ]);
         assert_eq!(out.len(), 1);
         assert!(matches!(&out[0], ToolResultContentBlock::Text(t) if t == "done"));
+    }
+
+    #[test]
+    fn test_bedrock_supports_adaptive_thinking() {
+        use super::bedrock_supports_adaptive_thinking;
+        use crate::types::{Model, ModelCost};
+        fn m(id: &str, name: &str) -> Model {
+            Model {
+                id: id.into(), name: name.into(), api: "bedrock-converse-stream".into(),
+                provider: "amazon-bedrock".into(), base_url: "".into(), reasoning: true,
+                thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
+                context_window: 200000, max_tokens: 8192, headers: None, api_key: None, compat: Default::default(),
+            }
+        }
+        // Detected by id pattern (incl. region prefixes and separator normalization).
+        assert!(bedrock_supports_adaptive_thinking(&m("anthropic.claude-opus-4-6-v1", "Claude Opus 4.6")));
+        assert!(bedrock_supports_adaptive_thinking(&m("au.anthropic.claude-sonnet-4-6", "")));
+        assert!(bedrock_supports_adaptive_thinking(&m("x", "Claude Opus 4.8")));
+        assert!(bedrock_supports_adaptive_thinking(&m("eu.anthropic.claude-fable-5", "")));
+        // Older models -> budget path.
+        assert!(!bedrock_supports_adaptive_thinking(&m("anthropic.claude-opus-4-5-20251101-v1:0", "Claude Opus 4.5")));
+        assert!(!bedrock_supports_adaptive_thinking(&m("anthropic.claude-sonnet-4-20250514-v1:0", "Claude Sonnet 4")));
     }
 
     #[test]
