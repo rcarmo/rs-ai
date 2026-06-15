@@ -3129,6 +3129,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_google_tool_call_with_max_tokens_is_tooluse() {
+        use crate::provider::google::stream_google;
+        // A tool call that also hits MAX_TOKENS must report toolUse, not length
+        // (upstream overrides the stop reason whenever a tool call is present).
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"name\":\"search\",\"args\":{\"q\":\"x\"}}}]},\"finishReason\":\"MAX_TOKENS\"}],\"usageMetadata\":{\"promptTokenCount\":5,\"candidatesTokenCount\":3,\"totalTokenCount\":8}}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("google-generative-ai", "google", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_google(&model, &ctx, &opts);
+        let mut reason = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { reason: r, .. } = evt { reason = Some(r); }
+        }
+        assert_eq!(reason, Some(StopReason::ToolUse));
+    }
+
+    #[tokio::test]
     async fn test_google_function_call_preserves_provided_id() {
         use crate::provider::google::stream_google;
         let server = MockServer::start().await;

@@ -298,13 +298,16 @@ pub fn stream_geminicli<'a>(
                                 _ => {}
                             }
                             block_kind = 0;
-                            partial.stop_reason = Some(match reason {
-                                "STOP" if !tool_call_ids.is_empty() => StopReason::ToolUse,
-                                "STOP" => StopReason::Stop,
-                                "MAX_TOKENS" => StopReason::Length,
-                                other => {
-                                    partial.error_message = Some(format!("Gemini stopped with finish reason: {other}"));
-                                    StopReason::Error
+                            partial.stop_reason = Some(if !tool_call_ids.is_empty() {
+                                StopReason::ToolUse
+                            } else {
+                                match reason {
+                                    "STOP" => StopReason::Stop,
+                                    "MAX_TOKENS" => StopReason::Length,
+                                    other => {
+                                        partial.error_message = Some(format!("Gemini stopped with finish reason: {other}"));
+                                        StopReason::Error
+                                    }
                                 }
                             });
                         }
