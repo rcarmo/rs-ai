@@ -293,6 +293,8 @@ pub struct Model {
 #[serde(rename_all = "camelCase")]
 pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub allow_empty_signature: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force_adaptive_thinking: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_tokens_field: Option<String>,

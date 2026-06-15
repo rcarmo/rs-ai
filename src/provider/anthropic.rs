@@ -489,6 +489,7 @@ pub(crate) struct AnthropicCompat {
     pub supports_long_cache_retention: bool,
     pub supports_cache_control_on_tools: bool,
     pub supports_temperature: bool,
+    pub allow_empty_signature: bool,
 }
 
 pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
@@ -498,6 +499,7 @@ pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
         supports_long_cache_retention: model.compat.supports_long_cache_retention.unwrap_or(!is_fireworks),
         supports_cache_control_on_tools: model.compat.supports_cache_control_on_tools.unwrap_or(!is_fireworks),
         supports_temperature: model.compat.supports_temperature.unwrap_or(true),
+        allow_empty_signature: model.compat.allow_empty_signature.unwrap_or(false),
     }
 }
 
@@ -584,29 +586,41 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
             Role::Assistant => "assistant",
             Role::ToolResult => unreachable!(),
         };
-        let content: Vec<Value> = msg.content.iter().map(|b| match b {
-            ContentBlock::Text { text, .. } => json!({"type": "text", "text": text}),
-            ContentBlock::Image { data, mime_type } => json!({
+        let content: Vec<Value> = msg.content.iter().filter_map(|b| match b {
+            ContentBlock::Text { text, .. } => Some(json!({"type": "text", "text": text})),
+            ContentBlock::Image { data, mime_type } => Some(json!({
                 "type": "image",
                 "source": {"type": "base64", "media_type": mime_type, "data": data}
-            }),
+            })),
             ContentBlock::Thinking { thinking, thinking_signature, redacted } => {
                 if *redacted {
                     // Send the opaque payload back as redacted_thinking.
-                    json!({"type": "redacted_thinking", "data": thinking_signature.clone().unwrap_or_default()})
-                } else {
-                    let mut block = json!({"type": "thinking", "thinking": thinking});
-                    if let Some(sig) = thinking_signature {
-                        block["signature"] = json!(sig);
-                    }
-                    block
+                    return Some(json!({"type": "redacted_thinking", "data": thinking_signature.clone().unwrap_or_default()}));
                 }
+                // Skip empty thinking blocks (mirrors upstream convertMessages).
+                if thinking.trim().is_empty() {
+                    return None;
+                }
+                let sig = thinking_signature.as_deref().filter(|s| !s.trim().is_empty());
+                Some(match sig {
+                    Some(s) => json!({"type": "thinking", "thinking": thinking, "signature": s}),
+                    None => {
+                        // Missing/empty signature: preserve as empty-signature thinking only
+                        // for marked models, otherwise downgrade to plain text so Anthropic
+                        // doesn't reject an unsigned thinking block.
+                        if anthropic_compat(model).allow_empty_signature {
+                            json!({"type": "thinking", "thinking": thinking, "signature": ""})
+                        } else {
+                            json!({"type": "text", "text": thinking})
+                        }
+                    }
+                })
             }
-            ContentBlock::ToolCall { id, name, arguments, .. } => json!({
+            ContentBlock::ToolCall { id, name, arguments, .. } => Some(json!({
                 "type": "tool_use", "id": normalize_anthropic_tool_call_id(id),
                 "name": if is_oauth { to_claude_code_name(name) } else { name.clone() },
                 "input": arguments
-            }),
+            })),
         }).collect();
         messages.push(json!({"role": role_str, "content": content}));
         i += 1;

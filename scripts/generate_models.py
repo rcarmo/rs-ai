@@ -63,6 +63,7 @@ def gen_model(m) -> str:
     lines.append("            api_key: None,")
     compat = m.get("compat") or {}
     compat_fields = {
+        "allowEmptySignature": ("allow_empty_signature", "bool"),
         "forceAdaptiveThinking": ("force_adaptive_thinking", "bool"),
         "maxTokensField": ("max_tokens_field", "str"),
         "requiresReasoningContentOnAssistantMessages": ("requires_reasoning_content_on_assistant_messages", "bool"),

@@ -1929,6 +1929,36 @@ mod tests {
     }
 
     #[test]
+    fn test_anthropic_unsigned_thinking_downgraded_to_text() {
+        use crate::provider::anthropic::build_anthropic_payload;
+        // A non-empty thinking block without a signature must be downgraded to plain
+        // text (default allowEmptySignature=false) so Anthropic doesn't reject it.
+        let model = test_model("anthropic-messages", "anthropic", "https://example.com");
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![Message {
+                role: Role::Assistant,
+                content: vec![ContentBlock::Thinking {
+                    thinking: "some reasoning".into(),
+                    thinking_signature: None,
+                    redacted: false,
+                }],
+                timestamp: 0,
+                api: Some("anthropic-messages".into()), provider: Some("anthropic".into()), model: Some("test-model".into()),
+                response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
+                stop_reason: Some(StopReason::Stop), error_message: None,
+                tool_call_id: None, tool_name: None, is_error: false, details: None,
+            }],
+            tools: vec![],
+        };
+        let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
+        let block = &payload["messages"][0]["content"][0];
+        assert_eq!(block["type"], "text");
+        assert_eq!(block["text"], "some reasoning");
+        assert!(block.get("signature").is_none());
+    }
+
+    #[test]
     fn test_anthropic_redacted_thinking_payload_roundtrip() {
         use crate::provider::anthropic::build_anthropic_payload;
         let model = test_model("anthropic-messages", "anthropic", "https://example.com");
