@@ -514,7 +514,21 @@ pub fn stream_bedrock<'a>(
             req = req.additional_model_request_fields(json_to_document(&fields));
         }
 
-        let result = req.send().await;
+        // Apply caller-supplied custom headers to the request (mirrors addCustomHeadersMiddleware).
+        let result = if let Some(custom) = opts.headers.as_ref().filter(|h| !h.is_empty()) {
+            let custom = custom.clone();
+            req.customize()
+                .mutate_request(move |http_req| {
+                    let headers = http_req.headers_mut();
+                    for (k, v) in &custom {
+                        let _ = headers.try_insert(k.clone(), v.clone());
+                    }
+                })
+                .send()
+                .await
+        } else {
+            req.send().await
+        };
 
         let output = match result {
             Ok(o) => o,
