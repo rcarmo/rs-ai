@@ -142,7 +142,7 @@ pub fn stream_codex<'a>(
                 if let Some(ref aid) = account_id {
                     req = req.header("chatgpt-account-id", aid);
                 }
-                if let Some(ref sid) = opts.session_id {
+                if let Some(sid) = opts.session_id.as_deref().filter(|s| !s.is_empty()) {
                     req = req.header("session-id", sid).header("x-client-request-id", sid);
                 }
                 if let Some(ref mh) = model.headers {

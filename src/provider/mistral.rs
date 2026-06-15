@@ -57,7 +57,7 @@ pub fn stream_mistral<'a>(
             }
         }
     }
-    if let Some(ref session_id) = opts.session_id
+    if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
         && !headers.contains_key("x-affinity")
         && let Ok(val) = HeaderValue::from_str(session_id) {
         headers.insert("x-affinity", val);

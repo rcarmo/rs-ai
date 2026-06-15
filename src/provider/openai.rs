@@ -77,8 +77,8 @@ pub fn stream_openai<'a>(
         }
     }
 
-    // Session affinity headers for providers that require them.
-    if let Some(ref session_id) = opts.session_id
+    // Session affinity headers for providers that require them (skip empty session id).
+    if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
         && compat.supports_session_affinity_headers == Some(true)
             && let Ok(val) = HeaderValue::from_str(session_id) {
                 headers.insert("session_id", val.clone());

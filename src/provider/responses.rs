@@ -191,9 +191,9 @@ fn stream_responses_inner<'a>(
             && let Ok(val) = HeaderValue::from_str(&format!("Bearer {}", api_key)) {
             headers.insert("cf-aig-authorization", val);
         }
-        // Session headers (non-Azure): upstream sends `session_id` only when
-        // compat.sendSessionIdHeader (default true), and `x-client-request-id` always.
-        if let Some(ref session_id) = opts.session_id
+        // Session headers (non-Azure): upstream gates on a truthy sessionId; sends
+        // `session_id` only when compat.sendSessionIdHeader (default true), `x-client-request-id` always.
+        if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
             && let Ok(val) = HeaderValue::from_str(session_id) {
                 if model.compat.send_session_id_header.unwrap_or(true) {
                     headers.insert("session_id", val.clone());

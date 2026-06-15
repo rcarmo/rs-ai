@@ -436,6 +436,25 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_responses_empty_session_id_no_headers() {
+        // An empty-string session id is treated as absent (upstream truthy `if (sessionId)`).
+        let server = MockServer::start().await;
+        Mock::given(method("POST")).and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string("data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server).await;
+        let model = test_model("openai-responses", "openai", &server.uri());
+        let opts = StreamOptions { session_id: Some("".into()), ..Default::default() };
+        let ctx = test_context();
+        let mut s = stream_responses(&model, &ctx, &opts);
+        while s.next().await.is_some() {}
+        let reqs = server.received_requests().await.unwrap();
+        assert!(reqs[0].headers.get("session_id").is_none());
+        assert!(reqs[0].headers.get("x-client-request-id").is_none());
+    }
+
+    #[tokio::test]
     async fn test_responses_session_header_gating() {
         use wiremock::matchers::header_exists;
         use crate::provider::responses::stream_azure_responses;

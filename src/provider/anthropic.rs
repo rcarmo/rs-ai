@@ -82,7 +82,7 @@ pub fn stream_anthropic<'a>(
     // Session affinity header for providers that require it (mirrors getAnthropicCompat
     // sendSessionAffinityHeaders: explicit compat override, else fireworks or the
     // Anthropic-via-Cloudflare-AI-Gateway default).
-    if let Some(ref session_id) = opts.session_id
+    if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
         && anthropic_needs_session_affinity(model)
         && let Ok(val) = HeaderValue::from_str(session_id) {
             headers.insert("x-session-affinity", val);
