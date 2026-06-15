@@ -2167,6 +2167,36 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_anthropic_cache_write_1h_survives_message_delta() {
+        // 1h cache-write tokens are captured at message_start and must NOT be zeroed
+        // by a later message_delta (upstream never touches cacheWrite1h in delta).
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/messages"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"usage\":{\"input_tokens\":10,\"output_tokens\":0,\"cache_creation_input_tokens\":100,\"cache_creation\":{\"ephemeral_1h_input_tokens\":40}}}}\n\n\
+                     event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":5}}\n\n\
+                     event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+                )
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("anthropic-messages", "anthropic", &server.uri());
+        let ctx = test_context();
+        let opts = StreamOptions::default();
+        let mut stream = stream_anthropic(&model, &ctx, &opts);
+        let mut usage = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt { usage = message.usage; }
+        }
+        let u = usage.expect("usage");
+        assert_eq!(u.cache_write, 100);
+        // The 1h portion survives the message_delta (would be 0 if overwritten).
+        assert_eq!(u.cache_write_1h, Some(40));
+    }
+
+    #[tokio::test]
     async fn test_anthropic_tool_use_stream() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

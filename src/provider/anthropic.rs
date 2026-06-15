@@ -393,10 +393,8 @@ pub fn stream_anthropic<'a>(
                                 if let Some(v) = usage.get("cache_creation_input_tokens").and_then(|v| v.as_u64()) {
                                     u.cache_write = v as u32;
                                 }
-                                u.cache_write_1h = Some(
-                                    usage.pointer("/cache_creation/ephemeral_1h_input_tokens")
-                                        .and_then(|v| v.as_u64()).unwrap_or(0) as u32,
-                                );
+                                // Note: cache_write_1h is set once in message_start and preserved;
+                                // upstream's message_delta does not update it.
                                 u.total_tokens = u.input + u.output + u.cache_read + u.cache_write;
                             }
                     }
