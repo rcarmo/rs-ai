@@ -165,6 +165,33 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_openai_response_id_first_wins() {
+        // responseId is captured first-wins (||=), matching upstream; a proxy that
+        // varies the id per chunk must not overwrite the initial value.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(sse_response(&[
+                    r#"{"id":"first","choices":[{"delta":{"content":"a"},"index":0}]}"#,
+                    r#"{"id":"second","choices":[{"delta":{"content":"b"},"index":0}]}"#,
+                    r#"{"id":"third","choices":[{"delta":{},"finish_reason":"stop","index":0}]}"#,
+                ]))
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-completions", "openai", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut done: Option<Message> = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt { done = Some(message); }
+        }
+        assert_eq!(done.unwrap().response_id.as_deref(), Some("first"));
+    }
+
+    #[tokio::test]
     async fn test_openai_emits_tool_call_end() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

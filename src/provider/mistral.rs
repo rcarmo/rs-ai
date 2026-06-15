@@ -161,7 +161,8 @@ pub fn stream_mistral<'a>(
                     Err(_) => continue,
                 };
 
-                if let Some(id) = chunk.get("id").and_then(|v| v.as_str()) {
+                if partial.response_id.is_none()
+                    && let Some(id) = chunk.get("id").and_then(|v| v.as_str()) {
                     partial.response_id = Some(id.to_string());
                 }
 

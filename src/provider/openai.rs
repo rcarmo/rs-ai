@@ -241,7 +241,8 @@ pub fn stream_openai<'a>(
                     return;
                 }
 
-                if let Some(id) = chunk.get("id").and_then(|v| v.as_str()) {
+                if partial.response_id.is_none()
+                    && let Some(id) = chunk.get("id").and_then(|v| v.as_str()) {
                     partial.response_id = Some(id.to_string());
                 }
                 if partial.response_model.is_none()
