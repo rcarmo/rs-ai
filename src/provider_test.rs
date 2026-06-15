@@ -842,6 +842,20 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_detected_thinking_format_priority() {
+        // Detected thinkingFormat follows upstream's priority and defaults to "openai".
+        let mk = |provider: &str, url: &str| {
+            let m = test_model("openai-completions", provider, url);
+            crate::compat::detect_compat(&m).thinking_format
+        };
+        assert_eq!(mk("deepseek", "https://api.deepseek.com").as_deref(), Some("deepseek"));
+        assert_eq!(mk("zai", "https://api.z.ai").as_deref(), Some("zai"));
+        assert_eq!(mk("together", "https://api.together.ai").as_deref(), Some("together"));
+        assert_eq!(mk("openrouter", "https://openrouter.ai/api/v1").as_deref(), Some("openrouter"));
+        assert_eq!(mk("openai", "https://api.openai.com").as_deref(), Some("openai"));
+    }
+
+    #[test]
     fn test_openai_compat_overrides_wired_through() {
         // requires_tool_result_name / requires_thinking_as_text / cache_control_format
         // must flow from model.compat into the resolved compat (upstream getCompat ??).

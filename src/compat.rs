@@ -137,7 +137,6 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
         c.max_tokens_field = Some("max_tokens".to_string());
     }
     if is_openrouter {
-        c.thinking_format = Some("openrouter".to_string());
         if model_id.starts_with("anthropic/") {
             c.cache_control_format = Some("anthropic".to_string());
         }
@@ -149,19 +148,20 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
         c.requires_tool_result_name = Some(true);
         c.supports_strict_mode = Some(false);
     }
-    if is_zai {
-        c.thinking_format = Some("zai".to_string());
-    }
-    if is_together {
-        c.thinking_format = Some("together".to_string());
-    }
     if is_deepseek {
-        c.thinking_format = Some("deepseek".to_string());
         c.requires_reasoning_content_on_assistant_messages = Some(true);
     }
-    if is_ant_ling {
-        c.thinking_format = Some("ant-ling".to_string());
-    }
+    // Detected thinking format follows upstream's priority chain
+    // (deepseek > zai > together > ant-ling > openrouter > openai), not last-wins.
+    c.thinking_format = Some(
+        if is_deepseek { "deepseek" }
+        else if is_zai { "zai" }
+        else if is_together { "together" }
+        else if is_ant_ling { "ant-ling" }
+        else if is_openrouter { "openrouter" }
+        else { "openai" }
+        .to_string(),
+    );
     if is_moonshot || is_cloudflare_aigw || is_together || is_nvidia {
         c.supports_strict_mode = Some(false);
     }
