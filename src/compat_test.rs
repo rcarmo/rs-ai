@@ -66,10 +66,26 @@ mod tests {
     }
 
     #[test]
-    fn test_xiaomi_as_deepseek() {
+    fn test_xiaomi_not_auto_detected_as_deepseek() {
+        // Upstream does NOT detect xiaomi as deepseek; xiaomi models carry an explicit
+        // compat (thinkingFormat/requiresReasoningContent). A bare xiaomi model must be
+        // treated as standard (store + developer role enabled, openai thinking format).
         let m = model_with("xiaomi", "https://api.xiaomimimo.com/v1", "mimo");
         let c = detect_compat(&m);
-        assert_eq!(c.thinking_format.as_deref(), Some("deepseek"));
+        assert_eq!(c.thinking_format.as_deref(), Some("openai"));
+        assert_eq!(c.supports_store, Some(true));
+        assert_eq!(c.supports_developer_role, Some(true));
+        assert_eq!(c.requires_reasoning_content_on_assistant_messages, None);
+
+        // The registry's explicit compat still yields the deepseek format via the override.
+        let mut m2 = model_with("xiaomi", "https://api.xiaomimimo.com/v1", "mimo");
+        m2.compat.thinking_format = Some("deepseek".into());
+        m2.compat.requires_reasoning_content_on_assistant_messages = Some(true);
+        let c2 = detect_compat(&m2);
+        assert_eq!(c2.thinking_format.as_deref(), Some("deepseek"));
+        assert_eq!(c2.requires_reasoning_content_on_assistant_messages, Some(true));
+        // Still standard (explicit format compat doesn't make it non-standard).
+        assert_eq!(c2.supports_store, Some(true));
     }
 
     #[test]

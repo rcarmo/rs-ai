@@ -95,8 +95,7 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
 
     let is_ollama = is_local_ollama(base_url);
     let is_openrouter = provider == "openrouter" || base_url.contains("openrouter.ai");
-    let is_deepseek = provider == "deepseek" || base_url.contains("deepseek.com")
-        || provider == "xiaomi" || base_url.contains("xiaomimimo.com");
+    let is_deepseek = provider == "deepseek" || base_url.contains("deepseek.com");
     let is_nvidia = provider == "nvidia" || base_url.contains("integrate.api.nvidia.com");
     let is_ant_ling = provider == "ant-ling" || base_url.contains("api.ant-ling.com");
     let is_zai = provider == "zai" || provider == "zai-coding-cn"
