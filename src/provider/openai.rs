@@ -461,11 +461,75 @@ pub(crate) fn build_payload(
 
     // Conversation messages
     let transformed_messages = crate::transform::transform_messages(&context.messages, model);
-    for msg in &transformed_messages {
+    let mut last_role: Option<Role> = None;
+    let mut idx = 0usize;
+    while idx < transformed_messages.len() {
+        let msg = &transformed_messages[idx];
+
+        // Some providers don't allow a user message directly after tool results;
+        // insert a synthetic assistant message to bridge (mirrors upstream).
+        if compat.requires_assistant_after_tool_result == Some(true)
+            && last_role == Some(Role::ToolResult)
+            && msg.role == Role::User {
+            messages.push(json!({"role": "assistant", "content": "I have processed the tool results."}));
+        }
+
+        // Tool results: emit a `tool` message for each consecutive result, then a
+        // separate user message carrying any images (the OpenAI `tool` role cannot
+        // hold image content) — mirrors upstream convertMessages.
+        if msg.role == Role::ToolResult {
+            let mut image_blocks: Vec<Value> = Vec::new();
+            let mut j = idx;
+            while j < transformed_messages.len() && transformed_messages[j].role == Role::ToolResult {
+                let tr = &transformed_messages[j];
+                let text_result = tr.content.iter().filter_map(|b| match b {
+                    ContentBlock::Text { text, .. } => Some(text.as_str()),
+                    _ => None,
+                }).collect::<Vec<_>>().join("\n");
+                let has_images = tr.content.iter().any(|b| matches!(b, ContentBlock::Image { .. }));
+                let content = if text_result.is_empty() { "(see attached image)".to_string() } else { text_result };
+                let mut tm = json!({
+                    "role": "tool",
+                    "content": content,
+                    "tool_call_id": tr.tool_call_id.as_deref()
+                        .map(|id| normalize_tool_call_id(id, &model.provider)).unwrap_or_default(),
+                });
+                if compat.requires_tool_result_name == Some(true)
+                    && let Some(ref name) = tr.tool_name {
+                        tm["name"] = json!(name);
+                    }
+                messages.push(tm);
+                if has_images && model.input.iter().any(|i| i == "image") {
+                    for b in &tr.content {
+                        if let ContentBlock::Image { data, mime_type } = b {
+                            image_blocks.push(json!({
+                                "type": "image_url",
+                                "image_url": {"url": format!("data:{};base64,{}", mime_type, data)}
+                            }));
+                        }
+                    }
+                }
+                j += 1;
+            }
+            idx = j;
+            if !image_blocks.is_empty() {
+                if compat.requires_assistant_after_tool_result == Some(true) {
+                    messages.push(json!({"role": "assistant", "content": "I have processed the tool results."}));
+                }
+                let mut content = vec![json!({"type": "text", "text": "Attached image(s) from tool result:"})];
+                content.extend(image_blocks);
+                messages.push(json!({"role": "user", "content": content}));
+                last_role = Some(Role::User);
+            } else {
+                last_role = Some(Role::ToolResult);
+            }
+            continue;
+        }
+
         let role_str = match msg.role {
             Role::User => "user",
             Role::Assistant => "assistant",
-            Role::ToolResult => "tool",
+            Role::ToolResult => unreachable!(),
         };
 
         let text_blocks: Vec<String> = msg.content.iter().filter_map(|b| match b {
@@ -501,7 +565,8 @@ pub(crate) fn build_payload(
                 }
                 json!(parts)
             } else if assistant_text.is_empty() {
-                Value::Null
+                // Empty assistant content: some providers reject null, use "" when bridging.
+                if compat.requires_assistant_after_tool_result == Some(true) { json!("") } else { Value::Null }
             } else {
                 json!(assistant_text)
             }
@@ -515,6 +580,7 @@ pub(crate) fn build_payload(
         };
 
         let mut m = json!({ "role": role_str, "content": content });
+        let mut should_push = true;
         if msg.role == Role::Assistant {
             if !tool_call_blocks.is_empty() {
                 m["tool_calls"] = json!(tool_call_blocks);
@@ -559,19 +625,14 @@ pub(crate) fn build_payload(
             let has_content = !matches!(m["content"], Value::Null)
                 && !(m["content"].as_str().map(|s| s.is_empty()).unwrap_or(false));
             if !has_content && tool_call_blocks.is_empty() {
-                continue;
+                should_push = false;
             }
         }
-        if msg.role == Role::ToolResult {
-            if let Some(ref id) = msg.tool_call_id {
-                m["tool_call_id"] = json!(normalize_tool_call_id(id, &model.provider));
-            }
-            if compat.requires_tool_result_name == Some(true)
-                && let Some(ref name) = msg.tool_name {
-                    m["name"] = json!(name);
-                }
+        if should_push {
+            messages.push(m);
         }
-        messages.push(m);
+        last_role = Some(msg.role.clone());
+        idx += 1;
     }
 
     let max_tokens_field = compat.max_tokens_field.as_deref().unwrap_or("max_completion_tokens");

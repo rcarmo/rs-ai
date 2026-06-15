@@ -574,6 +574,54 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_tool_result_images_extracted_to_user_message() {
+        // OpenAI `tool` role can't carry images: a vision model's image tool result
+        // must emit a string `tool` message plus a following `user` image message.
+        let mut model = test_model("openai-completions", "openai", "https://example.com");
+        model.input = vec!["text".into(), "image".into()];
+        let tr = Message {
+            role: Role::ToolResult,
+            content: vec![
+                ContentBlock::Text { text: "result text".into(), text_signature: None },
+                ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() },
+            ],
+            timestamp: 0,
+            api: None, provider: None, model: None, response_id: None, response_model: None,
+            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+            tool_call_id: Some("call_1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, messages: vec![tr], tools: vec![] };
+        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let msgs = payload["messages"].as_array().unwrap();
+        let tool_msg = msgs.iter().find(|m| m["role"] == "tool").unwrap();
+        // Tool message content is a plain string (not an array with image_url).
+        assert_eq!(tool_msg["content"], "result text");
+        assert!(tool_msg["content"].is_string());
+        // A following user message carries the image.
+        let user_msg = msgs.iter().find(|m| m["role"] == "user").unwrap();
+        let parts = user_msg["content"].as_array().unwrap();
+        assert!(parts.iter().any(|p| p["type"] == "image_url"));
+    }
+
+    #[test]
+    fn test_openai_tool_result_image_only_uses_placeholder() {
+        let mut model = test_model("openai-completions", "openai", "https://example.com");
+        model.input = vec!["text".into(), "image".into()];
+        let tr = Message {
+            role: Role::ToolResult,
+            content: vec![ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() }],
+            timestamp: 0,
+            api: None, provider: None, model: None, response_id: None, response_model: None,
+            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+            tool_call_id: Some("call_1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, messages: vec![tr], tools: vec![] };
+        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let tool_msg = payload["messages"].as_array().unwrap().iter().find(|m| m["role"] == "tool").unwrap();
+        assert_eq!(tool_msg["content"], "(see attached image)");
+    }
+
+    #[test]
     fn test_openai_developer_role_only_for_reasoning_models() {
         // Upstream uses the `developer` system role only when model.reasoning &&
         // supportsDeveloperRole; a non-reasoning model must use `system`.

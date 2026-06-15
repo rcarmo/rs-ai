@@ -67,6 +67,7 @@ def gen_model(m) -> str:
         "forceAdaptiveThinking": ("force_adaptive_thinking", "bool"),
         "maxTokensField": ("max_tokens_field", "str"),
         "requiresReasoningContentOnAssistantMessages": ("requires_reasoning_content_on_assistant_messages", "bool"),
+        "requiresAssistantAfterToolResult": ("requires_assistant_after_tool_result", "bool"),
         "sendSessionAffinityHeaders": ("send_session_affinity_headers", "bool"),
         "supportsCacheControlOnTools": ("supports_cache_control_on_tools", "bool"),
         "supportsDeveloperRole": ("supports_developer_role", "bool"),

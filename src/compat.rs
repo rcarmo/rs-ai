@@ -13,6 +13,7 @@ pub struct OpenAICompletionsCompat {
     pub max_tokens_field: Option<String>,
     pub requires_tool_result_name: Option<bool>,
     pub requires_thinking_as_text: Option<bool>,
+    pub requires_assistant_after_tool_result: Option<bool>,
     pub requires_reasoning_content_on_assistant_messages: Option<bool>,
     pub thinking_format: Option<String>,
     pub supports_strict_mode: Option<bool>,
@@ -44,6 +45,7 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         max_tokens_field: mc.max_tokens_field.clone(),
         requires_tool_result_name: None,
         requires_thinking_as_text: None,
+        requires_assistant_after_tool_result: mc.requires_assistant_after_tool_result,
         requires_reasoning_content_on_assistant_messages: mc.requires_reasoning_content_on_assistant_messages,
         thinking_format: mc.thinking_format.clone(),
         supports_strict_mode: mc.supports_strict_mode,
@@ -66,6 +68,7 @@ pub fn detect_compat_for_model(model: &Model, overrides: Option<&OpenAICompletio
         if o.max_tokens_field.is_some() { c.max_tokens_field = o.max_tokens_field.clone(); }
         if o.requires_tool_result_name.is_some() { c.requires_tool_result_name = o.requires_tool_result_name; }
         if o.requires_thinking_as_text.is_some() { c.requires_thinking_as_text = o.requires_thinking_as_text; }
+        if o.requires_assistant_after_tool_result.is_some() { c.requires_assistant_after_tool_result = o.requires_assistant_after_tool_result; }
         if o.requires_reasoning_content_on_assistant_messages.is_some() { c.requires_reasoning_content_on_assistant_messages = o.requires_reasoning_content_on_assistant_messages; }
         if o.thinking_format.is_some() { c.thinking_format = o.thinking_format.clone(); }
         if o.supports_strict_mode.is_some() { c.supports_strict_mode = o.supports_strict_mode; }

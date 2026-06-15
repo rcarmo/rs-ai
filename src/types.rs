@@ -301,6 +301,8 @@ pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requires_reasoning_content_on_assistant_messages: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub requires_assistant_after_tool_result: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub send_session_affinity_headers: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_cache_control_on_tools: Option<bool>,
