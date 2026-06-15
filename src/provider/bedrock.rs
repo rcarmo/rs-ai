@@ -127,6 +127,7 @@ fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde
     }
     let level = opts.reasoning.as_ref()?;
     let key = format!("{level:?}").to_lowercase();
+    let display = opts.thinking_display.as_deref().unwrap_or("summarized");
     if model.compat.force_adaptive_thinking == Some(true) {
         // Adaptive-thinking models: effort-based config, no interleaved beta, no max adjustment.
         let default_effort = match key.as_str() {
@@ -138,7 +139,7 @@ fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde
             .and_then(|m| m.get(&key)).and_then(|v| v.clone())
             .unwrap_or_else(|| default_effort.to_string());
         Some((serde_json::json!({
-            "thinking": { "type": "adaptive", "display": "summarized" },
+            "thinking": { "type": "adaptive", "display": display },
             "output_config": { "effort": effort },
         }), None))
     } else {
@@ -153,10 +154,14 @@ fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde
         let (adj_max, budget) = crate::simple_options::adjust_max_tokens_for_thinking(
             opts.max_tokens, model.max_tokens, level, &budgets_map,
         );
-        Some((serde_json::json!({
-            "thinking": { "type": "enabled", "budget_tokens": budget, "display": "summarized" },
-            "anthropic_beta": ["interleaved-thinking-2025-05-14"],
-        }), Some(adj_max)))
+        let mut fields = serde_json::json!({
+            "thinking": { "type": "enabled", "budget_tokens": budget, "display": display },
+        });
+        // Interleaved-thinking beta (budget path), gated on the interleaved_thinking option.
+        if opts.interleaved_thinking != Some(false) {
+            fields["anthropic_beta"] = serde_json::json!(["interleaved-thinking-2025-05-14"]);
+        }
+        Some((fields, Some(adj_max)))
     }
 }
 

@@ -2669,6 +2669,19 @@ mod tests {
     }
 
     #[test]
+    fn test_anthropic_thinking_display_option() {
+        use crate::provider::anthropic::build_anthropic_payload;
+        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        model.reasoning = true;
+        model.compat.force_adaptive_thinking = Some(true);
+        let ctx = test_context();
+        let opts_default = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        assert_eq!(build_anthropic_payload(&model, &ctx, &opts_default)["thinking"]["display"], "summarized");
+        let opts_detail = StreamOptions { reasoning: Some(ThinkingLevel::High), thinking_display: Some("detailed".into()), ..Default::default() };
+        assert_eq!(build_anthropic_payload(&model, &ctx, &opts_detail)["thinking"]["display"], "detailed");
+    }
+
+    #[test]
     fn test_anthropic_adaptive_thinking_uses_effort_not_budget() {
         use crate::provider::anthropic::build_anthropic_payload;
         // Adaptive-thinking models (forceAdaptiveThinking) send an effort, not a token budget.

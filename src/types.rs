@@ -385,6 +385,8 @@ pub struct StreamOptions {
     pub text_verbosity: Option<String>,
     /// Anthropic interleaved-thinking beta (defaults to enabled when unset).
     pub interleaved_thinking: Option<bool>,
+    /// Thinking display mode for Anthropic/Bedrock Claude (defaults to "summarized").
+    pub thinking_display: Option<String>,
     pub on_payload: Option<PayloadHook>,
     pub on_response: Option<ResponseHook>,
 }
@@ -411,6 +413,7 @@ impl std::fmt::Debug for StreamOptions {
             .field("service_tier", &self.service_tier)
             .field("text_verbosity", &self.text_verbosity)
             .field("interleaved_thinking", &self.interleaved_thinking)
+            .field("thinking_display", &self.thinking_display)
             .field("thinking_budgets", &self.thinking_budgets.as_ref().map(|_| "..."))
             .finish()
     }

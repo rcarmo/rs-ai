@@ -718,7 +718,7 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
     // Thinking/reasoning: adaptive, budget-based, or explicitly disabled (mirrors buildParams).
     if model.reasoning {
         if thinking_enabled {
-            let display = "summarized";
+            let display = opts.thinking_display.as_deref().unwrap_or("summarized");
             if model.compat.force_adaptive_thinking == Some(true) {
                 payload["thinking"] = json!({"type": "adaptive", "display": display});
                 let effort = map_anthropic_effort(model, opts.reasoning.as_ref());
