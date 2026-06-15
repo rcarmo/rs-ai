@@ -40,7 +40,7 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         supports_store: mc.supports_store,
         supports_developer_role: mc.supports_developer_role,
         supports_reasoning_effort: mc.supports_reasoning_effort,
-        supports_usage_in_streaming: None,
+        supports_usage_in_streaming: mc.supports_usage_in_streaming,
         supports_temperature: mc.supports_temperature,
         max_tokens_field: mc.max_tokens_field.clone(),
         requires_tool_result_name: None,

@@ -76,6 +76,7 @@ def gen_model(m) -> str:
         "supportsLongCacheRetention": ("supports_long_cache_retention", "bool"),
         "supportsReasoningEffort": ("supports_reasoning_effort", "bool"),
         "supportsStore": ("supports_store", "bool"),
+        "supportsUsageInStreaming": ("supports_usage_in_streaming", "bool"),
         "supportsStrictMode": ("supports_strict_mode", "bool"),
         "supportsTemperature": ("supports_temperature", "bool"),
         "thinkingFormat": ("thinking_format", "str"),

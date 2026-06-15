@@ -842,6 +842,22 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_usage_in_streaming_compat_override() {
+        // A model setting compat.supportsUsageInStreaming=false must omit stream_options
+        // (matches upstream supportsUsageInStreaming !== false gate).
+        let mut model = test_model("openai-completions", "openai", "https://example.com");
+        let ctx = test_context();
+        let opts = StreamOptions::default();
+        // Default: stream_options present.
+        let p1 = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        assert!(p1.get("stream_options").is_some());
+        // Override false -> omitted.
+        model.compat.supports_usage_in_streaming = Some(false);
+        let p2 = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        assert!(p2.get("stream_options").is_none());
+    }
+
+    #[test]
     fn test_openai_temperature_always_sent() {
         // Upstream completions always sends temperature when provided (no
         // supportsTemperature gate); a compat flag must not suppress it.
