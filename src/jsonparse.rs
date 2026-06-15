@@ -127,6 +127,36 @@ pub fn parse_streaming_json(partial_json: &str) -> Value {
 
 /// Attempt to parse potentially incomplete JSON by adding closing brackets/braces.
 pub fn parse_partial_json(input: &str) -> Option<Value> {
+    // Fast path: close open strings/structures at the truncation point.
+    if let Some(v) = close_and_parse(input) {
+        return Some(v);
+    }
+    // Fallback: the truncation landed after a comma/colon or mid-token (e.g.
+    // `{"a":1,` or `{"a":1,"b":`). Shrink to the largest prefix that closes into
+    // valid JSON, mirroring the `partial-json` library's best-valid-prefix contract.
+    let chars: Vec<char> = input.chars().collect();
+    let mut attempts = 0u32;
+    for end in (1..chars.len()).rev() {
+        // Only attempt at plausible value/structure ends to bound the cost.
+        let c = chars[end - 1];
+        if !(c == '}' || c == ']' || c == '"' || c.is_ascii_digit() || c == 'e') {
+            continue;
+        }
+        attempts += 1;
+        if attempts > 512 {
+            break;
+        }
+        let prefix: String = chars[..end].iter().collect();
+        if let Some(v) = close_and_parse(&prefix) {
+            return Some(v);
+        }
+    }
+    None
+}
+
+/// Close any open string/array/object at the end of `input` and parse. Returns
+/// None if the result is still not valid JSON.
+fn close_and_parse(input: &str) -> Option<Value> {
     // Try direct parse first
     if let Ok(v) = serde_json::from_str(input) {
         return Some(v);
@@ -244,5 +274,23 @@ mod tests {
     fn test_streaming_json_partial_recovers() {
         let v = parse_streaming_json(r#"{"q": "rust"#);
         assert_eq!(v["q"], "rust");
+    }
+
+    #[test]
+    fn test_partial_trailing_comma_and_dangling_pair() {
+        // Truncation after a comma -> drop the trailing comma.
+        assert_eq!(parse_partial_json(r#"{"a":1,"#).unwrap()["a"], 1);
+        assert_eq!(parse_partial_json("[1,2,").unwrap().as_array().unwrap().len(), 2);
+        // Truncation after a key+colon with no value -> drop the dangling pair.
+        let v = parse_partial_json(r#"{"a":1,"b":"#).unwrap();
+        assert_eq!(v["a"], 1);
+        assert!(v.get("b").is_none());
+        // Truncation after a bare key -> drop it, keep the rest.
+        let v2 = parse_partial_json(r#"{"a":1,"b"#).unwrap();
+        assert_eq!(v2["a"], 1);
+        assert!(v2.get("b").is_none());
+        // Nested: truncation after an inner array, dangling outer key.
+        let v3 = parse_partial_json(r#"{"a":[1,2,3],"b":"#).unwrap();
+        assert_eq!(v3["a"], serde_json::json!([1, 2, 3]));
     }
 }
