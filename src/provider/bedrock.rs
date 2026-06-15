@@ -119,6 +119,75 @@ fn convert_tool_result_content(content: &[ContentBlock]) -> Vec<ToolResultConten
     result
 }
 
+/// Extract the AWS region from a Bedrock inference-profile ARN model id
+/// (arn:partition:bedrock:REGION:...).
+pub(crate) fn bedrock_arn_region(model_id: &str) -> Option<String> {
+    if !model_id.starts_with("arn:") {
+        return None;
+    }
+    let parts: Vec<&str> = model_id.split(':').collect();
+    if parts.len() >= 4 && parts[2] == "bedrock" && !parts[3].is_empty() {
+        Some(parts[3].to_string())
+    } else {
+        None
+    }
+}
+
+/// Parse the region from a standard Bedrock runtime endpoint host
+/// (bedrock-runtime[-fips].REGION.amazonaws.com[.cn]); None for custom URLs.
+pub(crate) fn bedrock_standard_endpoint_region(base_url: &str) -> Option<String> {
+    let parsed = url::Url::parse(base_url).ok()?;
+    let host = parsed.host_str()?.to_lowercase();
+    let rest = host.strip_prefix("bedrock-runtime")?;
+    let rest = rest.strip_prefix("-fips").unwrap_or(rest);
+    let rest = rest.strip_prefix('.')?;
+    let region = rest.split('.').next()?;
+    let suffix = &rest[region.len()..];
+    if (suffix == ".amazonaws.com" || suffix == ".amazonaws.com.cn") && !region.is_empty() {
+        Some(region.to_string())
+    } else {
+        None
+    }
+}
+
+fn bedrock_configured_region() -> Option<String> {
+    std::env::var("AWS_REGION").or_else(|_| std::env::var("AWS_DEFAULT_REGION")).ok().filter(|s| !s.is_empty())
+}
+
+fn bedrock_has_profile() -> bool {
+    std::env::var("AWS_PROFILE").map(|v| !v.is_empty()).unwrap_or(false)
+}
+
+/// Whether to pin the model base URL as an explicit endpoint (mirrors
+/// shouldUseExplicitBedrockEndpoint): always for custom URLs, and for standard
+/// runtime endpoints only when no region/profile is configured.
+fn bedrock_use_explicit_endpoint(model: &Model) -> bool {
+    match bedrock_standard_endpoint_region(&model.base_url) {
+        None => true,
+        Some(_) => bedrock_configured_region().is_none() && !bedrock_has_profile(),
+    }
+}
+
+/// Resolve the Bedrock region (mirrors the upstream priority: ARN-embedded >
+/// configured env > standard-endpoint region (when explicit) > us-east-1 unless a
+/// profile is configured, in which case the SDK chain resolves it).
+fn resolve_bedrock_region(model: &Model) -> Option<String> {
+    if let Some(r) = bedrock_arn_region(&model.id) {
+        return Some(r);
+    }
+    if let Some(r) = bedrock_configured_region() {
+        return Some(r);
+    }
+    if bedrock_use_explicit_endpoint(model)
+        && let Some(r) = bedrock_standard_endpoint_region(&model.base_url) {
+        return Some(r);
+    }
+    if !bedrock_has_profile() {
+        return Some("us-east-1".to_string());
+    }
+    None
+}
+
 /// Whether the Bedrock target is GovCloud, where the Claude `thinking.display`
 /// field must be omitted (mirrors isGovCloudBedrockTarget).
 pub(crate) fn is_govcloud_bedrock_target(model: &Model) -> bool {
@@ -241,7 +310,14 @@ pub fn stream_bedrock<'a>(
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     Box::pin(async_stream::stream! {
-        let config = aws_config::defaults(BehaviorVersion::latest()).load().await;
+        let mut loader = aws_config::defaults(BehaviorVersion::latest());
+        if let Some(region) = resolve_bedrock_region(model) {
+            loader = loader.region(aws_config::Region::new(region));
+        }
+        if bedrock_use_explicit_endpoint(model) && !model.base_url.is_empty() {
+            loader = loader.endpoint_url(model.base_url.clone());
+        }
+        let config = loader.load().await;
         let client = BedrockClient::new(&config);
 
         let supports_signature = is_anthropic_claude_model(model);
@@ -771,6 +847,21 @@ mod tests {
         ]);
         assert_eq!(out.len(), 1);
         assert!(matches!(&out[0], ToolResultContentBlock::Text(t) if t == "done"));
+    }
+
+    #[test]
+    fn test_bedrock_region_parsers() {
+        use super::{bedrock_arn_region, bedrock_standard_endpoint_region};
+        // ARN-embedded region.
+        assert_eq!(bedrock_arn_region("arn:aws:bedrock:us-west-2:123:inference-profile/x").as_deref(), Some("us-west-2"));
+        assert_eq!(bedrock_arn_region("arn:aws-us-gov:bedrock:us-gov-west-1:123:foundation-model/y").as_deref(), Some("us-gov-west-1"));
+        assert_eq!(bedrock_arn_region("anthropic.claude-opus-4-6"), None);
+        // Standard runtime endpoint region.
+        assert_eq!(bedrock_standard_endpoint_region("https://bedrock-runtime.us-east-1.amazonaws.com").as_deref(), Some("us-east-1"));
+        assert_eq!(bedrock_standard_endpoint_region("https://bedrock-runtime-fips.us-east-2.amazonaws.com").as_deref(), Some("us-east-2"));
+        assert_eq!(bedrock_standard_endpoint_region("https://bedrock-runtime.cn-north-1.amazonaws.com.cn").as_deref(), Some("cn-north-1"));
+        // Custom/VPC URL -> no standard region.
+        assert_eq!(bedrock_standard_endpoint_region("https://my-vpc-proxy.internal/bedrock"), None);
     }
 
     #[test]
