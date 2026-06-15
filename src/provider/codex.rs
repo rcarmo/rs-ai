@@ -178,9 +178,10 @@ pub fn stream_codex<'a>(
                 if !resp.status().is_success() {
                     let status = resp.status().as_u16();
                     let body = resp.text().await.unwrap_or_default();
+                    let msg = parse_codex_error_response(&body, status);
                     yield Event::Error {
                         reason: StopReason::Error,
-                        error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!("HTTP {}: {}", status, body))),
+                        error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(msg)),
                         message: None,
                     };
                     return;
@@ -589,6 +590,41 @@ impl CodexWsState {
         self.events.push(Event::Done { reason, message: self.partial.clone() });
         self.events
     }
+}
+
+/// Parse a Codex error response body, extracting a friendly usage-limit message
+/// for rate/usage-limit errors (mirrors parseErrorResponse: surfaces
+/// friendlyMessage || err.message || raw).
+pub(crate) fn parse_codex_error_response(body: &str, status: u16) -> String {
+    let mut message = if body.is_empty() { "Request failed".to_string() } else { body.to_string() };
+    let mut friendly: Option<String> = None;
+    if let Ok(parsed) = serde_json::from_str::<Value>(body)
+        && let Some(err) = parsed.get("error") {
+        let code = err.get("code").and_then(|v| v.as_str())
+            .or_else(|| err.get("type").and_then(|v| v.as_str()))
+            .unwrap_or("")
+            .to_lowercase();
+        let is_usage_limit = code.contains("usage_limit_reached")
+            || code.contains("usage_not_included")
+            || code.contains("rate_limit_exceeded")
+            || status == 429;
+        if is_usage_limit {
+            let plan = err.get("plan_type").and_then(|v| v.as_str())
+                .map(|p| format!(" ({} plan)", p.to_lowercase()))
+                .unwrap_or_default();
+            let when = err.get("resets_at").and_then(|v| v.as_f64())
+                .map(|r| {
+                    let mins = (((r * 1000.0 - crate::utils::now_millis() as f64) / 60000.0).round()).max(0.0) as i64;
+                    format!(" Try again in ~{mins} min.")
+                })
+                .unwrap_or_default();
+            friendly = Some(format!("You have hit your ChatGPT usage limit{plan}.{when}").trim().to_string());
+        }
+        message = err.get("message").and_then(|v| v.as_str()).map(|s| s.to_string())
+            .or_else(|| friendly.clone())
+            .unwrap_or(message);
+    }
+    friendly.unwrap_or(message)
 }
 
 pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &StreamOptions) -> Value {

@@ -1580,6 +1580,26 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_codex_error_response_usage_limit() {
+        use crate::provider::codex::parse_codex_error_response;
+        // Usage-limit error -> friendly message with plan; no "HTTP" prefix.
+        let body = serde_json::json!({
+            "error": {"code": "usage_limit_reached", "plan_type": "Pro", "message": "limit"}
+        }).to_string();
+        let msg = parse_codex_error_response(&body, 429);
+        assert!(msg.starts_with("You have hit your ChatGPT usage limit (pro plan)."), "{msg}");
+        assert!(!msg.contains("HTTP"));
+        // 429 with no error object still triggers the friendly message.
+        let msg2 = parse_codex_error_response("{}", 429);
+        assert_eq!(msg2, "{}"); // no error object -> raw body returned
+        // Non-usage error surfaces err.message.
+        let body3 = serde_json::json!({"error": {"code": "bad_request", "message": "nope"}}).to_string();
+        assert_eq!(parse_codex_error_response(&body3, 400), "nope");
+        // Empty body -> "Request failed".
+        assert_eq!(parse_codex_error_response("", 500), "Request failed");
+    }
+
+    #[test]
     fn test_codex_incomplete_status_maps_to_length() {
         let model = test_model("openai-codex-responses", "openai", "https://example.com");
         let events = vec![
