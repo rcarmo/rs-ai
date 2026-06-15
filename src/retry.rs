@@ -46,9 +46,10 @@ pub fn compute_backoff(attempt: u32, config: &RetryConfig) -> Duration {
     Duration::from_secs_f64(jittered.max(0.0))
 }
 
-/// Check if an HTTP status code is retryable.
+/// Check if an HTTP status code is retryable. Mirrors the OpenAI/Anthropic SDK
+/// retry set (408 request timeout, 409 conflict/lock, 429 rate limit, and all 5xx).
 pub fn is_retryable_status(code: u16) -> bool {
-    matches!(code, 429 | 500 | 502 | 503 | 504)
+    matches!(code, 408 | 409 | 429) || code >= 500
 }
 
 /// Parse a `Retry-After` header value (integer/float seconds, or HTTP-date) into a Duration.
@@ -100,8 +101,13 @@ mod tests {
     fn test_is_retryable() {
         assert!(is_retryable_status(429));
         assert!(is_retryable_status(500));
+        assert!(is_retryable_status(408));
+        assert!(is_retryable_status(409));
+        assert!(is_retryable_status(501));
+        assert!(is_retryable_status(529));
         assert!(!is_retryable_status(200));
         assert!(!is_retryable_status(400));
+        assert!(!is_retryable_status(404));
     }
 
     #[test]
