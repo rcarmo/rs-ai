@@ -661,7 +661,7 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
         if let Some(ref tc) = opts.tool_choice {
             let mode = match tc.as_str() {
                 Some("auto") => "AUTO",
-                Some("any") | Some("required") => "ANY",
+                Some("any") => "ANY",
                 Some("none") => "NONE",
                 _ => "AUTO",
             };

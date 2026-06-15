@@ -3247,13 +3247,17 @@ mod tests {
         let opts = StreamOptions {
             reasoning: Some(ThinkingLevel::High),
             thinking_budgets: Some(ThinkingBudgets { high: Some(2048), ..Default::default() }),
-            tool_choice: Some(serde_json::json!("required")),
+            tool_choice: Some(serde_json::json!("any")),
             ..Default::default()
         };
         let payload = build_google_payload_public(&model, &ctx, &opts);
         assert_eq!(payload["generationConfig"]["thinkingConfig"]["includeThoughts"], true);
         assert_eq!(payload["generationConfig"]["thinkingConfig"]["thinkingBudget"], 2048);
         assert_eq!(payload["toolConfig"]["functionCallingConfig"]["mode"], "ANY");
+        // "required" is not a Gemini tool-choice term -> falls to AUTO (mirrors mapToolChoice default).
+        let opts_req = StreamOptions { tool_choice: Some(serde_json::json!("required")), ..Default::default() };
+        let p_req = build_google_payload_public(&model, &ctx, &opts_req);
+        assert_eq!(p_req["toolConfig"]["functionCallingConfig"]["mode"], "AUTO");
     }
 
     #[test]

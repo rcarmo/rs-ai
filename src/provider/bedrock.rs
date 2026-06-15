@@ -367,7 +367,7 @@ pub fn stream_bedrock<'a>(
                 if let Some(s) = choice.as_str() {
                     match s {
                         "auto" => tc_builder = tc_builder.tool_choice(ToolChoice::Auto(AutoToolChoice::builder().build())),
-                        "any" | "required" => tc_builder = tc_builder.tool_choice(ToolChoice::Any(AnyToolChoice::builder().build())),
+                        "any" => tc_builder = tc_builder.tool_choice(ToolChoice::Any(AnyToolChoice::builder().build())),
                         _ => {}
                     }
                 } else if choice.get("type").and_then(|v| v.as_str()) == Some("tool")
