@@ -119,6 +119,17 @@ fn convert_tool_result_content(content: &[ContentBlock]) -> Vec<ToolResultConten
     result
 }
 
+/// Whether the Bedrock target is GovCloud, where the Claude `thinking.display`
+/// field must be omitted (mirrors isGovCloudBedrockTarget).
+pub(crate) fn is_govcloud_bedrock_target(model: &Model) -> bool {
+    if let Ok(region) = std::env::var("AWS_REGION").or_else(|_| std::env::var("AWS_DEFAULT_REGION"))
+        && region.to_lowercase().starts_with("us-gov-") {
+        return true;
+    }
+    let id = model.id.to_lowercase();
+    id.starts_with("us-gov.") || id.starts_with("arn:aws-us-gov:")
+}
+
 /// Whether a Bedrock Claude model supports adaptive thinking, detected by id/name
 /// pattern (mirrors supportsAdaptiveThinking) rather than a compat flag.
 pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
@@ -155,7 +166,12 @@ fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde
     }
     let level = opts.reasoning.as_ref()?;
     let key = format!("{level:?}").to_lowercase();
-    let display = opts.thinking_display.as_deref().unwrap_or("summarized");
+    // GovCloud Bedrock rejects the thinking.display field, so omit it there.
+    let display: Option<&str> = if is_govcloud_bedrock_target(model) {
+        None
+    } else {
+        Some(opts.thinking_display.as_deref().unwrap_or("summarized"))
+    };
     if bedrock_supports_adaptive_thinking(model) {
         // Adaptive-thinking models: effort-based config, no interleaved beta, no max adjustment.
         let default_effort = match key.as_str() {
@@ -166,8 +182,10 @@ fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde
         let effort = model.thinking_level_map.as_ref()
             .and_then(|m| m.get(&key)).and_then(|v| v.clone())
             .unwrap_or_else(|| default_effort.to_string());
+        let mut thinking = serde_json::json!({ "type": "adaptive" });
+        if let Some(d) = display { thinking["display"] = serde_json::json!(d); }
         Some((serde_json::json!({
-            "thinking": { "type": "adaptive", "display": display },
+            "thinking": thinking,
             "output_config": { "effort": effort },
         }), None))
     } else {
@@ -183,8 +201,9 @@ fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde
             opts.max_tokens, model.max_tokens, level, &budgets_map,
         );
         let mut fields = serde_json::json!({
-            "thinking": { "type": "enabled", "budget_tokens": budget, "display": display },
+            "thinking": { "type": "enabled", "budget_tokens": budget },
         });
+        if let Some(d) = display { fields["thinking"]["display"] = serde_json::json!(d); }
         // Interleaved-thinking beta (budget path), gated on the interleaved_thinking option.
         if opts.interleaved_thinking != Some(false) {
             fields["anthropic_beta"] = serde_json::json!(["interleaved-thinking-2025-05-14"]);
@@ -752,6 +771,23 @@ mod tests {
         ]);
         assert_eq!(out.len(), 1);
         assert!(matches!(&out[0], ToolResultContentBlock::Text(t) if t == "done"));
+    }
+
+    #[test]
+    fn test_is_govcloud_bedrock_target() {
+        use super::is_govcloud_bedrock_target;
+        use crate::types::{Model, ModelCost};
+        fn m(id: &str) -> Model {
+            Model {
+                id: id.into(), name: "n".into(), api: "bedrock-converse-stream".into(),
+                provider: "amazon-bedrock".into(), base_url: "".into(), reasoning: true,
+                thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
+                context_window: 200000, max_tokens: 8192, headers: None, api_key: None, compat: Default::default(),
+            }
+        }
+        assert!(is_govcloud_bedrock_target(&m("us-gov.anthropic.claude-opus-4-6")));
+        assert!(is_govcloud_bedrock_target(&m("arn:aws-us-gov:bedrock:us-gov-west-1::foundation-model/x")));
+        assert!(!is_govcloud_bedrock_target(&m("anthropic.claude-opus-4-6-v1")));
     }
 
     #[test]
