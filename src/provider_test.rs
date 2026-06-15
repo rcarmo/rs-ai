@@ -356,6 +356,33 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_responses_copilot_dynamic_headers_sent() {
+        use wiremock::matchers::header;
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .and(header("X-Initiator", "user"))
+            .and(header("Openai-Intent", "conversation-edits"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\n\
+                     data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-responses", "github-copilot", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_responses(&model, &ctx, &opts);
+        let mut done = false;
+        while let Some(evt) = stream.next().await {
+            if matches!(evt, Event::Done { .. }) { done = true; }
+        }
+        // Missing the Copilot headers would fail the wiremock match -> no Done.
+        assert!(done);
+    }
+
+    #[tokio::test]
     async fn test_responses_stream_tool_calls() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

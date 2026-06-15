@@ -61,18 +61,8 @@ pub fn stream_openai<'a>(
 
     // GitHub Copilot dynamic headers (mirrors upstream buildCopilotDynamicHeaders)
     if model.provider == "github-copilot" {
-        let initiator = match context.messages.last() {
-            Some(m) if m.role != Role::User => "agent",
-            _ => "user",
-        };
-        headers.insert("X-Initiator", HeaderValue::from_static(if initiator == "agent" { "agent" } else { "user" }));
-        headers.insert("Openai-Intent", HeaderValue::from_static("conversation-edits"));
-        let has_images = context.messages.iter().any(|m| {
-            matches!(m.role, Role::User | Role::ToolResult)
-                && m.content.iter().any(|c| matches!(c, ContentBlock::Image { .. }))
-        });
-        if has_images {
-            headers.insert("Copilot-Vision-Request", HeaderValue::from_static("true"));
+        for (k, v) in crate::utils::copilot_dynamic_headers(&context.messages) {
+            headers.insert(k, HeaderValue::from_static(v));
         }
     }
 

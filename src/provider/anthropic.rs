@@ -88,6 +88,13 @@ pub fn stream_anthropic<'a>(
         }
     }
 
+    // GitHub Copilot dynamic headers (mirrors upstream anthropic createClient).
+    if model.provider == "github-copilot" {
+        for (k, v) in crate::utils::copilot_dynamic_headers(&context.messages) {
+            headers.insert(k, HeaderValue::from_static(v));
+        }
+    }
+
     Box::pin(async_stream::stream! {
         let client = reqwest::Client::new();
         let mut request = client.post(&url).headers(headers).json(&payload);

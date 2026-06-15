@@ -164,6 +164,13 @@ fn stream_responses_inner<'a>(
         }
     }
 
+    // GitHub Copilot dynamic headers (mirrors upstream openai-responses createClient).
+    if model.provider == "github-copilot" {
+        for (k, v) in crate::utils::copilot_dynamic_headers(&context.messages) {
+            headers.insert(k, HeaderValue::from_static(v));
+        }
+    }
+
     if let Some(ref extra_headers) = opts.headers {
         for (k, v) in extra_headers {
             if let (Ok(name), Ok(val)) = (

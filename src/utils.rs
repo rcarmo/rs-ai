@@ -36,6 +36,29 @@ pub fn copilot_headers_with_intent(intent: &str) -> HashMap<String, String> {
     h
 }
 
+/// GitHub Copilot dynamic per-request headers (mirrors buildCopilotDynamicHeaders):
+/// X-Initiator (agent when the last message isn't from the user), Openai-Intent,
+/// and Copilot-Vision-Request when any user/tool-result message carries an image.
+pub fn copilot_dynamic_headers(messages: &[crate::types::Message]) -> Vec<(&'static str, &'static str)> {
+    use crate::types::{Role, ContentBlock};
+    let initiator = match messages.last() {
+        Some(m) if m.role != Role::User => "agent",
+        _ => "user",
+    };
+    let mut headers = vec![
+        ("X-Initiator", initiator),
+        ("Openai-Intent", "conversation-edits"),
+    ];
+    let has_images = messages.iter().any(|m| {
+        matches!(m.role, Role::User | Role::ToolResult)
+            && m.content.iter().any(|c| matches!(c, ContentBlock::Image { .. }))
+    });
+    if has_images {
+        headers.push(("Copilot-Vision-Request", "true"));
+    }
+    headers
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,6 +86,31 @@ mod tests {
     fn test_copilot_headers_with_intent() {
         let h = copilot_headers_with_intent("chat");
         assert_eq!(h.get("openai-intent").unwrap(), "chat");
+    }
+
+    #[test]
+    fn test_copilot_dynamic_headers() {
+        use crate::types::{Message, Role, ContentBlock};
+        fn msg(role: Role, content: Vec<ContentBlock>) -> Message {
+            Message {
+                role, content, timestamp: 0,
+                api: None, provider: None, model: None, response_id: None, response_model: None,
+                diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+                tool_call_id: None, tool_name: None, is_error: false, details: None,
+            }
+        }
+        // Last message from user -> initiator user, no vision.
+        let h = copilot_dynamic_headers(&[msg(Role::User, vec![ContentBlock::Text { text: "hi".into(), text_signature: None }])]);
+        assert!(h.contains(&("X-Initiator", "user")));
+        assert!(h.contains(&("Openai-Intent", "conversation-edits")));
+        assert!(!h.iter().any(|(k, _)| *k == "Copilot-Vision-Request"));
+        // Last message from assistant -> initiator agent; user image -> vision header.
+        let h2 = copilot_dynamic_headers(&[
+            msg(Role::User, vec![ContentBlock::Image { data: "a".into(), mime_type: "image/png".into() }]),
+            msg(Role::Assistant, vec![ContentBlock::Text { text: "ok".into(), text_signature: None }]),
+        ]);
+        assert!(h2.contains(&("X-Initiator", "agent")));
+        assert!(h2.contains(&("Copilot-Vision-Request", "true")));
     }
 }
 
