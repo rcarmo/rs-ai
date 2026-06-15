@@ -289,7 +289,20 @@ pub fn stream_openai<'a>(
 
                         if let Some(delta_tool_calls) = delta.get("tool_calls").and_then(|v| v.as_array()) {
                             for tc in delta_tool_calls {
-                                let index = tc.get("index").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
+                                // Prefer the streamed index; when absent, correlate by id
+                                // (mirrors upstream toolCallBlocksByIndex / toolCallBlocksById).
+                                let index = if let Some(i) = tc.get("index").and_then(|v| v.as_u64()) {
+                                    i as usize
+                                } else if let Some(id) =
+                                    tc.get("id").and_then(|v| v.as_str()).filter(|s| !s.is_empty())
+                                {
+                                    match tool_calls.iter().find(|(_, v)| v.0 == id) {
+                                        Some((k, _)) => *k,
+                                        None => tool_calls.keys().next_back().map(|k| k + 1).unwrap_or(0),
+                                    }
+                                } else {
+                                    0
+                                };
                                 let entry = tool_calls.entry(index).or_insert_with(|| (String::new(), String::new(), String::new()));
                                 if let Some(id) = tc.get("id").and_then(|v| v.as_str())
                                     && entry.0.is_empty() {

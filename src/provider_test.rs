@@ -132,6 +132,39 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_openai_parallel_tool_calls_without_index_correlate_by_id() {
+        // Some OpenAI-compatible providers omit `index` on tool_calls; upstream
+        // correlates streamed deltas by `id` instead of collapsing them.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(sse_response(&[
+                    r#"{"choices":[{"delta":{"tool_calls":[{"id":"a","function":{"name":"first","arguments":"{\"x\":1}"}}]},"index":0}]}"#,
+                    r#"{"choices":[{"delta":{"tool_calls":[{"id":"b","function":{"name":"second","arguments":"{\"y\":2}"}}]},"index":0}]}"#,
+                    r#"{"choices":[{"delta":{},"finish_reason":"tool_calls","index":0}]}"#,
+                ]))
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+
+        let model = test_model("openai-completions", "openai", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut starts: Vec<(String, String)> = Vec::new();
+        while let Some(evt) = stream.next().await {
+            if let Event::ToolCallStart { id, name } = evt {
+                starts.push((id, name));
+            }
+        }
+        // Two distinct tool calls must be reported, not one merged call.
+        assert_eq!(starts.len(), 2, "expected two tool calls, got {starts:?}");
+        assert!(starts.contains(&("a".to_string(), "first".to_string())));
+        assert!(starts.contains(&("b".to_string(), "second".to_string())));
+    }
+
+    #[tokio::test]
     async fn test_openai_emits_tool_call_end() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
