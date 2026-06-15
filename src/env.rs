@@ -55,6 +55,22 @@ pub fn get_env_api_key(provider: &str) -> Option<String> {
         }
         return None;
     }
+    // Amazon Bedrock authenticates via the AWS credential chain, not an API key.
+    // Mirror upstream getEnvApiKey: signal "configured" when any standard AWS
+    // credential source is present.
+    if provider == "amazon-bedrock" {
+        let has = |k: &str| std::env::var(k).map(|v| !v.is_empty()).unwrap_or(false);
+        if has("AWS_PROFILE")
+            || (has("AWS_ACCESS_KEY_ID") && has("AWS_SECRET_ACCESS_KEY"))
+            || has("AWS_BEARER_TOKEN_BEDROCK")
+            || has("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
+            || has("AWS_CONTAINER_CREDENTIALS_FULL_URI")
+            || has("AWS_WEB_IDENTITY_TOKEN_FILE")
+        {
+            return Some("<authenticated>".to_string());
+        }
+        return None;
+    }
     // Generic fallback: PROVIDER_API_KEY
     let upper: String = provider
         .chars()

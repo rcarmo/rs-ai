@@ -41,6 +41,15 @@ mod tests {
     }
 
     #[test]
+    fn test_env_bedrock_authenticated_sentinel() {
+        // Bedrock uses the AWS credential chain; a present credential source yields
+        // the "<authenticated>" sentinel (mirrors upstream getEnvApiKey).
+        unsafe { std::env::set_var("AWS_BEARER_TOKEN_BEDROCK", "tok"); }
+        assert_eq!(get_env_api_key("amazon-bedrock"), Some("<authenticated>".into()));
+        unsafe { std::env::remove_var("AWS_BEARER_TOKEN_BEDROCK"); }
+    }
+
+    #[test]
     fn test_env_fallback_generic() {
         unsafe { std::env::set_var("TOTALLY_CUSTOM_PROVIDER_API_KEY", "custom-key"); }
         let key = get_env_api_key("totally-custom-provider");
