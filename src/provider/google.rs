@@ -646,7 +646,9 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
 
     if !context.tools.is_empty() {
         let decls: Vec<Value> = context.tools.iter().map(|t| {
-            json!({"name": t.name, "description": t.description, "parameters": t.parameters})
+            // Upstream convertTools defaults to parametersJsonSchema (full JSON Schema:
+            // anyOf/oneOf/const/$defs), not the legacy OpenAPI-3 `parameters` field.
+            json!({"name": t.name, "description": t.description, "parametersJsonSchema": t.parameters})
         }).collect();
         payload["tools"] = json!([{"functionDeclarations": decls}]);
 

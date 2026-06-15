@@ -2560,6 +2560,27 @@ mod tests {
     }
 
     #[test]
+    fn test_google_tools_use_parameters_json_schema() {
+        use crate::provider::google::build_google_payload_public;
+        // Upstream convertTools default emits parametersJsonSchema (full JSON Schema),
+        // not the legacy OpenAPI-3 `parameters` field.
+        let model = test_model("google-generative-ai", "google", "https://example.com");
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {"x": {"anyOf": [{"type": "string"}, {"type": "number"}]}}
+        });
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![],
+            tools: vec![Tool { name: "f".into(), description: "d".into(), parameters: schema.clone() }],
+        };
+        let payload = build_google_payload_public(&model, &ctx, &StreamOptions::default());
+        let decl = &payload["tools"][0]["functionDeclarations"][0];
+        assert_eq!(decl["parametersJsonSchema"], schema);
+        assert!(decl.get("parameters").is_none());
+    }
+
+    #[test]
     fn test_google_tool_result_images_gemini2_separate_user_turn() {
         use crate::provider::google::build_google_payload_public;
         // Gemini < 3 lacks multimodal functionResponse: images go in a separate user turn,
