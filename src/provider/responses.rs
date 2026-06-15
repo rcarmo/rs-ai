@@ -888,7 +888,8 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
         }
     }
 
-    if let Some(max) = opts.max_tokens {
+    // Upstream gates max_output_tokens on a truthy check, so a 0 is treated as unset.
+    if let Some(max) = opts.max_tokens.filter(|m| *m != 0) {
         payload["max_output_tokens"] = json!(max);
     }
     if let Some(temp) = opts.temperature {

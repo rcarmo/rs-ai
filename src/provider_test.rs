@@ -2540,6 +2540,27 @@ mod tests {
     }
 
     #[test]
+    fn test_max_tokens_zero_handling() {
+        // completions/responses use a truthy gate (skip 0); google uses !== undefined (include 0).
+        let ctx = test_context();
+        let opts0 = StreamOptions { max_tokens: Some(0), ..Default::default() };
+        let opts5 = StreamOptions { max_tokens: Some(5), ..Default::default() };
+
+        let omodel = test_model("openai-completions", "openai", "https://example.com");
+        let oc = crate::compat::detect_compat(&omodel);
+        assert!(crate::provider::openai::build_payload(&omodel, &ctx, &opts0, &oc).get("max_completion_tokens").is_none());
+        assert_eq!(crate::provider::openai::build_payload(&omodel, &ctx, &opts5, &oc)["max_completion_tokens"], 5);
+
+        let rmodel = test_model("openai-responses", "openai", "https://example.com");
+        assert!(crate::provider::responses::build_responses_payload(&rmodel, &ctx, &opts0).get("max_output_tokens").is_none());
+
+        // google includes 0 (maxOutputTokens via !== undefined).
+        let gmodel = test_model("google-generative-ai", "google", "https://example.com");
+        let gp = crate::provider::google::build_google_payload_public(&gmodel, &ctx, &opts0);
+        assert_eq!(gp["generationConfig"]["maxOutputTokens"], 0);
+    }
+
+    #[test]
     fn test_empty_system_prompt_omitted() {
         use crate::provider::anthropic::build_anthropic_payload;
         use crate::provider::responses::build_responses_payload;

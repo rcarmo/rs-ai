@@ -667,7 +667,8 @@ pub(crate) fn build_payload(
         payload["prompt_cache_retention"] = json!("24h");
     }
 
-    if let Some(max) = opts.max_tokens {
+    // Upstream gates max tokens on a truthy check, so a 0 is treated as unset.
+    if let Some(max) = opts.max_tokens.filter(|m| *m != 0) {
         payload[max_tokens_field] = json!(max);
     }
 
