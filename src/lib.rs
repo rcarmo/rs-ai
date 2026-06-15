@@ -36,7 +36,6 @@ pub mod harness;
 pub mod utils;
 pub mod context;
 pub mod diagnostics;
-pub mod azure;
 pub mod session_resources;
 pub mod prompt_cache;
 pub mod validation;

@@ -6,12 +6,10 @@ mod tests {
     use crate::context::*;
     use crate::simple_options::*;
     use crate::compaction::*;
-    use crate::azure::*;
     use crate::logger::*;
     use crate::utils::*;
     use crate::types::*;
     use std::time::Duration;
-    use serde_json::json;
 
     // --- Retry tests ---
 
@@ -140,16 +138,6 @@ mod tests {
             ..base_msg()
         };
         assert!(!is_context_overflow(&msg, &model));
-    }
-
-    // --- Azure tests ---
-
-    #[test]
-    fn test_strip_azure_tool_call_fields() {
-        let mut calls = vec![json!({"id": "tc1", "content_filter_results": {"safe": true}})];
-        strip_azure_tool_call_fields(&mut calls);
-        assert!(calls[0].get("content_filter_results").is_none());
-        assert!(calls[0].get("id").is_some());
     }
 
     // --- Logger tests ---
