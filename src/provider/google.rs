@@ -597,40 +597,50 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
         let is_gemini3_pro = id.contains("gemini-3") && id.contains("-pro");
         let is_gemini3_flash = id.contains("gemini-3") && id.contains("-flash");
         let is_gemma4 = id.contains("gemma-4") || id.contains("gemma4");
-        if let Some(level) = opts.reasoning.as_ref() {
+        if let Some(reasoning) = opts.reasoning.as_ref() {
             let mut thinking_config = json!({"includeThoughts": true});
-            let effort = format!("{:?}", level).to_lowercase();
+            // Clamp to a supported level; a level that clamps to off becomes "high"
+            // (mirrors streamSimpleGoogle effort = clamped==="off" ? "high" : clamped).
+            let effort = match crate::simple_options::clamp_reasoning_for_model(model, reasoning) {
+                Some(clamped) => format!("{:?}", clamped).to_lowercase(),
+                None => "high".to_string(),
+            };
             if is_gemini3_pro || is_gemini3_flash || is_gemma4 {
-                // Gemini 3 / Gemma 4 use a thinkingLevel string instead of a token budget.
-                let tl = if is_gemini3_pro {
-                    match effort.as_str() { "minimal" | "low" => "LOW", _ => "HIGH" }
+                // Gemini 3 / Gemma 4 use a thinkingLevel string (omitted if effort has no mapping).
+                let tl: Option<&str> = if is_gemini3_pro {
+                    match effort.as_str() { "minimal" | "low" => Some("LOW"), "medium" | "high" => Some("HIGH"), _ => None }
                 } else if is_gemma4 {
-                    match effort.as_str() { "minimal" | "low" => "MINIMAL", _ => "HIGH" }
+                    match effort.as_str() { "minimal" | "low" => Some("MINIMAL"), "medium" | "high" => Some("HIGH"), _ => None }
                 } else {
-                    match effort.as_str() { "minimal" => "MINIMAL", "low" => "LOW", "medium" => "MEDIUM", _ => "HIGH" }
+                    match effort.as_str() { "minimal" => Some("MINIMAL"), "low" => Some("LOW"), "medium" => Some("MEDIUM"), "high" => Some("HIGH"), _ => None }
                 };
-                thinking_config["thinkingLevel"] = json!(tl);
+                if let Some(tl) = tl {
+                    thinking_config["thinkingLevel"] = json!(tl);
+                }
             } else {
                 // Budget-based models: per-effort custom budget, else model-specific
-                // defaults, else -1 (dynamic). Mirrors upstream getGoogleBudget.
+                // defaults, else -1 (dynamic). Omitted when getGoogleBudget has no value.
                 let custom = opts.thinking_budgets.as_ref().and_then(|b| match effort.as_str() {
                     "minimal" => b.minimal,
                     "low" => b.low,
                     "medium" => b.medium,
-                    _ => b.high,
+                    "high" => b.high,
+                    _ => None,
                 }).map(|v| v as i64);
-                let budget = custom.unwrap_or_else(|| {
+                let budget: Option<i64> = custom.or_else(|| {
                     if id.contains("2.5-pro") {
-                        match effort.as_str() { "minimal" => 128, "low" => 2048, "medium" => 8192, _ => 32768 }
+                        match effort.as_str() { "minimal" => Some(128), "low" => Some(2048), "medium" => Some(8192), "high" => Some(32768), _ => None }
                     } else if id.contains("2.5-flash-lite") {
-                        match effort.as_str() { "minimal" => 512, "low" => 2048, "medium" => 8192, _ => 24576 }
+                        match effort.as_str() { "minimal" => Some(512), "low" => Some(2048), "medium" => Some(8192), "high" => Some(24576), _ => None }
                     } else if id.contains("2.5-flash") {
-                        match effort.as_str() { "minimal" => 128, "low" => 2048, "medium" => 8192, _ => 24576 }
+                        match effort.as_str() { "minimal" => Some(128), "low" => Some(2048), "medium" => Some(8192), "high" => Some(24576), _ => None }
                     } else {
-                        -1
+                        Some(-1)
                     }
                 });
-                thinking_config["thinkingBudget"] = json!(budget);
+                if let Some(budget) = budget {
+                    thinking_config["thinkingBudget"] = json!(budget);
+                }
             }
             config["thinkingConfig"] = thinking_config;
         } else {

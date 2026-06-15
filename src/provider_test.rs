@@ -3062,6 +3062,30 @@ mod tests {
     }
 
     #[test]
+    fn test_google_thinking_config_effort_mappings() {
+        use crate::provider::google::build_google_payload_public;
+        let ctx = test_context();
+        let mk = |id: &str, level: ThinkingLevel| {
+            let mut m = test_model("google-generative-ai", "google", "https://example.com");
+            m.id = id.into();
+            m.reasoning = true;
+            let opts = StreamOptions { reasoning: Some(level), ..Default::default() };
+            build_google_payload_public(&m, &ctx, &opts)["generationConfig"]["thinkingConfig"].clone()
+        };
+        // Gemini 3 Pro: medium -> HIGH thinkingLevel.
+        assert_eq!(mk("gemini-3-pro", ThinkingLevel::Medium)["thinkingLevel"], "HIGH");
+        assert_eq!(mk("gemini-3-pro", ThinkingLevel::Low)["thinkingLevel"], "LOW");
+        // Gemma 4: low -> MINIMAL.
+        assert_eq!(mk("gemma-4-it", ThinkingLevel::Low)["thinkingLevel"], "MINIMAL");
+        // 2.5-flash budget: low -> 2048.
+        assert_eq!(mk("gemini-2.5-flash", ThinkingLevel::Low)["thinkingBudget"], 2048);
+        // 2.5-pro budget: high -> 32768.
+        assert_eq!(mk("gemini-2.5-pro", ThinkingLevel::High)["thinkingBudget"], 32768);
+        // Non-2.x budget model: dynamic -1.
+        assert_eq!(mk("gemini-foo", ThinkingLevel::Medium)["thinkingBudget"], -1);
+    }
+
+    #[test]
     fn test_google_tools_use_parameters_json_schema() {
         use crate::provider::google::build_google_payload_public;
         // Upstream convertTools default emits parametersJsonSchema (full JSON Schema),
