@@ -243,7 +243,8 @@ pub async fn exchange_codex_code_at(token_url: &str, code: &str, verifier: &str,
         .map_err(|e| format!("OpenAI Codex token exchange invalid JSON: body={body}; details={e}"))?;
     let access = data.get("access_token").and_then(|v| v.as_str())
         .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?.to_string();
-    let refresh = data.get("refresh_token").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let refresh = data.get("refresh_token").and_then(|v| v.as_str())
+        .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?.to_string();
     let expires_in = data.get("expires_in").and_then(|v| v.as_i64())
         .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?;
     let account_id = decode_jwt_payload(&access)
@@ -251,7 +252,7 @@ pub async fn exchange_codex_code_at(token_url: &str, code: &str, verifier: &str,
         .ok_or_else(|| "Failed to extract accountId from token".to_string())?;
     Ok(CodexCredentials {
         access,
-        refresh,
+        refresh: Some(refresh),
         expires_at_ms: crate::utils::now_millis() + expires_in * 1000,
         account_id,
     })
@@ -317,7 +318,9 @@ pub async fn refresh_codex_token_at(token_url: &str, refresh_token: &str) -> Res
     let access = data.get("access_token").and_then(|v| v.as_str())
         .ok_or_else(|| format!("OpenAI Codex token refresh response missing fields: {body}"))?
         .to_string();
-    let refresh = data.get("refresh_token").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let refresh = data.get("refresh_token").and_then(|v| v.as_str())
+        .ok_or_else(|| format!("OpenAI Codex token refresh response missing fields: {body}"))?
+        .to_string();
     let expires_in = data.get("expires_in").and_then(|v| v.as_i64())
         .ok_or_else(|| format!("OpenAI Codex token refresh response missing fields: {body}"))?;
     let account_id = decode_jwt_payload(&access)
@@ -325,7 +328,7 @@ pub async fn refresh_codex_token_at(token_url: &str, refresh_token: &str) -> Res
         .ok_or_else(|| "Failed to extract accountId from token".to_string())?;
     Ok(CodexCredentials {
         access,
-        refresh,
+        refresh: Some(refresh),
         expires_at_ms: crate::utils::now_millis() + expires_in * 1000,
         account_id,
     })
@@ -708,5 +711,27 @@ mod tests {
         let creds = exchange_codex_code_at(&url, "code", "verifier", CODEX_REDIRECT_URI).await.unwrap();
         assert_eq!(creds.account_id, "acc_9");
         assert_eq!(creds.refresh.as_deref(), Some("r"));
+    }
+
+    #[tokio::test]
+    async fn test_codex_exchange_requires_refresh_token() {
+        use base64::Engine;
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+        use wiremock::matchers::{method, path};
+        let payload = serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": "a"}});
+        let payload_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(serde_json::to_vec(&payload).unwrap());
+        let jwt = format!("h.{payload_b64}.s");
+        let server = MockServer::start().await;
+        // Response omits refresh_token -> upstream rejects with "missing fields".
+        Mock::given(method("POST"))
+            .and(path("/oauth/token"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(format!(
+                r#"{{"access_token":"{jwt}","expires_in":3600}}"#
+            )))
+            .mount(&server)
+            .await;
+        let url = format!("{}/oauth/token", server.uri());
+        let err = exchange_codex_code_at(&url, "code", "v", CODEX_REDIRECT_URI).await.unwrap_err();
+        assert!(err.contains("missing fields"), "{err}");
     }
 }
