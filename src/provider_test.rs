@@ -574,6 +574,23 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_developer_role_only_for_reasoning_models() {
+        // Upstream uses the `developer` system role only when model.reasoning &&
+        // supportsDeveloperRole; a non-reasoning model must use `system`.
+        let ctx = Context { system_prompt: Some("sys".into()), messages: vec![], tools: vec![] };
+
+        let mut non_reasoning = test_model("openai-completions", "openai", "https://example.com");
+        non_reasoning.reasoning = false;
+        let p1 = crate::provider::openai::build_payload(&non_reasoning, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&non_reasoning));
+        assert_eq!(p1["messages"][0]["role"], "system");
+
+        let mut reasoning = test_model("openai-completions", "openai", "https://example.com");
+        reasoning.reasoning = true;
+        let p2 = crate::provider::openai::build_payload(&reasoning, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&reasoning));
+        assert_eq!(p2["messages"][0]["role"], "developer");
+    }
+
+    #[test]
     fn test_openai_no_tools_field_without_history() {
         let model = test_model("openai-completions", "openai", "https://example.com");
         let ctx = test_context();

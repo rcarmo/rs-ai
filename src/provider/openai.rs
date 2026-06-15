@@ -449,7 +449,9 @@ pub(crate) fn build_payload(
 
     // System prompt
     if let Some(ref prompt) = context.system_prompt {
-        let role = if compat.supports_developer_role == Some(true) {
+        // Developer role only for reasoning models that support it (mirrors upstream
+        // useDeveloperRole = model.reasoning && compat.supportsDeveloperRole).
+        let role = if model.reasoning && compat.supports_developer_role == Some(true) {
             "developer"
         } else {
             "system"
