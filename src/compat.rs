@@ -43,8 +43,8 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         supports_usage_in_streaming: mc.supports_usage_in_streaming,
         supports_temperature: mc.supports_temperature,
         max_tokens_field: mc.max_tokens_field.clone(),
-        requires_tool_result_name: None,
-        requires_thinking_as_text: None,
+        requires_tool_result_name: mc.requires_tool_result_name,
+        requires_thinking_as_text: mc.requires_thinking_as_text,
         requires_assistant_after_tool_result: mc.requires_assistant_after_tool_result,
         requires_reasoning_content_on_assistant_messages: mc.requires_reasoning_content_on_assistant_messages,
         thinking_format: mc.thinking_format.clone(),
@@ -52,7 +52,7 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         supports_long_cache_retention: mc.supports_long_cache_retention,
         supports_session_affinity_headers: mc.send_session_affinity_headers,
         zai_tool_stream: mc.zai_tool_stream,
-        cache_control_format: None,
+        cache_control_format: mc.cache_control_format.clone(),
     })
 }
 

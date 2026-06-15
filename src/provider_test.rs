@@ -842,6 +842,20 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_compat_overrides_wired_through() {
+        // requires_tool_result_name / requires_thinking_as_text / cache_control_format
+        // must flow from model.compat into the resolved compat (upstream getCompat ??).
+        let mut model = test_model("openai-completions", "openai", "https://example.com");
+        model.compat.requires_tool_result_name = Some(true);
+        model.compat.requires_thinking_as_text = Some(true);
+        model.compat.cache_control_format = Some("anthropic".into());
+        let c = crate::compat::detect_compat(&model);
+        assert_eq!(c.requires_tool_result_name, Some(true));
+        assert_eq!(c.requires_thinking_as_text, Some(true));
+        assert_eq!(c.cache_control_format.as_deref(), Some("anthropic"));
+    }
+
+    #[test]
     fn test_openai_usage_in_streaming_compat_override() {
         // A model setting compat.supportsUsageInStreaming=false must omit stream_options
         // (matches upstream supportsUsageInStreaming !== false gate).
