@@ -1929,6 +1929,28 @@ mod tests {
     }
 
     #[test]
+    fn test_anthropic_needs_session_affinity() {
+        use crate::provider::anthropic::anthropic_needs_session_affinity;
+        // Fireworks default true.
+        let fw = test_model("anthropic-messages", "fireworks", "https://api.fireworks.ai/inference");
+        assert!(anthropic_needs_session_affinity(&fw));
+        // Plain Anthropic default false.
+        let an = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        assert!(!anthropic_needs_session_affinity(&an));
+        // Anthropic via Cloudflare AI Gateway default true.
+        let cf = test_model("anthropic-messages", "cloudflare-ai-gateway", "https://gateway.ai.cloudflare.com/v1/a/b/anthropic");
+        assert!(anthropic_needs_session_affinity(&cf));
+        // Explicit compat override wins (opt-out on a fireworks model).
+        let mut fw_off = fw.clone();
+        fw_off.compat.send_session_affinity_headers = Some(false);
+        assert!(!anthropic_needs_session_affinity(&fw_off));
+        // Explicit opt-in on a plain model.
+        let mut an_on = an.clone();
+        an_on.compat.send_session_affinity_headers = Some(true);
+        assert!(anthropic_needs_session_affinity(&an_on));
+    }
+
+    #[test]
     fn test_anthropic_unsigned_thinking_downgraded_to_text() {
         use crate::provider::anthropic::build_anthropic_payload;
         // A non-empty thinking block without a signature must be downgraded to plain

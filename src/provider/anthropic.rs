@@ -68,16 +68,14 @@ pub fn stream_anthropic<'a>(
             headers.insert("anthropic-beta", val);
     }
 
-    // Session affinity header for providers that require it (Fireworks / Cloudflare AI Gateway).
-    if let Some(ref session_id) = opts.session_id {
-        let needs_affinity = model.provider == "fireworks"
-            || model.base_url.contains("fireworks.ai")
-            || model.base_url.contains("gateway.ai.cloudflare.com");
-        if needs_affinity
-            && let Ok(val) = HeaderValue::from_str(session_id) {
-                headers.insert("x-session-affinity", val);
-            }
-    }
+    // Session affinity header for providers that require it (mirrors getAnthropicCompat
+    // sendSessionAffinityHeaders: explicit compat override, else fireworks or the
+    // Anthropic-via-Cloudflare-AI-Gateway default).
+    if let Some(ref session_id) = opts.session_id
+        && anthropic_needs_session_affinity(model)
+        && let Ok(val) = HeaderValue::from_str(session_id) {
+            headers.insert("x-session-affinity", val);
+        }
 
     if let Some(ref model_headers) = model.headers {
         for (k, v) in model_headers {
@@ -452,6 +450,17 @@ const CLAUDE_CODE_TOOLS: &[&str] = &[
     "ExitPlanMode", "KillShell", "NotebookEdit", "Skill", "Task", "TaskOutput", "TodoWrite",
     "WebFetch", "WebSearch",
 ];
+
+/// Whether to send the Anthropic `x-session-affinity` header (mirrors getAnthropicCompat
+/// sendSessionAffinityHeaders: explicit compat override, else fireworks or Anthropic-via-CF-gateway).
+pub(crate) fn anthropic_needs_session_affinity(model: &Model) -> bool {
+    model.compat.send_session_affinity_headers.unwrap_or_else(|| {
+        let is_fireworks = model.provider == "fireworks";
+        let is_cf_anthropic =
+            model.provider == "cloudflare-ai-gateway" && model.base_url.contains("anthropic");
+        is_fireworks || is_cf_anthropic
+    })
+}
 
 /// Normalize a tool-call id for Anthropic (mirrors upstream `normalizeToolCallId`):
 /// replace any character outside `[a-zA-Z0-9_-]` with `_` and truncate to 64.
