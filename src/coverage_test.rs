@@ -145,27 +145,6 @@ mod tests {
     // --- Azure tests ---
 
     #[test]
-    fn test_azure_normalize_reasoning() {
-        let mut event = json!({
-            "type": "response.output_item.done",
-            "item": { "type": "reasoning", "content": [{"type": "reasoning_text", "text": "hmm"}] }
-        });
-        normalize_azure_reasoning_event(&mut event);
-        assert!(event.pointer("/item/summary").is_some());
-        assert!(event.pointer("/item/content").is_none());
-    }
-
-    #[test]
-    fn test_azure_no_op_for_non_reasoning() {
-        let mut event = json!({
-            "type": "response.output_item.done",
-            "item": { "type": "message", "content": [{"type": "text", "text": "hello"}] }
-        });
-        normalize_azure_reasoning_event(&mut event);
-        assert!(event.pointer("/item/content").is_some()); // unchanged
-    }
-
-    #[test]
     fn test_strip_azure_tool_call_fields() {
         let mut calls = vec![json!({"id": "tc1", "content_filter_results": {"safe": true}})];
         strip_azure_tool_call_fields(&mut calls);

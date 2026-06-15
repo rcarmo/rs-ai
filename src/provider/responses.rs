@@ -320,13 +320,10 @@ fn stream_responses_inner<'a>(
                     return;
                 }
 
-                let mut data: Value = match serde_json::from_str(&evt.data) {
+                let data: Value = match serde_json::from_str(&evt.data) {
                     Ok(v) => v,
                     Err(_) => continue,
                 };
-                if is_azure {
-                    crate::azure::normalize_azure_reasoning_event(&mut data);
-                }
 
                 let event_type = data.get("type").and_then(|v| v.as_str()).unwrap_or("");
                 match event_type {

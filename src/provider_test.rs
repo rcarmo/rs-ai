@@ -626,6 +626,47 @@ mod tests {
         assert_eq!(message.response_model.as_deref(), Some("gpt-5"));
     }
 
+    #[tokio::test]
+    async fn test_azure_reasoning_signature_preserves_content() {
+        use crate::provider::responses::stream_azure_responses;
+        // Azure now uses the shared decoder unchanged: a reasoning item with `content`
+        // yields the thinking text and the signature retains the original `content` key
+        // (no self-introduced content->summary rewrite).
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\n\
+                     data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"reasoning\",\"id\":\"rs_1\"}}\n\n\
+                     data: {\"type\":\"response.reasoning_text.delta\",\"delta\":\"think\"}\n\n\
+                     data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"reasoning\",\"id\":\"rs_1\",\"content\":[{\"text\":\"think\"}]}}\n\n\
+                     data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let mut model = test_model("azure-openai-responses", "azure-openai-responses", &server.uri());
+        model.api_key = Some("k".into());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_azure_responses(&model, &ctx, &opts);
+        let mut done: Option<Message> = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt { done = Some(message); }
+        }
+        let message = done.expect("done");
+        let sig = message.content.iter().find_map(|b| match b {
+            ContentBlock::Thinking { thinking, thinking_signature, .. } => {
+                assert_eq!(thinking, "think");
+                thinking_signature.clone()
+            }
+            _ => None,
+        }).expect("thinking signature");
+        // Signature is the original reasoning item JSON, retaining `content`.
+        assert!(sig.contains("\"content\""), "{sig}");
+        assert!(!sig.contains("\"summary\""), "{sig}");
+    }
+
     #[test]
     fn test_openrouter_anthropic_cache_control() {
         // OpenRouter anthropic/* models get Anthropic-style cache_control on system,
