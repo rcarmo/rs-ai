@@ -468,19 +468,20 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                 } else {
                     json!({"output": response_value})
                 };
+                let image_parts: Vec<Value> = msg.content.iter().filter_map(|b| match b {
+                    ContentBlock::Image { data, mime_type } => Some(json!({
+                        "inlineData": {"mimeType": mime_type, "data": data}
+                    })),
+                    _ => None,
+                }).collect();
+                let supports_multimodal = google_supports_multimodal_function_response(&model.id);
                 let mut function_response = json!({
                     "name": msg.tool_name.clone().unwrap_or_default(),
                     "response": response,
                 });
                 // Gemini 3+ supports image parts nested in the functionResponse.
-                if has_images && google_supports_multimodal_function_response(&model.id) {
-                    let image_parts: Vec<Value> = msg.content.iter().filter_map(|b| match b {
-                        ContentBlock::Image { data, mime_type } => Some(json!({
-                            "inlineData": {"mimeType": mime_type, "data": data}
-                        })),
-                        _ => None,
-                    }).collect();
-                    function_response["parts"] = json!(image_parts);
+                if has_images && supports_multimodal {
+                    function_response["parts"] = json!(image_parts.clone());
                 }
                 if google_requires_tool_call_id(&model.id)
                     && let Some(ref id) = msg.tool_call_id {
@@ -502,6 +503,13 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                     }
                 } else {
                     contents.push(json!({"role": "user", "parts": [function_response_part]}));
+                }
+                // For models without multimodal functionResponse support (Gemini < 3),
+                // attach images in a separate user turn (mirrors upstream).
+                if has_images && !supports_multimodal {
+                    let mut parts = vec![json!({"text": "Tool result image:"})];
+                    parts.extend(image_parts);
+                    contents.push(json!({"role": "user", "parts": parts}));
                 }
             }
             Role::User => {

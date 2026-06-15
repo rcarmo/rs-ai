@@ -2560,6 +2560,63 @@ mod tests {
     }
 
     #[test]
+    fn test_google_tool_result_images_gemini2_separate_user_turn() {
+        use crate::provider::google::build_google_payload_public;
+        // Gemini < 3 lacks multimodal functionResponse: images go in a separate user turn,
+        // not nested in functionResponse.parts.
+        let mut model = test_model("google-generative-ai", "google", "https://example.com");
+        model.id = "gemini-2.5-pro".into();
+        model.input = vec!["text".into(), "image".into()];
+        let tr = Message {
+            role: Role::ToolResult,
+            content: vec![
+                ContentBlock::Text { text: "ok".into(), text_signature: None },
+                ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() },
+            ],
+            timestamp: 0,
+            api: None, provider: None, model: None, response_id: None, response_model: None,
+            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+            tool_call_id: Some("c1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, messages: vec![tr], tools: vec![] };
+        let payload = build_google_payload_public(&model, &ctx, &StreamOptions::default());
+        let contents = payload["contents"].as_array().unwrap();
+        // functionResponse turn has no nested image parts.
+        let fr = &contents[0]["parts"][0]["functionResponse"];
+        assert!(fr.get("parts").is_none());
+        // A second user turn carries the image with the "Tool result image:" label.
+        let img_turn = &contents[1];
+        assert_eq!(img_turn["role"], "user");
+        assert_eq!(img_turn["parts"][0]["text"], "Tool result image:");
+        assert!(img_turn["parts"][1]["inlineData"].is_object());
+    }
+
+    #[test]
+    fn test_google_tool_result_images_gemini3_nested() {
+        use crate::provider::google::build_google_payload_public;
+        // Gemini 3+ nests images in functionResponse.parts; no separate user turn.
+        let mut model = test_model("google-generative-ai", "google", "https://example.com");
+        model.id = "gemini-3-pro".into();
+        model.input = vec!["text".into(), "image".into()];
+        let tr = Message {
+            role: Role::ToolResult,
+            content: vec![ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() }],
+            timestamp: 0,
+            api: None, provider: None, model: None, response_id: None, response_model: None,
+            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+            tool_call_id: Some("c1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, messages: vec![tr], tools: vec![] };
+        let payload = build_google_payload_public(&model, &ctx, &StreamOptions::default());
+        let contents = payload["contents"].as_array().unwrap();
+        assert_eq!(contents.len(), 1);
+        let fr = &contents[0]["parts"][0]["functionResponse"];
+        assert!(fr["parts"][0]["inlineData"].is_object());
+        // Image-only result uses the placeholder output.
+        assert_eq!(fr["response"]["output"], "(see attached image)");
+    }
+
+    #[test]
     fn test_google_foreign_thinking_downgraded_and_signatures_dropped() {
         use crate::provider::google::build_google_payload_public;
         let model = Model { id: "gemini-2.5-pro".into(), reasoning: true, ..test_model("google-generative-ai", "google", "https://example.com") };
