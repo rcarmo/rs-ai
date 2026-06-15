@@ -184,11 +184,14 @@ mod tests {
     #[test]
     fn test_resolve_cloudflare_base_url_substitutes_env() {
         unsafe { std::env::set_var("RS_AI_TEST_ACCT", "acct123"); }
-        let resolved = resolve_cloudflare_base_url("https://gateway.ai.cloudflare.com/v1/{RS_AI_TEST_ACCT}/openai");
-        assert_eq!(resolved, "https://gateway.ai.cloudflare.com/v1/acct123/openai");
+        let resolved = resolve_cloudflare_base_url("https://gateway.ai.cloudflare.com/v1/{RS_AI_TEST_ACCT}/openai", "cloudflare-ai-gateway");
+        assert_eq!(resolved.unwrap(), "https://gateway.ai.cloudflare.com/v1/acct123/openai");
         // No placeholders -> pass-through.
-        assert_eq!(resolve_cloudflare_base_url("https://example.com"), "https://example.com");
+        assert_eq!(resolve_cloudflare_base_url("https://example.com", "openai").unwrap(), "https://example.com");
         unsafe { std::env::remove_var("RS_AI_TEST_ACCT"); }
+        // A missing/unset variable is an error (matches upstream throw).
+        let err = resolve_cloudflare_base_url("https://x/{RS_AI_DEFINITELY_UNSET_VAR}/y", "cloudflare-workers-ai").unwrap_err();
+        assert!(err.contains("RS_AI_DEFINITELY_UNSET_VAR is required for provider cloudflare-workers-ai"), "{err}");
     }
 
     #[test]

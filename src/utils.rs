@@ -126,9 +126,12 @@ pub fn is_cloudflare_provider(provider: &str) -> bool {
 
 /// Resolve a Cloudflare base URL, substituting `{ENV_VAR}` placeholders from the
 /// environment (mirrors upstream `resolveCloudflareBaseUrl`).
-pub fn resolve_cloudflare_base_url(base_url: &str) -> String {
+/// Substitute `{VAR}` placeholders in a Cloudflare base URL from environment
+/// variables. Mirrors upstream `resolveCloudflareBaseUrl`: a referenced variable
+/// that is unset or empty is an error (the request can't be built).
+pub fn resolve_cloudflare_base_url(base_url: &str, provider: &str) -> Result<String, String> {
     if !base_url.contains('{') {
-        return base_url.to_string();
+        return Ok(base_url.to_string());
     }
     let mut out = String::with_capacity(base_url.len());
     let bytes = base_url.as_bytes();
@@ -140,8 +143,10 @@ pub fn resolve_cloudflare_base_url(base_url: &str) -> String {
                 if name.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
                     && name.chars().next().map(|c| c.is_ascii_uppercase() || c == '_').unwrap_or(false)
                 {
-                    let value = std::env::var(name).unwrap_or_default();
-                    out.push_str(&value);
+                    match std::env::var(name) {
+                        Ok(value) if !value.is_empty() => out.push_str(&value),
+                        _ => return Err(format!("{name} is required for provider {provider} but is not set.")),
+                    }
                     i = i + 1 + end + 1;
                     continue;
                 }
@@ -149,7 +154,7 @@ pub fn resolve_cloudflare_base_url(base_url: &str) -> String {
         out.push(bytes[i] as char);
         i += 1;
     }
-    out
+    Ok(out)
 }
 
 /// Format a thrown/panic value as a string (Rust equivalent: just Display).
