@@ -99,7 +99,7 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
     let is_nvidia = provider == "nvidia" || base_url.contains("integrate.api.nvidia.com");
     let is_ant_ling = provider == "ant-ling" || base_url.contains("api.ant-ling.com");
     let is_zai = provider == "zai" || provider == "zai-coding-cn"
-        || base_url.contains("z.ai") || base_url.contains("open.bigmodel.cn");
+        || base_url.contains("api.z.ai") || base_url.contains("open.bigmodel.cn");
     let is_moonshot = provider == "moonshotai" || provider == "moonshotai-cn"
         || base_url.contains("api.moonshot.");
     let is_cloudflare_aigw = provider == "cloudflare-ai-gateway"
@@ -120,7 +120,7 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
 
     let is_non_standard = provider == "cerebras" || provider == "xai"
         || base_url.contains("cerebras.ai") || base_url.contains("api.x.ai")
-        || base_url.contains("chutes.ai") || is_deepseek || is_zai || is_moonshot || is_together
+        || base_url.contains("chutes.ai") || base_url.contains("deepseek.com") || is_zai || is_moonshot || is_together
         || provider == "opencode" || base_url.contains("opencode.ai")
         || is_cloudflare_workers
         || is_cloudflare_aigw || is_ollama || is_nvidia || is_ant_ling;

@@ -66,6 +66,18 @@ mod tests {
     }
 
     #[test]
+    fn test_zai_detection_precise() {
+        // Standard z.ai endpoint -> zai format.
+        let m = model_with("zai", "https://api.z.ai/api/paas/v4", "glm");
+        assert_eq!(detect_compat(&m).thinking_format.as_deref(), Some("zai"));
+        // An unrelated domain that merely contains the substring "z.ai" must NOT match
+        // (upstream uses "api.z.ai", not a broad "z.ai" contains).
+        let m2 = model_with("custom", "https://xyz.ai/v1", "m");
+        assert_eq!(detect_compat(&m2).thinking_format.as_deref(), Some("openai"));
+        assert_eq!(detect_compat(&m2).supports_store, Some(true));
+    }
+
+    #[test]
     fn test_xiaomi_not_auto_detected_as_deepseek() {
         // Upstream does NOT detect xiaomi as deepseek; xiaomi models carry an explicit
         // compat (thinkingFormat/requiresReasoningContent). A bare xiaomi model must be
