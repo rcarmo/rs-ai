@@ -107,8 +107,18 @@ pub fn stream_codex<'a>(
                             code: None,
                         },
                         details: Some(std::collections::HashMap::from([
+                            ("configuredTransport".to_string(), serde_json::json!(match opts.transport {
+                                Some(Transport::Sse) => "sse",
+                                Some(Transport::Websocket) => "websocket",
+                                Some(Transport::WebsocketCached) => "websocket-cached",
+                                Some(Transport::Auto) | None => "auto",
+                            })),
                             ("fallbackTransport".to_string(), serde_json::json!("sse")),
+                            ("eventsEmitted".to_string(), serde_json::json!(false)),
                             ("phase".to_string(), serde_json::json!("before_message_stream_start")),
+                            ("requestBytes".to_string(), serde_json::json!(
+                                serde_json::to_vec(&payload).map(|v| v.len()).unwrap_or(0)
+                            )),
                         ])),
                     });
                     do_sse = true;
