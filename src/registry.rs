@@ -117,7 +117,7 @@ pub fn stream<'a>(
             let err = Event::Error {
                 reason: StopReason::Error,
                 error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                    format!("no provider registered for API {:?}", model.api),
+                    format!("No API provider registered for api: {}", model.api),
                 )),
                 message: None,
             };

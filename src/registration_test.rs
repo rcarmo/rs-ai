@@ -99,6 +99,6 @@ mod tests {
         let fut = images::generate_images(&model, &ctx, &opts);
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(fut);
-        assert!(!matches!(result.error_message.as_deref(), Some(msg) if msg.contains("no image provider registered")));
+        assert!(!matches!(result.error_message.as_deref(), Some(msg) if msg.contains("No API provider registered")));
     }
 }

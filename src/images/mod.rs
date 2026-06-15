@@ -114,7 +114,7 @@ pub async fn generate_images(
             timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as i64,
             response_id: None,
             usage: None,
-            error_message: Some(format!("no image provider registered for API {}", model.api)),
+            error_message: Some(format!("No API provider registered for api: {}", model.api)),
         },
     }
 }
