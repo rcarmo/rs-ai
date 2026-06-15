@@ -375,6 +375,8 @@ pub struct StreamOptions {
     pub service_tier: Option<String>,
     /// OpenAI Codex `text.verbosity` (defaults to "low" when unset).
     pub text_verbosity: Option<String>,
+    /// Anthropic interleaved-thinking beta (defaults to enabled when unset).
+    pub interleaved_thinking: Option<bool>,
     pub on_payload: Option<PayloadHook>,
     pub on_response: Option<ResponseHook>,
 }
@@ -400,6 +402,7 @@ impl std::fmt::Debug for StreamOptions {
             .field("tool_choice", &self.tool_choice)
             .field("service_tier", &self.service_tier)
             .field("text_verbosity", &self.text_verbosity)
+            .field("interleaved_thinking", &self.interleaved_thinking)
             .field("thinking_budgets", &self.thinking_budgets.as_ref().map(|_| "..."))
             .finish()
     }

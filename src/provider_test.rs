@@ -2360,30 +2360,34 @@ mod tests {
         // Regular Anthropic model supports eager tool-input streaming by default, so
         // fine-grained is NOT applied; interleaved is.
         let model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
-        let f = anthropic_beta_features(&model, &ctx_tools, false);
+        let f = anthropic_beta_features(&model, &ctx_tools, false, true);
         assert!(!f.contains(&"fine-grained-tool-streaming-2025-05-14"));
         assert!(f.contains(&"interleaved-thinking-2025-05-14"));
         assert!(!f.contains(&"oauth-2025-04-20"));
 
+        // interleaved_thinking=false disables the interleaved beta.
+        let f_off = anthropic_beta_features(&model, &ctx_tools, false, false);
+        assert!(!f_off.contains(&"interleaved-thinking-2025-05-14"));
+
         // Fireworks defaults to NOT eager -> fine-grained applied.
         let fw = test_model("anthropic-messages", "fireworks", "https://api.fireworks.ai");
-        let f = anthropic_beta_features(&fw, &ctx_tools, false);
+        let f = anthropic_beta_features(&fw, &ctx_tools, false, true);
         assert!(f.contains(&"fine-grained-tool-streaming-2025-05-14"));
 
         // Adaptive-thinking model: interleaved is omitted (built in).
         let mut adaptive = model.clone();
         adaptive.compat.force_adaptive_thinking = Some(true);
-        let f = anthropic_beta_features(&adaptive, &ctx_none, false);
+        let f = anthropic_beta_features(&adaptive, &ctx_none, false, true);
         assert!(!f.contains(&"interleaved-thinking-2025-05-14"));
 
         // Explicit non-eager override on a regular model -> fine-grained applied.
         let mut non_eager = model.clone();
         non_eager.compat.supports_eager_tool_input_streaming = Some(false);
-        let f = anthropic_beta_features(&non_eager, &ctx_tools, false);
+        let f = anthropic_beta_features(&non_eager, &ctx_tools, false, true);
         assert!(f.contains(&"fine-grained-tool-streaming-2025-05-14"));
 
         // OAuth: claude-code + oauth betas present.
-        let f = anthropic_beta_features(&model, &ctx_none, true);
+        let f = anthropic_beta_features(&model, &ctx_none, true, true);
         assert!(f.contains(&"claude-code-20250219"));
         assert!(f.contains(&"oauth-2025-04-20"));
     }

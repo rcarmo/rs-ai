@@ -73,7 +73,7 @@ pub fn stream_anthropic<'a>(
     }
 
     // Beta features (prompt caching is GA and no longer requires a beta header).
-    let beta_features = anthropic_beta_features(model, context, is_oauth);
+    let beta_features = anthropic_beta_features(model, context, is_oauth, opts.interleaved_thinking != Some(false));
     if !beta_features.is_empty()
         && let Ok(val) = HeaderValue::from_str(&beta_features.join(",")) {
             headers.insert("anthropic-beta", val);
@@ -532,7 +532,7 @@ pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
 
 /// Compute the Anthropic `anthropic-beta` feature list for a request (mirrors the
 /// upstream createClient beta-header logic).
-pub(crate) fn anthropic_beta_features<'a>(model: &'a Model, context: &Context, is_oauth: bool) -> Vec<&'a str> {
+pub(crate) fn anthropic_beta_features<'a>(model: &'a Model, context: &Context, is_oauth: bool, interleaved_thinking: bool) -> Vec<&'a str> {
     let mut beta_features: Vec<&str> = Vec::new();
     if is_oauth {
         beta_features.push("claude-code-20250219");
@@ -545,7 +545,7 @@ pub(crate) fn anthropic_beta_features<'a>(model: &'a Model, context: &Context, i
     }
     // Interleaved thinking, except for adaptive-thinking models which have it built in
     // (mirrors needsInterleavedBeta = interleavedThinking && !forceAdaptiveThinking).
-    if model.compat.force_adaptive_thinking != Some(true) {
+    if interleaved_thinking && model.compat.force_adaptive_thinking != Some(true) {
         beta_features.push("interleaved-thinking-2025-05-14");
     }
     beta_features
