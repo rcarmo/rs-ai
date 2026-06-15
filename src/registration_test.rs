@@ -4,6 +4,24 @@ mod tests {
     use crate::registry;
     use crate::types::*;
     use crate::images;
+    use tokio_stream::StreamExt;
+
+    #[tokio::test]
+    async fn test_vertex_location_placeholder_errors_clearly() {
+        provider::register_builtin_providers();
+        let mut model = openai_model();
+        model.api = "google-vertex".into();
+        model.provider = "google-vertex".into();
+        model.base_url = "https://{location}-aiplatform.googleapis.com".into();
+        let ctx = Context { system_prompt: None, messages: vec![], tools: vec![] };
+        let opts = StreamOptions::default();
+        let mut stream = registry::stream(&model, &ctx, &opts);
+        let mut err = None;
+        while let Some(evt) = stream.next().await {
+            if let crate::events::Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+        }
+        assert!(err.unwrap().contains("Google Vertex AI is not supported"));
+    }
 
     fn openai_model() -> Model {
         Model {

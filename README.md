@@ -69,10 +69,14 @@ rs-ai/
 
 Tracks `@earendil-works/pi-ai` `0.79.4`. Known divergences from upstream:
 
-- **Google Vertex AI auth**: response decoding matches Gemini, but production Vertex
-  auth (GCP Application Default Credentials / service-account token exchange and the
-  project/location-scoped endpoint) is not implemented — it would require a GCP auth
-  dependency. Vertex models fall back to the shared Gemini request path.
+- **Google Vertex AI**: Vertex is **not functional** via this port. The streamed
+  response format matches Gemini (so the shared decoder is reused), but Vertex's
+  request path differs fundamentally from the Gemini API — a project/location-scoped
+  endpoint (`/v1/projects/{project}/locations/{location}/publishers/google/models/...`),
+  a `{location}` host placeholder, and Bearer/ADC (or service-account) auth instead of
+  an API-key query param. Implementing it would require a GCP auth dependency and a
+  Vertex-specific request builder. `google-vertex` models should be treated as
+  unsupported here; use the `google-generative-ai` (Gemini API) models instead.
 - **Provider SDK retries**: upstream relies on vendor SDK retry behavior. This port
   honors `StreamOptions` retry fields (`max_retries`, `max_retry_delay_ms`,
   `retry_config`) via `retry::do_with_retry` across the HTTP providers; Bedrock uses

@@ -61,13 +61,22 @@ struct GoogleVertexProvider;
 impl ApiProvider for GoogleVertexProvider {
     fn api(&self) -> &str { "google-vertex" }
     // NOTE: Vertex AI responses use the same @google/genai format as Gemini, so the
-    // shared `stream_google` decoder is correct. However, production Vertex auth
-    // requires GCP Application Default Credentials / service-account token exchange
-    // and a project/location-scoped endpoint (the model `base_url` carries a
-    // `{location}` sentinel the upstream SDK resolves internally). That auth flow is
-    // a known limitation here: only Vertex API-key access via the shared path works;
-    // full ADC support would require a GCP auth dependency.
+    // shared `stream_google` decoder is correct. However, Vertex's request path differs
+    // (project/location-scoped endpoint, `{location}` host placeholder, Bearer/ADC auth),
+    // so the standard Vertex endpoint is not functional via the shared Gemini path.
+    // A base_url still carrying the unresolved `{location}` sentinel is rejected with a
+    // clear error; custom Gemini-compatible base URLs are passed through.
     fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+        if model.base_url.contains("{location}") {
+            let err = Event::Error {
+                reason: crate::types::StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                    "Google Vertex AI is not supported by this port (requires a project/location-scoped endpoint and GCP/ADC auth). Use a google-generative-ai (Gemini API) model instead.".to_string(),
+                )),
+                message: None,
+            };
+            return Box::pin(tokio_stream::once(err));
+        }
         google::stream_google(model, context, opts)
     }
 }
