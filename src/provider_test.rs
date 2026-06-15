@@ -1126,6 +1126,31 @@ mod tests {
     }
 
     #[test]
+    fn test_responses_azure_provider_is_tool_call_provider() {
+        // Azure models (provider azure-openai-responses) must apply the composite
+        // call|item id logic, matching upstream AZURE_TOOL_CALL_PROVIDERS.
+        let model = test_model("azure-openai-responses", "azure-openai-responses", "https://x.openai.azure.com/openai/v1");
+        let msg = Message {
+            role: Role::Assistant,
+            content: vec![ContentBlock::ToolCall {
+                id: "call_9|fc_xyz".into(), name: "t".into(),
+                arguments: std::collections::HashMap::new(), thought_signature: None,
+            }],
+            timestamp: 0,
+            api: Some("azure-openai-responses".into()), provider: Some("azure-openai-responses".into()), model: Some("test-model".into()),
+            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: Some(StopReason::ToolUse), error_message: None,
+            tool_call_id: None, tool_name: None, is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, messages: vec![msg], tools: vec![] };
+        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &StreamOptions::default());
+        let fc = payload["input"].as_array().unwrap().iter().find(|i| i["type"] == "function_call").unwrap();
+        // Composite split applied: call_id is the part before `|`, item id retained (same model).
+        assert_eq!(fc["call_id"], "call_9");
+        assert_eq!(fc["id"], "fc_xyz");
+    }
+
+    #[test]
     fn test_responses_build_payload_preserves_tool_history() {
         let model = test_model("openai-responses", "openai", "https://example.com");
         let ctx = Context {

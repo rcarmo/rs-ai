@@ -580,7 +580,10 @@ struct ParsedTextSignature {
 
 /// Providers whose stored tool-call ids use the Responses `callId|itemId` form.
 fn is_responses_tool_call_provider(provider: &str) -> bool {
-    matches!(provider, "openai" | "openai-codex" | "opencode")
+    // OPENAI/CODEX sets are {openai, openai-codex, opencode}; the Azure set additionally
+    // includes azure-openai-responses. A model's provider selects its entry path, so the
+    // union here reproduces upstream's per-path allowedToolCallProviders behavior.
+    matches!(provider, "openai" | "openai-codex" | "opencode" | "azure-openai-responses")
 }
 
 /// Sanitize an id part for the Responses API: keep [A-Za-z0-9_-], cap at 64, trim
