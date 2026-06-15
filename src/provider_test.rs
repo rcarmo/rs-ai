@@ -321,6 +321,41 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_responses_incomplete_maps_to_length_without_error_message() {
+        use crate::provider::responses::stream_responses;
+        // An incomplete response.completed maps to Length and must NOT carry an
+        // error message (matches upstream mapStopReason; incomplete is not an error).
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\n\
+                     data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"max_output_tokens\"},\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-responses", "openai", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_responses(&model, &ctx, &opts);
+        let mut reason = None;
+        let mut err_msg = None;
+        while let Some(evt) = stream.next().await {
+            match evt {
+                Event::Done { reason: r, message } => {
+                    reason = Some(r);
+                    err_msg = message.error_message.clone();
+                }
+                Event::Error { .. } => panic!("incomplete must not surface as an error"),
+                _ => {}
+            }
+        }
+        assert_eq!(reason, Some(StopReason::Length));
+        assert_eq!(err_msg, None, "incomplete (length) must not carry an error message");
+    }
+
+    #[tokio::test]
     async fn test_responses_stream_tool_calls() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

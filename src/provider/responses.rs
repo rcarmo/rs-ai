@@ -477,9 +477,6 @@ fn stream_responses_inner<'a>(
                                     .or_else(|| response.pointer("/error/message").and_then(|v| v.as_str()))
                                     .unwrap_or(status);
                                 partial.error_message = Some(format!("response {}: {}", status, detail));
-                            } else if status == "incomplete"
-                                && let Some(d) = response.pointer("/incomplete_details/reason").and_then(|v| v.as_str()) {
-                                    partial.error_message = Some(format!("incomplete: {}", d));
                             }
                             if reason != StopReason::Error
                                 && partial.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. })) {
