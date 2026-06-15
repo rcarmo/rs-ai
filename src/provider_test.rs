@@ -1952,6 +1952,27 @@ mod tests {
     }
 
     #[test]
+    fn test_responses_empty_tool_result_falls_back_to_placeholder() {
+        use crate::provider::responses::build_responses_payload;
+        // A tool result with no text and no image should emit the upstream
+        // "(see attached image)" placeholder, not an empty string.
+        let model = test_model("openai-responses", "openai", "https://example.com");
+        let tool_result = Message {
+            role: Role::ToolResult,
+            content: vec![],
+            timestamp: 0,
+            api: None, provider: None, model: None, response_id: None, response_model: None,
+            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+            tool_call_id: Some("call_x".into()), tool_name: Some("t".into()), is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, messages: vec![tool_result], tools: vec![] };
+        let payload = build_responses_payload(&model, &ctx, &StreamOptions::default());
+        let item = payload["input"].as_array().unwrap().iter()
+            .find(|i| i["type"] == "function_call_output").unwrap();
+        assert_eq!(item["output"], "(see attached image)");
+    }
+
+    #[test]
     fn test_anthropic_normalizes_tool_call_ids() {
         use crate::provider::anthropic::build_anthropic_payload;
         // An id from the OpenAI Responses API: contains `|` and exceeds 64 chars.

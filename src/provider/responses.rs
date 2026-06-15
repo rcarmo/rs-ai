@@ -786,10 +786,17 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
                         "output": output,
                     }));
                 } else {
+                    // Mirror upstream: an empty (no-text) tool result falls back to a
+                    // placeholder rather than an empty string.
+                    let output = if text_result.is_empty() {
+                        "(see attached image)".to_string()
+                    } else {
+                        text_result
+                    };
                     input.push(json!({
                         "type": "function_call_output",
                         "call_id": call_id,
-                        "output": text_result,
+                        "output": output,
                     }));
                 }
             }
