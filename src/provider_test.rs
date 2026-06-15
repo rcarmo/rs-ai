@@ -356,6 +356,55 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_responses_session_header_gating() {
+        use wiremock::matchers::header_exists;
+        use crate::provider::responses::stream_azure_responses;
+        let body = "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n";
+        let opts = StreamOptions { session_id: Some("sess-1".into()), ..Default::default() };
+        let ctx = test_context();
+
+        // Non-Azure default: session_id + x-client-request-id present.
+        let oai = MockServer::start().await;
+        Mock::given(method("POST")).and(path("/responses"))
+            .and(header_exists("session_id")).and(header_exists("x-client-request-id"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(body).insert_header("content-type", "text/event-stream"))
+            .mount(&oai).await;
+        let omodel = test_model("openai-responses", "openai", &oai.uri());
+        let mut s = stream_responses(&omodel, &ctx, &opts);
+        let mut done = false;
+        while let Some(e) = s.next().await { if matches!(e, Event::Done { .. }) { done = true; } }
+        assert!(done, "default should send session_id + x-client-request-id");
+
+        // compat.send_session_id_header = false: session_id omitted, x-client-request-id kept.
+        let oai2 = MockServer::start().await;
+        Mock::given(method("POST")).and(path("/responses"))
+            .and(header_exists("x-client-request-id"))
+            .and(|req: &wiremock::Request| req.headers.get("session_id").is_none())
+            .respond_with(ResponseTemplate::new(200).set_body_string(body).insert_header("content-type", "text/event-stream"))
+            .mount(&oai2).await;
+        let mut omodel2 = test_model("openai-responses", "openai", &oai2.uri());
+        omodel2.compat.send_session_id_header = Some(false);
+        let mut s2 = stream_responses(&omodel2, &ctx, &opts);
+        let mut done2 = false;
+        while let Some(e) = s2.next().await { if matches!(e, Event::Done { .. }) { done2 = true; } }
+        assert!(done2, "send_session_id_header=false should omit session_id but keep x-client-request-id");
+
+        // Azure: no session correlation headers at all.
+        let azure = MockServer::start().await;
+        Mock::given(method("POST")).and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200).set_body_string(body).insert_header("content-type", "text/event-stream"))
+            .mount(&azure).await;
+        let mut amodel = test_model("azure-openai-responses", "azure", &format!("{}/openai/v1", azure.uri()));
+        amodel.api_key = Some("k".into());
+        let mut s3 = stream_azure_responses(&amodel, &ctx, &opts);
+        while s3.next().await.is_some() {}
+        let reqs = azure.received_requests().await.unwrap();
+        assert!(!reqs.is_empty());
+        assert!(reqs[0].headers.get("session_id").is_none(), "azure must not send session_id");
+        assert!(reqs[0].headers.get("x-client-request-id").is_none(), "azure must not send x-client-request-id");
+    }
+
+    #[tokio::test]
     async fn test_responses_copilot_dynamic_headers_sent() {
         use wiremock::matchers::header;
         let server = MockServer::start().await;

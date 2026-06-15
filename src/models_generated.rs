@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
 //! Source: models.generated.js (971 models, 35 providers)
-//! Generated: 2026-06-15T11:11:45.184459Z
+//! Generated: 2026-06-15T12:00:47.100873Z
 
 #![allow(clippy::approx_constant)]
 

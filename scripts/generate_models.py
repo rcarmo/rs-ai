@@ -69,6 +69,7 @@ def gen_model(m) -> str:
         "requiresReasoningContentOnAssistantMessages": ("requires_reasoning_content_on_assistant_messages", "bool"),
         "requiresAssistantAfterToolResult": ("requires_assistant_after_tool_result", "bool"),
         "sendSessionAffinityHeaders": ("send_session_affinity_headers", "bool"),
+        "sendSessionIdHeader": ("send_session_id_header", "bool"),
         "supportsCacheControlOnTools": ("supports_cache_control_on_tools", "bool"),
         "supportsDeveloperRole": ("supports_developer_role", "bool"),
         "supportsEagerToolInputStreaming": ("supports_eager_tool_input_streaming", "bool"),

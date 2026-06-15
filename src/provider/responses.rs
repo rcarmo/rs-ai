@@ -126,17 +126,8 @@ fn stream_responses_inner<'a>(
         if let Ok(val) = HeaderValue::from_str(&api_key) {
             headers.insert("api-key", val);
         }
-        // Azure session affinity headers.
-        if let Some(ref session_id) = opts.session_id {
-            for (k, v) in crate::azure::azure_session_headers(session_id) {
-                if let (Ok(name), Ok(val)) = (
-                    reqwest::header::HeaderName::from_bytes(k.as_bytes()),
-                    HeaderValue::from_str(&v),
-                ) {
-                    headers.insert(name, val);
-                }
-            }
-        }
+        // Note: upstream's Azure client sends no session correlation headers
+        // (only api-key + model/option headers), so none are added here.
     } else {
         headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
         // Cloudflare AI Gateway also requires cf-aig-authorization.
@@ -144,11 +135,13 @@ fn stream_responses_inner<'a>(
             && let Ok(val) = HeaderValue::from_str(&format!("Bearer {}", api_key)) {
             headers.insert("cf-aig-authorization", val);
         }
-        // Session headers (non-Azure): upstream sends both `session_id`
-        // (gated on compat.sendSessionIdHeader, default true) and `x-client-request-id`.
+        // Session headers (non-Azure): upstream sends `session_id` only when
+        // compat.sendSessionIdHeader (default true), and `x-client-request-id` always.
         if let Some(ref session_id) = opts.session_id
             && let Ok(val) = HeaderValue::from_str(session_id) {
-                headers.insert("session_id", val.clone());
+                if model.compat.send_session_id_header.unwrap_or(true) {
+                    headers.insert("session_id", val.clone());
+                }
                 headers.insert("x-client-request-id", val);
             }
     }

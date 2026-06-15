@@ -311,6 +311,8 @@ pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub send_session_affinity_headers: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub send_session_id_header: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_cache_control_on_tools: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_developer_role: Option<bool>,

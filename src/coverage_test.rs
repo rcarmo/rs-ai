@@ -166,20 +166,6 @@ mod tests {
     }
 
     #[test]
-    fn test_azure_session_headers_populated() {
-        let h = azure_session_headers("sess-abc");
-        assert_eq!(h.len(), 3);
-        assert_eq!(h["session_id"], "sess-abc");
-        assert_eq!(h["x-client-request-id"], "sess-abc");
-    }
-
-    #[test]
-    fn test_azure_session_headers_empty() {
-        let h = azure_session_headers("");
-        assert!(h.is_empty());
-    }
-
-    #[test]
     fn test_strip_azure_tool_call_fields() {
         let mut calls = vec![json!({"id": "tc1", "content_filter_results": {"safe": true}})];
         strip_azure_tool_call_fields(&mut calls);
