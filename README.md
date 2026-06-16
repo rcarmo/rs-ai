@@ -65,6 +65,13 @@ rs-ai/
 | Gemini CLI | ✅ Implemented |
 | OAuth flows | ✅ Framework + PKCE |
 
+## Versioning
+
+This port is tagged to match the upstream `@earendil-works/pi-ai` release it tracks
+(e.g. `v0.79.5`). The tag is moved forward to the latest commit as additional
+parity fixes land against that same upstream version, and a new `vX.Y.Z` tag is
+cut when the port is realigned to a newer upstream release.
+
 ## Known limitations
 
 Tracks `@earendil-works/pi-ai` `0.79.5`. Known divergences from upstream:
