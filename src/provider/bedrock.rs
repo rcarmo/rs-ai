@@ -201,7 +201,9 @@ pub(crate) fn is_govcloud_bedrock_target(model: &Model) -> bool {
 
 /// Whether a Bedrock Claude model supports adaptive thinking, detected by id/name
 /// pattern (mirrors supportsAdaptiveThinking) rather than a compat flag.
-pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
+/// Build the lowercased + separator-collapsed model match candidates from id and
+/// name (mirrors upstream getModelMatchCandidates).
+fn bedrock_model_match_candidates(model: &Model) -> Vec<String> {
     let collapse = |s: &str| -> String {
         let mut out = String::new();
         let mut prev_sep = false;
@@ -221,9 +223,21 @@ pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
         candidates.push(collapse(&lower));
         candidates.push(lower);
     }
-    candidates.iter().any(|s| {
+    candidates
+}
+
+pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
+    bedrock_model_match_candidates(model).iter().any(|s| {
         s.contains("opus-4-6") || s.contains("opus-4-7") || s.contains("opus-4-8")
             || s.contains("sonnet-4-6") || s.contains("fable-5")
+    })
+}
+
+/// Claude models that accept a native `xhigh` effort value (mirrors
+/// supportsNativeXhighEffort).
+fn bedrock_supports_native_xhigh_effort(model: &Model) -> bool {
+    bedrock_model_match_candidates(model).iter().any(|s| {
+        s.contains("opus-4-7") || s.contains("opus-4-8") || s.contains("fable-5")
     })
 }
 
@@ -248,9 +262,15 @@ fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde
             "medium" => "medium",
             _ => "high",
         };
-        let effort = model.thinking_level_map.as_ref()
-            .and_then(|m| m.get(&key)).and_then(|v| v.clone())
-            .unwrap_or_else(|| default_effort.to_string());
+        // xhigh on a native-xhigh model takes precedence over the map/switch
+        // (mirrors mapThinkingLevelToEffort).
+        let effort = if key == "xhigh" && bedrock_supports_native_xhigh_effort(model) {
+            "xhigh".to_string()
+        } else {
+            model.thinking_level_map.as_ref()
+                .and_then(|m| m.get(&key)).and_then(|v| v.clone())
+                .unwrap_or_else(|| default_effort.to_string())
+        };
         let mut thinking = serde_json::json!({ "type": "adaptive" });
         if let Some(d) = display { thinking["display"] = serde_json::json!(d); }
         Some((serde_json::json!({
@@ -974,6 +994,14 @@ mod tests {
         assert_eq!(f["output_config"]["effort"], "high");
         assert!(f.get("anthropic_beta").is_none());
         assert_eq!(adj_max, None);
+        // Native-xhigh adaptive Claude (opus-4-7): xhigh effort is preserved.
+        let xopts = StreamOptions { reasoning: Some(ThinkingLevel::XHigh), ..Default::default() };
+        let (f, _) = bedrock_thinking_fields(&mk("anthropic.claude-opus-4-7", false), &xopts).unwrap();
+        assert_eq!(f["thinking"]["type"], "adaptive");
+        assert_eq!(f["output_config"]["effort"], "xhigh");
+        // Non-native adaptive (opus-4-6) with xhigh -> clamps to high.
+        let (f2, _) = bedrock_thinking_fields(&mk("anthropic.claude-opus-4-6", false), &xopts).unwrap();
+        assert_eq!(f2["output_config"]["effort"], "high");
         // Non-Claude model: no thinking fields.
         let f = bedrock_thinking_fields(&mk("meta.llama3", false), &opts);
         assert!(f.is_none());
