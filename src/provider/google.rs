@@ -185,8 +185,10 @@ pub fn stream_google<'a>(
                             for part in parts {
                                 let is_thought = part.get("thought").and_then(|v| v.as_bool()).unwrap_or(false);
                                 let part_sig = part.get("thoughtSignature").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
-                                if let Some(text) = part.get("text").and_then(|v| v.as_str())
-                                    && !text.is_empty() {
+                                // Upstream processes any part whose `text` field is defined,
+                                // including empty strings, so a trailing empty-text delta still
+                                // contributes its thoughtSignature to the current block.
+                                if let Some(text) = part.get("text").and_then(|v| v.as_str()) {
                                     let want: u8 = if is_thought { 2 } else { 1 };
                                     if block_kind != want {
                                         // Finalize the previous block in order.

@@ -3692,6 +3692,36 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_google_retains_signature_on_trailing_empty_text_0795() {
+        // A thinking block accumulates text over deltas, then the thoughtSignature arrives
+        // on a trailing empty-text delta. Upstream processes parts whose text field is
+        // defined (even ""), so the signature must still be retained on the thinking block.
+        use crate::provider::google::stream_google;
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"reason \",\"thought\":true}]}}]}\n\n\
+                     data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"\",\"thought\":true,\"thoughtSignature\":\"THSIG\"}]},\"finishReason\":\"STOP\"}]}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("google-generative-ai", "google", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_google(&model, &ctx, &opts);
+        let mut msg = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt { msg = Some(message); }
+        }
+        let sig = msg.unwrap().content.iter().find_map(|b| match b {
+            ContentBlock::Thinking { thinking, thinking_signature, .. } if thinking == "reason " => thinking_signature.clone(),
+            _ => None,
+        });
+        assert_eq!(sig.as_deref(), Some("THSIG"));
+    }
+
+    #[tokio::test]
     async fn test_google_usage_cache_and_thoughts() {
         use crate::provider::google::stream_google;
         let server = MockServer::start().await;
