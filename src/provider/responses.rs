@@ -739,25 +739,19 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
     for (msg_index, msg) in transformed_messages.iter().enumerate() {
         match msg.role {
             Role::User => {
-                if msg.content.len() == 1 {
-                    match &msg.content[0] {
-                        ContentBlock::Text { text, .. } => input.push(json!({"role": "user", "content": text})),
-                        ContentBlock::Image { data, mime_type } => input.push(json!({
-                            "role": "user",
-                            "content": [{"type": "input_image", "detail": "auto", "image_url": format!("data:{};base64,{}", mime_type, data)}]
-                        })),
-                        _ => {}
-                    }
-                } else {
-                    let parts: Vec<Value> = msg.content.iter().filter_map(|b| match b {
-                        ContentBlock::Text { text, .. } => Some(json!({"type": "input_text", "text": text})),
-                        ContentBlock::Image { data, mime_type } => Some(json!({
-                            "type": "input_image", "detail": "auto", "image_url": format!("data:{};base64,{}", mime_type, data)
-                        })),
-                        _ => None,
-                    }).collect();
-                    input.push(json!({"role": "user", "content": parts}));
+                // Mirror upstream convertResponsesMessages: user content is always an
+                // array of input_text/input_image parts; skip when it ends up empty.
+                let parts: Vec<Value> = msg.content.iter().filter_map(|b| match b {
+                    ContentBlock::Text { text, .. } => Some(json!({"type": "input_text", "text": text})),
+                    ContentBlock::Image { data, mime_type } => Some(json!({
+                        "type": "input_image", "detail": "auto", "image_url": format!("data:{};base64,{}", mime_type, data)
+                    })),
+                    _ => None,
+                }).collect();
+                if parts.is_empty() {
+                    continue;
                 }
+                input.push(json!({"role": "user", "content": parts}));
             }
             Role::Assistant => {
                 // Emit blocks in content order so encrypted reasoning items pair with the
@@ -770,10 +764,10 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
                                 input.push(v);
                             }
                         }
-                        ContentBlock::Text { text, text_signature } if !text.trim().is_empty() => {
-                            // Resolve the assistant message item id/phase from the text
-                            // signature, falling back to a deterministic msg_pi_ id
-                            // (mirrors upstream parseTextSignature + fallback).
+                        ContentBlock::Text { text, text_signature } => {
+                            // Upstream emits an output_text message for every text block
+                            // (including empty) and increments the index for each, so the
+                            // fallback msg_pi ids of later blocks line up.
                             let parsed = parse_text_signature(text_signature.as_deref());
                             let fallback = if text_block_index == 0 {
                                 format!("msg_pi_{msg_index}")

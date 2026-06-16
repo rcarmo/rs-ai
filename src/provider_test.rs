@@ -1311,6 +1311,52 @@ mod tests {
     }
 
     #[test]
+    fn test_responses_user_content_always_array_0795() {
+        // Upstream always wraps user content in an input_text/input_image array, even
+        // for a single text block (rs-ai previously emitted a bare string).
+        use crate::provider::responses::build_responses_payload;
+        let model = test_model("openai-responses", "openai", "https://example.com");
+        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        let p = build_responses_payload(&model, &ctx, &StreamOptions::default());
+        let m = &p["input"][0];
+        assert_eq!(m["role"], "user");
+        assert_eq!(m["content"][0]["type"], "input_text");
+        assert_eq!(m["content"][0]["text"], "hi");
+    }
+
+    #[test]
+    fn test_responses_assistant_empty_text_block_indexing_0795() {
+        // Upstream emits an output_text message for every text block (incl. empty) and
+        // increments the fallback index for all, so a non-empty block after an empty one
+        // gets msg_pi_0_1, not msg_pi_0.
+        use crate::provider::responses::build_responses_payload;
+        let model = test_model("openai-responses", "openai", "https://example.com");
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![Message {
+                role: Role::Assistant,
+                content: vec![
+                    ContentBlock::Text { text: "".into(), text_signature: None },
+                    ContentBlock::Text { text: "second".into(), text_signature: None },
+                ],
+                timestamp: 0,
+                api: Some("openai-responses".into()), provider: Some("openai".into()), model: Some("other-model".into()), response_id: None,
+                response_model: None, diagnostics: Vec::new(), usage: None,
+                stop_reason: Some(StopReason::Stop), error_message: None,
+                tool_call_id: None, tool_name: None, is_error: false, details: None,
+            }],
+            tools: vec![],
+        };
+        let p = build_responses_payload(&model, &ctx, &StreamOptions::default());
+        let input = p["input"].as_array().unwrap();
+        assert_eq!(input.len(), 2, "both text blocks emit a message");
+        assert_eq!(input[0]["content"][0]["text"], "");
+        assert_eq!(input[0]["id"], "msg_pi_0");
+        assert_eq!(input[1]["content"][0]["text"], "second");
+        assert_eq!(input[1]["id"], "msg_pi_0_1");
+    }
+
+    #[test]
     fn test_responses_reasoning_off_path() {
         use crate::provider::responses::build_responses_payload;
         let ctx = test_context();
