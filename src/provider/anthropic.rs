@@ -222,9 +222,8 @@ pub fn stream_anthropic<'a>(
                         if let Some(id) = data.pointer("/message/id").and_then(|v| v.as_str()) {
                             partial.response_id = Some(id.to_string());
                         }
-                        if let Some(model_name) = data.pointer("/message/model").and_then(|v| v.as_str()) {
-                            partial.response_model = Some(model_name.to_string());
-                        }
+                        // Note: upstream does not capture message.model into responseModel for
+                        // Anthropic, so we deliberately leave response_model unset here.
                         if let Some(usage) = data.pointer("/message/usage") {
                             partial.usage = Some(parse_anthropic_usage(usage));
                         }

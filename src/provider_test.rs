@@ -2213,7 +2213,7 @@ mod tests {
             .and(header("x-api-key", "test-key"))
             .respond_with(ResponseTemplate::new(200)
                 .set_body_string(
-                    "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg-1\",\"usage\":{\"input_tokens\":15,\"output_tokens\":0}}}\n\n\
+                    "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg-1\",\"model\":\"claude-served-x\",\"usage\":{\"input_tokens\":15,\"output_tokens\":0}}}\n\n\
                      event: content_block_start\ndata: {\"type\":\"content_block_start\",\"content_block\":{\"type\":\"text\"}}\n\n\
                      event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hi there!\"}}\n\n\
                      event: content_block_stop\ndata: {\"type\":\"content_block_stop\"}\n\n\
@@ -2238,6 +2238,8 @@ mod tests {
                 Event::Done { reason, message } => {
                     assert_eq!(reason, StopReason::Stop);
                     assert_eq!(message.response_id.as_deref(), Some("msg-1"));
+                    // Upstream does not capture message.model into responseModel for Anthropic.
+                    assert_eq!(message.response_model, None);
                     saw_done = true;
                 }
                 _ => {}
