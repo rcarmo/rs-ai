@@ -3734,6 +3734,33 @@ mod tests {
     }
 
     #[test]
+    fn test_mistral_reasoning_clamps_then_omits_or_maps_0795() {
+        use crate::provider::mistral::build_mistral_payload;
+        use std::collections::HashMap;
+        let ctx = test_context();
+        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        // All levels disabled -> clamps to off -> reasoning omitted entirely.
+        let mut off_map = HashMap::new();
+        for k in ["minimal", "low", "medium", "high"] { off_map.insert(k.to_string(), None); }
+        let m_off = Model { id: "magistral-medium".into(), reasoning: true, thinking_level_map: Some(off_map),
+            ..test_model("mistral-conversations", "mistral", "https://example.com") };
+        let p_off = build_mistral_payload(&m_off, &ctx, &opts);
+        assert!(p_off.get("prompt_mode").is_none(), "reasoning omitted when clamped off");
+        assert!(p_off.get("reasoning_effort").is_none());
+
+        // reasoning_effort model restricted to low: High clamps down to low, and the
+        // effort map is looked up with the *clamped* level.
+        let mut low_map = HashMap::new();
+        low_map.insert("medium".to_string(), None);
+        low_map.insert("high".to_string(), None);
+        low_map.insert("low".to_string(), Some("lo".to_string()));
+        let m_low = Model { id: "mistral-medium-3.5".into(), reasoning: true, thinking_level_map: Some(low_map),
+            ..test_model("mistral-conversations", "mistral", "https://example.com") };
+        let p_low = build_mistral_payload(&m_low, &ctx, &opts);
+        assert_eq!(p_low["reasoning_effort"], "lo", "effort mapped via clamped low level");
+    }
+
+    #[test]
     fn test_mistral_assistant_thinking_and_tool_result_images() {
         use crate::provider::mistral::build_mistral_payload;
         let mut model = test_model("mistral-conversations", "mistral", "https://example.com");

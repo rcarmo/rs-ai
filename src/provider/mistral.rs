@@ -517,11 +517,15 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
 
     // Reasoning: Mistral uses prompt_mode for most reasoning models and reasoning_effort
     // for a specific set (mirrors upstream usesReasoningEffort / usesPromptModeReasoning).
-    if model.reasoning && let Some(level) = opts.reasoning.as_ref() {
+    // The level is clamped first; if it clamps to off, reasoning is omitted entirely
+    // (mirrors clampedReasoning === "off" ? undefined).
+    if model.reasoning
+        && let Some(clamped) = opts.reasoning.as_ref()
+            .and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l)) {
         let uses_reasoning_effort = matches!(model.id.as_str(),
             "mistral-small-2603" | "mistral-small-latest" | "mistral-medium-3.5");
         if uses_reasoning_effort {
-            let key = format!("{:?}", level).to_lowercase();
+            let key = format!("{:?}", clamped).to_lowercase();
             let effort = model.thinking_level_map.as_ref()
                 .and_then(|m| m.get(&key))
                 .and_then(|v| v.clone())
