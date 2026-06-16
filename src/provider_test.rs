@@ -340,6 +340,9 @@ mod tests {
         );
         // Unmapped id with a map present -> falls back to model id.
         assert_eq!(resolve_azure_deployment_from_map(Some("gpt-4o=other"), "gpt-5"), "gpt-5");
+        // Empty deployment value -> skipped, falls back to model id (upstream !deploymentName).
+        assert_eq!(resolve_azure_deployment_from_map(Some("gpt-5="), "gpt-5"), "gpt-5");
+        assert_eq!(resolve_azure_deployment_from_map(Some("gpt-5=  "), "gpt-5"), "gpt-5");
     }
 
     #[test]

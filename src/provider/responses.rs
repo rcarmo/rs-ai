@@ -97,7 +97,10 @@ pub(crate) fn resolve_azure_deployment_from_map(map_str: Option<&str>, model_id:
     if let Some(map_str) = map_str {
         for entry in map_str.split(',') {
             if let Some((mid, dep)) = entry.split_once('=')
-                && mid.trim() == model_id {
+                && mid.trim() == model_id
+                // Skip entries with an empty deployment value (upstream `!deploymentName`),
+                // falling back to the model id.
+                && !dep.trim().is_empty() {
                 return dep.trim().to_string();
             }
         }
@@ -129,6 +132,10 @@ fn stream_responses_inner<'a>(
         // Azure's request `model` field is the deployment name (mapped via
         // AZURE_OPENAI_DEPLOYMENT_NAME_MAP, else the model id). Mirrors resolveDeploymentName.
         payload["model"] = json!(resolve_azure_deployment(&model.id));
+        // Azure buildParams does not emit service_tier (unlike the shared OpenAI builder).
+        if let Some(obj) = payload.as_object_mut() {
+            obj.remove("service_tier");
+        }
     }
     if let Some(ref hook) = opts.on_payload {
         match hook(payload.clone(), model) {
