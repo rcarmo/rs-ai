@@ -581,6 +581,15 @@ pub(crate) fn build_payload(
             json!(format_content_blocks(&msg.content))
         };
 
+        // Mirror upstream convertMessages: skip a user message whose converted content
+        // is an empty array (`if (content.length === 0) continue`). Like upstream, this
+        // does not update last_role.
+        if msg.role == Role::User
+            && content.as_array().map(|a| a.is_empty()).unwrap_or(false) {
+            idx += 1;
+            continue;
+        }
+
         let mut m = json!({ "role": role_str, "content": content });
         let mut should_push = true;
         if msg.role == Role::Assistant {

@@ -45,7 +45,29 @@ mod tests {
             + "data: [DONE]\n\n"
     }
 
-    // --- OpenAI Tests ---
+    #[test]
+    fn test_openai_empty_user_message_skipped_0795() {
+        // Upstream convertMessages skips a user message whose converted content array
+        // is empty (`if (content.length === 0) continue`). It must not be emitted, and
+        // must not act as the previous role for the assistant-bridge logic.
+        let model = test_model("openai-completions", "openai", "https://example.com");
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![Message {
+                role: Role::User,
+                content: vec![],
+                timestamp: 0,
+                api: None, provider: None, model: None, response_id: None,
+                response_model: None, diagnostics: Vec::new(), usage: None,
+                stop_reason: None, error_message: None,
+                tool_call_id: None, tool_name: None, is_error: false, details: None,
+            }],
+            tools: vec![],
+        };
+        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let msgs = payload["messages"].as_array().unwrap();
+        assert!(msgs.iter().all(|m| m["role"] != "user"), "empty user message must be skipped");
+    }
 
     #[tokio::test]
     async fn test_openai_stream_text() {
