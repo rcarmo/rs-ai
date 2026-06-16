@@ -3252,6 +3252,39 @@ mod tests {
         assert!(msg.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { id, name, arguments, .. } if id == "tc1" && name == "search" && arguments["q"] == "rust")));
     }
 
+    #[tokio::test]
+    async fn test_mistral_stream_tool_call_id_and_object_args_0795() {
+        // No usable id (literal "null") -> synthesize a deterministic id; object-form
+        // arguments are JSON-stringified rather than dropped (mirrors upstream).
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(sse_response(&[
+                    r#"{"id":"cmpl-3","choices":[{"delta":{"tool_calls":[{"index":0,"id":"null","function":{"name":"calc","arguments":{"x":1}}}]},"index":0}]}"#,
+                    r#"{"id":"cmpl-3","choices":[{"delta":{},"finish_reason":"tool_calls","index":0}]}"#,
+                ]))
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("mistral-conversations", "mistral", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_mistral(&model, &ctx, &opts);
+        let mut done: Option<Message> = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt { done = Some(message); }
+        }
+        let msg = done.expect("done");
+        let tc = msg.content.iter().find_map(|b| match b {
+            ContentBlock::ToolCall { id, name, arguments, .. } => Some((id.clone(), name.clone(), arguments.clone())),
+            _ => None,
+        }).expect("tool call");
+        assert!(!tc.0.is_empty() && tc.0 != "null");
+        assert_eq!(tc.1, "calc");
+        assert_eq!(tc.2["x"], 1);
+    }
+
     #[test]
     fn test_google_thinking_config_effort_mappings() {
         use crate::provider::google::build_google_payload_public;

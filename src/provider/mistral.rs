@@ -224,19 +224,31 @@ pub fn stream_mistral<'a>(
                                 for tc in delta_tool_calls {
                                     let index = tc.get("index").and_then(|v| v.as_u64()).unwrap_or(0) as usize;
                                     let entry = tool_calls.entry(index).or_insert_with(|| (String::new(), String::new(), String::new()));
-                                    if let Some(id) = tc.get("id").and_then(|v| v.as_str())
-                                        && entry.0.is_empty() { entry.0 = id.to_string(); }
+                                    if entry.0.is_empty() {
+                                        // Use the provider id unless missing or the literal "null";
+                                        // otherwise derive a deterministic id (mirrors upstream).
+                                        entry.0 = match tc.get("id").and_then(|v| v.as_str()) {
+                                            Some(id) if id != "null" && !id.is_empty() => id.to_string(),
+                                            _ => derive_mistral_tool_call_id(&format!("toolcall:{index}"), 0),
+                                        };
+                                    }
                                     if let Some(func) = tc.get("function") {
                                         if let Some(name) = func.get("name").and_then(|v| v.as_str())
                                             && entry.1.is_empty() && !name.is_empty() {
                                                 entry.1 = name.to_string();
                                                 yield Event::ToolCallStart { id: entry.0.clone(), name: entry.1.clone() };
                                             }
-                                        if let Some(args) = func.get("arguments").and_then(|v| v.as_str())
-                                            && !args.is_empty() {
-                                                entry.2.push_str(args);
-                                                yield Event::ToolCallDelta { delta: args.to_string() };
-                                            }
+                                        // Arguments may be a JSON string (streamed fragments) or an
+                                        // object; stringify non-strings to match upstream.
+                                        let args_delta = match func.get("arguments") {
+                                            Some(serde_json::Value::String(s)) => s.clone(),
+                                            Some(other) if !other.is_null() => serde_json::to_string(other).unwrap_or_default(),
+                                            _ => String::new(),
+                                        };
+                                        if !args_delta.is_empty() {
+                                            entry.2.push_str(&args_delta);
+                                            yield Event::ToolCallDelta { delta: args_delta };
+                                        }
                                     }
                                 }
                             }
