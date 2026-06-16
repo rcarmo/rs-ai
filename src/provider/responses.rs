@@ -338,14 +338,11 @@ fn stream_responses_inner<'a>(
                 let event_type = data.get("type").and_then(|v| v.as_str()).unwrap_or("");
                 match event_type {
                     "response.created" => {
-                        if let Some(response) = data.get("response") {
-                            if let Some(id) = response.get("id").and_then(|v| v.as_str()) {
-                                partial.response_id = Some(id.to_string());
-                            }
-                            if let Some(model_name) = response.get("model").and_then(|v| v.as_str()) {
-                                partial.response_model = Some(model_name.to_string());
-                            }
+                        if let Some(response) = data.get("response")
+                            && let Some(id) = response.get("id").and_then(|v| v.as_str()) {
+                            partial.response_id = Some(id.to_string());
                         }
+                        // Upstream does not capture response.model into responseModel.
                     }
                     "response.output_item.added" => {
                         if let Some(item) = data.get("item") {
@@ -505,9 +502,7 @@ fn stream_responses_inner<'a>(
                     }
                     "response.completed" | "response.incomplete" => {
                         if let Some(response) = data.get("response") {
-                            if let Some(model_name) = response.get("model").and_then(|v| v.as_str()) {
-                                partial.response_model = Some(model_name.to_string());
-                            }
+                            // Upstream does not capture response.model into responseModel.
                             if let Some(usage) = response.get("usage") {
                                 let mut parsed = crate::simple_options::parse_responses_usage(usage, model);
                                 // Resolve the effective service tier (response value wins) and

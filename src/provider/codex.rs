@@ -353,14 +353,11 @@ impl CodexWsState {
         let event_type = data.get("type").and_then(|v| v.as_str()).unwrap_or("");
         match event_type {
             "response.created" => {
-                if let Some(response) = data.get("response") {
-                    if let Some(id) = response.get("id").and_then(|v| v.as_str()) {
-                        self.partial.response_id = Some(id.to_string());
-                    }
-                    if let Some(model_name) = response.get("model").and_then(|v| v.as_str()) {
-                        self.partial.response_model = Some(model_name.to_string());
-                    }
+                if let Some(response) = data.get("response")
+                    && let Some(id) = response.get("id").and_then(|v| v.as_str()) {
+                    self.partial.response_id = Some(id.to_string());
                 }
+                // Upstream does not capture response.model into responseModel.
             }
             "response.output_item.added" => {
                 if let Some(item) = data.get("item") {
@@ -495,9 +492,7 @@ impl CodexWsState {
                     if let Some(id) = response.get("id").and_then(|v| v.as_str()) {
                         self.partial.response_id = Some(id.to_string());
                     }
-                    if let Some(model_name) = response.get("model").and_then(|v| v.as_str()) {
-                        self.partial.response_model = Some(model_name.to_string());
-                    }
+                    // Upstream does not capture response.model into responseModel.
                     if let Some(usage) = response.get("usage") {
                         let cached = usage.pointer("/input_tokens_details/cached_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
                         let input_total = usage.get("input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;

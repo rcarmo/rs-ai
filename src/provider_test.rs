@@ -596,7 +596,8 @@ mod tests {
                 Event::Done { reason, message } => {
                     done_reason = Some(reason);
                     assert_eq!(message.response_id.as_deref(), Some("resp-2"));
-                    assert_eq!(message.response_model.as_deref(), Some("gpt-4.1"));
+                    // Upstream does not set responseModel for responses.
+                    assert_eq!(message.response_model, None);
                     assert!(message.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search")));
                 }
                 _ => {}
@@ -719,7 +720,8 @@ mod tests {
         let message = done.expect("done message");
         assert!(saw_thinking);
         assert!(message.content.iter().any(|b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "step one")));
-        assert_eq!(message.response_model.as_deref(), Some("gpt-5"));
+        // Upstream does not set responseModel for responses.
+        assert_eq!(message.response_model, None);
     }
 
     #[tokio::test]
@@ -1811,7 +1813,8 @@ mod tests {
         assert!(replayed.iter().any(|e| matches!(e, Event::ToolCallEnd { id, name, arguments } if id == "call_1" && name == "search" && arguments["q"] == "rust")));
         let done = replayed.iter().find_map(|e| match e { Event::Done { message, .. } => Some(message), _ => None }).expect("done");
         assert_eq!(done.response_id.as_deref(), Some("resp-c1"));
-        assert_eq!(done.response_model.as_deref(), Some("codex-mini"));
+        // Upstream does not set responseModel for codex responses.
+        assert_eq!(done.response_model, None);
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "ponder")));
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search")));
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "answer")));
