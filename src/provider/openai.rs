@@ -697,6 +697,16 @@ pub(crate) fn build_payload(
         match compat.thinking_format.as_deref() {
             Some("zai") => {
                 payload["thinking"] = json!({"type": if clamped_effort.is_some() { "enabled" } else { "disabled" }});
+                if let Some(ref level) = clamped_effort
+                    && compat.supports_reasoning_effort == Some(true) {
+                        // effort = thinkingLevelMap[level] (string) else the level; null -> omit.
+                        let key = format!("{:?}", level).to_lowercase();
+                        match model.thinking_level_map.as_ref().and_then(|m| m.get(&key)) {
+                            None => { payload["reasoning_effort"] = json!(key); }
+                            Some(Some(s)) => { payload["reasoning_effort"] = json!(s); }
+                            Some(None) => {}
+                        }
+                    }
             }
             Some("qwen") => {
                 payload["enable_thinking"] = json!(clamped_effort.is_some());
@@ -722,7 +732,13 @@ pub(crate) fn build_payload(
                     }
             }
             Some("deepseek") => {
-                payload["thinking"] = json!({"type": if clamped_effort.is_some() { "enabled" } else { "disabled" }});
+                // thinking enabled when effort requested; else disabled UNLESS
+                // thinkingLevelMap.off is explicitly null (then omitted).
+                if clamped_effort.is_some() {
+                    payload["thinking"] = json!({"type": "enabled"});
+                } else if !matches!(model.thinking_level_map.as_ref().and_then(|m| m.get("off")), Some(None)) {
+                    payload["thinking"] = json!({"type": "disabled"});
+                }
                 if let Some(ref level) = clamped_effort
                     && compat.supports_reasoning_effort == Some(true) {
                         payload["reasoning_effort"] = json!(map_effort(level));

@@ -595,7 +595,8 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
     if model.reasoning {
         let id = model.id.to_lowercase();
         let is_gemini3_pro = id.contains("gemini-3") && id.contains("-pro");
-        let is_gemini3_flash = id.contains("gemini-3") && id.contains("-flash");
+        let is_gemini3_flash = (id.contains("gemini-3") && id.contains("-flash"))
+            || id == "gemini-flash-latest" || id == "gemini-flash-lite-latest";
         let is_gemma4 = id.contains("gemma-4") || id.contains("gemma4");
         if let Some(reasoning) = opts.reasoning.as_ref() {
             let mut thinking_config = json!({"includeThoughts": true});

@@ -1113,6 +1113,59 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_zai_reasoning_effort_0795() {
+        // 0.79.5: zai sends reasoning_effort (mapped via thinkingLevelMap) when
+        // supportsReasoningEffort. high -> "max" via the map.
+        use std::collections::HashMap;
+        let mut model = Model { reasoning: true, ..test_model("openai-completions", "zai", "https://z.ai/api") };
+        let mut map = HashMap::new();
+        map.insert("high".to_string(), Some("max".to_string()));
+        model.thinking_level_map = Some(map);
+        let overrides = crate::compat::OpenAICompletionsCompat { thinking_format: Some("zai".into()), supports_reasoning_effort: Some(true), ..Default::default() };
+        let compat = crate::compat::detect_compat_for_model(&model, Some(&overrides));
+        let ctx = test_context();
+        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
+        assert_eq!(payload["thinking"]["type"], "enabled");
+        assert_eq!(payload["reasoning_effort"], "max");
+    }
+
+    #[test]
+    fn test_openai_deepseek_thinking_omitted_when_off_null_0795() {
+        // 0.79.5: deepseek omits thinking:{disabled} when thinkingLevelMap.off === null,
+        // but still emits it when off is unset.
+        use std::collections::HashMap;
+        let mut model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
+        let overrides = crate::compat::OpenAICompletionsCompat { thinking_format: Some("deepseek".into()), ..Default::default() };
+        let compat = crate::compat::detect_compat_for_model(&model, Some(&overrides));
+        let ctx = test_context();
+        let opts = StreamOptions::default();
+        // off explicitly null -> thinking omitted.
+        let mut map = HashMap::new();
+        map.insert("off".to_string(), None);
+        model.thinking_level_map = Some(map);
+        let p_null = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
+        assert!(p_null.get("thinking").is_none());
+        // off unset -> disabled still present.
+        model.thinking_level_map = Some(HashMap::new());
+        let p_unset = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
+        assert_eq!(p_unset["thinking"]["type"], "disabled");
+    }
+
+    #[test]
+    fn test_google_flash_latest_thinking_level_0795() {
+        // 0.79.5: gemini-flash-latest / gemini-flash-lite-latest are treated as
+        // Gemini-3 flash models (thinkingLevel string, MINIMAL when disabled).
+        let ctx = test_context();
+        let opts = StreamOptions::default();
+        for id in ["gemini-flash-latest", "gemini-flash-lite-latest"] {
+            let model = Model { reasoning: true, id: id.into(), ..test_model("google", "google", "https://generativelanguage.googleapis.com") };
+            let payload = crate::provider::google::build_google_payload_public(&model, &ctx, &opts);
+            assert_eq!(payload["generationConfig"]["thinkingConfig"]["thinkingLevel"], "MINIMAL", "{id}");
+        }
+    }
+
+    #[test]
     fn test_openai_tool_choice_passthrough() {
         let model = test_model("openai-completions", "openai", "https://example.com");
         let ctx = test_context();

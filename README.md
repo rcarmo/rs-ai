@@ -67,7 +67,7 @@ rs-ai/
 
 ## Known limitations
 
-Tracks `@earendil-works/pi-ai` `0.79.4`. Known divergences from upstream:
+Tracks `@earendil-works/pi-ai` `0.79.5`. Known divergences from upstream:
 
 - **Google Vertex AI**: Vertex is **not functional** via this port. The streamed
   response format matches Gemini (so the shared decoder is reused), but Vertex's
@@ -81,6 +81,12 @@ Tracks `@earendil-works/pi-ai` `0.79.4`. Known divergences from upstream:
   honors `StreamOptions` retry fields (`max_retries`, `max_retry_delay_ms`,
   `retry_config`) via `retry::do_with_retry` across the HTTP providers; Bedrock uses
   the AWS SDK's own retry. There is no implicit default retry when no options are set.
+- **Scoped `options.env`**: upstream 0.79.5 threads an optional `options.env` map
+  through every provider via `getProviderEnvValue(name, env)` so callers can supply a
+  per-request environment overlay (plus a Bun `/proc/self/environ` sandbox fallback).
+  This port reads the process environment natively; with no scoped overlay supplied the
+  behavior is identical (the upstream fallback chain ends at `process.env`), so the
+  overlay parameter is intentionally not plumbed through.
 
 ## Credits
 
