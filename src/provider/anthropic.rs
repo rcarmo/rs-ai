@@ -488,6 +488,34 @@ fn normalize_anthropic_tool_call_id(id: &str) -> String {
     if sanitized.len() > 64 { sanitized[..64].to_string() } else { sanitized }
 }
 
+/// Convert tool-result content blocks to Anthropic `tool_result.content` (mirrors
+/// convertContentBlocks): text-only becomes a single newline-joined string; with images
+/// it becomes a block array, prepending a "(see attached image)" placeholder when there
+/// is no text block.
+fn convert_tool_result_content(content: &[ContentBlock]) -> Value {
+    let has_images = content.iter().any(|b| matches!(b, ContentBlock::Image { .. }));
+    if !has_images {
+        let joined = content.iter().filter_map(|b| match b {
+            ContentBlock::Text { text, .. } => Some(text.as_str()),
+            _ => None,
+        }).collect::<Vec<_>>().join("\n");
+        return json!(joined);
+    }
+    let mut blocks: Vec<Value> = content.iter().map(|b| match b {
+        ContentBlock::Image { data, mime_type } => json!({
+            "type": "image",
+            "source": {"type": "base64", "media_type": mime_type, "data": data}
+        }),
+        ContentBlock::Text { text, .. } => json!({"type": "text", "text": text}),
+        _ => json!({"type": "text", "text": ""}),
+    }).collect();
+    let has_text = blocks.iter().any(|b| b.get("type").and_then(|t| t.as_str()) == Some("text"));
+    if !has_text {
+        blocks.insert(0, json!({"type": "text", "text": "(see attached image)"}));
+    }
+    json!(blocks)
+}
+
 /// Canonicalize a tool name to its Claude Code casing if it matches (mirrors toClaudeCodeName).
 fn to_claude_code_name(name: &str) -> String {
     let lower = name.to_lowercase();
@@ -583,18 +611,10 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
             let mut tool_results: Vec<Value> = Vec::new();
             while i < transformed_messages.len() && transformed_messages[i].role == Role::ToolResult {
                 let tr = &transformed_messages[i];
-                let result_content: Vec<Value> = tr.content.iter().map(|b| match b {
-                    ContentBlock::Text { text, .. } => json!({"type": "text", "text": text}),
-                    ContentBlock::Image { data, mime_type } => json!({
-                        "type": "image",
-                        "source": {"type": "base64", "media_type": mime_type, "data": data}
-                    }),
-                    _ => json!({"type": "text", "text": ""}),
-                }).collect();
                 let mut tool_result = json!({
                     "type": "tool_result",
                     "tool_use_id": normalize_anthropic_tool_call_id(&tr.tool_call_id.clone().unwrap_or_default()),
-                    "content": result_content,
+                    "content": convert_tool_result_content(&tr.content),
                 });
                 if tr.is_error {
                     tool_result["is_error"] = json!(true);
@@ -612,7 +632,14 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
             Role::ToolResult => unreachable!(),
         };
         let content: Vec<Value> = msg.content.iter().filter_map(|b| match b {
-            ContentBlock::Text { text, .. } => Some(json!({"type": "text", "text": text})),
+            ContentBlock::Text { text, .. } => {
+                // Skip whitespace-only text blocks (mirrors upstream convertMessages).
+                if text.trim().is_empty() {
+                    None
+                } else {
+                    Some(json!({"type": "text", "text": text}))
+                }
+            }
             ContentBlock::Image { data, mime_type } => Some(json!({
                 "type": "image",
                 "source": {"type": "base64", "media_type": mime_type, "data": data}
@@ -647,6 +674,11 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
                 "input": arguments
             })),
         }).collect();
+        // Skip messages whose content ends up empty (mirrors upstream `blocks.length === 0`).
+        if content.is_empty() {
+            i += 1;
+            continue;
+        }
         messages.push(json!({"role": role_str, "content": content}));
         i += 1;
     }

@@ -2986,7 +2986,59 @@ mod tests {
         let block = &payload["messages"][0]["content"][0];
         assert_eq!(block["type"], "tool_result");
         assert_eq!(block["tool_use_id"], "tc1");
-        assert_eq!(block["content"][0]["text"], "42");
+        // Upstream convertContentBlocks returns a newline-joined string for text-only results.
+        assert_eq!(block["content"], "42");
+    }
+
+    #[test]
+    fn test_anthropic_tool_result_image_only_placeholder_0795() {
+        // Image-only tool results gain a "(see attached image)" placeholder text block
+        // and are returned as a block array (mirrors upstream convertContentBlocks).
+        use crate::provider::anthropic::build_anthropic_payload;
+        let model = Model { input: vec!["text".into(), "image".into()], ..test_model("anthropic-messages", "anthropic", "https://example.com") };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![Message {
+                role: Role::ToolResult,
+                content: vec![ContentBlock::Image { data: "AAAA".into(), mime_type: "image/png".into() }],
+                timestamp: 0,
+                api: None, provider: None, model: None, response_id: None,
+                response_model: None, diagnostics: Vec::new(), usage: None,
+                stop_reason: None, error_message: None,
+                tool_call_id: Some("tc2".into()), tool_name: Some("shot".into()),
+                is_error: false, details: None,
+            }],
+            tools: vec![],
+        };
+        let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
+        let content = &payload["messages"][0]["content"][0]["content"];
+        assert_eq!(content[0]["type"], "text");
+        assert_eq!(content[0]["text"], "(see attached image)");
+        assert_eq!(content[1]["type"], "image");
+    }
+
+    #[test]
+    fn test_anthropic_empty_text_blocks_skipped_0795() {
+        // Whitespace-only text blocks are filtered and messages that become empty are
+        // dropped (mirrors upstream convertMessages).
+        use crate::provider::anthropic::build_anthropic_payload;
+        let model = test_model("anthropic-messages", "anthropic", "https://example.com");
+        let mk = |role: Role, text: &str| Message {
+            role, content: vec![ContentBlock::Text { text: text.into(), text_signature: None }],
+            timestamp: 0, api: None, provider: None, model: None, response_id: None,
+            response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: None, error_message: None, tool_call_id: None, tool_name: None,
+            is_error: false, details: None,
+        };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![mk(Role::User, "   "), mk(Role::Assistant, "\n\t"), mk(Role::User, "real")],
+            tools: vec![],
+        };
+        let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
+        let msgs = payload["messages"].as_array().unwrap();
+        assert_eq!(msgs.len(), 1, "only the non-empty user message survives");
+        assert_eq!(msgs[0]["content"][0]["text"], "real");
     }
 
     #[tokio::test]
