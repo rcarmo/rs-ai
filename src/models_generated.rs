@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
 //! Source: models.generated.js (975 models, 35 providers)
-//! Generated: 2026-06-16T18:19:30.931984Z
+//! Generated: 2026-06-17T14:49:38.852880Z
 
 #![allow(clippy::approx_constant)]
 
@@ -8869,6 +8869,7 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat {
                 max_tokens_field: Some("max_tokens".into()),
                 requires_reasoning_content_on_assistant_messages: Some(true),
+                thinking_format: Some("deepseek".into()),
                 ..Default::default()
             },
         },
@@ -8895,6 +8896,7 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat {
                 max_tokens_field: Some("max_tokens".into()),
                 requires_reasoning_content_on_assistant_messages: Some(true),
+                thinking_format: Some("deepseek".into()),
                 ..Default::default()
             },
         },
@@ -9773,9 +9775,9 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.098_f64, output: 0.196_f64, cache_read: 0.02_f64, cache_write: 0_f64 },
+            cost: ModelCost { input: 0.09_f64, output: 0.18_f64, cache_read: 0.02_f64, cache_write: 0_f64 },
             context_window: 1048576,
-            max_tokens: 4096,
+            max_tokens: 65536,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -10767,9 +10769,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.75_f64, output: 3.5_f64, cache_read: 0.16_f64, cache_write: 0_f64 },
+            cost: ModelCost { input: 0.74_f64, output: 3.5_f64, cache_read: 0.15_f64, cache_write: 0_f64 },
             context_window: 262144,
-            max_tokens: 262144,
+            max_tokens: 16384,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
@@ -13084,7 +13086,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into()],
             cost: ModelCost { input: 1.4_f64, output: 4.4_f64, cache_read: 0.26_f64, cache_write: 0_f64 },
             context_window: 1048576,
-            max_tokens: 131072,
+            max_tokens: 262144,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
