@@ -74,7 +74,7 @@ cut when the port is realigned to a newer upstream release.
 
 ## Known limitations
 
-Tracks `@earendil-works/pi-ai` `0.79.6`. Known divergences from upstream:
+Tracks `@earendil-works/pi-ai` `0.79.7`. Known divergences from upstream:
 
 - **Google Vertex AI**: Vertex is **not functional** via this port. The streamed
   response format matches Gemini (so the shared decoder is reused), but Vertex's

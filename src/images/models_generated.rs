@@ -1,11 +1,12 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (32 image models, 1 provider)
-//! Generated: 2026-06-09T23:02:43.034823+00:00
+//! Source: image-models.generated.js (34 image models, 1 provider)
+//! Generated: 2026-06-18T17:16:06.386699+00:00
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
 
+/// Returns all built-in image models from the upstream pi-ai registry.
 pub fn builtin_image_models() -> Vec<ImagesModel> {
     vec![
         ImagesModel {
@@ -69,6 +70,16 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             cost: ModelCost { input: 0.3_f64, output: 2.5_f64, cache_read: 0.03_f64, cache_write: 0.08333333333333334_f64 },
         },
         ImagesModel {
+            id: "google/gemini-3-pro-image".into(),
+            name: "Google: Nano Banana Pro (Gemini 3 Pro Image)".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["image".into(), "text".into()],
+            output: vec!["image".into(), "text".into()],
+            cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.19999999999999998_f64, cache_write: 0.375_f64 },
+        },
+        ImagesModel {
             id: "google/gemini-3-pro-image-preview".into(),
             name: "Google: Nano Banana Pro (Gemini 3 Pro Image Preview)".into(),
             api: "openrouter-images".into(),
@@ -77,6 +88,16 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
             cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.19999999999999998_f64, cache_write: 0.375_f64 },
+        },
+        ImagesModel {
+            id: "google/gemini-3.1-flash-image".into(),
+            name: "Google: Nano Banana 2 (Gemini 3.1 Flash Image)".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["image".into(), "text".into()],
+            output: vec!["image".into(), "text".into()],
+            cost: ModelCost { input: 0.5_f64, output: 3_f64, cache_read: 0_f64, cache_write: 0_f64 },
         },
         ImagesModel {
             id: "google/gemini-3.1-flash-image-preview".into(),
