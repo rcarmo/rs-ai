@@ -57,8 +57,9 @@ pub fn stream_mistral<'a>(
             }
         }
     }
-    if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
+    if mistral_should_use_prompt_caching(opts)
         && !headers.contains_key("x-affinity")
+        && let Some(session_id) = opts.session_id.as_deref()
         && let Ok(val) = HeaderValue::from_str(session_id) {
         headers.insert("x-affinity", val);
     }
@@ -272,7 +273,7 @@ pub fn stream_mistral<'a>(
                 }
 
                 if let Some(usage) = chunk.get("usage") {
-                    partial.usage = Some(crate::simple_options::parse_openai_usage(usage, model));
+                    partial.usage = Some(mistral_parse_usage(usage, model));
                 }
             }
             if got_done {
@@ -548,7 +549,59 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
         }
     }
 
+    // Mistral prompt caching: send a prompt_cache_key when caching is enabled
+    // (mirrors upstream `if (shouldUsePromptCaching) payload.promptCacheKey = sessionId`).
+    if mistral_should_use_prompt_caching(opts)
+        && let Some(sid) = opts.session_id.as_deref() {
+        payload["prompt_cache_key"] = json!(sid);
+    }
+
     payload
+}
+
+/// Whether Mistral prompt caching is enabled for this request (mirrors upstream
+/// shouldUsePromptCaching): a session id is present and cacheRetention is not "none".
+fn mistral_should_use_prompt_caching(opts: &StreamOptions) -> bool {
+    opts.session_id.as_deref().is_some_and(|s| !s.is_empty())
+        && opts.cache_retention != Some(CacheRetention::None)
+}
+
+/// Extract cached prompt tokens from a Mistral usage object, checking the several
+/// field-name variants upstream getMistralCachedPromptTokens accepts, clamped to
+/// [0, prompt_tokens].
+fn mistral_cached_prompt_tokens(usage: &Value, prompt_tokens: u32) -> u32 {
+    let raw = usage.pointer("/promptTokensDetails/cachedTokens").and_then(|v| v.as_u64())
+        .or_else(|| usage.pointer("/prompt_tokens_details/cached_tokens").and_then(|v| v.as_u64()))
+        .or_else(|| usage.pointer("/promptTokenDetails/cachedTokens").and_then(|v| v.as_u64()))
+        .or_else(|| usage.pointer("/prompt_token_details/cached_tokens").and_then(|v| v.as_u64()))
+        .or_else(|| usage.get("numCachedTokens").and_then(|v| v.as_u64()))
+        .or_else(|| usage.get("num_cached_tokens").and_then(|v| v.as_u64()))
+        .unwrap_or(0) as u32;
+    raw.min(prompt_tokens)
+}
+
+/// Parse Mistral streaming usage, accounting for cached prompt tokens (mirrors the
+/// 0.79.8 consumeChatStream usage handling).
+fn mistral_parse_usage(usage: &Value, model: &Model) -> crate::types::Usage {
+    let prompt = usage.get("prompt_tokens").and_then(|v| v.as_u64())
+        .or_else(|| usage.get("promptTokens").and_then(|v| v.as_u64()))
+        .unwrap_or(0) as u32;
+    let completion = usage.get("completion_tokens").and_then(|v| v.as_u64())
+        .or_else(|| usage.get("completionTokens").and_then(|v| v.as_u64()))
+        .unwrap_or(0) as u32;
+    let cached = mistral_cached_prompt_tokens(usage, prompt);
+    let input = prompt.saturating_sub(cached);
+    let total = usage.get("total_tokens").and_then(|v| v.as_u64())
+        .or_else(|| usage.get("totalTokens").and_then(|v| v.as_u64()))
+        .map(|v| v as u32)
+        .filter(|t| *t != 0)
+        .unwrap_or(input + completion + cached);
+    let mut u = crate::types::Usage {
+        input, output: completion, cache_read: cached, cache_write: 0,
+        cache_write_1h: None, total_tokens: total, cost: Default::default(),
+    };
+    u.cost = crate::simple_options::calculate_cost(model, &u);
+    u
 }
 
 /// Map a Mistral chat finish_reason to a stop reason (mirrors mapChatStopReason).

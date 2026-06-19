@@ -3135,6 +3135,51 @@ mod tests {
 
     // --- Mistral Tests ---
 
+    #[test]
+    fn test_mistral_prompt_cache_key_0798() {
+        use crate::provider::mistral::build_mistral_payload;
+        let model = test_model("mistral-conversations", "mistral", "https://example.com");
+        let ctx = test_context();
+        // Session id + default retention -> prompt_cache_key present.
+        let opts = StreamOptions { session_id: Some("sess-7".into()), ..Default::default() };
+        let p = build_mistral_payload(&model, &ctx, &opts);
+        assert_eq!(p["prompt_cache_key"], "sess-7");
+        // cacheRetention "none" -> omitted.
+        let opts_none = StreamOptions { session_id: Some("sess-7".into()), cache_retention: Some(crate::types::CacheRetention::None), ..Default::default() };
+        let p2 = build_mistral_payload(&model, &ctx, &opts_none);
+        assert!(p2.get("prompt_cache_key").is_none());
+        // No session id -> omitted.
+        let p3 = build_mistral_payload(&model, &ctx, &StreamOptions::default());
+        assert!(p3.get("prompt_cache_key").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_mistral_usage_cache_read_0798() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(sse_response(&[
+                    r#"{"id":"c","choices":[{"delta":{"content":"hi"},"index":0}]}"#,
+                    r#"{"id":"c","choices":[{"delta":{},"finish_reason":"stop","index":0}],"usage":{"prompt_tokens":100,"completion_tokens":10,"total_tokens":110,"prompt_tokens_details":{"cached_tokens":40}}}"#,
+                ]))
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("mistral-conversations", "mistral", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_mistral(&model, &ctx, &opts);
+        let mut usage = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt { usage = message.usage; }
+        }
+        let u = usage.expect("usage");
+        assert_eq!(u.cache_read, 40);
+        assert_eq!(u.input, 60); // prompt 100 - cached 40
+        assert_eq!(u.output, 10);
+    }
+
     #[tokio::test]
     async fn test_mistral_merges_headers_and_affinity() {
         let server = MockServer::start().await;
