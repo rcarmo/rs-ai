@@ -340,6 +340,9 @@ pub struct ModelCompat {
     pub thinking_format: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zai_tool_stream: Option<bool>,
+    /// chat-template thinking format kwargs (object map; mirrors compat.chatTemplateKwargs).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chat_template_kwargs: Option<serde_json::Value>,
 }
 
 impl ModelCompat {

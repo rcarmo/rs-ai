@@ -21,6 +21,8 @@ pub struct OpenAICompletionsCompat {
     pub supports_session_affinity_headers: Option<bool>,
     pub zai_tool_stream: Option<bool>,
     pub cache_control_format: Option<String>,
+    /// chat-template thinking format kwargs (object map; see resolve_chat_template_kwarg_value).
+    pub chat_template_kwargs: Option<serde_json::Value>,
 }
 
 /// Auto-detect compatibility flags from a model's provider/URL, then overlay any
@@ -53,6 +55,7 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         supports_session_affinity_headers: mc.send_session_affinity_headers,
         zai_tool_stream: mc.zai_tool_stream,
         cache_control_format: mc.cache_control_format.clone(),
+        chat_template_kwargs: mc.chat_template_kwargs.clone(),
     })
 }
 
@@ -76,6 +79,7 @@ pub fn detect_compat_for_model(model: &Model, overrides: Option<&OpenAICompletio
         if o.supports_session_affinity_headers.is_some() { c.supports_session_affinity_headers = o.supports_session_affinity_headers; }
         if o.zai_tool_stream.is_some() { c.zai_tool_stream = o.zai_tool_stream; }
         if o.cache_control_format.is_some() { c.cache_control_format = o.cache_control_format.clone(); }
+        if o.chat_template_kwargs.is_some() { c.chat_template_kwargs = o.chat_template_kwargs.clone(); }
     }
     c
 }

@@ -1140,6 +1140,34 @@ mod tests {
     }
 
     #[test]
+    fn test_openai_chat_template_thinking_format_0799() {
+        // chat-template format: literal passthrough, $var thinking.enabled, omitWhenOff,
+        // and thinkingLevelMap effort resolution (mirrors buildChatTemplateKwargs).
+        use std::collections::HashMap;
+        let mut model = Model { reasoning: true, ..test_model("openai-completions", "openai", "https://example.com") };
+        model.thinking_level_map = Some(HashMap::from([("high".to_string(), Some("max".to_string()))]));
+        model.compat.thinking_format = Some("chat-template".into());
+        model.compat.chat_template_kwargs = Some(serde_json::json!({
+            "enable_thinking": {"$var": "thinking.enabled"},
+            "mode": "fast",
+            "budget": {"omitWhenOff": true}
+        }));
+        let compat = crate::compat::detect_compat(&model);
+        let ctx = test_context();
+        // With reasoning High.
+        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let p = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
+        assert_eq!(p["chat_template_kwargs"]["enable_thinking"], true);
+        assert_eq!(p["chat_template_kwargs"]["mode"], "fast");
+        assert_eq!(p["chat_template_kwargs"]["budget"], "max"); // high -> mapped "max"
+        // Without reasoning: enable_thinking false, budget omitted (omitWhenOff).
+        let p2 = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &compat);
+        assert_eq!(p2["chat_template_kwargs"]["enable_thinking"], false);
+        assert_eq!(p2["chat_template_kwargs"]["mode"], "fast");
+        assert!(p2["chat_template_kwargs"].get("budget").is_none());
+    }
+
+    #[test]
     fn test_openai_zai_reasoning_effort_0795() {
         // 0.79.5: zai sends reasoning_effort (mapped via thinkingLevelMap) when
         // supportsReasoningEffort. high -> "max" via the map.

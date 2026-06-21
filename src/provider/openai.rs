@@ -768,6 +768,11 @@ pub(crate) fn build_payload(
                     }
                 }
             }
+            Some("chat-template") => {
+                if let Some(kwargs) = build_chat_template_kwargs(model, &clamped_effort, compat) {
+                    payload["chat_template_kwargs"] = kwargs;
+                }
+            }
             _ => {
                 if compat.supports_reasoning_effort == Some(true) {
                     if let Some(ref level) = clamped_effort {
@@ -903,6 +908,58 @@ fn has_tool_history(messages: &[Message]) -> bool {
 /// Normalize a tool-call ID for OpenAI-compatible APIs (mirrors upstream `normalizeToolCallId`).
 /// Pipe-separated IDs (from the Responses API) are reduced to the sanitized call_id,
 /// and overly-long OpenAI IDs are truncated to 40 chars.
+/// Build the `chat_template_kwargs` object for the `chat-template` thinking format
+/// (mirrors buildChatTemplateKwargs): resolve each configured value, dropping any
+/// that resolve to undefined; returns None when the result is empty.
+fn build_chat_template_kwargs(
+    model: &Model,
+    clamped_effort: &Option<ThinkingLevel>,
+    compat: &crate::compat::OpenAICompletionsCompat,
+) -> Option<Value> {
+    let template = compat.chat_template_kwargs.as_ref()?.as_object()?;
+    let mut out = serde_json::Map::new();
+    for (key, value) in template {
+        if let Some(resolved) = resolve_chat_template_kwarg_value(model, clamped_effort, value) {
+            out.insert(key.clone(), resolved);
+        }
+    }
+    if out.is_empty() { None } else { Some(Value::Object(out)) }
+}
+
+/// Resolve a single chat-template kwarg value (mirrors resolveChatTemplateKwargValue).
+/// Non-object values pass through literally; object values support `omitWhenOff`,
+/// `$var: "thinking.enabled"`, and thinkingLevelMap-based effort resolution.
+fn resolve_chat_template_kwarg_value(
+    model: &Model,
+    clamped_effort: &Option<ThinkingLevel>,
+    value: &Value,
+) -> Option<Value> {
+    let obj = match value.as_object() {
+        Some(o) => o,
+        None => return Some(value.clone()), // literal passthrough
+    };
+    if clamped_effort.is_none() && obj.get("omitWhenOff").and_then(|v| v.as_bool()) == Some(true) {
+        return None;
+    }
+    if obj.get("$var").and_then(|v| v.as_str()) == Some("thinking.enabled") {
+        return Some(Value::Bool(clamped_effort.is_some()));
+    }
+    // mappedValue = effort ? thinkingLevelMap[effort] : thinkingLevelMap.off;
+    // undefined -> reasoningEffort (the level string, or undefined when off).
+    let (lookup_key, effort_string): (String, Option<String>) = match clamped_effort {
+        Some(level) => {
+            let k = format!("{:?}", level).to_lowercase();
+            (k.clone(), Some(k))
+        }
+        None => ("off".to_string(), None),
+    };
+    match model.thinking_level_map.as_ref().and_then(|m| m.get(&lookup_key)) {
+        None => effort_string.map(Value::String),
+        Some(Some(s)) => Some(Value::String(s.clone())),
+        Some(None) => None,
+    }
+}
+
 fn normalize_tool_call_id(id: &str, provider: &str) -> String {
     if let Some((call_id, _)) = id.split_once('|') {
         return call_id

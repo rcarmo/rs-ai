@@ -93,6 +93,9 @@ def gen_model(m) -> str:
                 compat_lines.append(f"                {rs_key}: Some({str(v).lower()}),")
             else:
                 compat_lines.append(f"                {rs_key}: Some({rust_string(v)}.into()),")
+    ctk = compat.get("chatTemplateKwargs")
+    if ctk:
+        compat_lines.append(f'                chat_template_kwargs: Some(serde_json::from_str({rust_string(json.dumps(ctk))}).unwrap()),')
     if compat_lines:
         lines.append("            compat: ModelCompat {")
         lines.extend(compat_lines)
