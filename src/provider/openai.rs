@@ -327,13 +327,16 @@ pub fn stream_openai<'a>(
                             }
                         }
 
-                        // Capture encrypted reasoning details and pair them to tool calls by id
-                        // (mirrors upstream reasoning.encrypted handling for replay).
+                        // Capture encrypted reasoning details and pair them to tool calls by id.
+                        // Signatures are stored by id and applied when tool-call blocks are
+                        // built at finish_reason, so this is order-independent (covers the
+                        // 0.79.10 pendingReasoningDetailsByToolCallId case). Validation mirrors
+                        // isEncryptedReasoningDetail: non-empty string id and data.
                         if let Some(details) = delta.get("reasoning_details").and_then(|v| v.as_array()) {
                             for detail in details {
                                 if detail.get("type").and_then(|v| v.as_str()) == Some("reasoning.encrypted")
-                                    && let Some(did) = detail.get("id").and_then(|v| v.as_str())
-                                    && detail.get("data").is_some() {
+                                    && let Some(did) = detail.get("id").and_then(|v| v.as_str()).filter(|s| !s.is_empty())
+                                    && detail.get("data").and_then(|v| v.as_str()).is_some_and(|s| !s.is_empty()) {
                                     tool_call_signatures.insert(did.to_string(), detail.to_string());
                                 }
                             }

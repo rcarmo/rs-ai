@@ -275,6 +275,41 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_openai_reasoning_detail_before_tool_call_0_79_10() {
+        // 0.79.10: an encrypted reasoning detail that arrives BEFORE its tool call must
+        // still pair (rs-ai stores by id and applies at finish, so order-independent).
+        // Also: a detail with empty data must be rejected (isEncryptedReasoningDetail).
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(sse_response(&[
+                    // detail arrives first, before any tool_call block exists
+                    r#"{"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.encrypted","id":"tcX","data":"ENCX"},{"type":"reasoning.encrypted","id":"tcY","data":""}]},"index":0}]}"#,
+                    r#"{"choices":[{"delta":{"tool_calls":[{"index":0,"id":"tcX","function":{"name":"s","arguments":"{}"}}]},"index":0}]}"#,
+                    r#"{"choices":[{"delta":{},"finish_reason":"tool_calls","index":0}]}"#,
+                ]))
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-completions", "openai", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut msg = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt { msg = Some(message); }
+        }
+        let m = msg.expect("done");
+        let sig = m.content.iter().find_map(|b| match b {
+            ContentBlock::ToolCall { id, thought_signature, .. } if id == "tcX" => Some(thought_signature.clone()),
+            _ => None,
+        }).expect("tcX tool call");
+        let sig = sig.expect("signature paired despite earlier arrival");
+        assert!(sig.contains("ENCX"));
+    }
+
+    #[tokio::test]
     async fn test_azure_responses_uses_api_key_and_version() {
         use crate::provider::responses::stream_azure_responses;
         let server = MockServer::start().await;
