@@ -165,7 +165,12 @@ fn stream_responses_inner<'a>(
                 return Box::pin(stream::once(async { err }));
             }
         };
-        let api_version = std::env::var("AZURE_OPENAI_API_VERSION").unwrap_or_else(|_| "v1".to_string());
+        // Upstream resolveAzureConfig uses `... || DEFAULT_AZURE_API_VERSION` (truthy),
+        // so an empty AZURE_OPENAI_API_VERSION falls back to "v1" rather than emitting
+        // an empty ?api-version=.
+        let api_version = std::env::var("AZURE_OPENAI_API_VERSION").ok()
+            .filter(|v| !v.is_empty())
+            .unwrap_or_else(|| "v1".to_string());
         format!("{}/responses?api-version={}", base, api_version)
     } else {
         let base = match crate::utils::resolve_cloudflare_base_url(model.base_url.trim_end_matches('/'), &model.provider) {
