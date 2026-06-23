@@ -372,6 +372,16 @@ pub fn check_schema(value: &Value, schema: &Value) -> bool {
     if !types.is_empty() && !types.iter().any(|t| matches_json_type(value, t)) {
         return false;
     }
+    // enum: the value must be one of the allowed values (TypeBox validates this).
+    if let Some(Value::Array(allowed)) = schema.get("enum")
+        && !allowed.iter().any(|e| e == value) {
+        return false;
+    }
+    // const: the value must equal the fixed value.
+    if let Some(c) = schema.get("const")
+        && c != value {
+        return false;
+    }
     if types.iter().any(|t| t == "object")
         && let Some(obj) = value.as_object() {
         if let Some(Value::Array(required)) = schema.get("required") {
@@ -427,6 +437,16 @@ fn collect_schema_errors(value: &Value, schema: &Value, path: &str, out: &mut Ve
     let types = schema_types(schema);
     if !types.is_empty() && !types.iter().any(|t| matches_json_type(value, t)) {
         out.push(format!("  - {}: Expected {}", here, types.join(" or ")));
+        return;
+    }
+    if let Some(Value::Array(allowed)) = schema.get("enum")
+        && !allowed.iter().any(|e| e == value) {
+        out.push(format!("  - {here}: value is not one of the allowed enum values"));
+        return;
+    }
+    if let Some(c) = schema.get("const")
+        && c != value {
+        out.push(format!("  - {here}: value does not equal the required constant"));
         return;
     }
     if types.iter().any(|t| t == "object")
@@ -500,6 +520,33 @@ mod coercion_tests {
         assert_eq!(out2["n"], json!(1000));
         assert_eq!(out2["i"], json!(17));
         assert!(validate_tool_arguments(&t, &json!({"n": "abc", "i": 1})).is_err());
+    }
+
+    #[test]
+    fn test_enum_and_const_validation() {
+        // enum: out-of-set value is rejected (TypeBox validates this); in-set passes,
+        // and a coercible value that matches after coercion passes.
+        let t = Tool { name: "t".into(), description: "d".into(), parameters: json!({
+            "type": "object",
+            "properties": {
+                "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+                "level": {"type": "integer", "enum": [1, 2, 3]},
+            },
+            "required": ["unit", "level"],
+        }) };
+        assert!(validate_tool_arguments(&t, &json!({"unit": "kelvin", "level": 1})).is_err());
+        let ok = validate_tool_arguments(&t, &json!({"unit": "celsius", "level": "2"})).unwrap();
+        assert_eq!(ok["unit"], "celsius");
+        assert_eq!(ok["level"], json!(2)); // "2" coerced then matches enum
+
+        // const.
+        let tc = Tool { name: "t".into(), description: "d".into(), parameters: json!({
+            "type": "object",
+            "properties": { "kind": {"const": "fixed"} },
+            "required": ["kind"],
+        }) };
+        assert!(validate_tool_arguments(&tc, &json!({"kind": "other"})).is_err());
+        assert!(validate_tool_arguments(&tc, &json!({"kind": "fixed"})).is_ok());
     }
 
     #[test]
