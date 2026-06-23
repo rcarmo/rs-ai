@@ -135,6 +135,12 @@ pub fn parse_partial_json(input: &str) -> Option<Value> {
     if let Some(v) = close_and_parse(input) {
         return Some(v);
     }
+    // Complete a trailing partial constant (true/false/null), like the partial-json
+    // library, before falling back to dropping it. Covers truncated boolean/null args.
+    if let Some(completed) = complete_trailing_constant(input)
+        && let Some(v) = close_and_parse(&completed) {
+            return Some(v);
+    }
     // Fallback: the truncation landed after a comma/colon or mid-token (e.g.
     // `{"a":1,` or `{"a":1,"b":`). Shrink to the largest prefix that closes into
     // valid JSON, mirroring the `partial-json` library's best-valid-prefix contract.
@@ -214,6 +220,53 @@ fn close_and_parse(input: &str) -> Option<Value> {
     serde_json::from_str(&fixed).ok()
 }
 
+/// If `input` ends (outside a string) with a non-empty proper prefix of a JSON
+/// constant (`true`/`false`/`null`), return `input` with that prefix completed to
+/// the full constant. Mirrors the partial-json library completing partial atoms at
+/// the truncation point. Returns None when there is no completable trailing token.
+fn complete_trailing_constant(input: &str) -> Option<String> {
+    // Don't touch a token that is actually inside an (unterminated) string.
+    let mut in_string = false;
+    let mut escape = false;
+    for ch in input.chars() {
+        if escape {
+            escape = false;
+            continue;
+        }
+        if ch == '\\' && in_string {
+            escape = true;
+            continue;
+        }
+        if ch == '"' {
+            in_string = !in_string;
+        }
+    }
+    if in_string {
+        return None;
+    }
+    let chars: Vec<char> = input.chars().collect();
+    let mut start = chars.len();
+    while start > 0 && chars[start - 1].is_ascii_lowercase() {
+        start -= 1;
+    }
+    if start == chars.len() {
+        return None; // no trailing lowercase token
+    }
+    let token: String = chars[start..].iter().collect();
+    // true/false/null have distinct first letters, so a prefix is unambiguous.
+    let full = if token != "true" && "true".starts_with(&token) {
+        "true"
+    } else if token != "false" && "false".starts_with(&token) {
+        "false"
+    } else if token != "null" && "null".starts_with(&token) {
+        "null"
+    } else {
+        return None;
+    };
+    let prefix: String = chars[..start].iter().collect();
+    Some(format!("{prefix}{full}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -244,6 +297,25 @@ mod tests {
     fn test_nested_partial() {
         let v = parse_partial_json(r#"{"a": {"b": [1, 2"#);
         assert!(v.is_some());
+    }
+
+    #[test]
+    fn test_partial_constants_completed() {
+        // partial-json completes a truncated trailing constant; rs-ai must too.
+        assert_eq!(parse_partial_json(r#"{"enabled": tru"#).unwrap()["enabled"], true);
+        assert_eq!(parse_partial_json(r#"{"enabled": t"#).unwrap()["enabled"], true);
+        assert_eq!(parse_partial_json(r#"{"x": fal"#).unwrap()["x"], false);
+        assert_eq!(parse_partial_json(r#"{"x": n"#).unwrap()["x"], serde_json::Value::Null);
+        // In an array too.
+        let arr = parse_partial_json(r#"[true, fal"#).unwrap();
+        assert_eq!(arr.as_array().unwrap(), &vec![serde_json::json!(true), serde_json::json!(false)]);
+        // A non-constant token (e.g. a path letter) is not mis-completed; the key
+        // is dropped to the largest valid prefix instead.
+        let v = parse_partial_json(r#"{"a": 1, "b": xy"#).unwrap();
+        assert_eq!(v["a"], 1);
+        assert!(v.get("b").is_none());
+        // A trailing constant inside a string is NOT treated as a constant.
+        assert_eq!(parse_partial_json(r#"{"s": "tru"#).unwrap()["s"], "tru");
     }
 
     #[test]
