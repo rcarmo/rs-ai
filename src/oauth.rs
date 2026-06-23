@@ -246,7 +246,7 @@ pub async fn exchange_codex_code_at(token_url: &str, code: &str, verifier: &str,
     let expires_in = data.get("expires_in").and_then(|v| v.as_i64())
         .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?;
     let account_id = decode_jwt_payload(&access)
-        .and_then(|p| p.get(CODEX_JWT_CLAIM_PATH).and_then(|a| a.get("chatgpt_account_id")).and_then(|v| v.as_str()).map(|s| s.to_string()))
+        .and_then(|p| p.get(CODEX_JWT_CLAIM_PATH).and_then(|a| a.get("chatgpt_account_id")).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(|s| s.to_string()))
         .ok_or_else(|| "Failed to extract accountId from token".to_string())?;
     Ok(CodexCredentials {
         access,
@@ -285,6 +285,8 @@ pub fn codex_account_id(token: &str) -> Option<String> {
         .and_then(|p| p.get(CODEX_JWT_CLAIM_PATH)
             .and_then(|a| a.get("chatgpt_account_id"))
             .and_then(|v| v.as_str())
+            // Upstream getAccountId returns null for an empty account id.
+            .filter(|s| !s.is_empty())
             .map(|s| s.to_string()))
 }
 
@@ -322,7 +324,7 @@ pub async fn refresh_codex_token_at(token_url: &str, refresh_token: &str) -> Res
     let expires_in = data.get("expires_in").and_then(|v| v.as_i64())
         .ok_or_else(|| format!("OpenAI Codex token refresh response missing fields: {body}"))?;
     let account_id = decode_jwt_payload(&access)
-        .and_then(|p| p.get(CODEX_JWT_CLAIM_PATH).and_then(|a| a.get("chatgpt_account_id")).and_then(|v| v.as_str()).map(|s| s.to_string()))
+        .and_then(|p| p.get(CODEX_JWT_CLAIM_PATH).and_then(|a| a.get("chatgpt_account_id")).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(|s| s.to_string()))
         .ok_or_else(|| "Failed to extract accountId from token".to_string())?;
     Ok(CodexCredentials {
         access,
@@ -709,6 +711,22 @@ mod tests {
         let creds = exchange_codex_code_at(&url, "code", "verifier", CODEX_REDIRECT_URI).await.unwrap();
         assert_eq!(creds.account_id, "acc_9");
         assert_eq!(creds.refresh.as_deref(), Some("r"));
+    }
+
+    #[test]
+    fn test_codex_account_id_empty_is_none() {
+        use base64::Engine;
+        let mk = |acc: &str| {
+            let payload = serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": acc}});
+            let b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(serde_json::to_vec(&payload).unwrap());
+            format!("h.{b64}.s")
+        };
+        // Upstream getAccountId returns null for an empty account id.
+        assert_eq!(codex_account_id(&mk("")), None);
+        assert_eq!(codex_account_id(&mk("acc_42")).as_deref(), Some("acc_42"));
+        // Malformed (not 3 parts) -> None.
+        assert_eq!(codex_account_id("not.a.valid.jwt"), None);
+        assert_eq!(codex_account_id("onlyonepart"), None);
     }
 
     #[tokio::test]
