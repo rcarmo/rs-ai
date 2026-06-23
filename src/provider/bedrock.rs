@@ -58,6 +58,133 @@ fn normalize_bedrock_tool_call_id(id: &str) -> String {
     if sanitized.len() > 64 { sanitized[..64].to_string() } else { sanitized }
 }
 
+/// Build the Bedrock Converse message list from the conversation (transform +
+/// per-role conversion + consecutive-tool-result coalescing + last-user cache
+/// point). Extracted so the coalescing/cache-point behaviour is unit-testable
+/// without an AWS endpoint. Returns `Err("Unknown image type: ...")` for an
+/// unsupported image mime (mirrors createImageBlock's throw).
+pub(crate) fn build_bedrock_messages(
+    messages: &[Message],
+    model: &Model,
+    opts: &StreamOptions,
+) -> Result<Vec<BedrockMessage>, String> {
+    let supports_signature = is_anthropic_claude_model(model);
+    let transformed = crate::transform::transform_messages(messages, model);
+    if let Some(bad) = bedrock_unsupported_image_mime(&transformed) {
+        return Err(format!("Unknown image type: {bad}"));
+    }
+    let mut out: Vec<BedrockMessage> = Vec::new();
+    let mut i = 0;
+    while i < transformed.len() {
+        let msg = &transformed[i];
+        match msg.role {
+            Role::User => {
+                let mut content: Vec<BedrockContent> = Vec::new();
+                for b in &msg.content {
+                    match b {
+                        ContentBlock::Text { text, .. } => {
+                            if let Some(tb) = non_blank_text(text) {
+                                content.push(tb);
+                            }
+                        }
+                        ContentBlock::Image { data, mime_type } => {
+                            if let Some(img) = bedrock_image_block(mime_type, data) {
+                                content.push(BedrockContent::Image(img));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if content.is_empty() {
+                    content.push(BedrockContent::Text(EMPTY_TEXT_PLACEHOLDER.to_string()));
+                }
+                out.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
+                i += 1;
+            }
+            Role::Assistant => {
+                if msg.content.is_empty() { i += 1; continue; }
+                let mut content: Vec<BedrockContent> = Vec::new();
+                for b in &msg.content {
+                    match b {
+                        ContentBlock::Text { text, .. } => {
+                            if let Some(tb) = non_blank_text(text) {
+                                content.push(tb);
+                            }
+                        }
+                        ContentBlock::ToolCall { id, name, arguments, .. } => {
+                            let args_value = serde_json::to_value(arguments).unwrap_or_else(|_| serde_json::json!({}));
+                            if let Ok(tub) = ToolUseBlock::builder()
+                                .tool_use_id(normalize_bedrock_tool_call_id(id))
+                                .name(name.clone())
+                                .input(json_to_document(&args_value))
+                                .build()
+                            {
+                                content.push(BedrockContent::ToolUse(tub));
+                            }
+                        }
+                        ContentBlock::Thinking { thinking, thinking_signature, redacted } if !redacted && !thinking.trim().is_empty() => {
+                            // Only Anthropic Claude models accept the reasoning signature.
+                            // For Claude with a missing signature, fall back to plain text
+                            // (Bedrock rejects a replayed reasoning block without a signature).
+                            if supports_signature {
+                                match thinking_signature.as_ref().filter(|s| !s.trim().is_empty()) {
+                                    Some(sig) => {
+                                        if let Ok(rt) = ReasoningTextBlock::builder().text(thinking.clone()).signature(sig.clone()).build() {
+                                            content.push(BedrockContent::ReasoningContent(ReasoningContentBlock::ReasoningText(rt)));
+                                        }
+                                    }
+                                    None => content.push(BedrockContent::Text(thinking.clone())),
+                                }
+                            } else if let Ok(rt) = ReasoningTextBlock::builder().text(thinking.clone()).build() {
+                                content.push(BedrockContent::ReasoningContent(ReasoningContentBlock::ReasoningText(rt)));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                if content.is_empty() { i += 1; continue; }
+                out.push(BedrockMessage::builder().role(ConversationRole::Assistant).set_content(Some(content)).build().unwrap());
+                i += 1;
+            }
+            Role::ToolResult => {
+                // Merge consecutive tool results into a single user message.
+                let mut content: Vec<BedrockContent> = Vec::new();
+                while i < transformed.len() && transformed[i].role == Role::ToolResult {
+                    let tr = &transformed[i];
+                    let status = if tr.is_error { ToolResultStatus::Error } else { ToolResultStatus::Success };
+                    if let Ok(trb) = ToolResultBlock::builder()
+                        .tool_use_id(normalize_bedrock_tool_call_id(tr.tool_call_id.as_deref().unwrap_or_default()))
+                        .set_content(Some(convert_tool_result_content(&tr.content)))
+                        .status(status)
+                        .build()
+                    {
+                        content.push(BedrockContent::ToolResult(trb));
+                    }
+                    i += 1;
+                }
+                out.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
+            }
+        }
+    }
+
+    // Prompt caching: add a cache point to the last user message for supported
+    // Claude models. Retention is resolved (defaults to short caching on).
+    let retention = crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref());
+    let cache_long = matches!(retention, CacheRetention::Long);
+    let cache_enabled = retention != CacheRetention::None && supports_bedrock_prompt_caching(model);
+    if cache_enabled
+        && let Some(last) = out.pop() {
+        if last.role() == &ConversationRole::User {
+            let mut content = last.content().to_vec();
+            content.push(BedrockContent::CachePoint(bedrock_cache_point(cache_long)));
+            out.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
+        } else {
+            out.push(last);
+        }
+    }
+    Ok(out)
+}
+
 /// Build a non-blank text content block, or None when blank (mirrors createNonBlankTextBlock).
 fn non_blank_text(text: &str) -> Option<BedrockContent> {
     if text.trim().is_empty() {
@@ -338,128 +465,21 @@ pub fn stream_bedrock<'a>(
         let config = loader.load().await;
         let client = BedrockClient::new(&config);
 
-        let supports_signature = is_anthropic_claude_model(model);
-        let transformed = crate::transform::transform_messages(&context.messages, model);
-        // Bedrock only supports jpeg/png/gif/webp images; an unknown type is a hard
-        // error (mirrors createImageBlock's throw), not a silent drop.
-        if let Some(bad) = bedrock_unsupported_image_mime(&transformed) {
-            yield Event::Error {
-                reason: StopReason::Error,
-                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!("Unknown image type: {bad}"))),
-                message: None,
-            };
-            return;
-        }
-        let mut messages = Vec::new();
-        let mut i = 0;
-        while i < transformed.len() {
-            let msg = &transformed[i];
-            match msg.role {
-                Role::User => {
-                    let mut content: Vec<BedrockContent> = Vec::new();
-                    for b in &msg.content {
-                        match b {
-                            ContentBlock::Text { text, .. } => {
-                                if let Some(tb) = non_blank_text(text) {
-                                    content.push(tb);
-                                }
-                            }
-                            ContentBlock::Image { data, mime_type } => {
-                                if let Some(img) = bedrock_image_block(mime_type, data) {
-                                    content.push(BedrockContent::Image(img));
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    if content.is_empty() {
-                        content.push(BedrockContent::Text(EMPTY_TEXT_PLACEHOLDER.to_string()));
-                    }
-                    messages.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
-                    i += 1;
-                }
-                Role::Assistant => {
-                    if msg.content.is_empty() { i += 1; continue; }
-                    let mut content: Vec<BedrockContent> = Vec::new();
-                    for b in &msg.content {
-                        match b {
-                            ContentBlock::Text { text, .. } => {
-                                if let Some(tb) = non_blank_text(text) {
-                                    content.push(tb);
-                                }
-                            }
-                            ContentBlock::ToolCall { id, name, arguments, .. } => {
-                                let args_value = serde_json::to_value(arguments).unwrap_or_else(|_| serde_json::json!({}));
-                                if let Ok(tub) = ToolUseBlock::builder()
-                                    .tool_use_id(normalize_bedrock_tool_call_id(id))
-                                    .name(name.clone())
-                                    .input(json_to_document(&args_value))
-                                    .build()
-                                {
-                                    content.push(BedrockContent::ToolUse(tub));
-                                }
-                            }
-                            ContentBlock::Thinking { thinking, thinking_signature, redacted } if !redacted && !thinking.trim().is_empty() => {
-                                // Only Anthropic Claude models accept the reasoning signature.
-                                // For Claude with a missing signature, fall back to plain text
-                                // (Bedrock rejects a replayed reasoning block without a signature).
-                                if supports_signature {
-                                    match thinking_signature.as_ref().filter(|s| !s.trim().is_empty()) {
-                                        Some(sig) => {
-                                            if let Ok(rt) = ReasoningTextBlock::builder().text(thinking.clone()).signature(sig.clone()).build() {
-                                                content.push(BedrockContent::ReasoningContent(ReasoningContentBlock::ReasoningText(rt)));
-                                            }
-                                        }
-                                        None => content.push(BedrockContent::Text(thinking.clone())),
-                                    }
-                                } else if let Ok(rt) = ReasoningTextBlock::builder().text(thinking.clone()).build() {
-                                    content.push(BedrockContent::ReasoningContent(ReasoningContentBlock::ReasoningText(rt)));
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    if content.is_empty() { i += 1; continue; }
-                    messages.push(BedrockMessage::builder().role(ConversationRole::Assistant).set_content(Some(content)).build().unwrap());
-                    i += 1;
-                }
-                Role::ToolResult => {
-                    // Merge consecutive tool results into a single user message.
-                    let mut content: Vec<BedrockContent> = Vec::new();
-                    while i < transformed.len() && transformed[i].role == Role::ToolResult {
-                        let tr = &transformed[i];
-                        let status = if tr.is_error { ToolResultStatus::Error } else { ToolResultStatus::Success };
-                        if let Ok(trb) = ToolResultBlock::builder()
-                            .tool_use_id(normalize_bedrock_tool_call_id(tr.tool_call_id.as_deref().unwrap_or_default()))
-                            .set_content(Some(convert_tool_result_content(&tr.content)))
-                            .status(status)
-                            .build()
-                        {
-                            content.push(BedrockContent::ToolResult(trb));
-                        }
-                        i += 1;
-                    }
-                    messages.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
-                }
+        let messages = match build_bedrock_messages(&context.messages, model, opts) {
+            Ok(m) => m,
+            Err(msg) => {
+                yield Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(msg)),
+                    message: None,
+                };
+                return;
             }
-        }
-
-        // Prompt caching: add cache points to the last user message and the system prompt
-        // for supported Claude models. Retention is resolved (defaults to short caching on).
+        };
         let retention = crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref());
         let cache_long = matches!(retention, CacheRetention::Long);
         let cache_enabled = retention != CacheRetention::None
             && supports_bedrock_prompt_caching(model);
-        if cache_enabled
-            && let Some(last) = messages.pop() {
-            if last.role() == &ConversationRole::User {
-                let mut content = last.content().to_vec();
-                content.push(BedrockContent::CachePoint(bedrock_cache_point(cache_long)));
-                messages.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
-            } else {
-                messages.push(last);
-            }
-        }
 
         let mut req = client
             .converse_stream()

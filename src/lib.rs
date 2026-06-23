@@ -82,6 +82,8 @@ mod azure_openai_base_url_test;
 #[cfg(test)]
 mod bedrock_endpoint_test;
 #[cfg(test)]
+mod bedrock_coalesce_test;
+#[cfg(test)]
 mod codex_request_shape_test;
 #[cfg(test)]
 mod codex_ws_connection_limit_test;

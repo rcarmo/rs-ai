@@ -44,9 +44,25 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 ## Pending high-value adaptations (next cycles)
 
 1. `TestProcessSSEStreamAttachesPendingEncryptedReasoningDetails` — encrypted-reasoning replay edge.
-2. `TestConvertMessagesCoalescesConsecutiveToolResults` (bedrock) — rs-ai coalesces correctly (verified) but the logic is inline in `stream_bedrock`; needs a testable `build_bedrock_messages` extraction.
+2. `TestConvertMessagesCoalescesConsecutiveToolResults` (bedrock) — ADAPTED: extracted a testable `build_bedrock_messages` and ported the coalescing + cache-point assertion (`src/bedrock_coalesce_test.rs`).
 3. `TestBedrockOptionPrecedenceAndRequestMetadata` — region option precedence + request metadata propagation.
 4. OAuth `TestGetAPIKeyRefreshesExpiredCredential` — blocked on credential-store seam (parity-gaps top-3 #2).
+
+## Reverse-direction gaps (rs-ai AHEAD — @go-ai / @swift-ai should adopt)
+
+Cases where rs-ai matches canonical upstream (`ec6311b`) but the reference port
+@go-ai currently diverges. Routed for the auditor to push downstream.
+
+| # | Edge case | rs-ai (matches upstream) | @go-ai (diverges) |
+|---|---|---|---|
+| R1 | "No API key for provider" casing | `No API key for provider: <p>` across all providers + images | lowercase `no API key for provider` (openai/codex); `No API key **available** for provider` (images) |
+| R2 | bedrock `MessageStart` role validation | throws `Unexpected assistant message start but got user message start instead` | `MessageStart` case just emits StartEvent; no role check |
+| R3 | codex SSE/WS terminal-error strings | SSE `OpenAI Responses stream ended before a terminal response event`; WS `WebSocket stream closed before response.completed` | no codex-specific terminal-error strings |
+| R4 | anthropic SSE `error` event surfacing | raw `sse.data` verbatim (no prefix) | no equivalent assertion |
+
+_Note: the WS missing-handshake-header bug rs-ai fixed was rs-ai-specific (rs-ai
+hand-built the `http::Request`); go-ai uses `coder/websocket` `Dial`, which adds
+the RFC6455 headers itself — not a reverse gap._
 
 ## rs-ai locally-authored regression tests (for @go-ai / @swift-ai to adapt)
 
