@@ -289,8 +289,13 @@ async fn try_websocket(
         .await
         .map_err(|e| e.to_string())?;
 
-    // Send the request payload
-    ws.send(tungstenite::Message::Text(serde_json::to_string(payload).unwrap().into()))
+    // Send the request as a `response.create` message: upstream sends
+    // JSON.stringify({ type: "response.create", ...requestBody }) over the socket.
+    let mut ws_msg = payload.clone();
+    if let Some(obj) = ws_msg.as_object_mut() {
+        obj.insert("type".to_string(), Value::String("response.create".to_string()));
+    }
+    ws.send(tungstenite::Message::Text(serde_json::to_string(&ws_msg).unwrap().into()))
         .await
         .map_err(|e| e.to_string())?;
 
