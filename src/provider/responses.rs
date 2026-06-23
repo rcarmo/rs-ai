@@ -628,7 +628,15 @@ fn stream_responses_inner<'a>(
                 yield Event::Done { reason, message: partial };
             }
             None => {
-                yield Event::Done { reason: StopReason::Stop, message: partial };
+                // Upstream's decoder throws when the stream ends without a terminal response
+                // event (response.completed/incomplete/failed); surface that as an error.
+                yield Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                        "OpenAI Responses stream ended before a terminal response event".to_string(),
+                    )),
+                    message: Some(partial),
+                };
             }
         }
     })

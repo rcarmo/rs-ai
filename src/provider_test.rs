@@ -524,6 +524,39 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_responses_no_terminal_event_is_error() {
+        use crate::provider::responses::stream_responses;
+        // A responses stream that ends without a terminal event (response.completed/
+        // incomplete/failed) must be an error (upstream throws "ended before a terminal
+        // response event"), not a clean Done.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\n\
+                     data: {\"type\":\"response.output_text.delta\",\"delta\":\"hi\"}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-responses", "openai", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_responses(&model, &ctx, &opts);
+        let mut saw_error = false;
+        let mut saw_done = false;
+        while let Some(evt) = stream.next().await {
+            match evt {
+                Event::Error { .. } => saw_error = true,
+                Event::Done { .. } => saw_done = true,
+                _ => {}
+            }
+        }
+        assert!(saw_error, "no-terminal responses stream must produce an Error");
+        assert!(!saw_done, "no-terminal responses stream must not produce a Done");
+    }
+
+    #[tokio::test]
     async fn test_responses_unknown_status_maps_to_error() {
         use crate::provider::responses::stream_responses;
         // Upstream's responses mapStopReason throws on an unknown status; this must be
