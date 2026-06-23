@@ -239,10 +239,22 @@ pub fn stream_codex<'a>(
                     }
                     if done { break; }
                 }
-                let final_events = state.finish();
-                while emitted < final_events.len() {
-                    yield final_events[emitted].clone();
-                    emitted += 1;
+                if !done {
+                    // Upstream's shared decoder throws when the codex stream ends without a
+                    // terminal response event; surface that as an error rather than a clean Done.
+                    yield Event::Error {
+                        reason: StopReason::Error,
+                        error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Codex stream ended before a terminal response event".to_string(),
+                        )),
+                        message: Some(state.partial.clone()),
+                    };
+                } else {
+                    let final_events = state.finish();
+                    while emitted < final_events.len() {
+                        yield final_events[emitted].clone();
+                        emitted += 1;
+                    }
                 }
         }
     })
@@ -302,6 +314,7 @@ async fn try_websocket(
     let mut state = CodexWsState::new(model);
     state.service_tier = opts.service_tier.clone();
 
+    let mut saw_terminal = false;
     while let Some(msg) = ws.next().await {
         let msg = msg.map_err(|e| e.to_string())?;
         let text = match msg {
@@ -313,8 +326,17 @@ async fn try_websocket(
         let data: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
         let is_done = state.process_event(&data);
         if is_done {
+            saw_terminal = true;
             break;
         }
+    }
+
+    // Upstream's parseWebSocket onClose raises a WebSocketCloseError when the socket
+    // closes before a terminal response event (response.completed/done/incomplete or
+    // an error), which the caller treats as a WS failure and falls back to SSE. Mirror
+    // that here rather than reporting a clean Done.
+    if !saw_terminal {
+        return Err("Codex WebSocket closed before a terminal response event".to_string());
     }
 
     Ok(state.finish())

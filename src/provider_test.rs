@@ -1950,6 +1950,41 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_codex_sse_no_terminal_is_error() {
+        use crate::provider::codex::stream_codex;
+        use crate::types::Transport;
+        // An SSE stream that ends without a terminal response event (no
+        // response.completed/done/incomplete) must be an error, not a clean Done
+        // (mirrors the shared decoder's "ended before a terminal response event").
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"codex\"}}\n\n\
+                     data: {\"type\":\"response.output_text.delta\",\"delta\":\"hi\"}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let mut model = test_model("openai-codex-responses", "openai", &server.uri());
+        model.api_key = Some("test-key".into());
+        let opts = StreamOptions { transport: Some(Transport::Sse), ..Default::default() };
+        let ctx = test_context();
+        let mut stream = stream_codex(&model, &ctx, &opts);
+        let mut saw_error = false;
+        let mut saw_done = false;
+        while let Some(evt) = stream.next().await {
+            match evt {
+                Event::Error { .. } => saw_error = true,
+                Event::Done { .. } => saw_done = true,
+                _ => {}
+            }
+        }
+        assert!(saw_error, "no-terminal codex SSE must produce an Error");
+        assert!(!saw_done, "no-terminal codex SSE must not produce a Done");
+    }
+
+    #[tokio::test]
     async fn test_codex_ws_fallback_is_sticky_per_session() {
         use crate::provider::codex::{stream_codex, clear_ws_fallback};
         clear_ws_fallback(Some("sess-sticky"));
