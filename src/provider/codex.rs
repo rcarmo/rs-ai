@@ -680,7 +680,7 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
         "stream": true,
         "instructions": instructions,
         "input": input,
-        "text": { "verbosity": opts.text_verbosity.clone().unwrap_or_else(|| "low".to_string()) },
+        "text": { "verbosity": opts.text_verbosity.clone().filter(|s| !s.is_empty()).unwrap_or_else(|| "low".to_string()) },
         "include": ["reasoning.encrypted_content"],
         "tool_choice": "auto",
         "parallel_tool_calls": true,
