@@ -200,13 +200,28 @@ fn number_value(n: f64) -> Value {
     }
 }
 
+/// Mirror JavaScript `Number(string)` for the already-trimmed, non-empty case:
+/// hex/octal/binary prefixes (0x/0o/0b) parse as integers; everything else parses
+/// as a decimal/scientific float. Rust's `f64::parse` rejects the radix prefixes
+/// that JS accepts, so handle them explicitly to coerce the same values upstream does.
+fn js_number(t: &str) -> Option<f64> {
+    let radix_digits = t.strip_prefix("0x").or_else(|| t.strip_prefix("0X")).map(|d| (16u32, d))
+        .or_else(|| t.strip_prefix("0o").or_else(|| t.strip_prefix("0O")).map(|d| (8u32, d)))
+        .or_else(|| t.strip_prefix("0b").or_else(|| t.strip_prefix("0B")).map(|d| (2u32, d)));
+    if let Some((radix, digits)) = radix_digits {
+        // JS requires at least one digit and rejects a sign on radix literals.
+        return u64::from_str_radix(digits, radix).ok().map(|n| n as f64);
+    }
+    t.parse::<f64>().ok()
+}
+
 fn coerce_primitive_by_type(value: &Value, ty: &str) -> Value {
     match ty {
         "number" => {
             if value.is_null() { return json!(0); }
             if let Some(s) = value.as_str()
                 && !s.trim().is_empty()
-                && let Ok(p) = s.trim().parse::<f64>()
+                && let Some(p) = js_number(s.trim())
                 && p.is_finite() {
                 return number_value(p);
             }
@@ -217,7 +232,7 @@ fn coerce_primitive_by_type(value: &Value, ty: &str) -> Value {
             if value.is_null() { return json!(0); }
             if let Some(s) = value.as_str()
                 && !s.trim().is_empty()
-                && let Ok(p) = s.trim().parse::<f64>()
+                && let Some(p) = js_number(s.trim())
                 && p.fract() == 0.0 {
                 return number_value(p);
             }
@@ -466,6 +481,25 @@ mod coercion_tests {
         assert_eq!(out["i"], json!(7));
         assert_eq!(out["b"], json!(true));
         assert_eq!(out["s"], json!("42"));
+    }
+
+    #[test]
+    fn test_coerce_radix_prefixed_number_strings() {
+        // JS Number() parses 0x/0o/0b prefixes; coercion must accept them too so a
+        // tool call isn't rejected where upstream would coerce + accept it.
+        let t = Tool { name: "t".into(), description: "d".into(), parameters: json!({
+            "type": "object",
+            "properties": { "n": {"type": "number"}, "i": {"type": "integer"} },
+            "required": ["n", "i"],
+        }) };
+        let out = validate_tool_arguments(&t, &json!({"n": "0x1f", "i": "0b101"})).unwrap();
+        assert_eq!(out["n"], json!(31));
+        assert_eq!(out["i"], json!(5));
+        // Decimal/scientific still work; a non-number string still fails coercion.
+        let out2 = validate_tool_arguments(&t, &json!({"n": "1e3", "i": "017"})).unwrap();
+        assert_eq!(out2["n"], json!(1000));
+        assert_eq!(out2["i"], json!(17));
+        assert!(validate_tool_arguments(&t, &json!({"n": "abc", "i": 1})).is_err());
     }
 
     #[test]
