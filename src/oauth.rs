@@ -3,7 +3,6 @@
 //! Provides PKCE, device-code, and token-refresh helpers for:
 //! - GitHub Copilot
 //! - Anthropic
-//! - Google Antigravity
 //! - OpenAI Codex
 
 /// PKCE challenge/verifier pair.
