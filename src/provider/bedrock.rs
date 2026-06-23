@@ -159,7 +159,7 @@ fn bedrock_has_profile() -> bool {
 /// Whether to pin the model base URL as an explicit endpoint (mirrors
 /// shouldUseExplicitBedrockEndpoint): always for custom URLs, and for standard
 /// runtime endpoints only when no region/profile is configured.
-fn bedrock_use_explicit_endpoint(model: &Model) -> bool {
+pub(crate) fn bedrock_use_explicit_endpoint(model: &Model) -> bool {
     match bedrock_standard_endpoint_region(&model.base_url) {
         None => true,
         Some(_) => bedrock_configured_region().is_none() && !bedrock_has_profile(),

@@ -78,3 +78,5 @@ mod registration_test;
 mod mistral_reasoning_mode_test;
 #[cfg(test)]
 mod azure_openai_base_url_test;
+#[cfg(test)]
+mod bedrock_endpoint_test;
