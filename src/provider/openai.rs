@@ -821,8 +821,8 @@ pub(crate) fn build_payload(
         payload["provider"] = routing.clone();
     }
     // Vercel AI Gateway routing preferences -> providerOptions.gateway.
-    if model.base_url.contains("ai-gateway.vercel.sh")
-        && let Some(ref routing) = model.compat.vercel_gateway_routing {
+    // 0.80.x: gated solely on compat.vercelGatewayRouting (baseURL check removed).
+    if let Some(ref routing) = model.compat.vercel_gateway_routing {
         let only = routing.get("only");
         let order = routing.get("order");
         if only.is_some() || order.is_some() {

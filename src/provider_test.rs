@@ -917,11 +917,12 @@ mod tests {
         assert_eq!(p2["providerOptions"]["gateway"]["only"], serde_json::json!(["bedrock"]));
         assert_eq!(p2["providerOptions"]["gateway"]["order"], serde_json::json!(["bedrock"]));
 
-        // Vercel routing is ignored when the base URL is not the Vercel gateway.
+        // 0.80.x: Vercel routing applies whenever compat.vercelGatewayRouting is set,
+        // regardless of base URL (the ai-gateway.vercel.sh gate was removed upstream).
         let mut non_vg = test_model("openai-completions", "openai", "https://example.com");
         non_vg.compat.vercel_gateway_routing = Some(serde_json::json!({"only": ["x"]}));
         let p3 = crate::provider::openai::build_payload(&non_vg, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&non_vg));
-        assert!(p3.get("providerOptions").is_none());
+        assert_eq!(p3["providerOptions"]["gateway"]["only"], serde_json::json!(["x"]));
     }
 
     #[test]
