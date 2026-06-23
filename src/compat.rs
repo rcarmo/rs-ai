@@ -84,27 +84,106 @@ pub fn detect_compat_for_model(model: &Model, overrides: Option<&OpenAICompletio
     c
 }
 
-fn detect_compat_inner(_provider: &str, _model_id: &str, _base_url: &str) -> OpenAICompletionsCompat {
-    // 0.80.x removed runtime URL/provider-based compat detection. Compat is now the
-    // OpenAI-standard DEFAULT_COMPAT overlaid by per-model compat baked into the catalog
-    // (mirrors getCompat: `model.compat.X ?? DEFAULT_COMPAT.X`).
+fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAICompletionsCompat {
+    // 0.80.2 restored runtime provider/baseUrl compat detection (mirrors detectCompat).
+    // Explicit per-model compat baked into the catalog still overlays these (getCompat).
+    let is_zai = provider == "zai"
+        || provider == "zai-coding-cn"
+        || base_url.contains("api.z.ai")
+        || base_url.contains("open.bigmodel.cn");
+    let is_together = provider == "together"
+        || base_url.contains("api.together.ai")
+        || base_url.contains("api.together.xyz");
+    let is_moonshot =
+        provider == "moonshotai" || provider == "moonshotai-cn" || base_url.contains("api.moonshot.");
+    let is_openrouter = provider == "openrouter" || base_url.contains("openrouter.ai");
+    let is_cloudflare_workers_ai =
+        provider == "cloudflare-workers-ai" || base_url.contains("api.cloudflare.com");
+    let is_cloudflare_ai_gateway =
+        provider == "cloudflare-ai-gateway" || base_url.contains("gateway.ai.cloudflare.com");
+    let is_nvidia = provider == "nvidia" || base_url.contains("integrate.api.nvidia.com");
+    let is_ant_ling = provider == "ant-ling" || base_url.contains("api.ant-ling.com");
+    let is_non_standard = is_nvidia
+        || provider == "cerebras"
+        || base_url.contains("cerebras.ai")
+        || provider == "xai"
+        || base_url.contains("api.x.ai")
+        || is_together
+        || base_url.contains("chutes.ai")
+        || base_url.contains("deepseek.com")
+        || is_zai
+        || is_moonshot
+        || provider == "opencode"
+        || base_url.contains("opencode.ai")
+        || is_cloudflare_workers_ai
+        || is_cloudflare_ai_gateway
+        || is_ant_ling;
+    let use_max_tokens = base_url.contains("chutes.ai")
+        || is_moonshot
+        || is_cloudflare_ai_gateway
+        || is_together
+        || is_nvidia
+        || is_ant_ling;
+    let is_grok = provider == "xai" || base_url.contains("api.x.ai");
+    let is_deepseek = provider == "deepseek" || base_url.contains("deepseek.com");
+    let is_openrouter_developer_role_model =
+        is_openrouter && (model_id.starts_with("anthropic/") || model_id.starts_with("openai/"));
+    let cache_control_format = if provider == "openrouter" && model_id.starts_with("anthropic/") {
+        Some("anthropic".to_string())
+    } else {
+        None
+    };
+    let thinking_format = if is_deepseek {
+        "deepseek"
+    } else if is_zai {
+        "zai"
+    } else if is_together {
+        "together"
+    } else if is_ant_ling {
+        "ant-ling"
+    } else if is_openrouter {
+        "openrouter"
+    } else {
+        "openai"
+    };
     OpenAICompletionsCompat {
-        supports_store: Some(true),
-        supports_developer_role: Some(true),
-        supports_reasoning_effort: Some(true),
+        supports_store: Some(!is_non_standard),
+        supports_developer_role: Some(
+            is_openrouter_developer_role_model || (!is_non_standard && !is_openrouter),
+        ),
+        supports_reasoning_effort: Some(
+            !is_grok
+                && !is_zai
+                && !is_moonshot
+                && !is_together
+                && !is_cloudflare_ai_gateway
+                && !is_nvidia
+                && !is_ant_ling,
+        ),
         supports_usage_in_streaming: Some(true),
+        // supports_temperature is an rs-ai extension (not in upstream compat); default on.
         supports_temperature: Some(true),
-        max_tokens_field: Some("max_completion_tokens".to_string()),
+        max_tokens_field: Some(
+            if use_max_tokens { "max_tokens" } else { "max_completion_tokens" }.to_string(),
+        ),
         requires_tool_result_name: Some(false),
         requires_thinking_as_text: Some(false),
         requires_assistant_after_tool_result: Some(false),
-        requires_reasoning_content_on_assistant_messages: Some(false),
-        thinking_format: Some("openai".to_string()),
+        requires_reasoning_content_on_assistant_messages: Some(is_deepseek),
+        thinking_format: Some(thinking_format.to_string()),
         zai_tool_stream: Some(false),
-        supports_strict_mode: Some(true),
-        cache_control_format: None,
+        supports_strict_mode: Some(
+            !is_moonshot && !is_together && !is_cloudflare_ai_gateway && !is_nvidia,
+        ),
+        cache_control_format,
         supports_session_affinity_headers: Some(false),
-        supports_long_cache_retention: Some(true),
+        supports_long_cache_retention: Some(
+            !(is_together
+                || is_cloudflare_workers_ai
+                || is_cloudflare_ai_gateway
+                || is_nvidia
+                || is_ant_ling),
+        ),
         ..Default::default()
     }
 }

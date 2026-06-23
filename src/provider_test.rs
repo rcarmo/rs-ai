@@ -1105,17 +1105,17 @@ mod tests {
 
     #[test]
     fn test_openai_detected_thinking_format_priority() {
-        // 0.80.x: thinkingFormat comes from per-model compat (baked catalog), not URL
-        // detection; a model with no compat defaults to "openai".
+        // 0.80.2: thinkingFormat comes from per-model compat overlaying the detected base.
+        // A standard provider with no compat defaults to "openai".
         let mk = |fmt: Option<&str>| {
-            let mut m = test_model("openai-completions", "deepseek", "https://api.deepseek.com");
+            let mut m = test_model("openai-completions", "openai", "https://api.openai.com");
             m.compat.thinking_format = fmt.map(|s| s.to_string());
             crate::compat::detect_compat(&m).thinking_format
         };
         assert_eq!(mk(Some("deepseek")).as_deref(), Some("deepseek"));
         assert_eq!(mk(Some("zai")).as_deref(), Some("zai"));
         assert_eq!(mk(Some("together")).as_deref(), Some("together"));
-        assert_eq!(mk(None).as_deref(), Some("openai")); // no compat -> default
+        assert_eq!(mk(None).as_deref(), Some("openai")); // standard provider, no compat -> default
     }
 
     #[test]
@@ -2997,19 +2997,19 @@ mod tests {
     #[test]
     fn test_anthropic_needs_session_affinity() {
         use crate::provider::anthropic::anthropic_needs_session_affinity;
-        // Fireworks default true.
+        // 0.80.2: static default false; fireworks/cloudflare values now come from the catalog.
         let fw = test_model("anthropic-messages", "fireworks", "https://api.fireworks.ai/inference");
-        assert!(anthropic_needs_session_affinity(&fw));
+        assert!(!anthropic_needs_session_affinity(&fw));
         // Plain Anthropic default false.
         let an = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
         assert!(!anthropic_needs_session_affinity(&an));
-        // Anthropic via Cloudflare AI Gateway default true.
+        // Cloudflare AI Gateway also defaults false now (no runtime detection).
         let cf = test_model("anthropic-messages", "cloudflare-ai-gateway", "https://gateway.ai.cloudflare.com/v1/a/b/anthropic");
-        assert!(anthropic_needs_session_affinity(&cf));
-        // Explicit compat override wins (opt-out on a fireworks model).
-        let mut fw_off = fw.clone();
-        fw_off.compat.send_session_affinity_headers = Some(false);
-        assert!(!anthropic_needs_session_affinity(&fw_off));
+        assert!(!anthropic_needs_session_affinity(&cf));
+        // Explicit compat override wins (opt-in via baked catalog compat).
+        let mut fw_on = fw.clone();
+        fw_on.compat.send_session_affinity_headers = Some(true);
+        assert!(anthropic_needs_session_affinity(&fw_on));
         // Explicit opt-in on a plain model.
         let mut an_on = an.clone();
         an_on.compat.send_session_affinity_headers = Some(true);
@@ -3216,10 +3216,12 @@ mod tests {
         let f_off = anthropic_beta_features(&model, &ctx_tools, false, false);
         assert!(!f_off.contains(&"interleaved-thinking-2025-05-14"));
 
-        // Fireworks defaults to NOT eager -> fine-grained applied.
+        // 0.80.2: fireworks no longer special-cased at runtime; a bare fireworks model
+        // defaults to eager streaming -> fine-grained NOT applied. (Catalog fireworks
+        // models bake supports_eager_tool_input_streaming=false; see explicit override below.)
         let fw = test_model("anthropic-messages", "fireworks", "https://api.fireworks.ai");
         let f = anthropic_beta_features(&fw, &ctx_tools, false, true);
-        assert!(f.contains(&"fine-grained-tool-streaming-2025-05-14"));
+        assert!(!f.contains(&"fine-grained-tool-streaming-2025-05-14"));
 
         // Adaptive-thinking model: interleaved is omitted (built in).
         let mut adaptive = model.clone();

@@ -82,8 +82,7 @@ pub fn stream_anthropic<'a>(
     }
 
     // Session affinity header for providers that require it (mirrors getAnthropicCompat
-    // sendSessionAffinityHeaders: explicit compat override, else fireworks or the
-    // Anthropic-via-Cloudflare-AI-Gateway default).
+    // sendSessionAffinityHeaders: explicit per-model compat override, else false in 0.80.2).
     if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
         && anthropic_needs_session_affinity(model)
         && let Ok(val) = HeaderValue::from_str(session_id) {
@@ -488,14 +487,9 @@ const CLAUDE_CODE_TOOLS: &[&str] = &[
 ];
 
 /// Whether to send the Anthropic `x-session-affinity` header (mirrors getAnthropicCompat
-/// sendSessionAffinityHeaders: explicit compat override, else fireworks or Anthropic-via-CF-gateway).
+/// sendSessionAffinityHeaders: explicit compat override, else false in 0.80.2).
 pub(crate) fn anthropic_needs_session_affinity(model: &Model) -> bool {
-    model.compat.send_session_affinity_headers.unwrap_or_else(|| {
-        let is_fireworks = model.provider == "fireworks";
-        let is_cf_anthropic =
-            model.provider == "cloudflare-ai-gateway" && model.base_url.contains("anthropic");
-        is_fireworks || is_cf_anthropic
-    })
+    model.compat.send_session_affinity_headers.unwrap_or(false)
 }
 
 /// Normalize a tool-call id for Anthropic (mirrors upstream `normalizeToolCallId`):
@@ -566,11 +560,12 @@ pub(crate) struct AnthropicCompat {
 }
 
 pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
-    let is_fireworks = model.provider == "fireworks";
+    // 0.80.2 made these static defaults (was `!isFireworks`); fireworks-specific values
+    // now come from explicit per-model compat baked into the catalog.
     AnthropicCompat {
-        supports_eager_tool_input_streaming: model.compat.supports_eager_tool_input_streaming.unwrap_or(!is_fireworks),
-        supports_long_cache_retention: model.compat.supports_long_cache_retention.unwrap_or(!is_fireworks),
-        supports_cache_control_on_tools: model.compat.supports_cache_control_on_tools.unwrap_or(!is_fireworks),
+        supports_eager_tool_input_streaming: model.compat.supports_eager_tool_input_streaming.unwrap_or(true),
+        supports_long_cache_retention: model.compat.supports_long_cache_retention.unwrap_or(true),
+        supports_cache_control_on_tools: model.compat.supports_cache_control_on_tools.unwrap_or(true),
         supports_temperature: model.compat.supports_temperature.unwrap_or(true),
         allow_empty_signature: model.compat.allow_empty_signature.unwrap_or(false),
     }

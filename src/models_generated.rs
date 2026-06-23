@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
 //! Source: models.generated.js (999 models, 35 providers)
-//! Generated: 2026-06-23T18:16:00.789896Z
+//! Generated: 2026-06-23T22:20:31.833361Z
 
 #![allow(clippy::approx_constant)]
 
@@ -11759,9 +11759,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.68_f64, output: 3.41_f64, cache_read: 0.144_f64, cache_write: 0_f64 },
+            cost: ModelCost { input: 0.74_f64, output: 3.5_f64, cache_read: 0.15_f64, cache_write: 0_f64 },
             context_window: 262144,
-            max_tokens: 262144,
+            max_tokens: 16384,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -14594,9 +14594,9 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.98_f64, output: 3.08_f64, cache_read: 0.182_f64, cache_write: 0_f64 },
+            cost: ModelCost { input: 0.95_f64, output: 3_f64, cache_read: 0.18_f64, cache_write: 0_f64 },
             context_window: 1048576,
-            max_tokens: 4096,
+            max_tokens: 32768,
             headers: None,
             api_key: None,
             compat: ModelCompat {
