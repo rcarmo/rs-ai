@@ -74,3 +74,5 @@ mod final_coverage_test;
 mod edge_case_test;
 #[cfg(test)]
 mod registration_test;
+#[cfg(test)]
+mod mistral_reasoning_mode_test;

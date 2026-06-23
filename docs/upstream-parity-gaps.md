@@ -136,15 +136,19 @@ validation, xhigh, xiaomi-models, zen, empty.
   (AbortSignal, HTTP proxy, CLI, lazy-loader).
 - **Providers:** 100% catalog parity; runtime exercised for all non-credential-gated
   providers.
-- **Tests:** ~75 of 87 upstream test files are behaviourally covered by rs-ai's 379
-  tests, but **0% are ported test-for-test** with upstream names/values (bar #2 open).
+- **Tests:** ~75 of 87 upstream test files are behaviourally covered by rs-ai's 386
+  tests. **1 file is now ported test-for-test** with upstream names/values
+  (`mistral-reasoning-mode.test.ts` -> `src/mistral_reasoning_mode_test.rs`, 7/7);
+  the remaining ~74 covered files are behaviourally equivalent but not yet
+  name-for-name ports (bar #2 in progress).
 
 ## Top 3 gaps (highest leverage first)
 
-1. **Test-for-test port (bar #2).** Re-express the ~75 behaviourally-covered upstream
-   `*.test.ts` as named rs-ai tests with identical fixtures/expected values, starting
-   with the highest-signal protocol tests (sse-parsing, tool-call-id-normalization,
-   transform-messages, terminal-event, unicode-surrogate).
+1. **Test-for-test port (bar #2).** Re-express the ~74 remaining behaviourally-covered
+   upstream `*.test.ts` as named rs-ai tests with identical fixtures/expected values.
+   Started: `mistral-reasoning-mode.test.ts` ported 7/7. Next highest-signal:
+   `openai-completions-tool-choice.test.ts` (41), `openai-codex-stream.test.ts` (16),
+   `azure-openai-base-url.test.ts` (11), `tool-call-id-normalization` (issue #1022 fixture).
 2. **Auth/credential abstraction (`auth/resolve.ts` + `credential-store.ts`).** rs-ai
    resolves keys ad-hoc from env; upstream has a `resolveProviderAuth` +
    `InMemoryCredentialStore` seam. Porting it (env-backed default) would unlock the
