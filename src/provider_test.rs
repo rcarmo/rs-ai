@@ -2308,7 +2308,8 @@ mod tests {
             if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
         }
         let e = err.unwrap();
-        // Both the error type and the message are surfaced.
+        // Upstream throws the raw error-event data verbatim (no "SSE error:" prefix).
+        assert!(!e.starts_with("SSE error:"), "must not prefix the raw data: {e}");
         assert!(e.contains("overloaded_error"));
         assert!(e.contains("server overloaded"));
     }

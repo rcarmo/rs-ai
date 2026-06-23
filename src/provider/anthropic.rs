@@ -205,10 +205,12 @@ pub fn stream_anthropic<'a>(
 
             for evt in parser.feed_bytes(&chunk_bytes) {
                 if evt.event == sse::EVENT_ERROR {
+                    // Upstream anthropic-messages throws `new Error(sse.data)` — the raw
+                    // error-event data verbatim, with no prefix.
                     yield Event::Error {
                         reason: StopReason::Error,
                         error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                            format!("SSE error: {}", evt.data),
+                            evt.data.clone(),
                         )),
                         message: Some(partial.clone()),
                     };
@@ -446,7 +448,7 @@ pub fn stream_anthropic<'a>(
                 yield Event::Error {
                     reason: StopReason::Error,
                     error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                        format!("SSE error: {}", evt.data),
+                        evt.data.clone(),
                     )),
                     message: Some(partial.clone()),
                 };
