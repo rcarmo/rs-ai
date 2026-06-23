@@ -69,6 +69,28 @@ mod tests {
         assert!(msgs.iter().all(|m| m["role"] != "user"), "empty user message must be skipped");
     }
 
+    #[test]
+    fn test_openai_whitespace_only_assistant_text_skipped() {
+        // Upstream convertMessages filters whitespace-only assistant text blocks
+        // (block.text.trim().length > 0). An assistant message whose only text block
+        // is whitespace, with no tool calls or thinking, must be skipped entirely.
+        let model = test_model("openai-completions", "openai", "https://example.com");
+        let ws = Message {
+            role: Role::Assistant,
+            content: vec![ContentBlock::Text { text: "   \n  ".into(), text_signature: None }],
+            timestamp: 0,
+            api: None, provider: None, model: None, response_id: None,
+            response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: None, error_message: None,
+            tool_call_id: None, tool_name: None, is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, messages: vec![ws], tools: vec![] };
+        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let msgs = payload["messages"].as_array().unwrap();
+        assert!(msgs.iter().all(|m| m["role"] != "assistant"),
+            "whitespace-only assistant message must be skipped, got: {:?}", msgs);
+    }
+
     #[tokio::test]
     async fn test_openai_stream_text() {
         let server = MockServer::start().await;

@@ -537,8 +537,11 @@ pub(crate) fn build_payload(
             Role::ToolResult => unreachable!(),
         };
 
+        // Assistant text parts mirror upstream `assistantTextParts`: whitespace-only
+        // text blocks are filtered out (block.text.trim().length > 0) before joining
+        // or spreading. Used only by the assistant branch below.
         let text_blocks: Vec<String> = msg.content.iter().filter_map(|b| match b {
-            ContentBlock::Text { text, .. } => Some(text.clone()),
+            ContentBlock::Text { text, .. } if !text.trim().is_empty() => Some(text.clone()),
             _ => None,
         }).collect();
         let tool_call_blocks: Vec<Value> = msg.content.iter().filter_map(|b| match b {
@@ -562,11 +565,13 @@ pub(crate) fn build_payload(
             let assistant_text = if text_blocks.is_empty() { String::new() } else { text_blocks.join("") };
 
             if !thinking_blocks.is_empty() && compat.requires_thinking_as_text == Some(true) {
-                // Convert thinking blocks into a leading text block (no tags).
+                // Convert thinking blocks into a leading text block (no tags), then
+                // spread the assistant text parts as separate items (matches upstream
+                // `[{thinkingText}, ...assistantTextParts]`).
                 let thinking_text = thinking_blocks.iter().map(|(t, _)| t.as_str()).collect::<Vec<_>>().join("\n\n");
                 let mut parts = vec![json!({"type": "text", "text": thinking_text})];
-                if !assistant_text.is_empty() {
-                    parts.push(json!({"type": "text", "text": assistant_text}));
+                for t in &text_blocks {
+                    parts.push(json!({"type": "text", "text": t}));
                 }
                 json!(parts)
             } else if assistant_text.is_empty() {
