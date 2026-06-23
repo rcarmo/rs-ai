@@ -101,6 +101,12 @@ Tracks `@earendil-works/pi-ai` `0.80.1`. Known divergences from upstream:
   This port reads the process environment natively; with no scoped overlay supplied the
   behavior is identical (the upstream fallback chain ends at `process.env`), so the
   overlay parameter is intentionally not plumbed through.
+- **HTTP proxy for Bedrock/Codex**: upstream wires `resolveHttpProxyUrlForTarget`
+  (HTTP_PROXY/HTTPS_PROXY/NO_PROXY) into the Bedrock AWS SDK request handler and the
+  Codex WebSocket. This port's standard HTTP providers honor those proxy variables
+  automatically via reqwest's default client, but the Rust AWS SDK (Bedrock) and the
+  Codex transport use their default transports and do not auto-resolve an explicit
+  proxy URL. Direct (non-proxied) Bedrock/Codex connections are unaffected.
 
 ## Credits
 
