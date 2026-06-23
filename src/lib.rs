@@ -89,3 +89,7 @@ mod codex_ws_connection_limit_test;
 mod codex_ws_protocol_test;
 #[cfg(test)]
 mod validation_upstream_test;
+#[cfg(test)]
+mod responses_foreign_toolcall_id_test;
+#[cfg(test)]
+mod responses_message_id_test;

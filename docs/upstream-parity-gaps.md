@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 3** / COVERED 69 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 5** / COVERED 67 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -157,8 +157,8 @@ _Generated. Total **86** upstream test files — **PORTED 3** / COVERED 69 / N/A
 | 59 | `openai-completions-tool-result-images.test.ts` | no | — | 1 cases to port name-for-name |
 | 60 | `openai-responses-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
 | 61 | `openai-responses-copilot-provider.test.ts` | n/a | — | credential/runtime-gated |
-| 62 | `openai-responses-foreign-toolcall-id.test.ts` | no | — | 1 cases to port name-for-name |
-| 63 | `openai-responses-message-id.test.ts` | no | — | 1 cases to port name-for-name |
+| 62 | `openai-responses-foreign-toolcall-id.test.ts` | yes | yes | src/responses_foreign_toolcall_id_test.rs |
+| 63 | `openai-responses-message-id.test.ts` | yes | yes | src/responses_message_id_test.rs |
 | 64 | `openai-responses-partial-json-cleanup.test.ts` | no | — | 1 cases to port name-for-name |
 | 65 | `openai-responses-reasoning-replay-e2e.test.ts` | no | — | 3 cases to port name-for-name |
 | 66 | `openai-responses-terminal-event.test.ts` | no | — | 5 cases to port name-for-name |
