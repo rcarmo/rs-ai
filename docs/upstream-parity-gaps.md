@@ -153,7 +153,7 @@ _Generated. Total **86** upstream test files — **PORTED 5** / COVERED 67 / N/A
 | 55 | `openai-completions-response-model.test.ts` | no | — | 3 cases to port name-for-name |
 | 56 | `openai-completions-retry.test.ts` | no | — | 2 cases to port name-for-name |
 | 57 | `openai-completions-thinking-as-text.test.ts` | no | — | 3 cases to port name-for-name |
-| 58 | `openai-completions-tool-choice.test.ts` | no | — | 41 cases to port name-for-name |
+| 58 | `openai-completions-tool-choice.test.ts` | partial | yes (22/41) | src/openai_completions_tool_choice_test.rs (payload+metadata+stream; remaining: mixed-delta/coalescing/chat-template/compat-metadata) |
 | 59 | `openai-completions-tool-result-images.test.ts` | no | — | 1 cases to port name-for-name |
 | 60 | `openai-responses-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
 | 61 | `openai-responses-copilot-provider.test.ts` | n/a | — | credential/runtime-gated |
