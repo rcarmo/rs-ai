@@ -88,11 +88,13 @@ Tracks `@earendil-works/pi-ai` `0.80.1`. Known divergences from upstream:
   honors `StreamOptions` retry fields (`max_retries`, `max_retry_delay_ms`,
   `retry_config`) via `retry::do_with_retry` across the HTTP providers; Bedrock uses
   the AWS SDK's own retry. There is no implicit default retry when no options are set.
-- **Header-based request auth (Anthropic)**: upstream 0.80.x added `assertRequestAuth`,
-  allowing a request to authenticate via an `authorization`/`x-api-key`/`cf-aig-authorization`
-  header instead of an explicit API key. This port still requires a resolved API key for the
-  Anthropic provider (it does not thread per-request custom headers into that request path),
-  so header-only auth for Anthropic is not yet supported. All other parity holds.
+- **Header-based request auth**: upstream 0.80.x added `getClientApiKey`/`assertRequestAuth`,
+  allowing a request to authenticate via an `authorization`/`cf-aig-authorization` header
+  instead of an explicit API key. This port mirrors that via `env::client_api_key`: when no
+  API key is configured but `StreamOptions.headers` carries an `authorization` or
+  `cf-aig-authorization` header, the OpenAI/Responses/Anthropic providers proceed with an
+  `"unused"` placeholder and let the supplied header own auth (options headers are merged
+  last, overriding any provider-built `Authorization`/`cf-aig-authorization`).
 - **Scoped `options.env`**: upstream 0.79.5 threads an optional `options.env` map
   through every provider via `getProviderEnvValue(name, env)` so callers can supply a
   per-request environment overlay (plus a Bun `/proc/self/environ` sandbox fallback).

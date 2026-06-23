@@ -7,7 +7,7 @@ use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use serde_json::{json, Value};
 
 use crate::compat::detect_compat;
-use crate::env::resolve_api_key;
+use crate::env::client_api_key;
 use crate::events::Event;
 use crate::transports::sse;
 use crate::types::*;
@@ -18,7 +18,7 @@ pub fn stream_openai<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
-    let api_key = resolve_api_key(model, opts);
+    let api_key = client_api_key(model, opts);
     if api_key.is_none() {
         let err = Event::Error {
             reason: StopReason::Error,

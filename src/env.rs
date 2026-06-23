@@ -95,3 +95,24 @@ pub fn resolve_api_key(model: &Model, opts: &StreamOptions) -> Option<String> {
     }
     get_env_api_key(&model.provider)
 }
+
+/// Mirrors upstream `getClientApiKey` (0.80.x): returns the resolved API key, or a
+/// `"unused"` placeholder when no key is configured but an `authorization` or
+/// `cf-aig-authorization` header is supplied via options (header-owned auth, e.g. a
+/// Cloudflare AI Gateway). Returns `None` only when neither a key nor an auth header
+/// is present, in which case the caller raises the "no API key" error.
+pub fn client_api_key(model: &Model, opts: &StreamOptions) -> Option<String> {
+    if let Some(key) = resolve_api_key(model, opts) {
+        return Some(key);
+    }
+    if let Some(ref headers) = opts.headers {
+        let has_auth_header = headers.keys().any(|k| {
+            let lk = k.to_ascii_lowercase();
+            lk == "authorization" || lk == "cf-aig-authorization"
+        });
+        if has_auth_header {
+            return Some("unused".to_string());
+        }
+    }
+    None
+}
