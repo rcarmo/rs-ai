@@ -11,6 +11,23 @@ use crate::provider::responses;
 use crate::transports::sse;
 use crate::types::*;
 
+/// Build the Codex User-Agent, mirroring upstream `pi (${os.platform()} ${os.release()}; ${os.arch()})`
+/// as closely as std allows. Platform/arch are mapped to Node's naming (darwin/win32, x64/arm64);
+/// the OS release is omitted (std exposes no portable release without a libc/uname dependency).
+fn codex_user_agent() -> String {
+    let platform = match std::env::consts::OS {
+        "macos" => "darwin",
+        "windows" => "win32",
+        other => other,
+    };
+    let arch = match std::env::consts::ARCH {
+        "x86_64" => "x64",
+        "aarch64" => "arm64",
+        other => other,
+    };
+    format!("pi ({platform}; {arch})")
+}
+
 /// Sessions whose Codex WebSocket transport has failed; subsequent requests for
 /// these sessions skip WebSocket and use SSE directly (mirrors upstream
 /// websocketSseFallbackSessions).
@@ -129,7 +146,7 @@ pub fn stream_codex<'a>(
                 // Fallback to SSE using the Codex request body and headers.
                 let url = format!("{}/responses", model.base_url.trim_end_matches('/'));
                 let account_id = crate::oauth::codex_account_id(&api_key);
-                let user_agent = format!("pi ({}; {})", std::env::consts::OS, std::env::consts::ARCH);
+                let user_agent = codex_user_agent();
                 let client = reqwest::Client::new();
                 let mut req = client
                     .post(&url)
@@ -242,7 +259,7 @@ async fn try_websocket(
     use futures::SinkExt;
 
     let account_id = crate::oauth::codex_account_id(api_key);
-    let user_agent = format!("pi ({}; {})", std::env::consts::OS, std::env::consts::ARCH);
+    let user_agent = codex_user_agent();
     let request_id = opts.session_id.clone().unwrap_or_else(|| format!("req_{}", crate::utils::now_millis()));
     let mut builder = tungstenite::http::Request::builder()
         .uri(ws_url)
@@ -744,4 +761,20 @@ pub(crate) fn replay_codex_ws_events_with_tier(model: &Model, events: &[Value], 
         }
     }
     state.finish()
+}
+
+#[cfg(test)]
+mod ua_tests {
+    use super::codex_user_agent;
+
+    #[test]
+    fn test_codex_user_agent_uses_node_naming() {
+        let ua = codex_user_agent();
+        assert!(ua.starts_with("pi (") && ua.ends_with(')'), "{ua}");
+        // std names must be mapped to Node's naming, never leaked verbatim.
+        assert!(!ua.contains("macos"), "{ua}");
+        assert!(!ua.contains("x86_64"), "{ua}");
+        assert!(!ua.contains("aarch64"), "{ua}");
+        assert!(!ua.contains("windows"), "{ua}");
+    }
 }
