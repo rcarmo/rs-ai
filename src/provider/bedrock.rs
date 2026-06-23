@@ -606,6 +606,20 @@ pub fn stream_bedrock<'a>(
                 Ok(Some(event)) => {
                     use aws_sdk_bedrockruntime::types::ConverseStreamOutput;
                     match event {
+                        ConverseStreamOutput::MessageStart(ev) => {
+                            // Mirror upstream's defensive role check: a converse stream must
+                            // begin an assistant message. (Start is emitted eagerly above.)
+                            if ev.role() != &ConversationRole::Assistant {
+                                yield Event::Error {
+                                    reason: StopReason::Error,
+                                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                                        "Unexpected assistant message start but got user message start instead".to_string(),
+                                    )),
+                                    message: Some(partial.clone()),
+                                };
+                                return;
+                            }
+                        }
                         ConverseStreamOutput::ContentBlockStart(start) => {
                             if let Some(aws_sdk_bedrockruntime::types::ContentBlockStart::ToolUse(tu)) = start.start() {
                                 in_tool_block = true;

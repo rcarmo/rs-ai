@@ -240,12 +240,13 @@ pub fn stream_codex<'a>(
                     if done { break; }
                 }
                 if !done {
-                    // Upstream's shared decoder throws when the codex stream ends without a
-                    // terminal response event; surface that as an error rather than a clean Done.
+                    // Codex SSE is consumed via the shared responses-stream decoder
+                    // (processStream -> processResponsesStream upstream), which throws this
+                    // exact message when the stream ends without a terminal response event.
                     yield Event::Error {
                         reason: StopReason::Error,
                         error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                            "Codex stream ended before a terminal response event".to_string(),
+                            "OpenAI Responses stream ended before a terminal response event".to_string(),
                         )),
                         message: Some(state.partial.clone()),
                     };
@@ -331,12 +332,12 @@ async fn try_websocket(
         }
     }
 
-    // Upstream's parseWebSocket onClose raises a WebSocketCloseError when the socket
-    // closes before a terminal response event (response.completed/done/incomplete or
-    // an error), which the caller treats as a WS failure and falls back to SSE. Mirror
-    // that here rather than reporting a clean Done.
+    // Upstream's processWebSocketStream throws this exact error when the socket closes
+    // before a terminal response event (response.completed/done/incomplete), which the
+    // caller treats as a WS transport failure and falls back to SSE. Mirror that here
+    // rather than reporting a clean Done.
     if !saw_terminal {
-        return Err("Codex WebSocket closed before a terminal response event".to_string());
+        return Err("WebSocket stream closed before response.completed".to_string());
     }
 
     Ok(state.finish())

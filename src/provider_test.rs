@@ -2006,15 +2006,19 @@ mod tests {
         let mut stream = stream_codex(&model, &ctx, &opts);
         let mut saw_error = false;
         let mut saw_done = false;
+        let mut err_msg = String::new();
         while let Some(evt) = stream.next().await {
             match evt {
-                Event::Error { .. } => saw_error = true,
+                Event::Error { error, .. } => { saw_error = true; err_msg = error.to_string(); }
                 Event::Done { .. } => saw_done = true,
                 _ => {}
             }
         }
         assert!(saw_error, "no-terminal codex SSE must produce an Error");
         assert!(!saw_done, "no-terminal codex SSE must not produce a Done");
+        // Codex SSE is consumed via the shared responses decoder, so the exact upstream
+        // message is the responses one, not a codex-specific variant.
+        assert_eq!(err_msg, "OpenAI Responses stream ended before a terminal response event");
     }
 
     #[tokio::test]
