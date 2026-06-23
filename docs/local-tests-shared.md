@@ -50,11 +50,16 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 
 ## Newly identified gap (from go-ai corpus)
 
-- **WS connection-limit retry-once.** Upstream/go-ai detect
-  `websocket_connection_limit_reached` (`isWebSocketConnectionLimitReachedError`)
-  and retry the WS connection once before falling back to SSE. rs-ai's codex WS
-  path falls straight back to SSE on any pre-stream failure (functionally
-  equivalent end result, but missing the retry-once). Lives in the documented
-  WS-pooling gap area (no idle cache / connection reuse). Codex *nested*
-  event-error extraction (`/error/message`, `/error/code`) IS covered
-  (`codex.rs` `process_event` "error"/"response.failed").
+- **WS connection-limit retry-once — CLOSED.** Implemented
+  `is_ws_connection_limit_error` + retry-once-before-SSE-fallback in
+  `src/provider/codex.rs`, mirroring upstream
+  `isWebSocketConnectionLimitReachedError` / `retriedWebSocketConnectionLimit`.
+  Adapted as `src/codex_ws_connection_limit_test.rs` (real WS server rejects
+  attempt 1 with the limit code, serves a valid stream on the retry).
+- **WS handshake header bug — FIXED (latent).** While building the retry test,
+  found rs-ai's Codex WebSocket request was a fully-built `http::Request`, which
+  bypasses tungstenite's automatic handshake-header generation, so it shipped
+  **without `Sec-WebSocket-Key`/`Upgrade`/`Connection`/`Sec-WebSocket-Version`/
+  `Host`** — every WS handshake was rejected and the provider silently fell back
+  to SSE. Now supplies all RFC6455 headers (fresh `generate_key()`), so the
+  WebSocket transport actually connects. No prior test exercised a real handshake.

@@ -34,6 +34,17 @@ fn codex_user_agent() -> String {
 static WS_FALLBACK_SESSIONS: std::sync::LazyLock<std::sync::Mutex<std::collections::HashSet<String>>> =
     std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashSet::new()));
 
+/// Codex error code emitted when the server rejects a WebSocket because too many
+/// are already open (mirrors upstream WEBSOCKET_CONNECTION_LIMIT_REACHED_CODE).
+pub(crate) const WS_CONNECTION_LIMIT_CODE: &str = "websocket_connection_limit_reached";
+
+/// Whether a `try_websocket` error string denotes a connection-limit rejection
+/// (mirrors upstream isWebSocketConnectionLimitReachedError), which the caller
+/// retries once before falling back to SSE.
+pub(crate) fn is_ws_connection_limit_error(err: &str) -> bool {
+    err.starts_with(WS_CONNECTION_LIMIT_CODE)
+}
+
 fn ws_fallback_active(session_id: Option<&str>) -> bool {
     match session_id {
         Some(s) => WS_FALLBACK_SESSIONS.lock().map(|set| set.contains(s)).unwrap_or(false),
@@ -104,13 +115,23 @@ pub fn stream_codex<'a>(
         let mut transport_diagnostic: Option<crate::types::AssistantMessageDiagnostic> = None;
         let mut do_sse = skip_ws;
         if !skip_ws {
+            // Retry the WebSocket connection once on a pre-start connection-limit
+            // rejection before falling back to SSE (mirrors upstream's
+            // retriedWebSocketConnectionLimit logic).
+            let mut retried_connection_limit = false;
+            loop {
             match try_websocket(&ws_url, &api_key, model, opts, &payload).await {
                 Ok(events) => {
                     for evt in events {
                         yield evt;
                     }
+                    break;
                 }
                 Err(ws_err) => {
+                    if !retried_connection_limit && is_ws_connection_limit_error(&ws_err) {
+                        retried_connection_limit = true;
+                        continue;
+                    }
                     // WebSocket transport failed; remember the fallback for this session and
                     // record a diagnostic (mirrors recordWebSocketFailure + appendAssistantMessageDiagnostic).
                     record_ws_fallback(opts.session_id.as_deref());
@@ -139,7 +160,9 @@ pub fn stream_codex<'a>(
                         ])),
                     });
                     do_sse = true;
+                    break;
                 }
+            }
             }
         }
         if do_sse {
@@ -277,8 +300,22 @@ async fn try_websocket(
     // gets a fresh request id rather than being used verbatim.
     let request_id = opts.session_id.clone().filter(|s| !s.is_empty())
         .unwrap_or_else(|| format!("req_{}", crate::utils::now_millis()));
+    // A fully-built http::Request bypasses tungstenite's automatic handshake-header
+    // generation, so we must supply Host + the RFC6455 upgrade headers (including a
+    // fresh Sec-WebSocket-Key) ourselves or the server rejects the handshake.
+    let host = url::Url::parse(ws_url).ok()
+        .and_then(|u| u.host_str().map(|h| match u.port() {
+            Some(p) => format!("{h}:{p}"),
+            None => h.to_string(),
+        }))
+        .unwrap_or_default();
     let mut builder = tungstenite::http::Request::builder()
         .uri(ws_url)
+        .header("Host", host)
+        .header("Connection", "Upgrade")
+        .header("Upgrade", "websocket")
+        .header("Sec-WebSocket-Version", "13")
+        .header("Sec-WebSocket-Key", tungstenite::handshake::client::generate_key())
         .header("Authorization", format!("Bearer {}", api_key))
         .header("originator", "pi")
         .header("User-Agent", user_agent)
@@ -325,6 +362,17 @@ async fn try_websocket(
         };
 
         let data: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+        // A `websocket_connection_limit_reached` error event means the server rejected
+        // this connection because too many are open; upstream treats it as a retryable
+        // pre-start transport failure (retry the WS once, then fall back to SSE) rather
+        // than surfacing it. Signal it to the caller via the Err marker.
+        if data.get("type").and_then(|v| v.as_str()) == Some("error") {
+            let code = data.get("code").and_then(|v| v.as_str())
+                .or_else(|| data.pointer("/error/code").and_then(|v| v.as_str()));
+            if code == Some(WS_CONNECTION_LIMIT_CODE) {
+                return Err(format!("{WS_CONNECTION_LIMIT_CODE}: codex websocket connection limit reached"));
+            }
+        }
         let is_done = state.process_event(&data);
         if is_done {
             saw_terminal = true;

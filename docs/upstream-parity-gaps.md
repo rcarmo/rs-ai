@@ -25,7 +25,7 @@ Status legend:
 | `google-shared.ts` | `src/provider/google.rs` | DONE | convert-tools, gemini3 unsigned tool-call, image tool-result routing, thinking signature. |
 | `google-vertex.ts` | — | MISSING | Vertex GCP/ADC-gated; no credential path available. |
 | `mistral-conversations.ts` | `src/provider/mistral.rs` | DONE | reasoning-mode, tool-schema, cached tokens, tool-id normalization — fully verified. |
-| `openai-codex-responses.ts` | `src/provider/codex.rs` | PARTIAL | WS + SSE transports; OAuth account-id from env; no WS pooling/idle cache. |
+| `openai-codex-responses.ts` | `src/provider/codex.rs` | PARTIAL | WS + SSE transports; OAuth account-id from env; no WS pooling/idle cache. WS handshake headers fixed (Sec-WebSocket-Key etc.) + connection-limit retry-once added. |
 | `openai-completions.ts` | `src/provider/openai.rs` | DONE | reasoning-details, tool-choice, response-model, retry, thinking-as-text, prompt-cache. |
 | `openai-prompt-cache.ts` | `src/prompt_cache.rs` | DONE | `clamp_openai_prompt_cache_key` (64 codepoints). |
 | `openai-responses-shared.ts` | `src/provider/responses.rs` | DONE | terminal-event enforcement, mapStopReason, foreign tool-call id, message-id. |
