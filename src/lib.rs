@@ -80,3 +80,5 @@ mod mistral_reasoning_mode_test;
 mod azure_openai_base_url_test;
 #[cfg(test)]
 mod bedrock_endpoint_test;
+#[cfg(test)]
+mod codex_request_shape_test;

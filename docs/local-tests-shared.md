@@ -17,6 +17,7 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 | `TestExtractRegionFromURL` | `src/bedrock_endpoint_test.rs::extract_region_from_url` | 6 cases incl. fips + `.com.cn`; `None == ""`. Previously rs-ai's `bedrock_standard_endpoint_region` was untested. |
 | `TestShouldUseExplicitBedrockEndpoint` | `src/bedrock_endpoint_test.rs::should_use_explicit_bedrock_endpoint` | custom→pinned, standard+clean-env→pinned, standard+`AWS_REGION`→not pinned. |
 | (bonus) ARN region | `src/bedrock_endpoint_test.rs::extract_region_from_arn_model_id` | covers `bedrock_arn_region`. |
+| `TestBuildCodexRequestMatchesPiaiShape` | `src/codex_request_shape_test.rs::build_codex_request_matches_piai_shape` | full pi-ai request-shape snapshot: stream/store, instructions, prompt_cache_key, tool_choice=auto, parallel_tool_calls, include, reasoning{effort,summary}, text{verbosity}, user-first input, tool strict:null. rs-ai shape confirmed matching. |
 
 ## Coverage status by area (go-ai corpus → rs-ai)
 
@@ -42,8 +43,18 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 
 ## Pending high-value adaptations (next cycles)
 
-1. `TestBuildCodexRequestMatchesPiaiShape` — exact codex request-shape snapshot vs pi-ai. rs-ai has `build_codex_payload` tests but not a full shape-parity snapshot.
-2. `TestProcessSSEStreamAttachesPendingEncryptedReasoningDetails` — encrypted-reasoning replay edge.
-3. `TestConvertMessagesCoalescesConsecutiveToolResults` (bedrock) — verify rs-ai coalescing has a named regression test.
-4. `TestBedrockOptionPrecedenceAndRequestMetadata` — region option precedence + request metadata propagation.
-5. OAuth `TestGetAPIKeyRefreshesExpiredCredential` — blocked on credential-store seam (parity-gaps top-3 #2).
+1. `TestProcessSSEStreamAttachesPendingEncryptedReasoningDetails` — encrypted-reasoning replay edge.
+2. `TestConvertMessagesCoalescesConsecutiveToolResults` (bedrock) — rs-ai coalesces correctly (verified) but the logic is inline in `stream_bedrock`; needs a testable `build_bedrock_messages` extraction.
+3. `TestBedrockOptionPrecedenceAndRequestMetadata` — region option precedence + request metadata propagation.
+4. OAuth `TestGetAPIKeyRefreshesExpiredCredential` — blocked on credential-store seam (parity-gaps top-3 #2).
+
+## Newly identified gap (from go-ai corpus)
+
+- **WS connection-limit retry-once.** Upstream/go-ai detect
+  `websocket_connection_limit_reached` (`isWebSocketConnectionLimitReachedError`)
+  and retry the WS connection once before falling back to SSE. rs-ai's codex WS
+  path falls straight back to SSE on any pre-stream failure (functionally
+  equivalent end result, but missing the retry-once). Lives in the documented
+  WS-pooling gap area (no idle cache / connection reuse). Codex *nested*
+  event-error extraction (`/error/message`, `/error/code`) IS covered
+  (`codex.rs` `process_event` "error"/"response.failed").
