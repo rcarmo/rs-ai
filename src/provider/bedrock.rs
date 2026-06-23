@@ -705,12 +705,17 @@ pub fn stream_bedrock<'a>(
                         }
                         ConverseStreamOutput::Metadata(meta) => {
                             if let Some(u) = meta.usage() {
+                                let input = u.input_tokens() as u32;
+                                let output = u.output_tokens() as u32;
+                                // Upstream: totalTokens || (input + output) — fall back when
+                                // the API reports a zero/absent total.
+                                let total = u.total_tokens() as u32;
                                 partial.usage = Some(Usage {
-                                    input: u.input_tokens() as u32,
-                                    output: u.output_tokens() as u32,
+                                    input,
+                                    output,
                                     cache_read: u.cache_read_input_tokens().unwrap_or(0) as u32,
                                     cache_write: u.cache_write_input_tokens().unwrap_or(0) as u32,
-                                    total_tokens: u.total_tokens() as u32,
+                                    total_tokens: if total == 0 { input + output } else { total },
                                     ..Default::default()
                                 });
                             }
