@@ -87,3 +87,5 @@ mod codex_request_shape_test;
 mod codex_ws_connection_limit_test;
 #[cfg(test)]
 mod codex_ws_protocol_test;
+#[cfg(test)]
+mod validation_upstream_test;

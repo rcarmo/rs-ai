@@ -90,6 +90,100 @@ the credential-available providers above).
 
 ---
 
+## 5a. Per-file upstream test port tracker (bar #2)
+
+_Generated. Total **86** upstream test files — **PORTED 3** / COVERED 69 / N/A 14._
+
+| # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
+|---|---|---|---|---|
+| 1 | `abort.test.ts` | n/a | — | credential/runtime-gated |
+| 2 | `anthropic-adaptive-thinking-models.test.ts` | no | — | 2 cases to port name-for-name |
+| 3 | `anthropic-cache-write-1h-cost.test.ts` | no | — | 2 cases to port name-for-name |
+| 4 | `anthropic-eager-tool-input-compat.test.ts` | no | — | 3 cases to port name-for-name |
+| 5 | `anthropic-eager-tool-input-e2e.test.ts` | no | — | 3 cases to port name-for-name |
+| 6 | `anthropic-empty-thinking-signature-compat.test.ts` | no | — | 2 cases to port name-for-name |
+| 7 | `anthropic-force-adaptive-thinking.test.ts` | no | — | 5 cases to port name-for-name |
+| 8 | `anthropic-long-cache-retention-e2e.test.ts` | no | — | 2 cases to port name-for-name |
+| 9 | `anthropic-oauth.test.ts` | n/a | — | credential/runtime-gated |
+| 10 | `anthropic-opus-4-8-smoke.test.ts` | n/a | — | credential/runtime-gated |
+| 11 | `anthropic-sse-parsing.test.ts` | no | — | 3 cases to port name-for-name |
+| 12 | `anthropic-temperature-compat.test.ts` | no | — | 6 cases to port name-for-name |
+| 13 | `anthropic-thinking-disable.test.ts` | no | — | 7 cases to port name-for-name |
+| 14 | `anthropic-tool-name-normalization.test.ts` | no | — | 4 cases to port name-for-name |
+| 15 | `azure-openai-base-url.test.ts` | yes | yes | src/azure_openai_base_url_test.rs |
+| 16 | `bedrock-convert-messages.test.ts` | no | — | 9 cases to port name-for-name |
+| 17 | `bedrock-custom-headers.test.ts` | no | — | 6 cases to port name-for-name |
+| 18 | `bedrock-endpoint-resolution.test.ts` | no | — | 7 cases to port name-for-name |
+| 19 | `bedrock-models.test.ts` | no | — | 2 cases to port name-for-name |
+| 20 | `bedrock-thinking-payload.test.ts` | no | — | 10 cases to port name-for-name |
+| 21 | `cache-retention.test.ts` | no | — | 16 cases to port name-for-name |
+| 22 | `compat-env.test.ts` | no | — | 1 cases to port name-for-name |
+| 23 | `context-overflow.test.ts` | no | — | 32 cases to port name-for-name |
+| 24 | `cross-provider-handoff.test.ts` | no | — | 2 cases to port name-for-name |
+| 25 | `empty.test.ts` | no | — | 104 cases to port name-for-name |
+| 26 | `env-api-keys.test.ts` | no | — | 3 cases to port name-for-name |
+| 27 | `faux-provider.test.ts` | no | — | 22 cases to port name-for-name |
+| 28 | `fireworks-models.test.ts` | no | — | 11 cases to port name-for-name |
+| 29 | `github-copilot-anthropic.test.ts` | n/a | — | credential/runtime-gated |
+| 30 | `github-copilot-oauth.test.ts` | n/a | — | credential/runtime-gated |
+| 31 | `google-shared-convert-tools.test.ts` | no | — | 7 cases to port name-for-name |
+| 32 | `google-shared-gemini3-unsigned-tool-call.test.ts` | no | — | 4 cases to port name-for-name |
+| 33 | `google-shared-image-tool-result-routing.test.ts` | no | — | 2 cases to port name-for-name |
+| 34 | `google-thinking-disable.test.ts` | no | — | 9 cases to port name-for-name |
+| 35 | `google-thinking-signature.test.ts` | no | — | 5 cases to port name-for-name |
+| 36 | `google-vertex-api-key-resolution.test.ts` | n/a | — | credential/runtime-gated |
+| 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
+| 38 | `images-models.test.ts` | no | — | 6 cases to port name-for-name |
+| 39 | `images.test.ts` | no | — | 3 cases to port name-for-name |
+| 40 | `interleaved-thinking.test.ts` | no | — | 4 cases to port name-for-name |
+| 41 | `lazy-module-load.test.ts` | n/a | — | credential/runtime-gated |
+| 42 | `mistral-reasoning-mode.test.ts` | yes | yes | src/mistral_reasoning_mode_test.rs |
+| 43 | `mistral-tool-schema.test.ts` | no | — | 1 cases to port name-for-name |
+| 44 | `models-runtime.test.ts` | no | — | 16 cases to port name-for-name |
+| 45 | `node-http-proxy.test.ts` | n/a | — | credential/runtime-gated |
+| 46 | `oauth-auth.test.ts` | n/a | — | credential/runtime-gated |
+| 47 | `oauth-device-code.test.ts` | n/a | — | credential/runtime-gated |
+| 48 | `openai-codex-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
+| 49 | `openai-codex-oauth.test.ts` | n/a | — | credential/runtime-gated |
+| 50 | `openai-codex-stream.test.ts` | no | — | 19 cases to port name-for-name |
+| 51 | `openai-completions-cache-control-format.test.ts` | no | — | 3 cases to port name-for-name |
+| 52 | `openai-completions-empty-tools.test.ts` | no | — | 9 cases to port name-for-name |
+| 53 | `openai-completions-prompt-cache.test.ts` | no | — | 9 cases to port name-for-name |
+| 54 | `openai-completions-reasoning-details.test.ts` | no | — | 1 cases to port name-for-name |
+| 55 | `openai-completions-response-model.test.ts` | no | — | 3 cases to port name-for-name |
+| 56 | `openai-completions-retry.test.ts` | no | — | 2 cases to port name-for-name |
+| 57 | `openai-completions-thinking-as-text.test.ts` | no | — | 3 cases to port name-for-name |
+| 58 | `openai-completions-tool-choice.test.ts` | no | — | 41 cases to port name-for-name |
+| 59 | `openai-completions-tool-result-images.test.ts` | no | — | 1 cases to port name-for-name |
+| 60 | `openai-responses-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
+| 61 | `openai-responses-copilot-provider.test.ts` | n/a | — | credential/runtime-gated |
+| 62 | `openai-responses-foreign-toolcall-id.test.ts` | no | — | 1 cases to port name-for-name |
+| 63 | `openai-responses-message-id.test.ts` | no | — | 1 cases to port name-for-name |
+| 64 | `openai-responses-partial-json-cleanup.test.ts` | no | — | 1 cases to port name-for-name |
+| 65 | `openai-responses-reasoning-replay-e2e.test.ts` | no | — | 3 cases to port name-for-name |
+| 66 | `openai-responses-terminal-event.test.ts` | no | — | 5 cases to port name-for-name |
+| 67 | `openai-responses-tool-result-images.test.ts` | no | — | 4 cases to port name-for-name |
+| 68 | `openrouter-cache-write-repro.test.ts` | no | — | 1 cases to port name-for-name |
+| 69 | `openrouter-images.test.ts` | no | — | 3 cases to port name-for-name |
+| 70 | `overflow.test.ts` | no | — | 13 cases to port name-for-name |
+| 71 | `providers.test.ts` | no | — | 13 cases to port name-for-name |
+| 72 | `responseid.test.ts` | no | — | 11 cases to port name-for-name |
+| 73 | `stream.test.ts` | no | — | 214 cases to port name-for-name |
+| 74 | `supports-xhigh.test.ts` | no | — | 16 cases to port name-for-name |
+| 75 | `together-models.test.ts` | no | — | 3 cases to port name-for-name |
+| 76 | `tokens.test.ts` | no | — | 26 cases to port name-for-name |
+| 77 | `tool-call-id-normalization.test.ts` | no | — | 4 cases to port name-for-name |
+| 78 | `tool-call-without-result.test.ts` | no | — | 26 cases to port name-for-name |
+| 79 | `total-tokens.test.ts` | no | — | 31 cases to port name-for-name |
+| 80 | `transform-messages-copilot-openai-to-anthropic.test.ts` | n/a | — | credential/runtime-gated |
+| 81 | `unicode-surrogate.test.ts` | no | — | 78 cases to port name-for-name |
+| 82 | `validation.test.ts` | yes | yes | src/validation_upstream_test.rs |
+| 83 | `xhigh.test.ts` | no | — | 3 cases to port name-for-name |
+| 84 | `xiaomi-models.test.ts` | no | — | 2 cases to port name-for-name |
+| 85 | `xiaomi-token-plan-ams-anthropic-empty-signature-smoke.test.ts` | n/a | — | credential/runtime-gated |
+| 86 | `zen.test.ts` | no | — | 1 cases to port name-for-name |
+
+
 ## 5. Upstream test suite (`test/*.test.ts` — 87 files)
 
 rs-ai currently has **379** test functions across `src/*_test.rs`. They cover the
