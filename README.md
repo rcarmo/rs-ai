@@ -107,6 +107,14 @@ Tracks `@earendil-works/pi-ai` `0.80.1`. Known divergences from upstream:
   automatically via reqwest's default client, but the Rust AWS SDK (Bedrock) and the
   Codex transport use their default transports and do not auto-resolve an explicit
   proxy URL. Direct (non-proxied) Bedrock/Codex connections are unaffected.
+- **Cancellation model**: upstream accepts an `AbortSignal` per request and, when it
+  fires, completes the stream with `stopReason: "aborted"` (carrying the partial
+  message). This port uses idiomatic Rust cancellation — drop the returned `Stream`
+  to cancel the in-flight request (the spawned work is aborted on drop). It therefore
+  does not thread a signal through `StreamOptions` or emit a synthetic `Aborted`
+  terminal event for HTTP providers; the `StopReason::Aborted` variant exists for
+  completeness and the mock/faux provider. Use a `tokio::time::timeout`/`select!` or
+  drop the stream to cancel.
 
 ## Credits
 
