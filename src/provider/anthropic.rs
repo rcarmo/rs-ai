@@ -182,6 +182,9 @@ pub fn stream_anthropic<'a>(
         let mut current_tool_id = String::new();
         let mut current_tool_name = String::new();
         let mut current_tool_args = String::new();
+        // Upstream seeds tool-call arguments with content_block.input ?? {} at
+        // content_block_start, overwriting it only when input_json_delta events arrive.
+        let mut current_tool_input: Value = Value::Null;
         let mut saw_message_start = false;
         let mut saw_message_stop = false;
 
@@ -259,6 +262,7 @@ pub fn stream_anthropic<'a>(
                                     raw_name.to_string()
                                 };
                                 current_tool_args.clear();
+                                current_tool_input = data.pointer("/content_block/input").cloned().unwrap_or(Value::Null);
                                 yield Event::ToolCallStart { id: current_tool_id.clone(), name: current_tool_name.clone() };
                             }
                             _ => {}
@@ -328,7 +332,17 @@ pub fn stream_anthropic<'a>(
                                 });
                             }
                             "tool_use" => {
-                                let parsed: Value = crate::jsonparse::parse_streaming_json(&current_tool_args);
+                                // Mirror upstream: arguments start as content_block.input ?? {}
+                                // and are only replaced by accumulated input_json_delta. When no
+                                // delta arrived, keep the initial input instead of parsing "".
+                                let parsed: Value = if current_tool_args.is_empty() {
+                                    match &current_tool_input {
+                                        Value::Object(_) => current_tool_input.clone(),
+                                        _ => serde_json::json!({}),
+                                    }
+                                } else {
+                                    crate::jsonparse::parse_streaming_json(&current_tool_args)
+                                };
                                 let parsed_map = match &parsed {
                                     Value::Object(map) => map.clone().into_iter().collect(),
                                     _ => std::collections::HashMap::new(),
@@ -345,6 +359,7 @@ pub fn stream_anthropic<'a>(
                                     arguments: parsed,
                                 };
                                 current_tool_args.clear();
+                                current_tool_input = Value::Null;
                             }
                             _ => {}
                         }

@@ -2679,6 +2679,40 @@ mod tests {
         assert!(msg.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { id, name, arguments, .. } if id == "tc1" && name == "search" && arguments["q"] == "rust")));
     }
 
+    #[tokio::test]
+    async fn test_anthropic_tool_use_input_at_start_no_deltas() {
+        // Upstream seeds tool-call arguments with content_block.input ?? {} and only
+        // overwrites it via input_json_delta. A tool_use block carrying a populated
+        // `input` and NO input_json_delta must preserve that input.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/messages"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg-3\",\"usage\":{\"input_tokens\":5,\"output_tokens\":0}}}\n\n\
+                     event: content_block_start\ndata: {\"type\":\"content_block_start\",\"content_block\":{\"type\":\"tool_use\",\"id\":\"tc9\",\"name\":\"lookup\",\"input\":{\"city\":\"lisbon\"}}}\n\n\
+                     event: content_block_stop\ndata: {\"type\":\"content_block_stop\"}\n\n\
+                     event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"}}\n\n\
+                     event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+                )
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+
+        let model = test_model("anthropic-messages", "anthropic", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_anthropic(&model, &ctx, &opts);
+        let mut done_msg: Option<Message> = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt { done_msg = Some(message); }
+        }
+        let msg = done_msg.expect("done message");
+        assert!(msg.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { id, arguments, .. }
+            if id == "tc9" && arguments["city"] == "lisbon")),
+            "initial content_block.input must be preserved when no input_json_delta arrives: {:?}", msg.content);
+    }
+
     #[test]
     fn test_anthropic_needs_session_affinity() {
         use crate::provider::anthropic::anthropic_needs_session_affinity;
