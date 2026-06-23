@@ -20,14 +20,12 @@ const EMPTY_TEXT_PLACEHOLDER: &str = "<empty>";
 
 /// Whether the Bedrock model supports prompt caching (mirrors supportsPromptCaching).
 fn supports_bedrock_prompt_caching(model: &Model) -> bool {
-    let id = model.id.to_lowercase();
-    let name = model.name.to_lowercase();
-    let has_claude = id.contains("claude") || name.contains("claude");
-    if !has_claude {
+    let candidates = bedrock_model_match_candidates(model);
+    let any = |needle: &str| candidates.iter().any(|c| c.contains(needle));
+    if !any("claude") {
         return std::env::var("AWS_BEDROCK_FORCE_CACHE").ok().as_deref() == Some("1");
     }
-    let m = |needle: &str| id.contains(needle) || name.contains(needle);
-    m("-4-") || m("claude-3-7-sonnet") || m("claude-3-5-haiku")
+    any("-4-") || any("claude-3-7-sonnet") || any("claude-3-5-haiku")
 }
 
 /// Build a Bedrock cache-point block with an optional 1h TTL for long retention.
