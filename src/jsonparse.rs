@@ -49,8 +49,12 @@ pub fn repair_json(json: &str) -> String {
                         index += 6;
                         continue;
                     }
-                    repaired.push_str("\\\\");
-                    index += 1;
+                    // 'u' is itself a VALID_JSON_ESCAPES member upstream, so a \u not
+                    // followed by 4 hex digits is kept as a \u escape (consume both chars),
+                    // not doubled into \\u.
+                    repaired.push('\\');
+                    repaired.push('u');
+                    index += 2;
                     continue;
                 }
                 Some(n) if matches!(n, '"' | '\\' | '/' | 'b' | 'f' | 'n' | 'r' | 't') => {
@@ -262,6 +266,17 @@ mod tests {
         let raw = r#"{"path": "C:\Users"}"#;
         let v = parse_streaming_json(raw);
         assert_eq!(v["path"], r"C:\Users");
+    }
+
+    #[test]
+    fn test_repair_backslash_u_matches_upstream() {
+        // Upstream VALID_JSON_ESCAPES includes 'u', so \u NOT followed by 4 hex digits
+        // is kept as a \u escape (consume both chars), not doubled into \\u.
+        assert_eq!(repair_json(r#"{"a":"x\users"}"#), r#"{"a":"x\users"}"#);
+        // \u WITH 4 hex digits is preserved verbatim.
+        assert_eq!(repair_json(r#"{"a":"\u0041"}"#), r#"{"a":"\u0041"}"#);
+        // Capital \U is not in the set -> still doubled to \\U.
+        assert_eq!(repair_json(r#"{"a":"\Users"}"#), r#"{"a":"\\Users"}"#);
     }
 
     #[test]
