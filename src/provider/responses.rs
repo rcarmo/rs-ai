@@ -629,7 +629,8 @@ fn stream_responses_inner<'a>(
 /// Encode an assistant text item id (+ optional phase) as a v1 text signature
 /// (mirrors encodeTextSignatureV1).
 fn encode_text_signature_v1(id: &str, phase: Option<&str>) -> String {
-    match phase {
+    // Upstream uses `if (phase)` (truthy), so an empty-string phase is omitted.
+    match phase.filter(|p| !p.is_empty()) {
         Some(p) => json!({"v": 1, "id": id, "phase": p}).to_string(),
         None => json!({"v": 1, "id": id}).to_string(),
     }
