@@ -121,6 +121,12 @@ Tracks `@earendil-works/pi-ai` `0.80.1`. Known divergences from upstream:
   terminal event for HTTP providers; the `StopReason::Aborted` variant exists for
   completeness and the mock/faux provider. Use a `tokio::time::timeout`/`select!` or
   drop the stream to cancel.
+- **Bedrock request/response hooks**: the HTTP providers run the JSON-`Value`
+  `on_payload` hook on the request body and `on_response` on the result. Bedrock
+  builds its request through the typed AWS SDK `ConverseStream` builder rather than a
+  JSON body, so `on_payload` (which mutates a JSON payload) is not applied for
+  bedrock, and `on_response` fires with the success status only (the AWS request id
+  is not surfaced on the streaming output type). All other providers honor both hooks.
 
 ## Credits
 
