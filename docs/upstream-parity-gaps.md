@@ -38,10 +38,10 @@ Status legend:
 
 | Upstream | rs-ai path | Status | Notes |
 |---|---|---|---|
-| `auth/context.ts` (`defaultProviderAuthContext`) | `src/env.rs` | PARTIAL | env-key resolution covered; full auth-context object not modelled. |
+| `auth/context.ts` (`defaultProviderAuthContext`) | `src/auth.rs` (`AuthContext`/`EnvAuthContext`) | DONE | injectable env context with request-scoped overlay (mirrors overlayEnvAuthContext). |
 | `auth/credential-store.ts` (`InMemoryCredentialStore`) | `src/auth.rs` | DONE | in-memory store with per-provider serialized read-modify-write (6 tests incl. concurrent-write serialization). |
 | `auth/helpers.ts` (`envApiKeyAuth`, `lazyOAuth`) | `src/env.rs` | PARTIAL | env path done; `lazyOAuth` not modelled. |
-| `auth/resolve.ts` (`resolveProviderAuth`, `ModelsError`) | `src/auth.rs` (`ModelsError`) | PARTIAL | error taxonomy + Credential/ModelAuth/AuthResult types ported; `resolveProviderAuth` (OAuth locked-refresh) next cycle. |
+| `auth/resolve.ts` (`resolveProviderAuth`, `ModelsError`) | `src/auth.rs` | DONE | full `resolve_provider_auth`: api-key override → stored (oauth double-checked locked refresh / api-key) → ambient env. `ApiKeyAuth`/`OAuthAuth`/`AuthContext` traits + `ModelsError`. 12 auth tests incl. valid-token-skips-refresh and expired-refreshes-once-and-persists. |
 | `utils/oauth/anthropic.ts` | `src/oauth.rs` | PARTIAL | token decode/account-id helpers; no interactive login. |
 | `utils/oauth/openai-codex.ts` | `src/oauth.rs` | PARTIAL | account-id extraction from token. |
 | `utils/oauth/github-copilot.ts` | — | MISSING | Copilot OAuth flow. |
@@ -149,12 +149,12 @@ validation, xhigh, xiaomi-models, zen, empty.
 > test-for-test port (#1), because the seam unlocks the OAuth provider branches (#3).
 
 1. **Auth/credential abstraction (`auth/resolve.ts` + `credential-store.ts`).**
-   IN PROGRESS — `src/auth.rs` lands the Credential/ModelAuth/AuthResult types,
-   `ModelsError` taxonomy, and `InMemoryCredentialStore` (per-provider serialized
-   modify). Remaining: `resolveProviderAuth` (stored-vs-ambient + OAuth
-   double-checked locked refresh) wiring into the providers. rs-ai already has the
-   OAuth primitives (PKCE, device flow, anthropic/codex/copilot exchange+refresh in
-   `src/oauth.rs`), so this seam is mostly glue.
+   DONE — `src/auth.rs` lands Credential/ModelAuth/AuthResult, `ModelsError`,
+   `InMemoryCredentialStore` (per-provider serialized modify),
+   `AuthContext`/`EnvAuthContext`, the `ApiKeyAuth`/`OAuthAuth` traits, and
+   `resolve_provider_auth` with OAuth double-checked locked refresh (12 tests).
+   Remaining: wire concrete provider `ApiKeyAuth`/`OAuthAuth` impls into the
+   stream paths (the providers still resolve via `env.rs` directly today).
 2. **Interactive OAuth flows.** Largely PRESENT in `src/oauth.rs` (device-code,
    PKCE, token refresh); remaining work is wiring them through the credential store
    + `toAuth` derivation.
