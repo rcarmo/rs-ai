@@ -266,13 +266,6 @@ fn stream_responses_inner<'a>(
         };
 
         let status = resp.status().as_u16();
-        if let Some(ref hook) = opts.on_response {
-            let mut hdrs = std::collections::HashMap::new();
-            for (k, v) in resp.headers().iter() {
-                hdrs.insert(k.to_string(), v.to_str().unwrap_or("").to_string());
-            }
-            hook(status, &hdrs, model);
-        }
 
         if !resp.status().is_success() {
             let body = resp.text().await.unwrap_or_default();
@@ -284,6 +277,16 @@ fn stream_responses_inner<'a>(
                 message: None,
             };
             return;
+        }
+
+        // Upstream invokes onResponse only after a successful response (withResponse()
+        // rejects on non-2xx first), so fire it after the status check.
+        if let Some(ref hook) = opts.on_response {
+            let mut hdrs = std::collections::HashMap::new();
+            for (k, v) in resp.headers().iter() {
+                hdrs.insert(k.to_string(), v.to_str().unwrap_or("").to_string());
+            }
+            hook(status, &hdrs, model);
         }
 
         let mut partial = Message {

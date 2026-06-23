@@ -140,12 +140,6 @@ pub async fn generate_openrouter(
         };
 
         let status = resp.status().as_u16();
-        if let Some(ref hook) = opts.on_response {
-            let hdrs: HashMap<String, String> = resp.headers().iter()
-                .filter_map(|(k, v)| v.to_str().ok().map(|s| (k.as_str().to_string(), s.to_string())))
-                .collect();
-            hook(status, &hdrs, model);
-        }
         if crate::retry::is_retryable_status(status) {
             last_err = format!("HTTP {}", status);
             if attempt < opts.max_retries {
@@ -162,6 +156,16 @@ pub async fn generate_openrouter(
             out.stop_reason = StopReason::Error;
             out.error_message = Some(format!("HTTP {}: {}", status, body_text));
             return out;
+        }
+
+        // Upstream fires onResponse once, after a successful response (the SDK's
+        // withResponse() resolves only on success after its internal retries), so call
+        // it here — not on retryable/error attempts.
+        if let Some(ref hook) = opts.on_response {
+            let hdrs: HashMap<String, String> = resp.headers().iter()
+                .filter_map(|(k, v)| v.to_str().ok().map(|s| (k.as_str().to_string(), s.to_string())))
+                .collect();
+            hook(status, &hdrs, model);
         }
 
         let raw: Value = match resp.json().await {

@@ -2686,6 +2686,36 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_on_response_not_called_on_error_status() {
+        use std::sync::{Arc, Mutex};
+        // Upstream fires onResponse only after a successful response (the SDK rejects on
+        // non-2xx first). on_response must NOT fire for a 4xx/5xx response.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(400).set_body_string("bad request"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-completions", "openai", &server.uri());
+        let called = Arc::new(Mutex::new(false));
+        let c2 = called.clone();
+        let opts = StreamOptions {
+            on_response: Some(Arc::new(move |_s: u16, _h: &std::collections::HashMap<String, String>, _m: &Model| {
+                *c2.lock().unwrap() = true;
+            })),
+            ..Default::default()
+        };
+        let ctx = test_context();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut saw_error = false;
+        while let Some(evt) = stream.next().await {
+            if matches!(evt, Event::Error { .. }) { saw_error = true; }
+        }
+        assert!(saw_error, "400 should produce an Error");
+        assert!(!*called.lock().unwrap(), "on_response must not fire on an error status");
+    }
+
+    #[tokio::test]
     async fn test_anthropic_truncated_stream_is_error() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

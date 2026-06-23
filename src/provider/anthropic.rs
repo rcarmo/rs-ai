@@ -129,16 +129,6 @@ pub fn stream_anthropic<'a>(
             }
         };
 
-        // Invoke the on_response hook with the status + headers (mirrors options.onResponse).
-        if let Some(ref hook) = opts.on_response {
-            let status = resp.status().as_u16();
-            let mut hdrs = std::collections::HashMap::new();
-            for (k, v) in resp.headers().iter() {
-                hdrs.insert(k.to_string(), v.to_str().unwrap_or("").to_string());
-            }
-            hook(status, &hdrs, model);
-        }
-
         if !resp.status().is_success() {
             let status = resp.status().as_u16();
             let body = resp.text().await.unwrap_or_default();
@@ -150,6 +140,17 @@ pub fn stream_anthropic<'a>(
                 message: None,
             };
             return;
+        }
+
+        // Upstream invokes onResponse only after a successful response (the SDK's
+        // asResponse() rejects on non-2xx first), so fire it after the status check.
+        if let Some(ref hook) = opts.on_response {
+            let status = resp.status().as_u16();
+            let mut hdrs = std::collections::HashMap::new();
+            for (k, v) in resp.headers().iter() {
+                hdrs.insert(k.to_string(), v.to_str().unwrap_or("").to_string());
+            }
+            hook(status, &hdrs, model);
         }
 
         let mut partial = Message {
