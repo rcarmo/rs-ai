@@ -17,7 +17,7 @@ Status legend:
 | Upstream module | rs-ai path | Status | Notes |
 |---|---|---|---|
 | `anthropic-messages.ts` | `src/provider/anthropic.rs` | DONE | SSE parse, thinking, cache, eager tool input, adaptive thinking, tool-id normalization. |
-| `azure-openai-responses.ts` | `src/provider/responses.rs` | DONE | Azure base-url + api-version handling (`test_azure_responses_uses_api_key_and_version`). |
+| `azure-openai-responses.ts` | `src/provider/responses.rs` | DONE | Azure base-url normalization + invalid-URL validation (`Invalid Azure OpenAI base URL`), api-version, prompt-cache-key clamp, store:false. Ported test-for-test (11/11). |
 | `bedrock-converse-stream.ts` | `src/provider/bedrock.rs` | DONE | AWS SDK converse stream; MessageStart role check, tool-id normalization, stop-reason map. |
 | `cloudflare.ts` | `src/compat.rs` + `src/env.rs` | PARTIAL | account/gateway resolved from env (documented divergence vs upstream credential plumbing). |
 | `github-copilot-headers.ts` | — | MISSING | Copilot OAuth-gated; no credential path available. |
@@ -136,19 +136,20 @@ validation, xhigh, xiaomi-models, zen, empty.
   (AbortSignal, HTTP proxy, CLI, lazy-loader).
 - **Providers:** 100% catalog parity; runtime exercised for all non-credential-gated
   providers.
-- **Tests:** ~75 of 87 upstream test files are behaviourally covered by rs-ai's 386
-  tests. **1 file is now ported test-for-test** with upstream names/values
-  (`mistral-reasoning-mode.test.ts` -> `src/mistral_reasoning_mode_test.rs`, 7/7);
-  the remaining ~74 covered files are behaviourally equivalent but not yet
+- **Tests:** ~75 of 87 upstream test files are behaviourally covered by rs-ai's 397
+  tests. **2 files are now ported test-for-test** with upstream names/values
+  (`mistral-reasoning-mode.test.ts` -> `src/mistral_reasoning_mode_test.rs`, 7/7;
+  `azure-openai-base-url.test.ts` -> `src/azure_openai_base_url_test.rs`, 11/11);
+  the remaining ~73 covered files are behaviourally equivalent but not yet
   name-for-name ports (bar #2 in progress).
 
 ## Top 3 gaps (highest leverage first)
 
-1. **Test-for-test port (bar #2).** Re-express the ~74 remaining behaviourally-covered
+1. **Test-for-test port (bar #2).** Re-express the ~73 remaining behaviourally-covered
    upstream `*.test.ts` as named rs-ai tests with identical fixtures/expected values.
-   Started: `mistral-reasoning-mode.test.ts` ported 7/7. Next highest-signal:
-   `openai-completions-tool-choice.test.ts` (41), `openai-codex-stream.test.ts` (16),
-   `azure-openai-base-url.test.ts` (11), `tool-call-id-normalization` (issue #1022 fixture).
+   Ported: `mistral-reasoning-mode` (7/7), `azure-openai-base-url` (11/11). Next
+   highest-signal: `openai-completions-tool-choice.test.ts` (41),
+   `openai-codex-stream.test.ts` (16), `tool-call-id-normalization` (issue #1022 fixture).
 2. **Auth/credential abstraction (`auth/resolve.ts` + `credential-store.ts`).** rs-ai
    resolves keys ad-hoc from env; upstream has a `resolveProviderAuth` +
    `InMemoryCredentialStore` seam. Porting it (env-backed default) would unlock the

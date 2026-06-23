@@ -430,23 +430,23 @@ mod tests {
         // AZURE_OPENAI_BASE_URL wins, normalized.
         assert_eq!(
             resolve_azure_base_url_from(Some("https://a.openai.azure.com"), Some("res"), "https://m.openai.azure.com/openai/v1"),
-            Some("https://a.openai.azure.com/openai/v1".to_string())
+            Ok(Some("https://a.openai.azure.com/openai/v1".to_string()))
         );
         // Resource name builds the default host when no base URL.
         assert_eq!(
             resolve_azure_base_url_from(None, Some("myres"), ""),
-            Some("https://myres.openai.azure.com/openai/v1".to_string())
+            Ok(Some("https://myres.openai.azure.com/openai/v1".to_string()))
         );
         // Falls back to model base URL.
         assert_eq!(
             resolve_azure_base_url_from(None, None, "https://m.openai.azure.com"),
-            Some("https://m.openai.azure.com/openai/v1".to_string())
+            Ok(Some("https://m.openai.azure.com/openai/v1".to_string()))
         );
-        // Nothing configured -> None.
-        assert_eq!(resolve_azure_base_url_from(None, None, ""), None);
+        // Nothing configured -> Ok(None).
+        assert_eq!(resolve_azure_base_url_from(None, None, ""), Ok(None));
         // Empty/whitespace env values are ignored.
         assert_eq!(resolve_azure_base_url_from(Some("  "), None, "https://m.openai.azure.com"),
-            Some("https://m.openai.azure.com/openai/v1".to_string()));
+            Ok(Some("https://m.openai.azure.com/openai/v1".to_string())));
     }
 
     #[test]
@@ -477,25 +477,25 @@ mod tests {
         // Azure host with no path -> /openai/v1 inserted.
         assert_eq!(
             normalize_azure_base_url("https://my-rg.openai.azure.com"),
-            "https://my-rg.openai.azure.com/openai/v1"
+            Ok("https://my-rg.openai.azure.com/openai/v1".to_string())
         );
         // Trailing slash / bare /openai also normalized.
         assert_eq!(
             normalize_azure_base_url("https://my-rg.openai.azure.com/openai/"),
-            "https://my-rg.openai.azure.com/openai/v1"
+            Ok("https://my-rg.openai.azure.com/openai/v1".to_string())
         );
         // Cognitive Services host normalized too.
         assert_eq!(
             normalize_azure_base_url("https://x.cognitiveservices.azure.com"),
-            "https://x.cognitiveservices.azure.com/openai/v1"
+            Ok("https://x.cognitiveservices.azure.com/openai/v1".to_string())
         );
         // Already-complete Azure path left as-is.
         assert_eq!(
             normalize_azure_base_url("https://my-rg.openai.azure.com/openai/v1"),
-            "https://my-rg.openai.azure.com/openai/v1"
+            Ok("https://my-rg.openai.azure.com/openai/v1".to_string())
         );
         // Non-Azure host untouched.
-        assert_eq!(normalize_azure_base_url("https://example.com/v1"), "https://example.com/v1");
+        assert_eq!(normalize_azure_base_url("https://example.com/v1"), Ok("https://example.com/v1".to_string()));
     }
 
     #[tokio::test]

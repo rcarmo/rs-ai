@@ -33,30 +33,28 @@ pub fn stream_azure_responses<'a>(
 
 /// Normalize an Azure OpenAI base URL: ensure Azure hosts use the `/openai/v1` base
 /// path so `/responses?api-version=...` resolves correctly (mirrors normalizeAzureBaseUrl).
-pub(crate) fn normalize_azure_base_url(base: &str) -> String {
+/// Returns `Err("Invalid Azure OpenAI base URL: ...")` for an unparseable URL, matching
+/// upstream's `new URL()` validation.
+pub(crate) fn normalize_azure_base_url(base: &str) -> Result<String, String> {
     let trimmed = base.trim().trim_end_matches('/');
-    let (scheme, rest) = match trimmed.split_once("://") {
-        Some((s, r)) => (s, r),
-        None => return trimmed.to_string(),
-    };
-    let (host, path) = match rest.split_once('/') {
-        Some((h, p)) => (h, format!("/{p}")),
-        None => (rest, String::new()),
-    };
-    let host_only = host.split('?').next().unwrap_or(host);
-    let is_azure_host = host_only.ends_with(".openai.azure.com")
-        || host_only.ends_with(".cognitiveservices.azure.com");
-    let path_norm = path.split('?').next().unwrap_or(&path).trim_end_matches('/');
-    if is_azure_host && (path_norm.is_empty() || path_norm == "/openai") {
-        return format!("{scheme}://{host_only}/openai/v1");
+    let mut url = url::Url::parse(trimmed)
+        .map_err(|_| format!("Invalid Azure OpenAI base URL: {base}"))?;
+    let host = url.host_str().unwrap_or("").to_string();
+    let is_azure_host = host.ends_with(".openai.azure.com")
+        || host.ends_with(".cognitiveservices.azure.com");
+    let normalized_path = url.path().trim_end_matches('/').to_string();
+    if is_azure_host && (normalized_path.is_empty() || normalized_path == "/openai") {
+        url.set_path("/openai/v1");
+        url.set_query(None);
     }
-    trimmed.to_string()
+    Ok(url.to_string().trim_end_matches('/').to_string())
 }
 
 /// Resolve the Azure base URL, mirroring resolveAzureConfig's priority:
 /// AZURE_OPENAI_BASE_URL env, else AZURE_OPENAI_RESOURCE_NAME env (→ default host),
-/// else model.baseUrl. Returns None when none is configured. The result is normalized.
-fn resolve_azure_base_url(model_base_url: &str) -> Option<String> {
+/// else model.baseUrl. Returns Ok(None) when none is configured. The result is
+/// normalized; an invalid URL yields Err.
+fn resolve_azure_base_url(model_base_url: &str) -> Result<Option<String>, String> {
     resolve_azure_base_url_from(
         std::env::var("AZURE_OPENAI_BASE_URL").ok().as_deref(),
         std::env::var("AZURE_OPENAI_RESOURCE_NAME").ok().as_deref(),
@@ -68,23 +66,23 @@ pub(crate) fn resolve_azure_base_url_from(
     base_env: Option<&str>,
     resource_env: Option<&str>,
     model_base_url: &str,
-) -> Option<String> {
+) -> Result<Option<String>, String> {
     if let Some(b) = base_env {
         let t = b.trim();
         if !t.is_empty() {
-            return Some(normalize_azure_base_url(t));
+            return normalize_azure_base_url(t).map(Some);
         }
     }
     if let Some(name) = resource_env {
         let t = name.trim();
         if !t.is_empty() {
-            return Some(normalize_azure_base_url(&format!("https://{t}.openai.azure.com/openai/v1")));
+            return normalize_azure_base_url(&format!("https://{t}.openai.azure.com/openai/v1")).map(Some);
         }
     }
     if !model_base_url.trim().is_empty() {
-        return Some(normalize_azure_base_url(model_base_url));
+        return normalize_azure_base_url(model_base_url).map(Some);
     }
-    None
+    Ok(None)
 }
 
 /// Resolve the Azure deployment name from AZURE_OPENAI_DEPLOYMENT_NAME_MAP
@@ -153,13 +151,21 @@ fn stream_responses_inner<'a>(
     }
     let url = if is_azure {
         let base = match resolve_azure_base_url(&model.base_url) {
-            Some(b) => b,
-            None => {
+            Ok(Some(b)) => b,
+            Ok(None) => {
                 let err = Event::Error {
                     reason: StopReason::Error,
                     error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
                         "Azure OpenAI base URL is required. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or model.baseUrl.".to_string(),
                     )),
+                    message: None,
+                };
+                return Box::pin(stream::once(async { err }));
+            }
+            Err(msg) => {
+                let err = Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(msg)),
                     message: None,
                 };
                 return Box::pin(stream::once(async { err }));
