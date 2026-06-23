@@ -43,7 +43,7 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 
 ## Pending high-value adaptations (next cycles)
 
-1. `TestProcessSSEStreamAttachesPendingEncryptedReasoningDetails` — encrypted-reasoning replay edge.
+1. `TestProcessSSEStreamAttachesPendingEncryptedReasoningDetails` — ADAPTED: `src/openai_encrypted_reasoning_test.rs` (encrypted `reasoning_details` attached to the matching tool call's `thought_signature`, order-independent; decoded fields asserted since the blob is opaque). All 3 originally-pending go-ai adaptations now done (codex request-shape, bedrock coalescing, SSE encrypted-reasoning).
 2. `TestConvertMessagesCoalescesConsecutiveToolResults` (bedrock) — ADAPTED: extracted a testable `build_bedrock_messages` and ported the coalescing + cache-point assertion (`src/bedrock_coalesce_test.rs`).
 3. `TestBedrockOptionPrecedenceAndRequestMetadata` — region option precedence + request metadata propagation.
 4. OAuth `TestGetAPIKeyRefreshesExpiredCredential` — blocked on credential-store seam (parity-gaps top-3 #2).
