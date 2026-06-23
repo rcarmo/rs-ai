@@ -63,3 +63,19 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
   `Host`** — every WS handshake was rejected and the provider silently fell back
   to SSE. Now supplies all RFC6455 headers (fresh `generate_key()`), so the
   WebSocket transport actually connects. No prior test exercised a real handshake.
+- **WS happy-path protocol flow — ADAPTED.** `TestStreamViaWebSocketProtocolFlow`
+  -> `src/codex_ws_protocol_test.rs::stream_via_websocket_protocol_flow`: real WS
+  server captures the outbound `response.create` (asserts `model`), streams
+  created/output_item.added/output_text.delta/output_item.done/completed; client
+  must emit Start + TextDelta("ok") + Done(Stop). This locks the handshake fix.
+
+### Pending WS adaptations (need extra harness/feature)
+
+- `TestStreamCodexWebSocketSetupFailureFallsBackToSSEWithDiagnostic` — needs a
+  combined WS+HTTP server (same host serves the WS upgrade AND the SSE fallback)
+  plus WS debug-stats counters (`WebSocketFailures`/`SSEFallbacks`/
+  `WebSocketFallbackActive`), which rs-ai does not expose. rs-ai already covers
+  SSE fallback + the `provider_transport_failure` diagnostic separately
+  (`provider_test.rs`). Debug-stats counters live in the documented WS-pooling gap.
+- `TestStreamViaWebSocketAutoUsesCachedDeltaAndDebugStats` — websocket-cached
+  transport + debug stats (WS-pooling gap; N/A until pooling lands).
