@@ -342,7 +342,9 @@ pub fn stream_openai<'a>(
                             }
                         }
 
-                        if let Some(reason) = choice.get("finish_reason").and_then(|v| v.as_str()) {
+                        // Match upstream's truthy `if (choice.finish_reason)` check:
+                        // null/absent/empty-string finish_reason is not a terminal signal.
+                        if let Some(reason) = choice.get("finish_reason").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
                             if text_started {
                                 yield Event::TextEnd;
                                 text_started = false;

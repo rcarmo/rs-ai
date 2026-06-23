@@ -133,6 +133,41 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_openai_stream_empty_finish_reason_not_terminal() {
+        // Upstream uses a truthy `if (choice.finish_reason)` check, so an empty-string
+        // finish_reason must NOT terminate the stream as an error. The stream should
+        // keep accumulating and end cleanly on the real "stop".
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(sse_response(&[
+                    r#"{"id":"resp-9","choices":[{"delta":{"content":"Hi"},"finish_reason":"","index":0}]}"#,
+                    r#"{"id":"resp-9","choices":[{"delta":{"content":" there"},"index":0}]}"#,
+                    r#"{"id":"resp-9","choices":[{"delta":{},"finish_reason":"stop","index":0}]}"#,
+                ]))
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+
+        let model = test_model("openai-completions", "openai", &server.uri());
+        let ctx = test_context();
+        let opts = StreamOptions::default();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut events = Vec::new();
+        while let Some(evt) = stream.next().await { events.push(evt); }
+
+        // No Error event should be produced by the empty finish_reason.
+        assert!(!events.iter().any(|e| matches!(e, Event::Error { .. })),
+            "empty finish_reason must not produce an error: {:?}", events);
+        let text: String = events.iter().filter_map(|e| {
+            if let Event::TextDelta { delta } = e { Some(delta.as_str()) } else { None }
+        }).collect();
+        assert_eq!(text, "Hi there");
+        assert!(matches!(events.last().unwrap(), Event::Done { reason: StopReason::Stop, .. }));
+    }
+
+    #[tokio::test]
     async fn test_openai_stream_tool_calls() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
