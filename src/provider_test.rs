@@ -1838,8 +1838,9 @@ mod tests {
 
     #[test]
     fn test_codex_ws_response_failed_format() {
-        // response.failed surfaces "<error.code>: <error.message>" (no "Error Code" prefix),
-        // matching the shared decoder.
+        // Codex events flow through mapCodexEvents, which throws just
+        // `response.error.message || "Codex response failed"` (the code is metadata, not
+        // part of the message). NOT the shared decoder's "<code>: <message>" form.
         let model = test_model("openai-codex-responses", "openai", "https://example.com");
         let events = vec![
             serde_json::json!({"type":"response.created","response":{"id":"c1","model":"codex"}}),
@@ -1847,7 +1848,16 @@ mod tests {
         ];
         let replayed = replay_codex_ws_events(&model, &events);
         let err = replayed.iter().find_map(|e| match e { Event::Error { error, .. } => Some(error.to_string()), _ => None }).unwrap();
-        assert_eq!(err, "server_error: boom");
+        assert_eq!(err, "boom");
+
+        // No error.message -> generic fallback.
+        let events2 = vec![
+            serde_json::json!({"type":"response.created","response":{"id":"c1","model":"codex"}}),
+            serde_json::json!({"type":"response.failed","response":{}}),
+        ];
+        let replayed2 = replay_codex_ws_events(&model, &events2);
+        let err2 = replayed2.iter().find_map(|e| match e { Event::Error { error, .. } => Some(error.to_string()), _ => None }).unwrap();
+        assert_eq!(err2, "Codex response failed");
     }
 
     #[tokio::test]
@@ -2007,6 +2017,34 @@ mod tests {
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "ponder")));
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search")));
         assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "answer")));
+    }
+
+    #[test]
+    fn test_codex_ws_response_done_is_terminal() {
+        // The Codex (ChatGPT) backend emits `response.done`; mapCodexEvents normalizes
+        // response.done/completed/incomplete into a single terminal event. rs-ai must
+        // finalize on `response.done` (usage + Stop), not ignore it.
+        let model = test_model("openai-codex-responses", "openai", "https://example.com");
+        let events = vec![
+            serde_json::json!({"type":"response.created","response":{"id":"d1","model":"codex"}}),
+            serde_json::json!({"type":"response.output_text.delta","delta":"hi"}),
+            serde_json::json!({"type":"response.done","response":{"id":"d1","status":"completed","usage":{"input_tokens":4,"output_tokens":2,"total_tokens":6}}}),
+        ];
+        let replayed = replay_codex_ws_events(&model, &events);
+        let done = replayed.iter().find_map(|e| match e { Event::Done { reason, message } => Some((reason.clone(), message)), _ => None })
+            .expect("response.done must produce a terminal Done event");
+        assert_eq!(done.0, StopReason::Stop);
+        assert_eq!(done.1.response_id.as_deref(), Some("d1"));
+        assert_eq!(done.1.usage.as_ref().map(|u| u.input), Some(4));
+
+        // response.incomplete (event type) also terminal -> Length.
+        let events2 = vec![
+            serde_json::json!({"type":"response.created","response":{"id":"d2","model":"codex"}}),
+            serde_json::json!({"type":"response.incomplete","response":{"id":"d2","status":"incomplete","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}),
+        ];
+        let replayed2 = replay_codex_ws_events(&model, &events2);
+        let reason2 = replayed2.iter().find_map(|e| match e { Event::Done { reason, .. } => Some(reason.clone()), _ => None }).expect("done");
+        assert_eq!(reason2, StopReason::Length);
     }
 
     #[test]

@@ -483,7 +483,10 @@ impl CodexWsState {
                     }
                 }
             }
-            "response.completed" => {
+            // Codex (ChatGPT backend) emits response.done; upstream mapCodexEvents
+            // normalizes response.done/response.completed/response.incomplete all into a
+            // single terminal event whose response.status drives the stop reason.
+            "response.completed" | "response.done" | "response.incomplete" => {
                 if self.text_started {
                     self.events.push(Event::TextEnd);
                     self.text_started = false;
@@ -555,15 +558,16 @@ impl CodexWsState {
                 return true;
             }
             "error" => {
-                // SSE error event: "Error Code <code>: <message>" (mirrors the shared decoder).
-                let msg = data.pointer("/message").and_then(|v| v.as_str())
-                    .or_else(|| data.pointer("/error/message").and_then(|v| v.as_str()))
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| "Unknown error".to_string());
+                // Codex error event -> `Codex error: <message || code || json>` (mirrors
+                // mapCodexEvents + extractCodexEventError, incl. the nested event.error).
+                let message = data.get("message").and_then(|v| v.as_str())
+                    .or_else(|| data.pointer("/error/message").and_then(|v| v.as_str()));
                 let code = data.get("code").and_then(|v| v.as_str())
-                    .or_else(|| data.pointer("/error/code").and_then(|v| v.as_str()))
-                    .map(|c| format!("Error Code {}: ", c)).unwrap_or_default();
-                let full = format!("{}{}", code, msg);
+                    .or_else(|| data.pointer("/error/code").and_then(|v| v.as_str()));
+                let detail = message.map(|s| s.to_string())
+                    .or_else(|| code.map(|s| s.to_string()))
+                    .unwrap_or_else(|| data.to_string());
+                let full = format!("Codex error: {detail}");
                 self.partial.stop_reason = Some(StopReason::Error);
                 self.partial.error_message = Some(full.clone());
                 self.events.push(Event::Error {
@@ -574,18 +578,10 @@ impl CodexWsState {
                 return true;
             }
             "response.failed" => {
-                // response.failed: "<error.code>: <error.message>", else "incomplete: <reason>",
-                // else a generic message (mirrors the shared decoder).
-                let resp = data.get("response");
-                let full = if let Some(err) = resp.and_then(|r| r.get("error")).filter(|e| !e.is_null()) {
-                    let code = err.get("code").and_then(|v| v.as_str()).unwrap_or("unknown");
-                    let m = err.get("message").and_then(|v| v.as_str()).unwrap_or("no message");
-                    format!("{code}: {m}")
-                } else if let Some(reason) = resp.and_then(|r| r.pointer("/incomplete_details/reason")).and_then(|v| v.as_str()) {
-                    format!("incomplete: {reason}")
-                } else {
-                    "Unknown error (no error details in response)".to_string()
-                };
+                // mapCodexEvents: response.error.message, else "Codex response failed".
+                let full = data.pointer("/response/error/message").and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(|| "Codex response failed".to_string());
                 self.partial.stop_reason = Some(StopReason::Error);
                 self.partial.error_message = Some(full.clone());
                 self.events.push(Event::Error {
