@@ -84,103 +84,27 @@ pub fn detect_compat_for_model(model: &Model, overrides: Option<&OpenAICompletio
     c
 }
 
-fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAICompletionsCompat {
-    let mut c = OpenAICompletionsCompat {
+fn detect_compat_inner(_provider: &str, _model_id: &str, _base_url: &str) -> OpenAICompletionsCompat {
+    // 0.80.x removed runtime URL/provider-based compat detection. Compat is now the
+    // OpenAI-standard DEFAULT_COMPAT overlaid by per-model compat baked into the catalog
+    // (mirrors getCompat: `model.compat.X ?? DEFAULT_COMPAT.X`).
+    OpenAICompletionsCompat {
         supports_store: Some(true),
         supports_developer_role: Some(true),
         supports_reasoning_effort: Some(true),
         supports_usage_in_streaming: Some(true),
         supports_temperature: Some(true),
         max_tokens_field: Some("max_completion_tokens".to_string()),
+        requires_tool_result_name: Some(false),
+        requires_thinking_as_text: Some(false),
+        requires_assistant_after_tool_result: Some(false),
+        requires_reasoning_content_on_assistant_messages: Some(false),
+        thinking_format: Some("openai".to_string()),
+        zai_tool_stream: Some(false),
         supports_strict_mode: Some(true),
+        cache_control_format: None,
+        supports_session_affinity_headers: Some(false),
         supports_long_cache_retention: Some(true),
         ..Default::default()
-    };
-
-    let is_ollama = is_local_ollama(base_url);
-    let is_openrouter = provider == "openrouter" || base_url.contains("openrouter.ai");
-    let is_deepseek = provider == "deepseek" || base_url.contains("deepseek.com");
-    let is_nvidia = provider == "nvidia" || base_url.contains("integrate.api.nvidia.com");
-    let is_ant_ling = provider == "ant-ling" || base_url.contains("api.ant-ling.com");
-    let is_zai = provider == "zai" || provider == "zai-coding-cn"
-        || base_url.contains("api.z.ai") || base_url.contains("open.bigmodel.cn");
-    let is_moonshot = provider == "moonshotai" || provider == "moonshotai-cn"
-        || base_url.contains("api.moonshot.");
-    let is_cloudflare_aigw = provider == "cloudflare-ai-gateway"
-        || base_url.contains("gateway.ai.cloudflare.com");
-    let is_fireworks = provider == "fireworks" || base_url.contains("fireworks.ai");
-    let is_together = provider == "together"
-        || base_url.contains("api.together.ai") || base_url.contains("api.together.xyz");
-    let is_grok = provider == "xai" || base_url.contains("api.x.ai");
-    let is_cloudflare_workers = provider == "cloudflare-workers-ai" || base_url.contains("api.cloudflare.com");
-    if is_fireworks || is_cloudflare_aigw {
-        c.supports_session_affinity_headers = Some(true);
-    }
-
-    // supportsReasoningEffort is disabled for several non-standard providers.
-    if is_grok || is_zai || is_moonshot || is_together || is_cloudflare_aigw || is_nvidia || is_ant_ling {
-        c.supports_reasoning_effort = Some(false);
-    }
-
-    let is_non_standard = provider == "cerebras" || provider == "xai"
-        || base_url.contains("cerebras.ai") || base_url.contains("api.x.ai")
-        || base_url.contains("chutes.ai") || base_url.contains("deepseek.com") || is_zai || is_moonshot || is_together
-        || provider == "opencode" || base_url.contains("opencode.ai")
-        || is_cloudflare_workers
-        || is_cloudflare_aigw || is_ollama || is_nvidia || is_ant_ling;
-
-    let use_max_tokens = base_url.contains("chutes.ai") || is_moonshot
-        || is_cloudflare_aigw || is_ollama || is_nvidia || is_ant_ling || is_together;
-
-    if is_non_standard {
-        c.supports_store = Some(false);
-        c.supports_developer_role = Some(false);
-    }
-    if use_max_tokens {
-        c.max_tokens_field = Some("max_tokens".to_string());
-    }
-    if is_openrouter {
-        if model_id.starts_with("anthropic/") {
-            c.cache_control_format = Some("anthropic".to_string());
-        }
-        if !model_id.starts_with("anthropic/") && !model_id.starts_with("openai/") {
-            c.supports_developer_role = Some(false);
-        }
-    }
-    if is_ollama {
-        c.requires_tool_result_name = Some(true);
-        c.supports_strict_mode = Some(false);
-    }
-    if is_deepseek {
-        c.requires_reasoning_content_on_assistant_messages = Some(true);
-    }
-    // Detected thinking format follows upstream's priority chain
-    // (deepseek > zai > together > ant-ling > openrouter > openai), not last-wins.
-    c.thinking_format = Some(
-        if is_deepseek { "deepseek" }
-        else if is_zai { "zai" }
-        else if is_together { "together" }
-        else if is_ant_ling { "ant-ling" }
-        else if is_openrouter { "openrouter" }
-        else { "openai" }
-        .to_string(),
-    );
-    if is_moonshot || is_cloudflare_aigw || is_together || is_nvidia {
-        c.supports_strict_mode = Some(false);
-    }
-    if is_cloudflare_workers || is_cloudflare_aigw || is_together || is_nvidia || is_ant_ling {
-        c.supports_long_cache_retention = Some(false);
-    }
-
-    c
-}
-
-fn is_local_ollama(url: &str) -> bool {
-    if let Ok(parsed) = url::Url::parse(url) {
-        let host = parsed.host_str().unwrap_or("");
-        let port = parsed.port().unwrap_or(0);
-        port == 11434 && (host == "localhost" || host == "127.0.0.1" || host == "[::1]")
-    } else {
-        false
     }
 }

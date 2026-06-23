@@ -808,7 +808,9 @@ mod tests {
         // OpenRouter anthropic/* models get Anthropic-style cache_control on system,
         // last conversation message, and last tool.
         let model = test_model("openai-completions", "openrouter", "https://openrouter.ai/api/v1");
-        let model = Model { id: "anthropic/claude-sonnet-4".into(), ..model };
+        let mut model = Model { id: "anthropic/claude-sonnet-4".into(), ..model };
+        // 0.80.x: compat is baked per-model, not URL-detected.
+        model.compat.cache_control_format = Some("anthropic".into());
         let ctx = Context {
             system_prompt: Some("sys".into()),
             messages: vec![user_message("hi")],
@@ -924,16 +926,17 @@ mod tests {
 
     #[test]
     fn test_openai_detected_thinking_format_priority() {
-        // Detected thinkingFormat follows upstream's priority and defaults to "openai".
-        let mk = |provider: &str, url: &str| {
-            let m = test_model("openai-completions", provider, url);
+        // 0.80.x: thinkingFormat comes from per-model compat (baked catalog), not URL
+        // detection; a model with no compat defaults to "openai".
+        let mk = |fmt: Option<&str>| {
+            let mut m = test_model("openai-completions", "deepseek", "https://api.deepseek.com");
+            m.compat.thinking_format = fmt.map(|s| s.to_string());
             crate::compat::detect_compat(&m).thinking_format
         };
-        assert_eq!(mk("deepseek", "https://api.deepseek.com").as_deref(), Some("deepseek"));
-        assert_eq!(mk("zai", "https://api.z.ai").as_deref(), Some("zai"));
-        assert_eq!(mk("together", "https://api.together.ai").as_deref(), Some("together"));
-        assert_eq!(mk("openrouter", "https://openrouter.ai/api/v1").as_deref(), Some("openrouter"));
-        assert_eq!(mk("openai", "https://api.openai.com").as_deref(), Some("openai"));
+        assert_eq!(mk(Some("deepseek")).as_deref(), Some("deepseek"));
+        assert_eq!(mk(Some("zai")).as_deref(), Some("zai"));
+        assert_eq!(mk(Some("together")).as_deref(), Some("together"));
+        assert_eq!(mk(None).as_deref(), Some("openai")); // no compat -> default
     }
 
     #[test]
@@ -1112,7 +1115,8 @@ mod tests {
 
     #[test]
     fn test_openai_deepseek_reasoning_content_on_assistant() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
+        let mut model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
+        model.compat.requires_reasoning_content_on_assistant_messages = Some(true);
         let ctx = Context {
             system_prompt: None,
             messages: vec![Message {
@@ -1155,7 +1159,8 @@ mod tests {
 
     #[test]
     fn test_openai_zai_thinking_format() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "zai", "https://z.ai/api") };
+        let mut model = Model { reasoning: true, ..test_model("openai-completions", "zai", "https://z.ai/api") };
+        model.compat.thinking_format = Some("zai".into());
         let ctx = test_context();
         let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
         let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
@@ -1166,7 +1171,8 @@ mod tests {
 
     #[test]
     fn test_openai_deepseek_thinking_object() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
+        let mut model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
+        model.compat.thinking_format = Some("deepseek".into());
         let ctx = test_context();
         let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
         let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));

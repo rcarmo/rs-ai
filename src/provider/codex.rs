@@ -560,7 +560,9 @@ impl CodexWsState {
                     .or_else(|| data.pointer("/error/message").and_then(|v| v.as_str()))
                     .map(|s| s.to_string())
                     .unwrap_or_else(|| "Unknown error".to_string());
-                let code = data.get("code").and_then(|v| v.as_str()).map(|c| format!("Error Code {}: ", c)).unwrap_or_default();
+                let code = data.get("code").and_then(|v| v.as_str())
+                    .or_else(|| data.pointer("/error/code").and_then(|v| v.as_str()))
+                    .map(|c| format!("Error Code {}: ", c)).unwrap_or_default();
                 let full = format!("{}{}", code, msg);
                 self.partial.stop_reason = Some(StopReason::Error);
                 self.partial.error_message = Some(full.clone());
