@@ -315,10 +315,7 @@ mod tests {
 
     #[test]
     fn uses_configurable_chat_template_boolean_thinking_kwargs() {
-        let mut compat = crate::types::ModelCompat::default();
-        compat.thinking_format = Some("chat-template".into());
-        compat.supports_reasoning_effort = Some(false);
-        compat.chat_template_kwargs = Some(json!({"thinking": {"$var": "thinking.enabled"}}));
+        let compat = crate::types::ModelCompat { thinking_format: Some("chat-template".into()), supports_reasoning_effort: Some(false), chat_template_kwargs: Some(json!({"thinking": {"$var": "thinking.enabled"}})), ..Default::default() };
         let model = local_vllm("deepseek-ai/DeepSeek-V3.1", compat, None);
         for (level, expected) in [(Some(ThinkingLevel::High), true), (None, false)] {
             let opts = StreamOptions { reasoning: level, ..Default::default() };
@@ -331,9 +328,11 @@ mod tests {
 
     #[test]
     fn uses_qwen_chat_template_thinking_kwargs() {
-        let mut compat = crate::types::ModelCompat::default();
-        compat.thinking_format = Some("qwen-chat-template".into());
-        compat.supports_reasoning_effort = Some(false);
+        let compat = crate::types::ModelCompat {
+            thinking_format: Some("qwen-chat-template".into()),
+            supports_reasoning_effort: Some(false),
+            ..Default::default()
+        };
         let model = local_vllm("Qwen/Qwen3-Coder", compat, None);
         for (level, expected) in [(Some(ThinkingLevel::High), true), (None, false)] {
             let opts = StreamOptions { reasoning: level, ..Default::default() };
@@ -345,13 +344,15 @@ mod tests {
 
     #[test]
     fn uses_configurable_chat_template_effort_kwargs_with_static_kwargs() {
-        let mut compat = crate::types::ModelCompat::default();
-        compat.thinking_format = Some("chat-template".into());
-        compat.supports_reasoning_effort = Some(false);
-        compat.chat_template_kwargs = Some(json!({
-            "preserve_thinking": true,
-            "reasoning_effort": {"$var": "thinking.effort", "omitWhenOff": true},
-        }));
+        let compat = crate::types::ModelCompat {
+            thinking_format: Some("chat-template".into()),
+            supports_reasoning_effort: Some(false),
+            chat_template_kwargs: Some(json!({
+                "preserve_thinking": true,
+                "reasoning_effort": {"$var": "thinking.effort", "omitWhenOff": true},
+            })),
+            ..Default::default()
+        };
         let mut map = std::collections::HashMap::new();
         map.insert("xhigh".to_string(), Some("max".to_string()));
         let model = local_vllm("unsloth/gpt-oss-120b-GGUF", compat, Some(map));
@@ -444,5 +445,196 @@ mod tests {
             }
             other => panic!("expected toolCall, got {other:?}"),
         }
+    }
+
+    // --- z.ai tool_stream override ---
+
+    #[test]
+    fn respects_explicit_zai_tool_stream_compat_override() {
+        let mut model = cat("zai", "glm-4.5-air");
+        model.compat.zai_tool_stream = Some(true);
+        let mut ctx = user_ctx();
+        ctx.tools = vec![ping_tool()];
+        let p = payload(&model, &ctx, &StreamOptions::default());
+        assert_eq!(p["tool_stream"], json!(true));
+    }
+
+    // --- openrouter system/developer role routing ---
+
+    #[test]
+    fn uses_system_messages_for_non_openai_anthropic_openrouter_reasoning_model() {
+        let p = payload(&cat("openrouter", "deepseek/deepseek-v4-pro"), &sys_ctx(), &StreamOptions::default());
+        assert_eq!(p["messages"][0]["role"], json!("system"));
+    }
+
+    #[test]
+    fn keeps_developer_messages_for_openai_and_anthropic_openrouter_reasoning_models() {
+        for model in [cat("openrouter", "openai/gpt-5.2-codex"), cat("openrouter", "anthropic/claude-sonnet-4.5")] {
+            let p = payload(&model, &sys_ctx(), &StreamOptions::default());
+            assert_eq!(p["messages"][0]["role"], json!("developer"), "model {}", model.id);
+        }
+    }
+
+    #[test]
+    fn stores_openrouter_kimi_k2_6_reasoning_replay_compat() {
+        let m = cat("openrouter", "moonshotai/kimi-k2.6");
+        assert_eq!(m.compat.supports_developer_role, Some(false));
+        assert_eq!(m.compat.requires_reasoning_content_on_assistant_messages, Some(true));
+    }
+
+    // --- reasoning-delta signature normalization ---
+
+    fn thinking_block(m: &crate::types::Message) -> (&str, Option<&str>) {
+        match m.content.iter().find(|b| matches!(b, ContentBlock::Thinking { .. })) {
+            Some(ContentBlock::Thinking { thinking, thinking_signature, .. }) => (thinking.as_str(), thinking_signature.as_deref()),
+            _ => panic!("no thinking block"),
+        }
+    }
+
+    #[tokio::test]
+    async fn normalizes_opencode_go_reasoning_deltas_to_reasoning_content_for_replay() {
+        let body = concat!(
+            "data: {\"id\":\"x\",\"choices\":[{\"delta\":{\"reasoning\":\"think\"},\"finish_reason\":\"stop\"}]}\n\n",
+            "data: [DONE]\n\n",
+        ).to_string();
+        let (_r, _e, m) = run_openai_chunks(cat("opencode-go", "kimi-k2.6"), body).await;
+        assert_eq!(thinking_block(&m), ("think", Some("reasoning_content")));
+    }
+
+    #[tokio::test]
+    async fn keeps_non_opencode_go_reasoning_deltas_on_the_original_reasoning_field() {
+        let body = concat!(
+            "data: {\"id\":\"x\",\"choices\":[{\"delta\":{\"reasoning\":\"think\"},\"finish_reason\":\"stop\"}]}\n\n",
+            "data: [DONE]\n\n",
+        ).to_string();
+        let (_r, _e, m) = run_openai_chunks(cat("openai", "gpt-4o-mini"), body).await;
+        assert_eq!(thinking_block(&m), ("think", Some("reasoning")));
+    }
+
+    #[test]
+    fn replays_opencode_go_reasoning_thinking_blocks_as_reasoning_content() {
+        let mut args = std::collections::HashMap::new();
+        args.insert("path".to_string(), json!("README.md"));
+        let assistant = Message {
+            role: Role::Assistant,
+            content: vec![
+                ContentBlock::Thinking { thinking: "think".into(), thinking_signature: Some("reasoning".into()), redacted: false },
+                ContentBlock::ToolCall { id: "call_1".into(), name: "read".into(), arguments: args, thought_signature: None },
+            ],
+            timestamp: 0,
+            api: Some("openai-completions".into()), provider: Some("opencode-go".into()), model: Some("kimi-k2.6".into()),
+            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: Some(crate::types::StopReason::Stop), error_message: None,
+            tool_call_id: None, tool_name: None, is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, tools: Vec::new(), messages: vec![assistant] };
+        let p = payload(&cat("opencode-go", "kimi-k2.6"), &ctx, &StreamOptions::default());
+        let replayed = p["messages"].as_array().unwrap().iter()
+            .find(|msg| msg.get("role").and_then(|r| r.as_str()) == Some("assistant"))
+            .expect("assistant message");
+        assert_eq!(replayed["reasoning_content"], json!("think"));
+        assert!(replayed.get("reasoning").is_none(), "must not use the `reasoning` key");
+    }
+
+    #[tokio::test]
+    async fn replays_xiaomi_mimo_assistant_tool_calls_with_empty_reasoning_content_when_thinking_missing() {
+        let mut args = std::collections::HashMap::new();
+        args.insert("path".to_string(), json!("README.md"));
+        let assistant = Message {
+            role: Role::Assistant,
+            content: vec![ContentBlock::ToolCall { id: "call_1".into(), name: "read".into(), arguments: args, thought_signature: None }],
+            timestamp: 0,
+            api: Some("openai-completions".into()), provider: Some("xiaomi".into()), model: Some("mimo-v2.5-pro".into()),
+            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: Some(crate::types::StopReason::ToolUse), error_message: None,
+            tool_call_id: None, tool_name: None, is_error: false, details: None,
+        };
+        let tool_result = Message {
+            role: Role::ToolResult,
+            content: vec![ContentBlock::Text { text: "contents".into(), text_signature: None }],
+            timestamp: 0, api: None, provider: None, model: None, response_id: None,
+            response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: None, error_message: None,
+            tool_call_id: Some("call_1".into()), tool_name: Some("read".into()), is_error: false, details: None,
+        };
+        let ctx = Context { system_prompt: None, tools: Vec::new(),
+            messages: vec![msg(Role::User, "Read README.md"), assistant, tool_result] };
+        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let p = payload(&cat("xiaomi", "mimo-v2.5-pro"), &ctx, &opts);
+        let replayed = p["messages"].as_array().unwrap().iter()
+            .find(|m| m.get("role").and_then(|r| r.as_str()) == Some("assistant")).expect("assistant");
+        assert_eq!(replayed["reasoning_content"], json!(""));
+        assert_eq!(p["thinking"], json!({"type": "enabled"}));
+        assert_eq!(p["reasoning_effort"], json!("high"));
+    }
+
+    /// Mixed text + reasoning + 4 parallel tool-call deltas. rs-ai's event protocol
+    /// is index-less (tool events carry no `contentIndex`), so the upstream
+    /// per-contentIndex grouping is N/A; the portable substance is the event-type
+    /// counts and the final accumulated content (ids/names/coalesced args).
+    #[tokio::test]
+    async fn accumulates_mixed_content_reasoning_and_parallel_tool_call_deltas() {
+        let body = concat!(
+            "data: {\"id\":\"x\",\"choices\":[{\"delta\":{\"content\":\"answer 1\",\"reasoning_content\":\"think 1\",\"tool_calls\":[",
+            "{\"index\":0,\"id\":\"tc_read_initial\",\"type\":\"function\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"path\\\":\\\"README\"}},",
+            "{\"index\":1,\"id\":\"tc_grep_initial\",\"type\":\"function\",\"function\":{\"name\":\"grep\",\"arguments\":\"{\\\"pattern\\\":\\\"TODO\"}},",
+            "{\"id\":\"tc_list_no_index\",\"type\":\"function\",\"function\":{\"name\":\"list\",\"arguments\":\"{\\\"path\\\":\\\"packages\"}},",
+            "{\"id\":\"tc_write_no_index\",\"type\":\"function\",\"function\":{\"name\":\"write\",\"arguments\":\"{\\\"path\\\":\\\"out\"}}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"x\",\"choices\":[{\"delta\":{\"content\":\" answer 2\",\"tool_calls\":[",
+            "{\"index\":1,\"id\":\"tc_grep_changed\",\"type\":\"function\",\"function\":{\"arguments\":\"\\\",\\\"path\\\":\\\"src\"}},",
+            "{\"id\":\"tc_write_no_index\",\"type\":\"function\",\"function\":{\"arguments\":\".txt\\\",\\\"content\\\":\\\"ok\\\"}\"}},",
+            "{\"id\":\"tc_list_no_index\",\"type\":\"function\",\"function\":{\"arguments\":\"/ai\\\"}\"}}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"x\",\"choices\":[{\"delta\":{\"content\":\"\\n\",\"reasoning_content\":\" think 2\",\"tool_calls\":[",
+            "{\"index\":0,\"id\":\"tc_read_changed\",\"type\":\"function\",\"function\":{\"arguments\":\".md\\\"}\"}},",
+            "{\"index\":1,\"type\":\"function\",\"function\":{\"arguments\":\"\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":8,\"prompt_tokens_details\":{\"cached_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":2}}}\n\n",
+            "data: [DONE]\n\n",
+        ).to_string();
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body))
+            .mount(&server).await;
+        let mut model = cat("openai", "gpt-4o-mini");
+        model.base_url = server.uri();
+        model.api_key = Some("test".into());
+        let mut ctx = user_ctx();
+        ctx.tools = vec![
+            Tool { name: "read".into(), description: "r".into(), parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}) },
+            Tool { name: "grep".into(), description: "g".into(), parameters: json!({"type":"object","properties":{"pattern":{"type":"string"},"path":{"type":"string"}}}) },
+            Tool { name: "list".into(), description: "l".into(), parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}) },
+            Tool { name: "write".into(), description: "w".into(), parameters: json!({"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}}}) },
+        ];
+        let opts = StreamOptions::default();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+        let mut message = None;
+        while let Some(evt) = stream.next().await {
+            let key = match &evt {
+                Event::TextStart => "text_start", Event::TextDelta { .. } => "text_delta", Event::TextEnd => "text_end",
+                Event::ThinkingStart => "thinking_start", Event::ThinkingDelta { .. } => "thinking_delta", Event::ThinkingEnd => "thinking_end",
+                Event::ToolCallStart { .. } => "toolcall_start", Event::ToolCallDelta { .. } => "toolcall_delta", Event::ToolCallEnd { .. } => "toolcall_end",
+                Event::Done { message: m, .. } => { message = Some(m.clone()); "done" }
+                _ => "other",
+            };
+            *counts.entry(key).or_default() += 1;
+        }
+        let c = |k: &str| *counts.get(k).unwrap_or(&0);
+        assert_eq!(c("text_start"), 1); assert_eq!(c("text_delta"), 3); assert_eq!(c("text_end"), 1);
+        assert_eq!(c("thinking_start"), 1); assert_eq!(c("thinking_delta"), 2); assert_eq!(c("thinking_end"), 1);
+        assert_eq!(c("toolcall_start"), 4); assert_eq!(c("toolcall_delta"), 9); assert_eq!(c("toolcall_end"), 4);
+
+        let m = message.expect("Done");
+        assert!(matches!(m.stop_reason, Some(crate::types::StopReason::ToolUse)));
+        assert_eq!(m.content.len(), 6);
+        assert!(matches!(&m.content[0], ContentBlock::Text { text, .. } if text == "answer 1 answer 2\n"));
+        assert!(matches!(&m.content[1], ContentBlock::Thinking { thinking, thinking_signature, .. }
+            if thinking == "think 1 think 2" && thinking_signature.as_deref() == Some("reasoning_content")));
+        let tc = |i: usize| match &m.content[i] {
+            ContentBlock::ToolCall { id, name, arguments, .. } => (id.as_str(), name.as_str(), arguments.clone()),
+            other => panic!("expected toolCall at {i}, got {other:?}"),
+        };
+        let (id, name, a) = tc(2); assert_eq!((id, name), ("tc_read_initial", "read")); assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("README.md"));
+        let (id, name, a) = tc(3); assert_eq!((id, name), ("tc_grep_initial", "grep")); assert_eq!(a.get("pattern").and_then(|v| v.as_str()), Some("TODO")); assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("src"));
+        let (id, name, a) = tc(4); assert_eq!((id, name), ("tc_list_no_index", "list")); assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("packages/ai"));
+        let (id, name, a) = tc(5); assert_eq!((id, name), ("tc_write_no_index", "write")); assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("out.txt")); assert_eq!(a.get("content").and_then(|v| v.as_str()), Some("ok"));
     }
 }

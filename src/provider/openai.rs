@@ -185,6 +185,11 @@ pub fn stream_openai<'a>(
         let mut text_started = false;
         let mut current_text = String::new();
         let mut thinking_started = false;
+        // Track whether thinking began before any text in the stream so the
+        // assembled content preserves streaming order (mirrors upstream, which
+        // creates blocks incrementally: text-first when `content` streams before
+        // `reasoning_content`). Defaults to thinking-first for reasoning-first streams.
+        let mut thinking_before_text = false;
         let mut current_thinking = String::new();
         let mut current_thinking_signature: Option<String> = None;
         let mut tool_calls: std::collections::BTreeMap<usize, (String, String, String)> = std::collections::BTreeMap::new();
@@ -278,6 +283,9 @@ pub fn stream_openai<'a>(
                                 && !reasoning.is_empty() {
                                     if !thinking_started {
                                         thinking_started = true;
+                                        if !text_started {
+                                            thinking_before_text = true;
+                                        }
                                         // opencode-go reports the `reasoning` field but replays it as `reasoning_content`.
                                         let sig = if model.provider == "opencode-go" && field == "reasoning" {
                                             "reasoning_content"
@@ -364,20 +372,7 @@ pub fn stream_openai<'a>(
                                 partial.error_message = Some(msg);
                             }
                             partial.stop_reason = Some(stop.clone());
-                            // reasoning_content streams before content, so emit Thinking first.
-                            if !current_thinking.is_empty() && !partial.content.iter().any(|b| matches!(b, ContentBlock::Thinking { .. })) {
-                                partial.content.push(ContentBlock::Thinking {
-                                    thinking: current_thinking.clone(),
-                                    thinking_signature: current_thinking_signature.clone(),
-                                    redacted: false,
-                                });
-                            }
-                            if !current_text.is_empty() && !partial.content.iter().any(|b| matches!(b, ContentBlock::Text { .. })) {
-                                partial.content.push(ContentBlock::Text {
-                                    text: current_text.clone(),
-                                    text_signature: None,
-                                });
-                            }
+                            assemble_text_thinking(&mut partial.content, &current_thinking, &current_thinking_signature, &current_text, thinking_before_text);
                             if partial.content.iter().all(|b| !matches!(b, ContentBlock::ToolCall { .. })) {
                                 for (id, name, args_json) in tool_calls.values() {
                                     let parsed = crate::jsonparse::parse_streaming_json(args_json);
@@ -424,19 +419,7 @@ pub fn stream_openai<'a>(
         if thinking_started {
             yield Event::ThinkingEnd;
         }
-        if !current_thinking.is_empty() && !partial.content.iter().any(|b| matches!(b, ContentBlock::Thinking { .. })) {
-            partial.content.push(ContentBlock::Thinking {
-                thinking: current_thinking.clone(),
-                thinking_signature: current_thinking_signature.clone(),
-                redacted: false,
-            });
-        }
-        if !current_text.is_empty() && !partial.content.iter().any(|b| matches!(b, ContentBlock::Text { .. })) {
-            partial.content.push(ContentBlock::Text {
-                text: current_text.clone(),
-                text_signature: None,
-            });
-        }
+        assemble_text_thinking(&mut partial.content, &current_thinking, &current_thinking_signature, &current_text, thinking_before_text);
         if partial.content.iter().all(|b| !matches!(b, ContentBlock::ToolCall { .. })) {
             for (id, name, args_json) in tool_calls.values() {
                 let parsed = crate::jsonparse::parse_streaming_json(args_json);
@@ -489,6 +472,35 @@ pub fn stream_openai<'a>(
             }
         }
     })
+}
+
+/// Append the accumulated text and thinking blocks to `content`, preserving the
+/// stream order in which they began (`thinking_first` = thinking started before
+/// any text). Mirrors upstream's incremental block creation.
+fn assemble_text_thinking(
+    content: &mut Vec<ContentBlock>,
+    thinking: &str,
+    sig: &Option<String>,
+    text: &str,
+    thinking_first: bool,
+) {
+    let needs_thinking = !thinking.is_empty()
+        && !content.iter().any(|b| matches!(b, ContentBlock::Thinking { .. }));
+    let needs_text = !text.is_empty()
+        && !content.iter().any(|b| matches!(b, ContentBlock::Text { .. }));
+    let thinking_block = || ContentBlock::Thinking {
+        thinking: thinking.to_string(),
+        thinking_signature: sig.clone(),
+        redacted: false,
+    };
+    let text_block = || ContentBlock::Text { text: text.to_string(), text_signature: None };
+    if thinking_first {
+        if needs_thinking { content.push(thinking_block()); }
+        if needs_text { content.push(text_block()); }
+    } else {
+        if needs_text { content.push(text_block()); }
+        if needs_thinking { content.push(thinking_block()); }
+    }
 }
 
 pub(crate) fn build_payload(
