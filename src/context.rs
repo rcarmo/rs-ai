@@ -45,8 +45,16 @@ pub fn is_context_overflow(msg: &Message, model: &Model) -> bool {
             "input token count",                  // Google (with "exceeds the maximum")
         ];
         let is_non_overflow = NON_OVERFLOW.iter().any(|n| lower.contains(n));
-        if !is_non_overflow && OVERFLOW.iter().any(|n| lower.contains(n)) {
-            return true;
+        if !is_non_overflow {
+            if OVERFLOW.iter().any(|n| lower.contains(n)) {
+                return true;
+            }
+            // Cerebras returns a 400/413 with no body, e.g. "400 (no body)" or
+            // "413 status code (no body)" (upstream /^4(?:00|13)\s*(?:status code)?\s*\(no body\)/).
+            let t = lower.trim_start();
+            if (t.starts_with("400") || t.starts_with("413")) && t.contains("(no body)") {
+                return true;
+            }
         }
     }
 
@@ -144,6 +152,8 @@ mod tests {
             "prompt token count of 50000 exceeds the limit of 8192",        // Copilot
             "input is too long for requested model",                        // Bedrock
             "413 request_too_large",                                        // Anthropic 413
+            "400 (no body)",                                                // Cerebras
+            "413 status code (no body)",                                    // Cerebras
         ];
         for c in cases {
             let mut msg = base_msg();
