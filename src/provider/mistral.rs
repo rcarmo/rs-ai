@@ -254,7 +254,9 @@ pub fn stream_mistral<'a>(
                                 }
                             }
                         }
-                        if let Some(reason) = choice.get("finish_reason").and_then(|v| v.as_str()) {
+                        // Match upstream's truthy `if (choice.finishReason)` check: an
+                        // empty-string finish_reason is not a terminal signal.
+                        if let Some(reason) = choice.get("finish_reason").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
                             if text_started {
                                 yield Event::TextEnd;
                                 text_started = false;

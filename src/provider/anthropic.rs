@@ -366,7 +366,10 @@ pub fn stream_anthropic<'a>(
                         current_block_type.clear();
                     }
                     "message_delta" => {
-                        if let Some(reason) = data.pointer("/delta/stop_reason").and_then(|v| v.as_str()) {
+                        // Match upstream's truthy `if (event.delta.stop_reason)` check: an
+                        // empty-string stop_reason must not be mapped (which would otherwise
+                        // surface as an "Unhandled stop reason" error).
+                        if let Some(reason) = data.pointer("/delta/stop_reason").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
                             let stop_details = data.pointer("/delta/stop_details");
                             partial.stop_reason = Some(match reason {
                                 "end_turn" => StopReason::Stop,

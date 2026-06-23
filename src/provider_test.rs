@@ -2831,6 +2831,37 @@ mod tests {
             "initial content_block.input must be preserved when no input_json_delta arrives: {:?}", msg.content);
     }
 
+    #[tokio::test]
+    async fn test_anthropic_empty_stop_reason_not_terminal() {
+        // Upstream uses a truthy `if (event.delta.stop_reason)` check. An empty-string
+        // stop_reason must be ignored, not mapped to "Unhandled stop reason" -> Error.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/messages"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\n\
+                     event: content_block_start\ndata: {\"type\":\"content_block_start\",\"content_block\":{\"type\":\"text\"}}\n\n\
+                     event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"hi\"}}\n\n\
+                     event: content_block_stop\ndata: {\"type\":\"content_block_stop\"}\n\n\
+                     event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"\"}}\n\n\
+                     event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"}}\n\n\
+                     event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"
+                )
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("anthropic-messages", "anthropic", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_anthropic(&model, &ctx, &opts);
+        let mut events = Vec::new();
+        while let Some(evt) = stream.next().await { events.push(evt); }
+        assert!(!events.iter().any(|e| matches!(e, Event::Error { .. })),
+            "empty stop_reason must not error: {events:?}");
+        assert!(matches!(events.last().unwrap(), Event::Done { reason: StopReason::Stop, .. }));
+    }
+
     #[test]
     fn test_anthropic_needs_session_affinity() {
         use crate::provider::anthropic::anthropic_needs_session_affinity;

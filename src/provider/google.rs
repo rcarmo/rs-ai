@@ -273,7 +273,7 @@ pub fn stream_google<'a>(
                                 }
                             }
                         }
-                        if let Some(reason) = candidate.get("finishReason").and_then(|v| v.as_str()) {
+                        if let Some(reason) = candidate.get("finishReason").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
                             // Finalize any open block before recording the stop reason.
                             match block_kind {
                                 1 => {
