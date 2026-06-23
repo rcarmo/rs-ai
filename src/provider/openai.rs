@@ -192,12 +192,12 @@ pub fn stream_openai<'a>(
             let chunk_bytes = match chunk_result {
                 Ok(c) => c,
                 Err(e) => {
-                    yield Event::Error {
-                        reason: StopReason::Error,
-                        error: Arc::from(Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
-                        message: Some(partial.clone()),
-                    };
-                    return;
+                    // Mid-stream network/body error: record it and break so the after-loop
+                    // finalization assembles partial.content before the terminal Error event
+                    // (mirrors upstream surfacing accumulated blocks on a broken stream).
+                    partial.stop_reason = Some(StopReason::Error);
+                    partial.error_message = Some(e.to_string());
+                    break;
                 }
             };
 

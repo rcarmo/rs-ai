@@ -135,12 +135,12 @@ pub fn stream_google<'a>(
             let chunk_bytes = match chunk_result {
                 Ok(c) => c,
                 Err(e) => {
-                    yield Event::Error {
-                        reason: StopReason::Error,
-                        error: Arc::from(Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
-                        message: Some(partial.clone()),
-                    };
-                    return;
+                    // Mid-stream network/body error: record it and break so the after-loop
+                    // block finalization assembles the in-progress block before the terminal
+                    // Error event.
+                    partial.stop_reason = Some(StopReason::Error);
+                    partial.error_message = Some(e.to_string());
+                    break;
                 }
             };
 
