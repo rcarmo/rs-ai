@@ -66,7 +66,7 @@ pub async fn generate_openrouter(
         Some(k) => k,
         None => {
             out.stop_reason = StopReason::Error;
-            out.error_message = Some(format!("no API key for provider: {}", model.provider));
+            out.error_message = Some(format!("No API key for provider: {}", model.provider));
             return out;
         }
     };

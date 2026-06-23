@@ -69,7 +69,7 @@ pub fn stream_codex<'a>(
         let err = Event::Error {
             reason: StopReason::Error,
             error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                format!("no API key for provider: {}", model.provider),
+                format!("No API key for provider: {}", model.provider),
             )),
             message: None,
         };

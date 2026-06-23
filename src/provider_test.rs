@@ -2501,7 +2501,13 @@ mod tests {
         let ctx = test_context();
         let mut stream = stream_openai(&model, &ctx, &opts);
         let evt = stream.next().await.unwrap();
-        assert!(matches!(evt, Event::Error { .. }));
+        match evt {
+            Event::Error { error, .. } => {
+                // Exact upstream casing: "No API key for provider: <provider>".
+                assert_eq!(error.to_string(), "No API key for provider: openai");
+            }
+            other => panic!("expected Error, got {other:?}"),
+        }
     }
 
     #[tokio::test]
