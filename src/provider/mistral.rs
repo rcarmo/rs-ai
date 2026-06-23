@@ -339,21 +339,6 @@ pub fn stream_mistral<'a>(
 
 const MISTRAL_TOOL_CALL_ID_LENGTH: usize = 9;
 
-/// Encode a u64 in lowercase base36.
-fn to_base36(mut n: u64) -> String {
-    const ALPHABET: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
-    if n == 0 {
-        return "0".to_string();
-    }
-    let mut s = Vec::new();
-    while n > 0 {
-        s.push(ALPHABET[(n % 36) as usize]);
-        n /= 36;
-    }
-    s.reverse();
-    String::from_utf8(s).unwrap()
-}
-
 /// Derive a candidate Mistral tool-call id (mirrors deriveMistralToolCallId).
 fn derive_mistral_tool_call_id(id: &str, attempt: u32) -> String {
     let normalized: String = id.chars().filter(|c| c.is_ascii_alphanumeric()).collect();
@@ -362,7 +347,7 @@ fn derive_mistral_tool_call_id(id: &str, attempt: u32) -> String {
     }
     let seed_base = if normalized.is_empty() { id.to_string() } else { normalized };
     let seed = if attempt == 0 { seed_base } else { format!("{seed_base}:{attempt}") };
-    to_base36(crate::utils::hash_string(&seed))
+    crate::utils::short_hash(&seed)
         .chars()
         .filter(|c| c.is_ascii_alphanumeric())
         .take(MISTRAL_TOOL_CALL_ID_LENGTH)
@@ -643,7 +628,30 @@ fn build_tool_result_text(text: &str, has_images: bool, supports_images: bool, i
 #[cfg(test)]
 mod tests {
     use super::map_mistral_finish_reason;
+    use super::{derive_mistral_tool_call_id, MistralIdNormalizer, MISTRAL_TOOL_CALL_ID_LENGTH};
     use crate::types::StopReason;
+
+    #[test]
+    fn test_mistral_derived_id_is_nine_chars() {
+        // A non-conforming id must be hashed to exactly 9 alphanumeric chars
+        // (upstream shortHash yields >=12 base-36 chars, sliced to 9).
+        let id = derive_mistral_tool_call_id("call_some-long+weird/id==", 0);
+        assert_eq!(id.len(), MISTRAL_TOOL_CALL_ID_LENGTH, "derived id must be 9 chars: {id}");
+        assert!(id.chars().all(|c| c.is_ascii_alphanumeric()));
+        // Deterministic.
+        assert_eq!(id, derive_mistral_tool_call_id("call_some-long+weird/id==", 0));
+    }
+
+    #[test]
+    fn test_mistral_normalizer_collision_resolution() {
+        // Distinct inputs always map to distinct 9-char ids; the same input is stable.
+        let mut n = MistralIdNormalizer::default();
+        let a = n.normalize("id-a");
+        let b = n.normalize("id-b");
+        assert_ne!(a, b);
+        assert_eq!(a.len(), MISTRAL_TOOL_CALL_ID_LENGTH);
+        assert_eq!(a, n.normalize("id-a"));
+    }
 
     #[test]
     fn test_map_mistral_finish_reason() {

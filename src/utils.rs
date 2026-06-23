@@ -116,7 +116,34 @@ mod tests {
 
 /// Short hash (first 8 hex chars of FNV hash).
 pub fn short_hash(s: &str) -> String {
-    format!("{:08x}", hash_string(s) & 0xFFFFFFFF)
+    // Exact port of upstream `shortHash` (utils/hash.js): a cyrb53-style 64-bit
+    // double hash emitting base-36 of two unsigned 32-bit halves. `charCodeAt`
+    // iterates UTF-16 code units and `Math.imul` is 32-bit wrapping multiply.
+    let mut h1: u32 = 0xdead_beef;
+    let mut h2: u32 = 0x41c6_ce57;
+    for ch in s.encode_utf16() {
+        let ch = ch as u32;
+        h1 = (h1 ^ ch).wrapping_mul(2_654_435_761);
+        h2 = (h2 ^ ch).wrapping_mul(1_597_334_677);
+    }
+    h1 = (h1 ^ (h1 >> 16)).wrapping_mul(2_246_822_507) ^ (h2 ^ (h2 >> 13)).wrapping_mul(3_266_489_909);
+    h2 = (h2 ^ (h2 >> 16)).wrapping_mul(2_246_822_507) ^ (h1 ^ (h1 >> 13)).wrapping_mul(3_266_489_909);
+    format!("{}{}", to_base36(u64::from(h2)), to_base36(u64::from(h1)))
+}
+
+/// Encode a u64 in lowercase base36 (mirrors JS `Number.toString(36)`).
+pub(crate) fn to_base36(mut n: u64) -> String {
+    const ALPHABET: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
+    if n == 0 {
+        return "0".to_string();
+    }
+    let mut s = Vec::new();
+    while n > 0 {
+        s.push(ALPHABET[(n % 36) as usize]);
+        n /= 36;
+    }
+    s.reverse();
+    String::from_utf8(s).unwrap()
 }
 
 /// Check if a provider is a Cloudflare provider.

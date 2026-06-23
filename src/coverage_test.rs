@@ -169,8 +169,11 @@ mod tests {
 
     #[test]
     fn test_short_hash() {
-        let h = short_hash("test");
-        assert_eq!(h.len(), 8);
+        // Exact upstream shortHash values (cyrb53-style base-36 double hash).
+        assert_eq!(short_hash("test"), "1mibwv417rfy6h");
+        assert_eq!(short_hash("fc_abc"), "1qaoofs1vxahbg");
+        assert_eq!(short_hash(""), "k4n83c7h0j2b");
+        assert_eq!(short_hash("hello world"), "n7rb4n1m39uz8");
         assert_eq!(short_hash("test"), short_hash("test"));
     }
 
