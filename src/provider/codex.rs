@@ -260,7 +260,10 @@ async fn try_websocket(
 
     let account_id = crate::oauth::codex_account_id(api_key);
     let user_agent = codex_user_agent();
-    let request_id = opts.session_id.clone().unwrap_or_else(|| format!("req_{}", crate::utils::now_millis()));
+    // Upstream: `sessionId || createCodexRequestId()` (truthy), so an empty session id
+    // gets a fresh request id rather than being used verbatim.
+    let request_id = opts.session_id.clone().filter(|s| !s.is_empty())
+        .unwrap_or_else(|| format!("req_{}", crate::utils::now_millis()));
     let mut builder = tungstenite::http::Request::builder()
         .uri(ws_url)
         .header("Authorization", format!("Bearer {}", api_key))
