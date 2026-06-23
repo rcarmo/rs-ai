@@ -631,7 +631,16 @@ impl CodexWsState {
 /// for rate/usage-limit errors (mirrors parseErrorResponse: surfaces
 /// friendlyMessage || err.message || raw).
 pub(crate) fn parse_codex_error_response(body: &str, status: u16) -> String {
-    let mut message = if body.is_empty() { "Request failed".to_string() } else { body.to_string() };
+    let mut message = if body.is_empty() {
+        // Upstream: raw || response.statusText || "Request failed". With an empty body,
+        // fall back to the HTTP status reason phrase before the generic default.
+        reqwest::StatusCode::from_u16(status).ok()
+            .and_then(|s| s.canonical_reason())
+            .unwrap_or("Request failed")
+            .to_string()
+    } else {
+        body.to_string()
+    };
     let mut friendly: Option<String> = None;
     if let Ok(parsed) = serde_json::from_str::<Value>(body)
         && let Some(err) = parsed.get("error") {

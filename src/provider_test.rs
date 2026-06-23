@@ -2084,8 +2084,11 @@ mod tests {
         // Non-usage error surfaces err.message.
         let body3 = serde_json::json!({"error": {"code": "bad_request", "message": "nope"}}).to_string();
         assert_eq!(parse_codex_error_response(&body3, 400), "nope");
-        // Empty body -> "Request failed".
-        assert_eq!(parse_codex_error_response("", 500), "Request failed");
+        // Empty body -> HTTP status reason phrase (upstream: raw || statusText || ...).
+        assert_eq!(parse_codex_error_response("", 500), "Internal Server Error");
+        assert_eq!(parse_codex_error_response("", 404), "Not Found");
+        // Empty body + unmapped status -> generic fallback.
+        assert_eq!(parse_codex_error_response("", 799), "Request failed");
     }
 
     #[test]
