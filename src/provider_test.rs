@@ -521,6 +521,28 @@ mod tests {
         assert_eq!(err.as_deref(), Some("Unhandled stop reason: weird_status"));
     }
 
+    #[test]
+    fn test_responses_non_reasoning_model_ignores_reasoning_summary() {
+        // Upstream wraps the entire reasoning block in `if (model.reasoning)`. A
+        // non-reasoning model must NOT emit reasoning params even if a reasoning_summary
+        // is supplied.
+        let mut model = test_model("openai-responses", "openai", "https://example.com");
+        model.reasoning = false;
+        let opts = StreamOptions { reasoning_summary: Some("detailed".into()), ..Default::default() };
+        let ctx = test_context();
+        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &opts);
+        assert!(payload.get("reasoning").is_none(),
+            "non-reasoning model must not emit reasoning params: {payload}");
+        assert!(payload.get("include").is_none());
+
+        // Sanity: a reasoning model WITH a summary does emit them.
+        let mut rmodel = test_model("openai-responses", "openai", "https://example.com");
+        rmodel.reasoning = true;
+        let payload2 = crate::provider::responses::build_responses_payload(&rmodel, &ctx, &opts);
+        assert_eq!(payload2["reasoning"]["summary"], "detailed");
+        assert_eq!(payload2["reasoning"]["effort"], "medium");
+    }
+
     #[tokio::test]
     async fn test_responses_toolcall_with_incomplete_stays_length() {
         use crate::provider::responses::stream_responses;
