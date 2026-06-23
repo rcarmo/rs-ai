@@ -408,6 +408,45 @@ pub fn stream_openai<'a>(
             }
         }
 
+        // Finalize any accumulated blocks so a stream that ends WITHOUT a finish_reason
+        // (truncation / error) still carries its partial content, mirroring upstream's
+        // finishBlock at stream end. The any()/all() guards make this idempotent with the
+        // finish_reason-path assembly above (normal completions already populated content).
+        if text_started {
+            yield Event::TextEnd;
+        }
+        if thinking_started {
+            yield Event::ThinkingEnd;
+        }
+        if !current_thinking.is_empty() && !partial.content.iter().any(|b| matches!(b, ContentBlock::Thinking { .. })) {
+            partial.content.push(ContentBlock::Thinking {
+                thinking: current_thinking.clone(),
+                thinking_signature: current_thinking_signature.clone(),
+                redacted: false,
+            });
+        }
+        if !current_text.is_empty() && !partial.content.iter().any(|b| matches!(b, ContentBlock::Text { .. })) {
+            partial.content.push(ContentBlock::Text {
+                text: current_text.clone(),
+                text_signature: None,
+            });
+        }
+        if partial.content.iter().all(|b| !matches!(b, ContentBlock::ToolCall { .. })) {
+            for (id, name, args_json) in tool_calls.values() {
+                let parsed = crate::jsonparse::parse_streaming_json(args_json);
+                let arguments = match &parsed {
+                    serde_json::Value::Object(map) => map.clone().into_iter().collect(),
+                    _ => std::collections::HashMap::new(),
+                };
+                partial.content.push(ContentBlock::ToolCall {
+                    id: id.clone(),
+                    name: name.clone(),
+                    arguments,
+                    thought_signature: tool_call_signatures.get(id).cloned(),
+                });
+            }
+        }
+
         if let Some(evt) = parser.finish()
             && evt.event == sse::EVENT_ERROR {
                 yield Event::Error {

@@ -92,6 +92,35 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_openai_truncated_stream_keeps_partial_content() {
+        // A stream that ends without a finish_reason (truncation) is an error, but the
+        // error message must still carry the accumulated content (mirrors upstream
+        // finishBlock at stream end), not an empty message.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200)
+                // Note: no finish_reason chunk and no [DONE] sentinel -> truncated.
+                .set_body_string(
+                    "data: {\"id\":\"r\",\"choices\":[{\"delta\":{\"content\":\"partial ans\"},\"index\":0}]}\n\n\
+                     data: {\"id\":\"r\",\"choices\":[{\"delta\":{\"content\":\"wer\"},\"index\":0}]}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-completions", "openai", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut err_msg: Option<Message> = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Error { message, .. } = evt { err_msg = message; }
+        }
+        let msg = err_msg.expect("truncated stream should emit an Error with a message");
+        assert!(msg.content.iter().any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "partial answer")),
+            "truncated stream must keep accumulated content: {:?}", msg.content);
+    }
+
+    #[tokio::test]
     async fn test_openai_stream_text() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
