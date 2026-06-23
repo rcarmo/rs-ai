@@ -2048,6 +2048,27 @@ mod tests {
     }
 
     #[test]
+    fn test_codex_ws_refusal_and_content_part_framing() {
+        // Codex passes Responses-protocol events through mapCodexEvents unchanged, so
+        // content_part.added/done frame text and refusal.delta is captured as text
+        // (matching the shared responses decoder).
+        let model = test_model("openai-codex-responses", "openai", "https://example.com");
+        let events = vec![
+            serde_json::json!({"type":"response.created","response":{"id":"rf1","model":"codex"}}),
+            serde_json::json!({"type":"response.content_part.added","part":{"type":"text"}}),
+            serde_json::json!({"type":"response.refusal.delta","delta":"I can't help with that"}),
+            serde_json::json!({"type":"response.content_part.done"}),
+            serde_json::json!({"type":"response.done","response":{"id":"rf1","status":"completed","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}),
+        ];
+        let replayed = replay_codex_ws_events(&model, &events);
+        assert!(replayed.iter().any(|e| matches!(e, Event::TextStart)));
+        assert!(replayed.iter().any(|e| matches!(e, Event::TextDelta { delta } if delta == "I can't help with that")));
+        assert!(replayed.iter().any(|e| matches!(e, Event::TextEnd)));
+        let done = replayed.iter().find_map(|e| match e { Event::Done { message, .. } => Some(message), _ => None }).expect("done");
+        assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "I can't help with that")));
+    }
+
+    #[test]
     fn test_parse_codex_error_response_usage_limit() {
         use crate::provider::codex::parse_codex_error_response;
         // Usage-limit error -> friendly message with plan; no "HTTP" prefix.

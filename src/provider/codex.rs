@@ -384,7 +384,13 @@ impl CodexWsState {
                     }
                 }
             }
-            "response.output_text.delta" => {
+            "response.content_part.added" => {
+                if !self.text_started {
+                    self.text_started = true;
+                    self.events.push(Event::TextStart);
+                }
+            }
+            "response.output_text.delta" | "response.refusal.delta" => {
                 if let Some(delta) = data.get("delta").and_then(|v| v.as_str()) {
                     if !self.text_started {
                         self.text_started = true;
@@ -394,10 +400,24 @@ impl CodexWsState {
                     self.events.push(Event::TextDelta { delta: delta.to_string() });
                 }
             }
+            "response.content_part.done" => {
+                if self.text_started {
+                    self.text_started = false;
+                    self.events.push(Event::TextEnd);
+                }
+            }
             "response.reasoning_text.delta" | "response.reasoning_summary_text.delta" => {
                 if let Some(delta) = data.get("delta").and_then(|v| v.as_str()) {
                     self.current_thinking.push_str(delta);
                     self.events.push(Event::ThinkingDelta { delta: delta.to_string() });
+                }
+            }
+            "response.reasoning_summary_part.done" => {
+                // Separate consecutive reasoning-summary parts with a blank line (only
+                // when a summary is in progress), matching the shared responses decoder.
+                if !self.current_thinking.is_empty() {
+                    self.current_thinking.push_str("\n\n");
+                    self.events.push(Event::ThinkingDelta { delta: "\n\n".to_string() });
                 }
             }
             "response.function_call_arguments.delta" => {
