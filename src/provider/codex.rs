@@ -271,8 +271,7 @@ async fn try_websocket(
         .header("User-Agent", user_agent)
         .header("OpenAI-Beta", "responses_websockets=2026-02-06")
         .header("x-client-request-id", &request_id)
-        .header("session-id", &request_id)
-        .header("Sec-WebSocket-Protocol", "openai-beta.responses");
+        .header("session-id", &request_id);
     if let Some(ref aid) = account_id {
         builder = builder.header("chatgpt-account-id", aid);
     }
