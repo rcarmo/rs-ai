@@ -3157,6 +3157,26 @@ mod tests {
     }
 
     #[test]
+    fn test_anthropic_zero_budget_clamps_to_1024() {
+        use crate::provider::anthropic::build_anthropic_payload;
+        // Tiny effective max_tokens cap: adjustMaxTokensForThinking yields a 0 budget
+        // (max_tokens - 1024 <= 0). Upstream clamps via `thinkingBudgetTokens || 1024`,
+        // so budget_tokens must be 1024, never 0 (Anthropic rejects 0).
+        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        model.reasoning = true;
+        model.max_tokens = 800; // model cap below the 1024 min-output floor
+        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::Low),
+            max_tokens: None, // no caller cap -> use the (tiny) model cap
+            ..Default::default()
+        };
+        let payload = build_anthropic_payload(&model, &ctx, &opts);
+        assert_eq!(payload["thinking"]["budget_tokens"], 1024,
+            "0 budget must clamp to 1024: {payload}");
+    }
+
+    #[test]
     fn test_anthropic_oauth_identity_system_block() {
         use crate::provider::anthropic::build_anthropic_payload;
         let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");

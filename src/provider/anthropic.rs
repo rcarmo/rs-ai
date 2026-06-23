@@ -784,6 +784,10 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
                     opts.max_tokens, model.max_tokens, &level, &budgets_map,
                 );
                 payload["max_tokens"] = json!(adj_max);
+                // Mirror upstream `budget_tokens: options.thinkingBudgetTokens || 1024`: a
+                // computed budget of 0 (tiny max_tokens cap) clamps up to Anthropic's 1024
+                // minimum rather than sending an invalid 0.
+                let budget = if budget == 0 { 1024 } else { budget };
                 payload["thinking"] = json!({"type": "enabled", "budget_tokens": budget, "display": display});
             }
         } else {
