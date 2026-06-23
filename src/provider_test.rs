@@ -490,6 +490,38 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_responses_unknown_status_maps_to_error() {
+        use crate::provider::responses::stream_responses;
+        // Upstream's responses mapStopReason throws on an unknown status; this must be
+        // surfaced as an error ("Unhandled stop reason: <status>"), not silently Stop.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(ResponseTemplate::new(200)
+                .set_body_string(
+                    "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\n\
+                     data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"weird_status\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
+                .insert_header("content-type", "text/event-stream"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-responses", "openai", &server.uri());
+        let opts = StreamOptions::default();
+        let ctx = test_context();
+        let mut stream = stream_responses(&model, &ctx, &opts);
+        let mut err = None;
+        let mut saw_done = false;
+        while let Some(evt) = stream.next().await {
+            match evt {
+                Event::Error { error, .. } => err = Some(error.to_string()),
+                Event::Done { .. } => saw_done = true,
+                _ => {}
+            }
+        }
+        assert!(!saw_done, "unknown status must not produce a Done event");
+        assert_eq!(err.as_deref(), Some("Unhandled stop reason: weird_status"));
+    }
+
+    #[tokio::test]
     async fn test_responses_toolcall_with_incomplete_stays_length() {
         use crate::provider::responses::stream_responses;
         // Upstream overrides to toolUse only when the status maps to `stop`. A tool call

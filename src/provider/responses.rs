@@ -525,9 +525,14 @@ fn stream_responses_inner<'a>(
                                 "completed" | "in_progress" | "queued" => StopReason::Stop,
                                 "incomplete" => StopReason::Length,
                                 "failed" | "cancelled" => StopReason::Error,
-                                _ => StopReason::Stop,
+                                other => {
+                                    // Upstream's responses mapStopReason throws on an unknown
+                                    // status, which is caught and surfaced as an error.
+                                    partial.error_message = Some(format!("Unhandled stop reason: {other}"));
+                                    StopReason::Error
+                                }
                             };
-                            if reason == StopReason::Error {
+                            if reason == StopReason::Error && partial.error_message.is_none() {
                                 let detail = response.pointer("/incomplete_details/reason").and_then(|v| v.as_str())
                                     .or_else(|| response.pointer("/error/message").and_then(|v| v.as_str()))
                                     .unwrap_or(status);
