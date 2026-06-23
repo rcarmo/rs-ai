@@ -300,4 +300,149 @@ mod tests {
         assert_eq!(u.cache_write, 30);
         assert_eq!(u.total_tokens, 105);
     }
+
+    // --- chat-template thinking kwargs ---
+
+    fn local_vllm(id: &str, compat: crate::types::ModelCompat, thinking_level_map: Option<std::collections::HashMap<String, Option<String>>>) -> Model {
+        Model {
+            id: id.into(), name: id.into(), api: "openai-completions".into(),
+            provider: "local-vllm".into(), base_url: "http://localhost:8000/v1".into(),
+            reasoning: true, thinking_level_map,
+            input: vec!["text".into()], cost: crate::types::ModelCost::default(),
+            context_window: 128000, max_tokens: 8192, headers: None, api_key: None, compat,
+        }
+    }
+
+    #[test]
+    fn uses_configurable_chat_template_boolean_thinking_kwargs() {
+        let mut compat = crate::types::ModelCompat::default();
+        compat.thinking_format = Some("chat-template".into());
+        compat.supports_reasoning_effort = Some(false);
+        compat.chat_template_kwargs = Some(json!({"thinking": {"$var": "thinking.enabled"}}));
+        let model = local_vllm("deepseek-ai/DeepSeek-V3.1", compat, None);
+        for (level, expected) in [(Some(ThinkingLevel::High), true), (None, false)] {
+            let opts = StreamOptions { reasoning: level, ..Default::default() };
+            let p = payload(&model, &user_ctx(), &opts);
+            assert_eq!(p["chat_template_kwargs"], json!({"thinking": expected}));
+            assert!(p.get("thinking").is_none());
+            assert!(p.get("reasoning_effort").is_none());
+        }
+    }
+
+    #[test]
+    fn uses_qwen_chat_template_thinking_kwargs() {
+        let mut compat = crate::types::ModelCompat::default();
+        compat.thinking_format = Some("qwen-chat-template".into());
+        compat.supports_reasoning_effort = Some(false);
+        let model = local_vllm("Qwen/Qwen3-Coder", compat, None);
+        for (level, expected) in [(Some(ThinkingLevel::High), true), (None, false)] {
+            let opts = StreamOptions { reasoning: level, ..Default::default() };
+            let p = payload(&model, &user_ctx(), &opts);
+            assert_eq!(p["chat_template_kwargs"], json!({"enable_thinking": expected, "preserve_thinking": true}));
+            assert!(p.get("reasoning_effort").is_none());
+        }
+    }
+
+    #[test]
+    fn uses_configurable_chat_template_effort_kwargs_with_static_kwargs() {
+        let mut compat = crate::types::ModelCompat::default();
+        compat.thinking_format = Some("chat-template".into());
+        compat.supports_reasoning_effort = Some(false);
+        compat.chat_template_kwargs = Some(json!({
+            "preserve_thinking": true,
+            "reasoning_effort": {"$var": "thinking.effort", "omitWhenOff": true},
+        }));
+        let mut map = std::collections::HashMap::new();
+        map.insert("xhigh".to_string(), Some("max".to_string()));
+        let model = local_vllm("unsloth/gpt-oss-120b-GGUF", compat, Some(map));
+        let opts = StreamOptions { reasoning: Some(ThinkingLevel::XHigh), ..Default::default() };
+        let p = payload(&model, &user_ctx(), &opts);
+        assert_eq!(p["chat_template_kwargs"], json!({"preserve_thinking": true, "reasoning_effort": "max"}));
+        assert!(p.get("reasoning_effort").is_none());
+    }
+
+    // --- moonshot kimi metadata/payload ---
+
+    #[test]
+    fn omits_disabled_thinking_for_moonshot_kimi_k2_7_code_models() {
+        for model in [cat("moonshotai", "kimi-k2.7-code"), cat("moonshotai-cn", "kimi-k2.7-code")] {
+            let p = payload(&model, &user_ctx(), &StreamOptions::default());
+            assert!(p.get("thinking").is_none(), "k2.7-code must omit disabled thinking");
+            assert!(p.get("reasoning_effort").is_none());
+        }
+    }
+
+    #[test]
+    fn keeps_disabled_thinking_for_moonshot_kimi_k2_6_when_off() {
+        let p = payload(&cat("moonshotai-cn", "kimi-k2.6"), &user_ctx(), &StreamOptions::default());
+        assert_eq!(p["thinking"], json!({"type": "disabled"}));
+        assert!(p.get("reasoning_effort").is_none());
+    }
+
+    #[test]
+    fn stores_xiaomi_mimo_reasoning_replay_compat_metadata() {
+        for provider in ["xiaomi", "xiaomi-token-plan-cn", "xiaomi-token-plan-ams", "xiaomi-token-plan-sgp"] {
+            let m = cat(provider, "mimo-v2.5-pro");
+            assert_eq!(m.compat.requires_reasoning_content_on_assistant_messages, Some(true));
+            assert_eq!(m.compat.thinking_format.as_deref(), Some("deepseek"));
+        }
+    }
+
+    #[test]
+    fn uses_ant_ling_compatibility_metadata() {
+        let m = cat("ant-ling", "Ring-2.6-1T");
+        assert_eq!(m.compat.supports_developer_role, Some(false));
+        assert_eq!(m.compat.supports_reasoning_effort, Some(false));
+        assert_eq!(m.compat.max_tokens_field.as_deref(), Some("max_tokens"));
+        assert_eq!(m.compat.thinking_format.as_deref(), Some("ant-ling"));
+        // System prompt stays role "system" (developer role unsupported).
+        let p = payload(&m, &sys_ctx(), &reasoning(ThinkingLevel::High));
+        assert_eq!(p["messages"][0]["role"], json!("system"));
+    }
+
+    // --- tool-call delta coalescing by stable index ---
+
+    #[tokio::test]
+    async fn coalesces_tool_call_deltas_by_stable_index_when_provider_mutates_ids() {
+        let body = concat!(
+            "data: {\"id\":\"k\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"functions.read:0\",\"type\":\"function\",\"function\":{\"name\":\"read\",\"arguments\":\"\"}}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"k\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"chatcmpl-tool-a\",\"type\":\"function\",\"function\":{\"name\":null,\"arguments\":\"{\\\"path\\\":\\\"README\"}}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"k\",\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"chatcmpl-tool-b\",\"type\":\"function\",\"function\":{\"name\":null,\"arguments\":\".md\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"prompt_tokens_details\":{\"cached_tokens\":0},\"completion_tokens_details\":{\"reasoning_tokens\":0}}}\n\n",
+            "data: [DONE]\n\n",
+        ).to_string();
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body))
+            .mount(&server).await;
+        let mut model = cat("openai", "gpt-4o-mini");
+        model.base_url = server.uri();
+        model.api_key = Some("test".into());
+        let mut ctx = user_ctx();
+        ctx.tools = vec![Tool { name: "read".into(), description: "Read a file".into(), parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}) }];
+        let opts = StreamOptions::default();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut indexes: Vec<usize> = Vec::new();
+        let mut message = None;
+        while let Some(evt) = stream.next().await {
+            match evt {
+                Event::ToolCallStart { .. } => indexes.push(0),
+                Event::ToolCallDelta { .. } => indexes.push(0),
+                Event::ToolCallEnd { .. } => indexes.push(0),
+                Event::Done { message: m, .. } => message = Some(m),
+                _ => {}
+            }
+        }
+        let m = message.expect("Done");
+        assert!(matches!(m.stop_reason, Some(crate::types::StopReason::ToolUse)));
+        assert_eq!(indexes, vec![0, 0, 0, 0, 0], "all tool events on stable content index 0");
+        assert_eq!(m.content.len(), 1);
+        match &m.content[0] {
+            ContentBlock::ToolCall { id, name, arguments, .. } => {
+                assert_eq!(id, "functions.read:0", "first id is kept across mutations");
+                assert_eq!(name, "read");
+                assert_eq!(arguments.get("path").and_then(|v| v.as_str()), Some("README.md"));
+            }
+            other => panic!("expected toolCall, got {other:?}"),
+        }
+    }
 }

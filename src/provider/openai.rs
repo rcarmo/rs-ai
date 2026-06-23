@@ -322,9 +322,11 @@ pub fn stream_openai<'a>(
                                                 yield Event::ToolCallStart { id: entry.0.clone(), name: entry.1.clone() };
                                             }
                                         }
-                                    if let Some(args) = func.get("arguments").and_then(|v| v.as_str())
-                                        && !args.is_empty() {
+                                    if let Some(args) = func.get("arguments").and_then(|v| v.as_str()) {
                                             entry.2.push_str(args);
+                                            // Upstream emits a toolcall_delta whenever `arguments`
+                                            // is present (checks `!== undefined`), including the
+                                            // empty-string first fragment — not only when non-empty.
                                             yield Event::ToolCallDelta { delta: args.to_string() };
                                         }
                                 }
