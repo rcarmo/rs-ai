@@ -562,6 +562,15 @@ pub fn stream_bedrock<'a>(
             }
         };
 
+        // Invoke the on_response hook on a successful response, mirroring upstream's
+        // onResponse({ status: $metadata.httpStatusCode, headers }). A successful
+        // converse_stream is HTTP 200. (The AWS request id is not readily exposed on the
+        // streaming output type, so the header map is left empty.)
+        if let Some(ref hook) = opts.on_response {
+            let hdrs = std::collections::HashMap::new();
+            hook(200, &hdrs, model);
+        }
+
         let mut partial = Message {
             role: Role::Assistant,
             content: Vec::new(),
