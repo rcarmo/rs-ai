@@ -57,6 +57,8 @@ pub fn stream_anthropic<'a>(
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert("accept", HeaderValue::from_static("text/event-stream"));
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
+    // Upstream's anthropic createClient sets this on every request (dangerouslyAllowBrowser).
+    headers.insert("anthropic-dangerous-direct-browser-access", HeaderValue::from_static("true"));
 
     let is_oauth = api_key.contains("sk-ant-oat");
     if model.provider == "cloudflare-ai-gateway" {

@@ -2465,6 +2465,8 @@ mod tests {
         Mock::given(method("POST"))
             .and(path("/messages"))
             .and(header("x-api-key", "test-key"))
+            .and(header("anthropic-version", "2023-06-01"))
+            .and(header("anthropic-dangerous-direct-browser-access", "true"))
             .respond_with(ResponseTemplate::new(200)
                 .set_body_string(
                     "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg-1\",\"model\":\"claude-served-x\",\"usage\":{\"input_tokens\":15,\"output_tokens\":0}}}\n\n\
