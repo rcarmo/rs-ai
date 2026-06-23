@@ -435,6 +435,11 @@ mod tests {
         // Empty deployment value -> skipped, falls back to model id (upstream !deploymentName).
         assert_eq!(resolve_azure_deployment_from_map(Some("gpt-5="), "gpt-5"), "gpt-5");
         assert_eq!(resolve_azure_deployment_from_map(Some("gpt-5=  "), "gpt-5"), "gpt-5");
+        // Duplicate keys: upstream builds a Map (map.set), so the LAST entry wins.
+        assert_eq!(
+            resolve_azure_deployment_from_map(Some("gpt-5=first, gpt-5=second"), "gpt-5"),
+            "second"
+        );
     }
 
     #[test]

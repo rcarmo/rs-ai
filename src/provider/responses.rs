@@ -94,18 +94,19 @@ fn resolve_azure_deployment(model_id: &str) -> String {
 }
 
 pub(crate) fn resolve_azure_deployment_from_map(map_str: Option<&str>, model_id: &str) -> String {
+    let mut resolved: Option<String> = None;
     if let Some(map_str) = map_str {
         for entry in map_str.split(',') {
             if let Some((mid, dep)) = entry.split_once('=')
                 && mid.trim() == model_id
-                // Skip entries with an empty deployment value (upstream `!deploymentName`),
-                // falling back to the model id.
+                // Skip entries with an empty deployment value (upstream `!deploymentName`).
                 && !dep.trim().is_empty() {
-                return dep.trim().to_string();
+                // Upstream builds a Map (map.set), so a later duplicate key wins.
+                resolved = Some(dep.trim().to_string());
             }
         }
     }
-    model_id.to_string()
+    resolved.unwrap_or_else(|| model_id.to_string())
 }
 
 fn stream_responses_inner<'a>(
