@@ -39,9 +39,9 @@ Status legend:
 | Upstream | rs-ai path | Status | Notes |
 |---|---|---|---|
 | `auth/context.ts` (`defaultProviderAuthContext`) | `src/env.rs` | PARTIAL | env-key resolution covered; full auth-context object not modelled. |
-| `auth/credential-store.ts` (`InMemoryCredentialStore`) | — | MISSING | rs-ai resolves credentials from env per request; no pluggable store. |
+| `auth/credential-store.ts` (`InMemoryCredentialStore`) | `src/auth.rs` | DONE | in-memory store with per-provider serialized read-modify-write (6 tests incl. concurrent-write serialization). |
 | `auth/helpers.ts` (`envApiKeyAuth`, `lazyOAuth`) | `src/env.rs` | PARTIAL | env path done; `lazyOAuth` not modelled. |
-| `auth/resolve.ts` (`resolveProviderAuth`, `ModelsError`) | `src/env.rs` | PARTIAL | env resolution done; OAuth/credential-store branch absent. |
+| `auth/resolve.ts` (`resolveProviderAuth`, `ModelsError`) | `src/auth.rs` (`ModelsError`) | PARTIAL | error taxonomy + Credential/ModelAuth/AuthResult types ported; `resolveProviderAuth` (OAuth locked-refresh) next cycle. |
 | `utils/oauth/anthropic.ts` | `src/oauth.rs` | PARTIAL | token decode/account-id helpers; no interactive login. |
 | `utils/oauth/openai-codex.ts` | `src/oauth.rs` | PARTIAL | account-id extraction from token. |
 | `utils/oauth/github-copilot.ts` | — | MISSING | Copilot OAuth flow. |
@@ -145,15 +145,18 @@ validation, xhigh, xiaomi-models, zen, empty.
 
 ## Top 3 gaps (highest leverage first)
 
-1. **Test-for-test port (bar #2).** Re-express the ~73 remaining behaviourally-covered
-   upstream `*.test.ts` as named rs-ai tests with identical fixtures/expected values.
-   Ported: `mistral-reasoning-mode` (7/7), `azure-openai-base-url` (11/11). Next
-   highest-signal: `openai-completions-tool-choice.test.ts` (41),
-   `openai-codex-stream.test.ts` (16), `tool-call-id-normalization` (issue #1022 fixture).
-2. **Auth/credential abstraction (`auth/resolve.ts` + `credential-store.ts`).** rs-ai
-   resolves keys ad-hoc from env; upstream has a `resolveProviderAuth` +
-   `InMemoryCredentialStore` seam. Porting it (env-backed default) would unlock the
-   OAuth provider branches behind a single abstraction.
-3. **Interactive OAuth flows (anthropic / openai-codex / github-copilot).** Device-code
-   + PKCE + token refresh. Largest behavioural surface still MISSING; currently only
-   token-decode helpers exist.
+> Auditor-endorsed ordering: do the auth/credential seam (#2) **before** the bulk
+> test-for-test port (#1), because the seam unlocks the OAuth provider branches (#3).
+
+1. **Auth/credential abstraction (`auth/resolve.ts` + `credential-store.ts`).**
+   IN PROGRESS — `src/auth.rs` lands the Credential/ModelAuth/AuthResult types,
+   `ModelsError` taxonomy, and `InMemoryCredentialStore` (per-provider serialized
+   modify). Remaining: `resolveProviderAuth` (stored-vs-ambient + OAuth
+   double-checked locked refresh) wiring into the providers. rs-ai already has the
+   OAuth primitives (PKCE, device flow, anthropic/codex/copilot exchange+refresh in
+   `src/oauth.rs`), so this seam is mostly glue.
+2. **Interactive OAuth flows.** Largely PRESENT in `src/oauth.rs` (device-code,
+   PKCE, token refresh); remaining work is wiring them through the credential store
+   + `toAuth` derivation.
+3. **Test-for-test port (bar #2).** Resume the wide sweep after the seam lands so
+   OAuth-provider tests port for real instead of stubbing.

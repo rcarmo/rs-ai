@@ -48,6 +48,20 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 3. `TestBedrockOptionPrecedenceAndRequestMetadata` — region option precedence + request metadata propagation.
 4. OAuth `TestGetAPIKeyRefreshesExpiredCredential` — blocked on credential-store seam (parity-gaps top-3 #2).
 
+## rs-ai locally-authored regression tests (for @go-ai / @swift-ai to adapt)
+
+These are edge cases rs-ai fixed against canonical upstream (`ec6311b`) that are
+**not** upstream test ports. Per the auditor, logged here so sibling ports can
+adapt them. Notably, on all four the **reference port @go-ai currently diverges
+from canonical upstream** — rs-ai is ahead.
+
+| rs-ai test / fix | Guards | Canonical upstream | @go-ai status |
+|---|---|---|---|
+| `provider_test.rs::test_openai_missing_api_key` (+ casing across 7 files) | Exact error string **`No API key for provider: <p>`** (capital N) in all 6 providers + openrouter images | `No API key for provider` (36 occurrences) | **DIVERGES**: lowercase `no API key for provider` (openai/codex) and `No API key **available** for provider` (images). rs-ai ahead. |
+| `provider_test.rs::test_codex_sse_no_terminal_is_error` (+ WS string) | Codex SSE no-terminal emits the shared-decoder `OpenAI Responses stream ended before a terminal response event`; WS emits `WebSocket stream closed before response.completed` | both strings present | **MISSING**: go-ai has no codex-specific terminal-error strings. rs-ai ahead. |
+| `provider_test.rs::test_anthropic_error_event_emits_error` | Anthropic SSE `error` event surfaces **raw `sse.data`** verbatim (no `SSE error:` prefix) | `throw new Error(sse.data)` | Different handling; no equivalent assertion. rs-ai ahead/divergent. |
+| bedrock `MessageStart` role validation (`bedrock.rs:609`; arm, AWS-SDK-mock-hard to unit test) | Emits `Unexpected assistant message start but got user message start instead` when the first converse message is not assistant | `bedrock-converse-stream` throws same | **MISSING**: go-ai's `MessageStart` case just emits StartEvent, no role check. rs-ai ahead. |
+
 ## Newly identified gap (from go-ai corpus)
 
 - **WS connection-limit retry-once — CLOSED.** Implemented
