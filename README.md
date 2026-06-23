@@ -88,6 +88,12 @@ Tracks `@earendil-works/pi-ai` `0.80.1`. Known divergences from upstream:
   honors `StreamOptions` retry fields (`max_retries`, `max_retry_delay_ms`,
   `retry_config`) via `retry::do_with_retry` across the HTTP providers; Bedrock uses
   the AWS SDK's own retry. There is no implicit default retry when no options are set.
+- **Default request timeout**: this port applies a total request timeout (via
+  reqwest) only when `StreamOptions.timeout_ms` is set; with no value there is no
+  timeout. Upstream similarly forwards `timeout` to the SDK only when set, but the
+  vendor SDKs apply their own default (~10 min for OpenAI/Anthropic, plus Anthropic's
+  dynamic large-request timeout) when none is given. So an idle/stalled connection is
+  bounded under upstream but not here unless the caller supplies `timeout_ms`.
 - **Header-based request auth**: upstream 0.80.x added `getClientApiKey`/`assertRequestAuth`,
   allowing a request to authenticate via an `authorization`/`cf-aig-authorization` header
   instead of an explicit API key. This port mirrors that via `env::client_api_key`: when no
