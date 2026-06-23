@@ -40,8 +40,8 @@ Status legend:
 |---|---|---|---|
 | `auth/context.ts` (`defaultProviderAuthContext`) | `src/auth.rs` (`AuthContext`/`EnvAuthContext`) | DONE | injectable env context with request-scoped overlay (mirrors overlayEnvAuthContext). |
 | `auth/credential-store.ts` (`InMemoryCredentialStore`) | `src/auth.rs` | DONE | in-memory store with per-provider serialized read-modify-write (6 tests incl. concurrent-write serialization). |
-| `auth/helpers.ts` (`envApiKeyAuth`, `lazyOAuth`) | `src/env.rs` | PARTIAL | env path done; `lazyOAuth` not modelled. |
-| `auth/resolve.ts` (`resolveProviderAuth`, `ModelsError`) | `src/auth.rs` | DONE | full `resolve_provider_auth`: api-key override → stored (oauth double-checked locked refresh / api-key) → ambient env. `ApiKeyAuth`/`OAuthAuth`/`AuthContext` traits + `ModelsError`. 12 auth tests incl. valid-token-skips-refresh and expired-refreshes-once-and-persists. |
+| `auth/helpers.ts` (`envApiKeyAuth`, `lazyOAuth`) | `src/auth_providers.rs` | PARTIAL | concrete `OAuthAuth` impls (CodexOAuth/AnthropicOAuth) wrap `src/oauth.rs` refresh; `lazyOAuth` lazy-loading not modelled (static linking). |
+| `auth/resolve.ts` (`resolveProviderAuth`, `ModelsError`) | `src/auth.rs` | DONE | full `resolve_provider_auth`: api-key override → stored (oauth double-checked locked refresh / api-key) → ambient env. Concrete `CodexOAuth`/`AnthropicOAuth` impls wire `src/oauth.rs` into the seam (`src/auth_providers.rs`); 15 auth tests incl. end-to-end refresh-through-resolver via a mock token endpoint. |
 | `utils/oauth/anthropic.ts` | `src/oauth.rs` | PARTIAL | token decode/account-id helpers; no interactive login. |
 | `utils/oauth/openai-codex.ts` | `src/oauth.rs` | PARTIAL | account-id extraction from token. |
 | `utils/oauth/github-copilot.ts` | — | MISSING | Copilot OAuth flow. |

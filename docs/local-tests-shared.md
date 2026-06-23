@@ -64,6 +64,17 @@ _Note: the WS missing-handshake-header bug rs-ai fixed was rs-ai-specific (rs-ai
 hand-built the `http::Request`); go-ai uses `coder/websocket` `Dial`, which adds
 the RFC6455 headers itself — not a reverse gap._
 
+### Reverse-direction TEST-METHOD items (origin = rs-ai; go-ai/swift-ai should adopt)
+
+| # | rs-ai test | Why go-ai should adopt |
+|---|---|---|
+| RT1 | `src/codex_ws_connection_limit_test.rs` | **Real WS-server** integration test (not a mock): stands up a TcpListener that rejects attempt 1 with `websocket_connection_limit_reached` and serves a valid stream on the retry. This is the method that exposed rs-ai's silent handshake bug; if go-ai only has mock/replay WS tests it should add a real-handshake one. |
+| RT2 | `src/codex_ws_protocol_test.rs` | Real WS-server happy-path: captures the outbound `response.create` (asserts `model`) and streams created/output_item.added/delta/done/completed; asserts Start+TextDelta+Done(Stop). Locks the handshake against regressions. |
+
+Principle (auditor-endorsed): prefer **real server integration tests over mocks**
+wherever a transport/handshake is involved — mocks can't catch a malformed
+handshake request.
+
 ## rs-ai locally-authored regression tests (for @go-ai / @swift-ai to adapt)
 
 These are edge cases rs-ai fixed against canonical upstream (`ec6311b`) that are

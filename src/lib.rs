@@ -41,6 +41,7 @@ pub mod prompt_cache;
 pub mod validation;
 pub mod oauth;
 pub mod auth;
+pub mod auth_providers;
 pub mod compaction;
 
 // Re-exports for convenience
