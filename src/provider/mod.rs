@@ -15,7 +15,6 @@ pub mod responses;
 pub mod faux;
 pub mod bedrock;
 pub mod codex;
-pub mod geminicli;
 
 struct OpenAIProvider;
 impl ApiProvider for OpenAIProvider {
@@ -81,14 +80,6 @@ impl ApiProvider for GoogleVertexProvider {
     }
 }
 
-struct GeminiCliProvider;
-impl ApiProvider for GeminiCliProvider {
-    fn api(&self) -> &str { "google-gemini-cli" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
-        geminicli::stream_geminicli(model, context, opts)
-    }
-}
-
 struct MistralProvider;
 impl ApiProvider for MistralProvider {
     fn api(&self) -> &str { "mistral-conversations" }
@@ -121,7 +112,6 @@ pub fn register_builtin_providers() {
     registry::register_api(Arc::new(AnthropicProvider));
     registry::register_api(Arc::new(GoogleProvider));
     registry::register_api(Arc::new(GoogleVertexProvider));
-    registry::register_api(Arc::new(GeminiCliProvider));
     registry::register_api(Arc::new(MistralProvider));
     registry::register_api(Arc::new(BedrockProvider));
     registry::register_api(Arc::new(CodexProvider));

@@ -18,7 +18,6 @@ pub mod api {
     pub const ANTHROPIC_MESSAGES: &str = "anthropic-messages";
     pub const BEDROCK_CONVERSE_STREAM: &str = "bedrock-converse-stream";
     pub const GOOGLE_GENERATIVE_AI: &str = "google-generative-ai";
-    pub const GOOGLE_GEMINI_CLI: &str = "google-gemini-cli";
     pub const GOOGLE_VERTEX: &str = "google-vertex";
     pub const MISTRAL_CONVERSATIONS: &str = "mistral-conversations";
 }

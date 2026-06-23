@@ -53,7 +53,6 @@ mod tests {
         assert!(registry::get_api_provider("mistral-conversations"));
         assert!(registry::get_api_provider("bedrock-converse-stream"));
         assert!(registry::get_api_provider("openai-codex-responses"));
-        assert!(registry::get_api_provider("google-gemini-cli"));
     }
 
     #[tokio::test]
