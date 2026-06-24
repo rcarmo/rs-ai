@@ -20,7 +20,7 @@ Status legend:
 | `azure-openai-responses.ts` | `src/provider/responses.rs` | DONE | Azure base-url normalization + invalid-URL validation (`Invalid Azure OpenAI base URL`), api-version, prompt-cache-key clamp, store:false. Ported test-for-test (11/11). |
 | `bedrock-converse-stream.ts` | `src/provider/bedrock.rs` | DONE | AWS SDK converse stream; MessageStart role check, tool-id normalization, stop-reason map. |
 | `cloudflare.ts` | `src/compat.rs` + `src/env.rs` | PARTIAL | account/gateway resolved from env (documented divergence vs upstream credential plumbing). |
-| `github-copilot-headers.ts` | — | MISSING | Copilot OAuth-gated; no credential path available. |
+| `github-copilot-headers.ts` | `src/utils.rs` (`copilot_dynamic_headers`) | PARTIAL | Pure header logic ported: `inferCopilotInitiator` (X-Initiator user/agent from last message), `hasCopilotVisionInput` (image in user/toolResult → Copilot-Vision-Request), Openai-Intent. Wired into anthropic/openai/responses provider builders. Copilot OAuth credential acquisition remains MISSING (no credential path). |
 | `google-generative-ai.ts` | `src/provider/google.rs` | DONE | |
 | `google-shared.ts` | `src/provider/google.rs` | DONE | convert-tools, gemini3 unsigned tool-call, image tool-result routing, thinking signature. |
 | `google-vertex.ts` | `src/provider/google.rs` (+`mod.rs`) | DONE | Vertex request path ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`: project/location-scoped REST endpoint, `{location}` host substitution, GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT + GOOGLE_CLOUD_LOCATION env fallback (or StreamOptions.project/location), placeholder/ADC api-key handling. Shared `stream_google` decoder. |
@@ -92,7 +92,16 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Total **87** upstream test files — **41 PORTED (yes/yes)** + **13 partial** (deterministic substance ported; live/WS-pooling/architectural remainder noted) + **10 N/A** (live-only / credential-gated / JS-runtime / architectural) + a live-E2E backlog (`no`) that is behaviourally covered by deterministic unit tests but not name-for-name portable (each calls `complete`/`streamSimple` against real providers, no mocks). All deterministic (live=0) files are ported or have a precise N/A rationale. The Vertex request path is implemented (ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`); the Cloudflare-AI-Gateway client-construction cases are ported via `build_openai_request_parts`. HTTP-proxy resolution is now ported (`node-http-proxy.test.ts` → `src/http_proxy_test.rs`) and wired into all provider clients via `reqwest::Proxy`. 72 rs-ai test files, 677 tests, no new clippy warnings._
+_Total **87** upstream test files. **Final classification (Rui's ruling: "we test with what we have. No keys, no tests" — no record-replay/mock harness, no skip-only wrappers, no fabrication):**_
+
+- **42 PORTED (yes/yes)** — deterministic, name/value-faithful ports.
+- **1 covered** (`faux-provider`) — exercised via rs-ai's FauxProvider harness (upstream closure/registration API differs).
+- **13 partial** — the entire **deterministic** substance of each file is ported; the documented remainder is genuinely architectural (AbortSignal, WS pooling, instance-collection vs global-registry, TypeBox symbol stripping) or interactive-OAuth/credential — i.e. N/A here.
+- **31 N/A** — not deterministically runnable in this environment:
+  - 10 architectural / JS-runtime / smoke (`abort`, `lazy-module-load`, `mistral-tool-schema`, `xhigh`, `images`, `interleaved-thinking`, `anthropic-opus-4-8-smoke`, `xiaomi-token-plan-ams-…-smoke`, `transform-messages-copilot-…`, `openai-completions-retry`).
+  - 21 **live-E2E / credential-gated** (`stream`, `empty`, `unicode-surrogate`, `tokens`, `total-tokens`, `responseid`, `tool-call-without-result`, `image-tool-result`, `openai-responses-tool-result-images`, `cache-retention`, `context-overflow`, `cross-provider-handoff`, `google-thinking-disable`, `anthropic-eager-tool-input-e2e`, `anthropic-long-cache-retention-e2e`, `openai-codex-cache-affinity-e2e`, `openai-responses-cache-affinity-e2e`, `openai-responses-reasoning-replay-e2e`, `openrouter-cache-write-repro`, `zen`). Each imports `complete`/`completeSimple`/`stream` + `resolveApiKey`/`skipIf(API_KEY)` and exercises real provider endpoints; with no keys there are no real fixtures, so porting them would require fabricated mocks (forbidden). Their behaviour is covered by the deterministic unit tests above.
+
+**The deterministically-runnable upstream test surface is 100% ported** (every file with `live=0` is either ported test-for-test or has its deterministic substance ported + a precise N/A rationale for an architectural remainder). The Vertex request path is implemented (ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`); Cloudflare-AI-Gateway client-construction is ported via `build_openai_request_parts`; HTTP-proxy resolution is ported (`node-http-proxy.test.ts` → `src/http_proxy_test.rs`) and wired into all provider clients via `reqwest::Proxy`; `github-copilot-headers.ts` pure logic is ported (`copilot_dynamic_headers` in `src/utils.rs`). **72 rs-ai test files, 678 tests, 0 failures, no new clippy warnings.**_
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -100,10 +109,10 @@ _Total **87** upstream test files — **41 PORTED (yes/yes)** + **13 partial** (
 | 2 | `anthropic-adaptive-thinking-models.test.ts` | yes | yes | src/anthropic_compat_test.rs |
 | 3 | `anthropic-cache-write-1h-cost.test.ts` | yes | yes | src/anthropic_cache_write_1h_cost_test.rs |
 | 4 | `anthropic-eager-tool-input-compat.test.ts` | yes | yes | src/anthropic_compat_test.rs |
-| 5 | `anthropic-eager-tool-input-e2e.test.ts` | no | — | 3 cases to port name-for-name |
+| 5 | `anthropic-eager-tool-input-e2e.test.ts` | n/a (live) | — | live-E2E credential-gated (3 cases against real providers); N/A per "no keys, no tests" |
 | 6 | `anthropic-empty-thinking-signature-compat.test.ts` | yes | yes | src/anthropic_compat_test.rs |
 | 7 | `anthropic-force-adaptive-thinking.test.ts` | yes | yes | src/anthropic_force_adaptive_thinking_test.rs |
-| 8 | `anthropic-long-cache-retention-e2e.test.ts` | no | — | 2 cases to port name-for-name |
+| 8 | `anthropic-long-cache-retention-e2e.test.ts` | n/a (live) | — | live-E2E credential-gated (2 cases against real providers); N/A per "no keys, no tests" |
 | 9 | `anthropic-oauth.test.ts` | partial | yes (3/3 portable) | src/anthropic_oauth_test.rs (token-endpoint + refresh-omits-scope + exchange-redirect_uri request shape; interactive login orchestration N/A = MISSING surface) |
 | 10 | `anthropic-opus-4-8-smoke.test.ts` | n/a | — | credential/runtime-gated |
 | 11 | `anthropic-sse-parsing.test.ts` | yes | yes | src/anthropic_sse_parsing_test.rs |
@@ -116,11 +125,11 @@ _Total **87** upstream test files — **41 PORTED (yes/yes)** + **13 partial** (
 | 18 | `bedrock-endpoint-resolution.test.ts` | yes (region-resolution) | yes | src/bedrock_endpoint_test.rs (SDK-client endpoint/profile config = AWS-SDK-internal)|
 | 19 | `bedrock-models.test.ts` | partial | yes (catalog non-empty) | src/bedrock_images_models_test.rs (per-model live request cases N/A) |
 | 20 | `bedrock-thinking-payload.test.ts` | yes | yes (9/10) | src/bedrock_thinking_payload_test.rs (adaptive/govcloud/app-inference-profile; live max-tokens E2E N/A) |
-| 21 | `cache-retention.test.ts` | no | — | 16 cases to port name-for-name |
+| 21 | `cache-retention.test.ts` | n/a (live) | — | live-E2E credential-gated (16 cases against real providers); N/A per "no keys, no tests" |
 | 22 | `compat-env.test.ts` | yes | yes | src/compat_env_test.rs |
-| 23 | `context-overflow.test.ts` | no | — | 32 cases to port name-for-name |
-| 24 | `cross-provider-handoff.test.ts` | no | — | 2 cases to port name-for-name |
-| 25 | `empty.test.ts` | no | — | 104 cases to port name-for-name |
+| 23 | `context-overflow.test.ts` | n/a (live) | — | live-E2E credential-gated (32 cases against real providers); N/A per "no keys, no tests" |
+| 24 | `cross-provider-handoff.test.ts` | n/a (live) | — | live-E2E credential-gated (2 cases against real providers); N/A per "no keys, no tests" |
+| 25 | `empty.test.ts` | n/a (live) | — | live-E2E credential-gated (104 cases against real providers); N/A per "no keys, no tests" |
 | 26 | `env-api-keys.test.ts` | yes | yes | src/env_api_keys_test.rs |
 | 27 | `faux-provider.test.ts` | covered | — | rs-ai FauxProvider (provider/faux.rs) tested in provider_test/coverage; upstream harness API (closures/registration) differs; abort cases N/A (no AbortSignal) |
 | 28 | `fireworks-models.test.ts` | yes | yes | src/fireworks_models_test.rs |
@@ -129,10 +138,10 @@ _Total **87** upstream test files — **41 PORTED (yes/yes)** + **13 partial** (
 | 31 | `google-shared-convert-tools.test.ts` | yes | yes | src/google_shared_convert_tools_test.rs |
 | 32 | `google-shared-gemini3-unsigned-tool-call.test.ts` | yes | yes | src/google_gemini3_unsigned_tool_call_test.rs |
 | 33 | `google-shared-image-tool-result-routing.test.ts` | yes | yes | src/google_image_tool_result_routing_test.rs |
-| 34 | `google-thinking-disable.test.ts` | no | — | 9 cases to port name-for-name |
+| 34 | `google-thinking-disable.test.ts` | n/a (live) | — | live-E2E credential-gated (9 cases against real providers); N/A per "no keys, no tests" |
 | 35 | `google-thinking-signature.test.ts` | yes | yes | src/google_thinking_signature_test.rs |
 | 36 | `google-vertex-api-key-resolution.test.ts` | yes | yes | src/google_vertex_request_path_test.rs (Vertex REST request path implemented: project/location resolution from StreamOptions + GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT/GOOGLE_CLOUD_LOCATION env, `{location}` host substitution, placeholder-marker `<...>`/`gcp-vertex-credentials` api-key suppression → ADC URL, real-key append, custom base-url passthrough. Upstream's @google/genai SDK-constructor assertions are JS-runtime-specific; this port asserts the equivalent URL shape + resolution, mirroring go-ai `buildStreamURL`/`resolveVertexProjectLocation`.) |
-| 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
+| 37 | `image-tool-result.test.ts` | n/a (live) | — | live-E2E credential-gated (38 cases against real providers); N/A per "no keys, no tests" |
 | 38 | `images-models.test.ts` | partial | yes (builtin catalog) | src/bedrock_images_models_test.rs (instance ImagesModels collection = architectural diff) |
 | 39 | `images.test.ts` | n/a | — | live image generation (OPENROUTER_API_KEY) |
 | 40 | `interleaved-thinking.test.ts` | n/a | — | live model-behavior (bedrock/anthropic creds); asserts the model emits interleaved thinking+toolCall |
@@ -143,7 +152,7 @@ _Total **87** upstream test files — **41 PORTED (yes/yes)** + **13 partial** (
 | 45 | `node-http-proxy.test.ts` | yes | yes | src/http_proxy_test.rs (ported resolve_http_proxy_url_for_target; NO_PROXY exclusion, HTTP(S) resolution, scoped-env precedence, SOCKS/PAC rejection) |
 | 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
 | 47 | `oauth-device-code.test.ts` | yes | yes | src/oauth_device_code_test.rs (implemented generic poll_oauth_device_code_flow; tokio paused clock) |
-| 48 | `openai-codex-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
+| 48 | `openai-codex-cache-affinity-e2e.test.ts` | n/a (live) | — | live-E2E credential-gated (1 cases against real providers); N/A per "no keys, no tests" |
 | 49 | `openai-codex-oauth.test.ts` | partial | yes (1/8 portable) | src/openai_codex_oauth_test.rs (refresh-failure error shape; +fixed status to numeric (401) per upstream; 7 device-code login-flow cases N/A = MISSING interactive surface) |
 | 50 | `openai-codex-stream.test.ts` | partial | yes (SSE/header/cache subset) | src/openai_codex_stream_test.rs (WS-transport cases = WS-pooling gap) |
 | 51 | `openai-completions-cache-control-format.test.ts` | yes | yes | src/openai_completions_cache_control_format_test.rs |
@@ -155,33 +164,33 @@ _Total **87** upstream test files — **41 PORTED (yes/yes)** + **13 partial** (
 | 57 | `openai-completions-thinking-as-text.test.ts` | yes | yes | src/openai_completions_thinking_as_text_test.rs |
 | 58 | `openai-completions-tool-choice.test.ts` | partial | yes (39/41) | src/openai_completions_tool_choice_test.rs (full incl. mixed-delta accumulation + openrouter role routing + reasoning-replay; 2 N/A: ant-ling native reasoningEffort-omit + per-contentIndex grouping = rs-ai event protocol is index-less) |
 | 59 | `openai-completions-tool-result-images.test.ts` | yes | yes | src/openai_completions_tool_result_images_test.rs |
-| 60 | `openai-responses-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
+| 60 | `openai-responses-cache-affinity-e2e.test.ts` | n/a (live) | — | live-E2E credential-gated (1 cases against real providers); N/A per "no keys, no tests" |
 | 61 | `openai-responses-copilot-provider.test.ts` | yes | yes | src/openai_responses_copilot_provider_test.rs (deterministic: reasoning defaults, cache-affinity headers, prompt_cache_key clamp, service-tier cost) |
 | 62 | `openai-responses-foreign-toolcall-id.test.ts` | yes | yes | src/responses_foreign_toolcall_id_test.rs |
 | 63 | `openai-responses-message-id.test.ts` | yes | yes | src/responses_message_id_test.rs |
 | 64 | `openai-responses-partial-json-cleanup.test.ts` | yes | yes | src/openai_responses_partial_json_cleanup_test.rs |
-| 65 | `openai-responses-reasoning-replay-e2e.test.ts` | no | — | 3 cases to port name-for-name |
+| 65 | `openai-responses-reasoning-replay-e2e.test.ts` | n/a (live) | — | live-E2E credential-gated (3 cases against real providers); N/A per "no keys, no tests" |
 | 66 | `openai-responses-terminal-event.test.ts` | yes | yes (4/6) | src/openai_responses_terminal_event_test.rs (the 2 processResponsesStream-direct cases collapse into the wrapper no-terminal case) |
-| 67 | `openai-responses-tool-result-images.test.ts` | no | — | 4 cases to port name-for-name |
-| 68 | `openrouter-cache-write-repro.test.ts` | no | — | 1 cases to port name-for-name |
+| 67 | `openai-responses-tool-result-images.test.ts` | n/a (live) | — | live-E2E credential-gated (4 cases against real providers); N/A per "no keys, no tests" |
+| 68 | `openrouter-cache-write-repro.test.ts` | n/a (live) | — | live-E2E credential-gated (1 cases against real providers); N/A per "no keys, no tests" |
 | 69 | `openrouter-images.test.ts` | yes | yes (2/3) | src/openrouter_images_test.rs (abort-signal case N/A) |
 | 70 | `overflow.test.ts` | yes | yes | src/overflow_test.rs |
 | 71 | `providers.test.ts` | partial | yes (6) | src/providers_upstream_test.rs (builtin registration + anthropic-OAuth/bedrock-AWS/cloudflare env precedence + no-api-impl stream error + fauxProvider queued stream; cloudflare/vertex scoped-baseUrl+AuthResult.env shaping, vertex ADC file path, envApiKeyAuth.login prompt, and dynamic refreshModels dedup = instance-collection/architectural N/A) |
-| 72 | `responseid.test.ts` | no | — | 11 cases to port name-for-name |
-| 73 | `stream.test.ts` | no | — | 214 cases to port name-for-name |
+| 72 | `responseid.test.ts` | n/a (live) | — | live-E2E credential-gated (11 cases against real providers); N/A per "no keys, no tests" |
+| 73 | `stream.test.ts` | n/a (live) | — | live-E2E credential-gated (214 cases against real providers); N/A per "no keys, no tests" |
 | 74 | `supports-xhigh.test.ts` | yes | yes | src/supports_xhigh_test.rs|
 | 75 | `together-models.test.ts` | yes | yes | src/together_xiaomi_models_test.rs |
-| 76 | `tokens.test.ts` | no | — | 26 cases to port name-for-name |
+| 76 | `tokens.test.ts` | n/a (live) | — | live-E2E credential-gated (26 cases against real providers); N/A per "no keys, no tests" |
 | 77 | `tool-call-id-normalization.test.ts` | partial | yes (issue 1022 fixture) | src/tool_call_id_normalization_test.rs (live handoff N/A) |
-| 78 | `tool-call-without-result.test.ts` | no | — | 26 cases to port name-for-name |
-| 79 | `total-tokens.test.ts` | no | — | 31 cases to port name-for-name |
+| 78 | `tool-call-without-result.test.ts` | n/a (live) | — | live-E2E credential-gated (26 cases against real providers); N/A per "no keys, no tests" |
+| 79 | `total-tokens.test.ts` | n/a (live) | — | live-E2E credential-gated (31 cases against real providers); N/A per "no keys, no tests" |
 | 80 | `transform-messages-copilot-openai-to-anthropic.test.ts` | n/a | — | credential/runtime-gated |
-| 81 | `unicode-surrogate.test.ts` | no | — | 78 cases to port name-for-name |
+| 81 | `unicode-surrogate.test.ts` | n/a (live) | — | live-E2E credential-gated (78 cases against real providers); N/A per "no keys, no tests" |
 | 82 | `validation.test.ts` | yes | yes | src/validation_upstream_test.rs |
 | 83 | `xhigh.test.ts` | n/a | — | live (OPENAI_API_KEY); the supported-levels logic is covered by supports-xhigh |
 | 84 | `xiaomi-models.test.ts` | yes | yes | src/together_xiaomi_models_test.rs|
 | 85 | `xiaomi-token-plan-ams-anthropic-empty-signature-smoke.test.ts` | n/a | — | credential/runtime-gated |
-| 86 | `zen.test.ts` | no | — | 1 cases to port name-for-name |
+| 86 | `zen.test.ts` | n/a (live) | — | live-E2E credential-gated (1 cases against real providers); N/A per "no keys, no tests" |
 
 
 ## 5. Upstream test suite (`test/*.test.ts` — 87 files)
@@ -230,11 +239,16 @@ validation, xhigh, xiaomi-models, zen, empty.
   (`src/http_proxy.rs`, wired into all provider clients).
 - **Providers:** 100% catalog parity; runtime exercised for all non-credential-gated
   providers.
-- **Tests:** ~75 of 87 upstream test files are behaviourally covered by rs-ai's 677
-  tests. `node-http-proxy.test.ts` and `oauth-device-code.test.ts` are now ported
-  with upstream names/values, joining `mistral-reasoning-mode.test.ts` and
-  `azure-openai-base-url.test.ts`; the remaining covered files are behaviourally
-  equivalent but not yet name-for-name ports (bar #2 in progress).
+- **Tests:** the **deterministically-runnable upstream surface is 100% ported** —
+  42 files ported test-for-test, 1 covered via the FauxProvider harness, and 13
+  with their full deterministic substance ported plus a precise architectural
+  N/A remainder. 31 files are N/A (10 architectural/JS-runtime/smoke + 21
+  live-E2E credential-gated). rs-ai ships **678 tests across 72 files, 0
+  failures**. `node-http-proxy.test.ts`, `oauth-device-code.test.ts`,
+  `mistral-reasoning-mode.test.ts`, and `azure-openai-base-url.test.ts` are
+  name-for-name ports; `github-copilot-headers.ts` pure logic is ported in
+  `src/utils.rs`. The only non-ported files require live credentials/mocks
+  (forbidden) or model JS-runtime/CLI behaviour with no Rust analogue.
 
 ## Top 3 gaps (highest leverage first)
 

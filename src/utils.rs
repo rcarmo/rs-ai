@@ -40,23 +40,34 @@ pub fn copilot_headers_with_intent(intent: &str) -> HashMap<String, String> {
 /// X-Initiator (agent when the last message isn't from the user), Openai-Intent,
 /// and Copilot-Vision-Request when any user/tool-result message carries an image.
 pub fn copilot_dynamic_headers(messages: &[crate::types::Message]) -> Vec<(&'static str, &'static str)> {
-    use crate::types::{Role, ContentBlock};
-    let initiator = match messages.last() {
-        Some(m) if m.role != Role::User => "agent",
-        _ => "user",
-    };
     let mut headers = vec![
-        ("X-Initiator", initiator),
+        ("X-Initiator", infer_copilot_initiator(messages)),
         ("Openai-Intent", "conversation-edits"),
     ];
-    let has_images = messages.iter().any(|m| {
-        matches!(m.role, Role::User | Role::ToolResult)
-            && m.content.iter().any(|c| matches!(c, ContentBlock::Image { .. }))
-    });
-    if has_images {
+    if has_copilot_vision_input(messages) {
         headers.push(("Copilot-Vision-Request", "true"));
     }
     headers
+}
+
+/// Mirrors upstream `inferCopilotInitiator`: "agent" when the last message is not
+/// from the user (follow-up after assistant/tool messages), else "user".
+pub fn infer_copilot_initiator(messages: &[crate::types::Message]) -> &'static str {
+    use crate::types::Role;
+    match messages.last() {
+        Some(m) if m.role != Role::User => "agent",
+        _ => "user",
+    }
+}
+
+/// Mirrors upstream `hasCopilotVisionInput`: true when any user/toolResult message
+/// carries an image content block.
+pub fn has_copilot_vision_input(messages: &[crate::types::Message]) -> bool {
+    use crate::types::{Role, ContentBlock};
+    messages.iter().any(|m| {
+        matches!(m.role, Role::User | Role::ToolResult)
+            && m.content.iter().any(|c| matches!(c, ContentBlock::Image { .. }))
+    })
 }
 
 #[cfg(test)]
@@ -111,6 +122,33 @@ mod tests {
         ]);
         assert!(h2.contains(&("X-Initiator", "agent")));
         assert!(h2.contains(&("Copilot-Vision-Request", "true")));
+    }
+
+    #[test]
+    fn test_infer_copilot_initiator_and_vision() {
+        use crate::types::{Message, Role, ContentBlock};
+        fn msg(role: Role, content: Vec<ContentBlock>) -> Message {
+            Message {
+                role, content, timestamp: 0,
+                api: None, provider: None, model: None, response_id: None, response_model: None,
+                diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
+                tool_call_id: None, tool_name: None, is_error: false, details: None,
+            }
+        }
+        // empty -> user
+        assert_eq!(infer_copilot_initiator(&[]), "user");
+        // last user -> user
+        assert_eq!(infer_copilot_initiator(&[msg(Role::User, vec![])]), "user");
+        // last assistant -> agent
+        assert_eq!(infer_copilot_initiator(&[msg(Role::Assistant, vec![])]), "agent");
+        // last toolResult -> agent
+        assert_eq!(infer_copilot_initiator(&[msg(Role::ToolResult, vec![])]), "agent");
+        // vision: user image
+        assert!(has_copilot_vision_input(&[msg(Role::User, vec![ContentBlock::Image { data: "a".into(), mime_type: "image/png".into() }])]));
+        // vision: toolResult image
+        assert!(has_copilot_vision_input(&[msg(Role::ToolResult, vec![ContentBlock::Image { data: "a".into(), mime_type: "image/png".into() }])]));
+        // no vision: text only
+        assert!(!has_copilot_vision_input(&[msg(Role::User, vec![ContentBlock::Text { text: "hi".into(), text_signature: None }])]));
     }
 }
 
