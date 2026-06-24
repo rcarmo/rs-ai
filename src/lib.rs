@@ -101,6 +101,8 @@ mod openai_completions_empty_tools_test;
 #[cfg(test)]
 mod openai_completions_thinking_as_text_test;
 #[cfg(test)]
+mod openai_completions_response_model_test;
+#[cfg(test)]
 mod codex_request_shape_test;
 #[cfg(test)]
 mod codex_ws_connection_limit_test;
