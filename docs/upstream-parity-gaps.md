@@ -125,7 +125,7 @@ _Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/
 | 27 | `faux-provider.test.ts` | covered | — | rs-ai FauxProvider (provider/faux.rs) tested in provider_test/coverage; upstream harness API (closures/registration) differs; abort cases N/A (no AbortSignal) |
 | 28 | `fireworks-models.test.ts` | yes | yes | src/fireworks_models_test.rs |
 | 29 | `github-copilot-anthropic.test.ts` | yes | yes | src/github_copilot_anthropic_test.rs |
-| 30 | `github-copilot-oauth.test.ts` | n/a | — | credential/runtime-gated |
+| 30 | `github-copilot-oauth.test.ts` | partial | yes (model-picker filter) | src/github_copilot_oauth_test.rs (interactive slow_down/timeout login orchestration = interactive-OAuth surface) |
 | 31 | `google-shared-convert-tools.test.ts` | yes | yes | src/google_shared_convert_tools_test.rs |
 | 32 | `google-shared-gemini3-unsigned-tool-call.test.ts` | yes | yes | src/google_gemini3_unsigned_tool_call_test.rs |
 | 33 | `google-shared-image-tool-result-routing.test.ts` | yes | yes | src/google_image_tool_result_routing_test.rs |

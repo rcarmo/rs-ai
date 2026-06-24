@@ -442,6 +442,24 @@ where
     }
 }
 
+/// Whether a GitHub Copilot `/models` entry is selectable for the model picker
+/// (mirrors the upstream catalog filter): `model_picker_enabled` is true, the
+/// model is not policy-disabled, and it supports tool calls.
+pub fn is_selectable_copilot_model(model: &serde_json::Value) -> bool {
+    let picker_enabled = model.get("model_picker_enabled").and_then(|v| v.as_bool()).unwrap_or(false);
+    let policy_disabled = model.pointer("/policy/state").and_then(|v| v.as_str()) == Some("disabled");
+    let supports_tools = model.pointer("/capabilities/supports/tool_calls").and_then(|v| v.as_bool()).unwrap_or(false);
+    picker_enabled && !policy_disabled && supports_tools
+}
+
+/// The selectable Copilot model ids from a `/models` response `data` array.
+pub fn selectable_copilot_model_ids(models_data: &[serde_json::Value]) -> Vec<String> {
+    models_data.iter()
+        .filter(|m| is_selectable_copilot_model(m))
+        .filter_map(|m| m.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()))
+        .collect()
+}
+
 /// Poll once for a GitHub device-code access token (mirrors pollForGitHubAccessToken's poll).
 pub async fn poll_github_device_token(domain: &str, device_code: &str) -> DevicePollStatus {
     poll_github_device_token_at(&format!("https://{domain}/login/oauth/access_token"), COPILOT_CLIENT_ID, device_code).await
