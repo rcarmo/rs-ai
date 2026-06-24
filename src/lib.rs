@@ -97,6 +97,8 @@ mod google_gemini3_unsigned_tool_call_test;
 #[cfg(test)]
 mod google_image_tool_result_routing_test;
 #[cfg(test)]
+mod google_thinking_signature_test;
+#[cfg(test)]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
 mod openai_completions_tool_choice_test;

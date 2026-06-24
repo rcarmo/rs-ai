@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 26** / COVERED 43 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 27** / COVERED 42 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -130,7 +130,7 @@ _Generated. Total **86** upstream test files — **PORTED 26** / COVERED 43 / N/
 | 32 | `google-shared-gemini3-unsigned-tool-call.test.ts` | yes | yes | src/google_gemini3_unsigned_tool_call_test.rs |
 | 33 | `google-shared-image-tool-result-routing.test.ts` | yes | yes | src/google_image_tool_result_routing_test.rs |
 | 34 | `google-thinking-disable.test.ts` | no | — | 9 cases to port name-for-name |
-| 35 | `google-thinking-signature.test.ts` | no | — | 5 cases to port name-for-name |
+| 35 | `google-thinking-signature.test.ts` | yes | yes | src/google_thinking_signature_test.rs |
 | 36 | `google-vertex-api-key-resolution.test.ts` | n/a | — | credential/runtime-gated |
 | 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
 | 38 | `images-models.test.ts` | no | — | 6 cases to port name-for-name |

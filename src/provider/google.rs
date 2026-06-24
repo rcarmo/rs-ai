@@ -183,7 +183,7 @@ pub fn stream_google<'a>(
                     for candidate in candidates {
                         if let Some(parts) = candidate.pointer("/content/parts").and_then(|v| v.as_array()) {
                             for part in parts {
-                                let is_thought = part.get("thought").and_then(|v| v.as_bool()).unwrap_or(false);
+                                let is_thought = is_thinking_part(part);
                                 let part_sig = part.get("thoughtSignature").and_then(|v| v.as_str()).filter(|s| !s.is_empty());
                                 // Upstream processes any part whose `text` field is defined,
                                 // including empty strings, so a trailing empty-text delta still
@@ -215,11 +215,11 @@ pub fn stream_google<'a>(
                                     }
                                     if is_thought {
                                         current_thinking.push_str(text);
-                                        if let Some(sig) = part_sig { current_thinking_signature = Some(sig.to_string()); }
+                                        current_thinking_signature = retain_thought_signature(current_thinking_signature.as_deref(), part_sig);
                                         yield Event::ThinkingDelta { delta: text.to_string() };
                                     } else {
                                         current_text.push_str(text);
-                                        if let Some(sig) = part_sig { current_text_signature = Some(sig.to_string()); }
+                                        current_text_signature = retain_thought_signature(current_text_signature.as_deref(), part_sig);
                                         yield Event::TextDelta { delta: text.to_string() };
                                     }
                                 }
@@ -452,6 +452,22 @@ fn google_supports_multimodal_function_response(model_id: &str) -> bool {
         Some(v) => v >= 3,
         None => true,
     }
+}
+
+/// Whether a Gemini stream part is thinking content: only `thought === true`
+/// indicates thinking (a `thoughtSignature` alone does not — it can appear on any
+/// part type for context replay). Mirrors upstream `isThinkingPart`.
+pub(crate) fn is_thinking_part(part: &Value) -> bool {
+    part.get("thought").and_then(|v| v.as_bool()).unwrap_or(false)
+}
+
+/// Keep the existing thought signature when a subsequent delta omits/empties it;
+/// update when a new non-empty signature arrives (mirrors upstream
+/// `retainThoughtSignature`).
+pub(crate) fn retain_thought_signature(prev: Option<&str>, new: Option<&str>) -> Option<String> {
+    new.filter(|s| !s.is_empty())
+        .map(String::from)
+        .or_else(|| prev.map(String::from))
 }
 
 /// Validate a Gemini thought signature: base64-ish and length a multiple of 4.
