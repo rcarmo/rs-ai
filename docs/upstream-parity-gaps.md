@@ -156,7 +156,7 @@ _Generated. Total **86** upstream test files — **PORTED 37** / COVERED 32 / N/
 | 58 | `openai-completions-tool-choice.test.ts` | partial | yes (39/41) | src/openai_completions_tool_choice_test.rs (full incl. mixed-delta accumulation + openrouter role routing + reasoning-replay; 2 N/A: ant-ling native reasoningEffort-omit + per-contentIndex grouping = rs-ai event protocol is index-less) |
 | 59 | `openai-completions-tool-result-images.test.ts` | yes | yes | src/openai_completions_tool_result_images_test.rs |
 | 60 | `openai-responses-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
-| 61 | `openai-responses-copilot-provider.test.ts` | n/a | — | credential/runtime-gated |
+| 61 | `openai-responses-copilot-provider.test.ts` | yes | yes | src/openai_responses_copilot_provider_test.rs (deterministic: reasoning defaults, cache-affinity headers, prompt_cache_key clamp, service-tier cost) |
 | 62 | `openai-responses-foreign-toolcall-id.test.ts` | yes | yes | src/responses_foreign_toolcall_id_test.rs |
 | 63 | `openai-responses-message-id.test.ts` | yes | yes | src/responses_message_id_test.rs |
 | 64 | `openai-responses-partial-json-cleanup.test.ts` | yes | yes | src/openai_responses_partial_json_cleanup_test.rs |
