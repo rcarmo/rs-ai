@@ -104,7 +104,7 @@ _Generated. Total **86** upstream test files — **PORTED 6** / COVERED 66 / N/A
 | 6 | `anthropic-empty-thinking-signature-compat.test.ts` | no | — | 2 cases to port name-for-name |
 | 7 | `anthropic-force-adaptive-thinking.test.ts` | no | — | 5 cases to port name-for-name |
 | 8 | `anthropic-long-cache-retention-e2e.test.ts` | no | — | 2 cases to port name-for-name |
-| 9 | `anthropic-oauth.test.ts` | n/a | — | credential/runtime-gated |
+| 9 | `anthropic-oauth.test.ts` | partial | yes (3/3 portable) | src/anthropic_oauth_test.rs (token-endpoint + refresh-omits-scope + exchange-redirect_uri request shape; interactive login orchestration N/A = MISSING surface) |
 | 10 | `anthropic-opus-4-8-smoke.test.ts` | n/a | — | credential/runtime-gated |
 | 11 | `anthropic-sse-parsing.test.ts` | no | — | 3 cases to port name-for-name |
 | 12 | `anthropic-temperature-compat.test.ts` | no | — | 6 cases to port name-for-name |
