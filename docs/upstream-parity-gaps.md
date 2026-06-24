@@ -141,7 +141,7 @@ _Generated. Total **86** upstream test files — **PORTED 6** / COVERED 66 / N/A
 | 43 | `mistral-tool-schema.test.ts` | no | — | 1 cases to port name-for-name |
 | 44 | `models-runtime.test.ts` | no | — | 16 cases to port name-for-name |
 | 45 | `node-http-proxy.test.ts` | n/a | — | credential/runtime-gated |
-| 46 | `oauth-auth.test.ts` | n/a | — | credential/runtime-gated |
+| 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
 | 47 | `oauth-device-code.test.ts` | n/a | — | credential/runtime-gated |
 | 48 | `openai-codex-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
 | 49 | `openai-codex-oauth.test.ts` | n/a | — | credential/runtime-gated |
