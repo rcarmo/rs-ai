@@ -194,6 +194,14 @@ fn non_blank_text(text: &str) -> Option<BedrockContent> {
     }
 }
 
+/// Whether a caller-supplied header is a reserved SigV4/auth header that must not
+/// be overridden (mirrors upstream isReservedHeader): any `x-amz-*` header, or
+/// `authorization`/`host` (all case-insensitive).
+pub(crate) fn is_reserved_bedrock_header(key: &str) -> bool {
+    let lower = key.to_ascii_lowercase();
+    lower.starts_with("x-amz-") || lower == "authorization" || lower == "host"
+}
+
 /// First image with a mime type Bedrock doesn't support (jpeg/png/gif/webp), if any.
 pub(crate) fn bedrock_unsupported_image_mime(messages: &[crate::types::Message]) -> Option<String> {
     messages.iter().flat_map(|m| m.content.iter()).find_map(|b| match b {
@@ -552,14 +560,18 @@ pub fn stream_bedrock<'a>(
             req = req.additional_model_request_fields(json_to_document(&fields));
         }
 
-        // Apply caller-supplied custom headers to the request (mirrors addCustomHeadersMiddleware).
+        // Apply caller-supplied custom headers to the request (mirrors addCustomHeadersMiddleware):
+        // skip reserved SigV4/auth headers (x-amz-*, authorization, host); other caller headers
+        // override any existing same-named header.
         let result = if let Some(custom) = opts.headers.as_ref().filter(|h| !h.is_empty()) {
             let custom = custom.clone();
             req.customize()
                 .mutate_request(move |http_req| {
                     let headers = http_req.headers_mut();
                     for (k, v) in &custom {
-                        let _ = headers.try_insert(k.clone(), v.clone());
+                        if !is_reserved_bedrock_header(k) {
+                            headers.insert(k.clone(), v.clone());
+                        }
                     }
                 })
                 .send()

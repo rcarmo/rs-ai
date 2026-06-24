@@ -112,7 +112,7 @@ _Generated. Total **86** upstream test files — **PORTED 22** / COVERED 48 / N/
 | 14 | `anthropic-tool-name-normalization.test.ts` | no | — | 4 cases to port name-for-name |
 | 15 | `azure-openai-base-url.test.ts` | yes | yes | src/azure_openai_base_url_test.rs |
 | 16 | `bedrock-convert-messages.test.ts` | partial | yes (5/9) | src/bedrock_convert_messages_test.rs (4 unknown-content/surrogate cases N/A: Rust exhaustive enum + no lone surrogates) |
-| 17 | `bedrock-custom-headers.test.ts` | no | — | 6 cases to port name-for-name |
+| 17 | `bedrock-custom-headers.test.ts` | partial | yes (reserved-header substance) | src/bedrock_custom_headers_test.rs (+fixed: skip x-amz-*/auth/host + override; SDK-middleware registration cases N/A) |
 | 18 | `bedrock-endpoint-resolution.test.ts` | no | — | 7 cases to port name-for-name |
 | 19 | `bedrock-models.test.ts` | no | — | 2 cases to port name-for-name |
 | 20 | `bedrock-thinking-payload.test.ts` | no | — | 10 cases to port name-for-name |
