@@ -404,17 +404,28 @@ pub enum DevicePollStatus {
     Failed(String),
 }
 
-/// Outcome of a single device-code poll for the generic polling loop.
+/// Outcome of a single device-code poll for the generic polling loop
+/// (mirrors upstream `OAuthDeviceCodePollResult`).
 pub enum DevicePollOutcome<T> {
     Pending,
+    SlowDown,
+    Failed(String),
     Complete(T),
 }
 
+// Mirror upstream device-code.ts constants.
+const CANCEL_MESSAGE: &str = "Login cancelled";
+const TIMEOUT_MESSAGE: &str = "Device flow timed out";
+const SLOW_DOWN_TIMEOUT_MESSAGE: &str = "Device flow timed out after one or more slow_down responses. This is often caused by clock drift in WSL or VM environments. Please sync or restart the VM clock and try again.";
+const MINIMUM_INTERVAL_MS: u64 = 1000;
+const SLOW_DOWN_INTERVAL_INCREMENT_MS: u64 = 5000;
+
 /// Generic OAuth device-code polling loop (mirrors upstream `pollOAuthDeviceCodeFlow`):
-/// poll immediately, then every `interval_seconds` until the poll reports complete
-/// or the `expires_in_seconds` deadline passes. `cancel` resolving aborts the wait
-/// with `"Login cancelled"`. Production callers with no cancellation pass
-/// `std::future::pending()`.
+/// poll immediately, then every `interval` until the poll reports complete or the
+/// `expires_in_seconds` deadline passes. A `SlowDown` outcome increases the interval
+/// by 5s (RFC 8628 §3.5, clamped to a 1s minimum); a `Failed` outcome propagates its
+/// message. `cancel` resolving aborts the wait with `"Login cancelled"`. Production
+/// callers with no cancellation pass `std::future::pending()`.
 pub async fn poll_oauth_device_code_flow<T, P, Fut>(
     interval_seconds: u64,
     expires_in_seconds: u64,
@@ -426,20 +437,32 @@ where
     Fut: std::future::Future<Output = DevicePollOutcome<T>>,
 {
     let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(expires_in_seconds);
+    let mut interval_ms = std::cmp::max(MINIMUM_INTERVAL_MS, interval_seconds.saturating_mul(1000));
+    let mut slow_down_responses: u64 = 0;
     tokio::pin!(cancel);
     loop {
         match poll().await {
             DevicePollOutcome::Complete(v) => return Ok(v),
+            DevicePollOutcome::Failed(message) => return Err(message),
+            DevicePollOutcome::SlowDown => {
+                slow_down_responses += 1;
+                // RFC 8628 §3.5: apply this increase to this and all subsequent requests.
+                interval_ms = std::cmp::max(MINIMUM_INTERVAL_MS, interval_ms + SLOW_DOWN_INTERVAL_INCREMENT_MS);
+            }
             DevicePollOutcome::Pending => {}
         }
-        if tokio::time::Instant::now() >= deadline {
-            return Err("Device code expired".to_string());
+        let now = tokio::time::Instant::now();
+        if now >= deadline {
+            break;
         }
+        let remaining = deadline - now;
+        let wait = std::cmp::min(std::time::Duration::from_millis(interval_ms), remaining);
         tokio::select! {
-            _ = &mut cancel => return Err("Login cancelled".to_string()),
-            _ = tokio::time::sleep(std::time::Duration::from_secs(interval_seconds)) => {}
+            _ = &mut cancel => return Err(CANCEL_MESSAGE.to_string()),
+            _ = tokio::time::sleep(wait) => {}
         }
     }
+    Err(if slow_down_responses > 0 { SLOW_DOWN_TIMEOUT_MESSAGE } else { TIMEOUT_MESSAGE }.to_string())
 }
 
 /// Whether a GitHub Copilot `/models` entry is selectable for the model picker

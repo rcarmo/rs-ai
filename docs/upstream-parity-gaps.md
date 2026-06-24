@@ -45,7 +45,7 @@ Status legend:
 | `utils/oauth/anthropic.ts` | `src/oauth.rs` | PARTIAL | token decode/account-id helpers; no interactive login. |
 | `utils/oauth/openai-codex.ts` | `src/oauth.rs` | PARTIAL | account-id extraction from token. |
 | `utils/oauth/github-copilot.ts` | — | MISSING | Copilot OAuth flow. |
-| `utils/oauth/device-code.ts`, `oauth-page.ts`, `pkce.ts`, `load.ts` | — | MISSING | Interactive OAuth flows (device-code, PKCE, browser page). |
+| `utils/oauth/device-code.ts`, `pkce.ts` | `src/oauth.rs` | PORTED | device-code poll loop = `poll_oauth_device_code_flow` (slow_down interval increment, min-interval clamp, distinct timeout messages, abortable wait); PKCE = `generate_pkce` (verifier+SHA-256 challenge, base64url). Deterministic cases ported in `src/oauth_device_code_test.rs`. `oauth-page.ts`/`load.ts` = N/A (browser page + lazy loader). |
 
 ## 3. Core / utils modules
 
@@ -71,7 +71,7 @@ Status legend:
 | `utils/typebox-helpers.ts` | `src/validation.rs` | DONE | |
 | `utils/validation.ts` | `src/validation.rs` | DONE | |
 | `utils/abort-signals.ts` | — | MISSING (architectural) | rs-ai uses native future-drop cancellation; no `AbortSignal`. |
-| `utils/node-http-proxy.ts` | — | MISSING | no HTTP proxy support. |
+| `utils/node-http-proxy.ts` | `src/http_proxy.rs` | PORTED | `resolve_http_proxy_url_for_target` + `should_proxy_hostname`/`get_proxy_for_url` mirror env resolution (HTTP(S)_PROXY/NO_PROXY/ALL_PROXY, scoped-env precedence, SOCKS/PAC rejection); `client_for_target` wires `reqwest::Proxy` into all provider client builders. Tests: `src/http_proxy_test.rs`. |
 | `cli.ts` | — | N/A | rs-ai is a library, not a CLI. |
 | `legacy-api-aliases.ts` | — | N/A | deprecated shims. |
 | `api/lazy.ts`, `*.lazy.ts` | — | N/A | JS lazy-loader; Rust links statically. |
@@ -140,7 +140,7 @@ _Total **87** upstream test files — **40 PORTED (yes/yes)** + **13 partial** (
 | 42 | `mistral-reasoning-mode.test.ts` | yes | yes | src/mistral_reasoning_mode_test.rs |
 | 43 | `mistral-tool-schema.test.ts` | n/a | — | TypeBox JS Symbol-key stripping has no Rust analogue (serde_json params carry no symbols) |
 | 44 | `models-runtime.test.ts` | partial | yes (auth-resolution + merge) | src/models_runtime_auth_test.rs + auth.rs/auth_providers.rs (incl. merge_auth_into_request; instance Models collection = global-registry architectural diff) |
-| 45 | `node-http-proxy.test.ts` | n/a | — | reqwest provides HTTP_PROXY/HTTPS_PROXY/NO_PROXY handling natively; no hand-rolled resolveHttpProxyUrlForTarget |
+| 45 | `node-http-proxy.test.ts` | yes | yes | src/http_proxy_test.rs (ported resolve_http_proxy_url_for_target; NO_PROXY exclusion, HTTP(S) resolution, scoped-env precedence, SOCKS/PAC rejection) |
 | 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
 | 47 | `oauth-device-code.test.ts` | yes | yes | src/oauth_device_code_test.rs (implemented generic poll_oauth_device_code_flow; tokio paused clock) |
 | 48 | `openai-codex-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
@@ -210,10 +210,9 @@ total-tokens, transform-messages-copilot-openai-to-anthropic, unicode-surrogate,
 validation, xhigh, xiaomi-models, zen, empty.
 
 ### MISSING (no rs-ai equivalent — credential/feature-gated)
-- `anthropic-oauth`, `oauth-auth`, `oauth-device-code`, `github-copilot-oauth`,
+- `anthropic-oauth`, `oauth-auth`, `github-copilot-oauth`,
   `github-copilot-anthropic`, `openai-codex-oauth`,
   `openai-responses-copilot-provider` — OAuth/Copilot flows (MISSING feature).
-- `node-http-proxy` — HTTP proxy (MISSING feature).
 - `lazy-module-load` — JS lazy loader (N/A).
 - `anthropic-opus-4-8-smoke`, `xiaomi-token-plan-ams-anthropic-empty-signature-smoke` —
   live smoke tests (N/A without credentials).
@@ -226,16 +225,16 @@ validation, xhigh, xiaomi-models, zen, empty.
 
 - **Modules / exports:** ~88% functional coverage. Gaps are credential-gated
   (Copilot, interactive OAuth, credential-store) or architectural
-  (AbortSignal, HTTP proxy, CLI, lazy-loader). Google Vertex AI is now implemented
-  (project/location-scoped REST request path).
+  (AbortSignal, CLI, lazy-loader). Google Vertex AI is now implemented
+  (project/location-scoped REST request path). HTTP proxy is now ported
+  (`src/http_proxy.rs`, wired into all provider clients).
 - **Providers:** 100% catalog parity; runtime exercised for all non-credential-gated
   providers.
-- **Tests:** ~75 of 87 upstream test files are behaviourally covered by rs-ai's 397
-  tests. **2 files are now ported test-for-test** with upstream names/values
-  (`mistral-reasoning-mode.test.ts` -> `src/mistral_reasoning_mode_test.rs`, 7/7;
-  `azure-openai-base-url.test.ts` -> `src/azure_openai_base_url_test.rs`, 11/11);
-  the remaining ~73 covered files are behaviourally equivalent but not yet
-  name-for-name ports (bar #2 in progress).
+- **Tests:** ~75 of 87 upstream test files are behaviourally covered by rs-ai's 677
+  tests. `node-http-proxy.test.ts` and `oauth-device-code.test.ts` are now ported
+  with upstream names/values, joining `mistral-reasoning-mode.test.ts` and
+  `azure-openai-base-url.test.ts`; the remaining covered files are behaviourally
+  equivalent but not yet name-for-name ports (bar #2 in progress).
 
 ## Top 3 gaps (highest leverage first)
 

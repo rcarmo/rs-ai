@@ -118,7 +118,7 @@ pub fn stream_anthropic<'a>(
     }
 
     Box::pin(async_stream::stream! {
-        let client = reqwest::Client::new();
+        let client = crate::http_proxy::client_for_target(&url, None);
         let mut request = client.post(&url).headers(headers).json(&payload);
         if let Some(ms) = opts.timeout_ms {
             request = request.timeout(std::time::Duration::from_millis(ms));

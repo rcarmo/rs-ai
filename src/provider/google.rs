@@ -68,7 +68,7 @@ pub fn stream_google<'a>(
     }
 
     Box::pin(async_stream::stream! {
-        let client = reqwest::Client::new();
+        let client = crate::http_proxy::client_for_target(&url, None);
         let request = client.post(&url).headers(headers).json(&payload);
         let request = if let Some(ms) = opts.timeout_ms {
             request.timeout(std::time::Duration::from_millis(ms))

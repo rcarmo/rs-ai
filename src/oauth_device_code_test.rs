@@ -55,4 +55,57 @@ mod tests {
         let err = handle.await.unwrap().unwrap_err();
         assert_eq!(err, "Login cancelled");
     }
+
+    #[tokio::test(start_paused = true)]
+    async fn propagates_a_failed_poll_message() {
+        let poll = || async { DevicePollOutcome::<&str>::Failed("access_denied".to_string()) };
+        let err = poll_oauth_device_code_flow(5, 30, poll, std::future::pending::<()>())
+            .await
+            .unwrap_err();
+        assert_eq!(err, "access_denied");
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn times_out_with_the_default_message() {
+        let poll = || async { DevicePollOutcome::<&str>::Pending };
+        let handle = tokio::spawn(poll_oauth_device_code_flow(2, 6, poll, std::future::pending::<()>()));
+        tokio::task::yield_now().await;
+        tokio::time::advance(Duration::from_secs(7)).await;
+        let err = handle.await.unwrap().unwrap_err();
+        assert_eq!(err, "Device flow timed out");
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn slow_down_increases_interval_and_uses_slow_down_timeout_message() {
+        // First poll asks to slow down (interval 2s -> 7s), then stays pending
+        // until the deadline; the slow-down-specific timeout message is used.
+        let polls = Arc::new(AtomicUsize::new(0));
+        let p = polls.clone();
+        let poll = move || {
+            let p = p.clone();
+            async move {
+                let n = p.fetch_add(1, Ordering::SeqCst) + 1;
+                if n == 1 { DevicePollOutcome::<&str>::SlowDown } else { DevicePollOutcome::<&str>::Pending }
+            }
+        };
+        let handle = tokio::spawn(poll_oauth_device_code_flow(2, 20, poll, std::future::pending::<()>()));
+        tokio::task::yield_now().await;
+        assert_eq!(polls.load(Ordering::SeqCst), 1, "polls immediately");
+
+        // Interval should now be 7s, not the original 2s.
+        tokio::time::advance(Duration::from_millis(6999)).await;
+        tokio::task::yield_now().await;
+        assert_eq!(polls.load(Ordering::SeqCst), 1, "no second poll before the 7s slow-down interval");
+        tokio::time::advance(Duration::from_millis(1)).await;
+        tokio::task::yield_now().await;
+        assert_eq!(polls.load(Ordering::SeqCst), 2, "second poll after the increased interval");
+
+        // Run out the clock and confirm the slow-down timeout message.
+        tokio::time::advance(Duration::from_secs(20)).await;
+        let err = handle.await.unwrap().unwrap_err();
+        assert_eq!(
+            err,
+            "Device flow timed out after one or more slow_down responses. This is often caused by clock drift in WSL or VM environments. Please sync or restart the VM clock and try again."
+        );
+    }
 }

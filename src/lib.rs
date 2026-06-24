@@ -43,6 +43,7 @@ pub mod oauth;
 pub mod auth;
 pub mod auth_providers;
 pub mod compaction;
+pub mod http_proxy;
 
 // Re-exports for convenience
 pub use types::*;
@@ -52,6 +53,8 @@ pub use registry::{stream, complete};
 
 #[cfg(test)]
 mod registry_test;
+#[cfg(test)]
+mod http_proxy_test;
 #[cfg(test)]
 mod env_test;
 #[cfg(test)]

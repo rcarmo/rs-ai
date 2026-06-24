@@ -61,7 +61,7 @@ pub fn stream_openai<'a>(
     };
 
     Box::pin(async_stream::stream! {
-        let client = reqwest::Client::new();
+        let client = crate::http_proxy::client_for_target(&url, None);
         let request = client
             .post(&url)
             .headers(headers)

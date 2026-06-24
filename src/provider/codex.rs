@@ -170,7 +170,7 @@ pub fn stream_codex<'a>(
                 let url = format!("{}/responses", model.base_url.trim_end_matches('/'));
                 let account_id = crate::oauth::codex_account_id(&api_key);
                 let user_agent = codex_user_agent();
-                let client = reqwest::Client::new();
+                let client = crate::http_proxy::client_for_target(&url, None);
                 let mut req = client
                     .post(&url)
                     .header("content-type", "application/json")
