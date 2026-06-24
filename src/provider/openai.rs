@@ -48,8 +48,8 @@ pub fn stream_openai<'a>(
         }
     }
 
-    let base = match crate::utils::resolve_cloudflare_base_url(model.base_url.trim_end_matches('/'), &model.provider) {
-        Ok(b) => b,
+    let (url, headers) = match build_openai_request_parts(model, context, opts, &compat, &api_key) {
+        Ok(parts) => parts,
         Err(msg) => {
             let err = Event::Error {
                 reason: StopReason::Error,
@@ -59,60 +59,6 @@ pub fn stream_openai<'a>(
             return Box::pin(stream::once(async { err }));
         }
     };
-    let url = format!("{}/chat/completions", base.trim_end_matches('/'));
-    let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    headers.insert("Accept", HeaderValue::from_static("text/event-stream"));
-
-    if model.provider == "cloudflare-ai-gateway" {
-        headers.insert("cf-aig-authorization", HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
-    } else {
-        headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
-    }
-
-    // GitHub Copilot dynamic headers (mirrors upstream buildCopilotDynamicHeaders)
-    if model.provider == "github-copilot" {
-        for (k, v) in crate::utils::copilot_dynamic_headers(&context.messages) {
-            headers.insert(k, HeaderValue::from_static(v));
-        }
-    }
-
-    // Session affinity headers for providers that require them. The session id is
-    // cleared when caching is off (upstream cacheSessionId = retention==="none" ?
-    // undefined : sessionId), so these headers are omitted; skip empty session ids.
-    let affinity_caching_on =
-        crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref()) != crate::types::CacheRetention::None;
-    if affinity_caching_on
-        && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
-        && compat.supports_session_affinity_headers == Some(true)
-            && let Ok(val) = HeaderValue::from_str(session_id) {
-                headers.insert("session_id", val.clone());
-                headers.insert("x-client-request-id", val.clone());
-                headers.insert("x-session-affinity", val);
-            }
-
-    // Add model-level headers
-    if let Some(ref model_headers) = model.headers {
-        for (k, v) in model_headers {
-            if let (Ok(name), Ok(val)) = (
-                reqwest::header::HeaderName::from_bytes(k.as_bytes()),
-                HeaderValue::from_str(v),
-            ) {
-                headers.insert(name, val);
-            }
-        }
-    }
-
-    if let Some(ref extra_headers) = opts.headers {
-        for (k, v) in extra_headers {
-            if let (Ok(name), Ok(val)) = (
-                reqwest::header::HeaderName::from_bytes(k.as_bytes()),
-                HeaderValue::from_str(v),
-            ) {
-                headers.insert(name, val);
-            }
-        }
-    }
 
     Box::pin(async_stream::stream! {
         let client = reqwest::Client::new();
@@ -506,6 +452,79 @@ fn assemble_text_thinking(
         if needs_text { content.push(text_block()); }
         if needs_thinking { content.push(thinking_block()); }
     }
+}
+
+/// Build the request URL and headers for an OpenAI-completions request.
+/// Extracted from `stream_openai` so the Cloudflare-AI-Gateway base-URL/header
+/// resolution and session-affinity headers are unit-testable without a live
+/// request (mirrors upstream client-construction assertions).
+pub(crate) fn build_openai_request_parts(
+    model: &Model,
+    context: &Context,
+    opts: &StreamOptions,
+    compat: &crate::compat::OpenAICompletionsCompat,
+    api_key: &str,
+) -> Result<(String, HeaderMap), String> {
+    let base = crate::utils::resolve_cloudflare_base_url(
+        model.base_url.trim_end_matches('/'),
+        &model.provider,
+    )?;
+    let url = format!("{}/chat/completions", base.trim_end_matches('/'));
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.insert("Accept", HeaderValue::from_static("text/event-stream"));
+
+    if model.provider == "cloudflare-ai-gateway" {
+        headers.insert("cf-aig-authorization", HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+    } else {
+        headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+    }
+
+    // GitHub Copilot dynamic headers (mirrors upstream buildCopilotDynamicHeaders)
+    if model.provider == "github-copilot" {
+        for (k, v) in crate::utils::copilot_dynamic_headers(&context.messages) {
+            headers.insert(k, HeaderValue::from_static(v));
+        }
+    }
+
+    // Session affinity headers for providers that require them. The session id is
+    // cleared when caching is off (upstream cacheSessionId = retention==="none" ?
+    // undefined : sessionId), so these headers are omitted; skip empty session ids.
+    let affinity_caching_on =
+        crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref()) != crate::types::CacheRetention::None;
+    if affinity_caching_on
+        && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
+        && compat.supports_session_affinity_headers == Some(true)
+            && let Ok(val) = HeaderValue::from_str(session_id) {
+                headers.insert("session_id", val.clone());
+                headers.insert("x-client-request-id", val.clone());
+                headers.insert("x-session-affinity", val);
+            }
+
+    // Add model-level headers
+    if let Some(ref model_headers) = model.headers {
+        for (k, v) in model_headers {
+            if let (Ok(name), Ok(val)) = (
+                reqwest::header::HeaderName::from_bytes(k.as_bytes()),
+                HeaderValue::from_str(v),
+            ) {
+                headers.insert(name, val);
+            }
+        }
+    }
+
+    if let Some(ref extra_headers) = opts.headers {
+        for (k, v) in extra_headers {
+            if let (Ok(name), Ok(val)) = (
+                reqwest::header::HeaderName::from_bytes(k.as_bytes()),
+                HeaderValue::from_str(v),
+            ) {
+                headers.insert(name, val);
+            }
+        }
+    }
+
+    Ok((url, headers))
 }
 
 pub(crate) fn build_payload(

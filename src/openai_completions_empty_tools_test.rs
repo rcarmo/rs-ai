@@ -94,4 +94,76 @@ mod tests {
         let p = payload(&ctx, &StreamOptions::default());
         assert_eq!(p["tools"], serde_json::json!([]), "tool history must keep an empty tools array");
     }
+
+    // --- Cloudflare AI Gateway client-construction cases ---
+    // Ported from upstream's baseURL / cf-aig-authorization / session-affinity
+    // assertions via the extracted `build_openai_request_parts` helper. These set
+    // CLOUDFLARE_* env vars (no other test reads them) under a serial guard.
+    use crate::provider::openai::build_openai_request_parts;
+    use std::sync::Mutex;
+    static CF_ENV_GUARD: Mutex<()> = Mutex::new(());
+
+    struct CfEnv;
+    impl CfEnv {
+        fn set() -> Self {
+            unsafe {
+                std::env::set_var("CLOUDFLARE_ACCOUNT_ID", "account-id");
+                std::env::set_var("CLOUDFLARE_GATEWAY_ID", "gateway-id");
+            }
+            CfEnv
+        }
+    }
+    impl Drop for CfEnv {
+        fn drop(&mut self) {
+            unsafe {
+                std::env::remove_var("CLOUDFLARE_ACCOUNT_ID");
+                std::env::remove_var("CLOUDFLARE_GATEWAY_ID");
+            }
+        }
+    }
+
+    fn cf_model(id: &str) -> Model {
+        get_model("cloudflare-ai-gateway", id).expect("cloudflare-ai-gateway model")
+    }
+
+    fn parts(model: &Model, opts: &StreamOptions, key: &str) -> (String, reqwest::header::HeaderMap) {
+        build_openai_request_parts(model, &Context { system_prompt: None, tools: Vec::new(), messages: vec![user("hi")] }, opts, &detect_compat(model), key).expect("request parts")
+    }
+
+    #[test]
+    fn cloudflare_gateway_resolves_compat_base_url_and_cf_aig_auth() {
+        let _g = CF_ENV_GUARD.lock().unwrap();
+        let _env = CfEnv::set();
+        let model = cf_model("workers-ai/@cf/moonshotai/kimi-k2.6");
+        let (url, headers) = parts(&model, &StreamOptions::default(), "cf-token");
+        assert_eq!(url, "https://gateway.ai.cloudflare.com/v1/account-id/gateway-id/compat/chat/completions");
+        assert_eq!(headers.get("cf-aig-authorization").unwrap(), "Bearer cf-token");
+        assert!(headers.get("authorization").is_none(), "primary Authorization must not be set for the gateway");
+    }
+
+    #[test]
+    fn cloudflare_gateway_preserves_inline_upstream_authorization_byok() {
+        let _g = CF_ENV_GUARD.lock().unwrap();
+        let _env = CfEnv::set();
+        let model = cf_model("gpt-5.1");
+        let opts = StreamOptions {
+            headers: Some(HashMap::from([("Authorization".to_string(), "Bearer upstream-token".to_string())])),
+            ..Default::default()
+        };
+        let (_url, headers) = parts(&model, &opts, "cf-token");
+        assert_eq!(headers.get("authorization").unwrap(), "Bearer upstream-token");
+        assert_eq!(headers.get("cf-aig-authorization").unwrap(), "Bearer cf-token");
+    }
+
+    #[test]
+    fn cloudflare_gateway_sends_session_affinity_headers() {
+        let _g = CF_ENV_GUARD.lock().unwrap();
+        let _env = CfEnv::set();
+        let model = cf_model("workers-ai/@cf/moonshotai/kimi-k2.6");
+        let opts = StreamOptions { session_id: Some("session-1".into()), ..Default::default() };
+        let (_url, headers) = parts(&model, &opts, "cf-token");
+        assert_eq!(headers.get("session_id").unwrap(), "session-1");
+        assert_eq!(headers.get("x-client-request-id").unwrap(), "session-1");
+        assert_eq!(headers.get("x-session-affinity").unwrap(), "session-1");
+    }
 }
