@@ -36,15 +36,15 @@ fn get_proxy_env(key: &str, env: Option<&HashMap<String, String>>) -> String {
             return v.clone();
         }
     }
-    if let Ok(v) = std::env::var(&lower) {
-        if !v.is_empty() {
-            return v;
-        }
+    if let Ok(v) = std::env::var(&lower)
+        && !v.is_empty()
+    {
+        return v;
     }
-    if let Ok(v) = std::env::var(&upper) {
-        if !v.is_empty() {
-            return v;
-        }
+    if let Ok(v) = std::env::var(&upper)
+        && !v.is_empty()
+    {
+        return v;
     }
     String::new()
 }
@@ -148,12 +148,11 @@ pub fn resolve_http_proxy_url_for_target(
 /// resolved HTTP/HTTPS proxy (per `*_proxy`/`no_proxy` env), falling back to a
 /// direct client when no proxy applies or proxy resolution fails.
 pub fn client_for_target(target_url: &str, env: Option<&HashMap<String, String>>) -> reqwest::Client {
-    if let Ok(Some(proxy_url)) = resolve_http_proxy_url_for_target(target_url, env) {
-        if let Ok(proxy) = reqwest::Proxy::all(proxy_url.as_str()) {
-            if let Ok(client) = reqwest::Client::builder().proxy(proxy).build() {
-                return client;
-            }
-        }
+    if let Ok(Some(proxy_url)) = resolve_http_proxy_url_for_target(target_url, env)
+        && let Ok(proxy) = reqwest::Proxy::all(proxy_url.as_str())
+        && let Ok(client) = reqwest::Client::builder().proxy(proxy).build()
+    {
+        return client;
     }
     reqwest::Client::new()
 }
