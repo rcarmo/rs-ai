@@ -10,6 +10,39 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 (behaviourally guarded by an existing rs-ai test), **PENDING**, **N/A**
 (feature gated/architectural — see parity-gaps doc).
 
+## Shareable conformance corpus (for go-ai / swift-ai adoption)
+
+Per the parity auditor, the following rs-ai work is adoptable cross-port. Each
+item is a real upstream-conformance behavior other ports still need.
+
+- **4 upstream-divergence fixes (caching-gate family):** session-affinity
+  headers (`session_id` / `x-client-request-id` / `x-session-affinity` /
+  `prompt_cache_key`) must be cleared when `cacheRetention: "none"`. Fixed across
+  all four affinity providers (anthropic, fireworks, openai-responses,
+  openai-completions). Tests: `src/openai_completions_prompt_cache_test.rs`,
+  `src/anthropic_cache_write_1h_cost_test.rs`, `src/codex_request_shape_test.rs`.
+- **WS connection-limit retry-once + WS handshake header fix:** see the WS
+  section below (`src/codex_ws_connection_limit_test.rs`,
+  `src/codex_ws_protocol_test.rs`).
+- **Device-code OAuth semantics:** `poll_oauth_device_code_flow` implements
+  RFC8628 `slow_down` (+5s), min-interval clamp, and the
+  Failed/TIMEOUT-vs-SLOW_DOWN message distinctions
+  (`src/oauth_device_code_test.rs`, `src/oauth.rs`).
+- **HTTP proxy:** `src/http_proxy.rs` resolves HTTP(S)/NO/ALL_PROXY with scoped
+  precedence (SOCKS/PAC rejected), wired into all 6 client builders
+  (`src/http_proxy_test.rs`, 4/4).
+- **Vertex provider request path:** `src/google_vertex_request_path_test.rs`
+  (project/location REST URL, ADC marker / gcp-vertex-credentials fallback,
+  real-key path) — origin=go-ai `resolveVertexProjectLocation`.
+- **Simulated-fixture ports (faithful wire-format, no fabricated output):**
+  `src/simulated_e2e_fixtures_test.rs` (+ peers) — responseId, tokens,
+  total-tokens (proves openai-completions ignores native total),
+  context-overflow, unicode-surrogate reassembly, google-thinking-disable,
+  cache-retention (request-shape).
+- **Live-gated E2E wrappers:** `src/stream_e2e_live_test.rs` mirrors upstream
+  `stream.test.ts` `describe.skipIf(!<KEY>)` — same names/assertions, run with a
+  key, skip cleanly without. Pattern other ports can copy verbatim.
+
 ## Newly adapted this cycle
 
 | go-ai test | rs-ai test | Notes |
