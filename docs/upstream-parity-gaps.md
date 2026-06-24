@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 27** / COVERED 42 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 28** / COVERED 41 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
