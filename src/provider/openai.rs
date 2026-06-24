@@ -77,8 +77,13 @@ pub fn stream_openai<'a>(
         }
     }
 
-    // Session affinity headers for providers that require them (skip empty session id).
-    if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
+    // Session affinity headers for providers that require them. The session id is
+    // cleared when caching is off (upstream cacheSessionId = retention==="none" ?
+    // undefined : sessionId), so these headers are omitted; skip empty session ids.
+    let affinity_caching_on =
+        crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref()) != crate::types::CacheRetention::None;
+    if affinity_caching_on
+        && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
         && compat.supports_session_affinity_headers == Some(true)
             && let Ok(val) = HeaderValue::from_str(session_id) {
                 headers.insert("session_id", val.clone());

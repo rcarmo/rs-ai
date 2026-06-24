@@ -148,7 +148,7 @@ _Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/
 | 50 | `openai-codex-stream.test.ts` | no | — | 19 cases to port name-for-name |
 | 51 | `openai-completions-cache-control-format.test.ts` | yes | yes | src/openai_completions_cache_control_format_test.rs |
 | 52 | `openai-completions-empty-tools.test.ts` | partial | yes (5/8) | src/openai_completions_empty_tools_test.rs (tools omit/empty-with-history + max_tokens; 3 cloudflare-gateway client-construction cases env-coupled) |
-| 53 | `openai-completions-prompt-cache.test.ts` | no | — | 9 cases to port name-for-name |
+| 53 | `openai-completions-prompt-cache.test.ts` | yes | yes | src/openai_completions_prompt_cache_test.rs |
 | 54 | `openai-completions-reasoning-details.test.ts` | yes | yes | src/openai_completions_reasoning_details_test.rs |
 | 55 | `openai-completions-response-model.test.ts` | yes | yes | src/openai_completions_response_model_test.rs |
 | 56 | `openai-completions-retry.test.ts` | no | — | 2 cases to port name-for-name |
