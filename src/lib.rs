@@ -103,6 +103,8 @@ mod supports_xhigh_test;
 #[cfg(test)]
 mod together_xiaomi_models_test;
 #[cfg(test)]
+mod fireworks_models_test;
+#[cfg(test)]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
 mod openai_completions_tool_choice_test;

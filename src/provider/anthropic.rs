@@ -83,7 +83,12 @@ pub fn stream_anthropic<'a>(
 
     // Session affinity header for providers that require it (mirrors getAnthropicCompat
     // sendSessionAffinityHeaders: explicit per-model compat override, else false in 0.80.2).
-    if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
+    // The session id used for affinity is cleared when caching is off
+    // (upstream `cacheSessionId = retention === "none" ? undefined : sessionId`).
+    let affinity_caching_on =
+        crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref()) != crate::types::CacheRetention::None;
+    if affinity_caching_on
+        && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
         && anthropic_needs_session_affinity(model)
         && let Ok(val) = HeaderValue::from_str(session_id) {
             headers.insert("x-session-affinity", val);
