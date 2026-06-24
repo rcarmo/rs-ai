@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 31** / COVERED 38 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 32** / COVERED 37 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -165,7 +165,7 @@ _Generated. Total **86** upstream test files — **PORTED 31** / COVERED 38 / N/
 | 67 | `openai-responses-tool-result-images.test.ts` | no | — | 4 cases to port name-for-name |
 | 68 | `openrouter-cache-write-repro.test.ts` | no | — | 1 cases to port name-for-name |
 | 69 | `openrouter-images.test.ts` | no | — | 3 cases to port name-for-name |
-| 70 | `overflow.test.ts` | no | — | 13 cases to port name-for-name |
+| 70 | `overflow.test.ts` | yes | yes | src/overflow_test.rs |
 | 71 | `providers.test.ts` | no | — | 13 cases to port name-for-name |
 | 72 | `responseid.test.ts` | no | — | 11 cases to port name-for-name |
 | 73 | `stream.test.ts` | no | — | 214 cases to port name-for-name |
