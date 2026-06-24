@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 33** / COVERED 36 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 34** / COVERED 35 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -121,7 +121,7 @@ _Generated. Total **86** upstream test files — **PORTED 33** / COVERED 36 / N/
 | 23 | `context-overflow.test.ts` | no | — | 32 cases to port name-for-name |
 | 24 | `cross-provider-handoff.test.ts` | no | — | 2 cases to port name-for-name |
 | 25 | `empty.test.ts` | no | — | 104 cases to port name-for-name |
-| 26 | `env-api-keys.test.ts` | no | — | 3 cases to port name-for-name |
+| 26 | `env-api-keys.test.ts` | yes | yes | src/env_api_keys_test.rs |
 | 27 | `faux-provider.test.ts` | covered | — | rs-ai FauxProvider (provider/faux.rs) tested in provider_test/coverage; upstream harness API (closures/registration) differs; abort cases N/A (no AbortSignal) |
 | 28 | `fireworks-models.test.ts` | yes | yes | src/fireworks_models_test.rs |
 | 29 | `github-copilot-anthropic.test.ts` | n/a | — | credential/runtime-gated |
