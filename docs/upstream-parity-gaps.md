@@ -139,7 +139,7 @@ _Generated. Total **86** upstream test files — **PORTED 31** / COVERED 38 / N/
 | 41 | `lazy-module-load.test.ts` | n/a | — | credential/runtime-gated |
 | 42 | `mistral-reasoning-mode.test.ts` | yes | yes | src/mistral_reasoning_mode_test.rs |
 | 43 | `mistral-tool-schema.test.ts` | n/a | — | TypeBox JS Symbol-key stripping has no Rust analogue (serde_json params carry no symbols) |
-| 44 | `models-runtime.test.ts` | no | — | 16 cases to port name-for-name |
+| 44 | `models-runtime.test.ts` | partial | yes (auth-resolution subset) | src/models_runtime_auth_test.rs + auth.rs/auth_providers.rs (instance Models collection = global-registry architectural diff) |
 | 45 | `node-http-proxy.test.ts` | n/a | — | credential/runtime-gated |
 | 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
 | 47 | `oauth-device-code.test.ts` | yes | yes | src/oauth_device_code_test.rs (implemented generic poll_oauth_device_code_flow; tokio paused clock) |
