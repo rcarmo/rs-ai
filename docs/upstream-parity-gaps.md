@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 21** / COVERED 50 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 22** / COVERED 49 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -102,7 +102,7 @@ _Generated. Total **86** upstream test files — **PORTED 21** / COVERED 50 / N/
 | 4 | `anthropic-eager-tool-input-compat.test.ts` | yes | yes | src/anthropic_compat_test.rs |
 | 5 | `anthropic-eager-tool-input-e2e.test.ts` | no | — | 3 cases to port name-for-name |
 | 6 | `anthropic-empty-thinking-signature-compat.test.ts` | yes | yes | src/anthropic_compat_test.rs |
-| 7 | `anthropic-force-adaptive-thinking.test.ts` | no | — | 5 cases to port name-for-name |
+| 7 | `anthropic-force-adaptive-thinking.test.ts` | yes | yes | src/anthropic_force_adaptive_thinking_test.rs |
 | 8 | `anthropic-long-cache-retention-e2e.test.ts` | no | — | 2 cases to port name-for-name |
 | 9 | `anthropic-oauth.test.ts` | partial | yes (3/3 portable) | src/anthropic_oauth_test.rs (token-endpoint + refresh-omits-scope + exchange-redirect_uri request shape; interactive login orchestration N/A = MISSING surface) |
 | 10 | `anthropic-opus-4-8-smoke.test.ts` | n/a | — | credential/runtime-gated |
@@ -135,7 +135,7 @@ _Generated. Total **86** upstream test files — **PORTED 21** / COVERED 50 / N/
 | 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
 | 38 | `images-models.test.ts` | no | — | 6 cases to port name-for-name |
 | 39 | `images.test.ts` | no | — | 3 cases to port name-for-name |
-| 40 | `interleaved-thinking.test.ts` | no | — | 4 cases to port name-for-name |
+| 40 | `interleaved-thinking.test.ts` | n/a | — | live model-behavior (bedrock/anthropic creds); asserts the model emits interleaved thinking+toolCall |
 | 41 | `lazy-module-load.test.ts` | n/a | — | credential/runtime-gated |
 | 42 | `mistral-reasoning-mode.test.ts` | yes | yes | src/mistral_reasoning_mode_test.rs |
 | 43 | `mistral-tool-schema.test.ts` | n/a | — | TypeBox JS Symbol-key stripping has no Rust analogue (serde_json params carry no symbols) |

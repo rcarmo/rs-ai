@@ -125,6 +125,8 @@ mod anthropic_cache_write_1h_cost_test;
 #[cfg(test)]
 mod anthropic_compat_test;
 #[cfg(test)]
+mod anthropic_force_adaptive_thinking_test;
+#[cfg(test)]
 mod codex_request_shape_test;
 #[cfg(test)]
 mod codex_ws_connection_limit_test;
