@@ -524,6 +524,12 @@ fn stream_responses_inner<'a>(
                     }
                     "response.completed" | "response.incomplete" => {
                         if let Some(response) = data.get("response") {
+                            // Capture the terminal response id (mirrors upstream
+                            // handleTerminalResponse: `output.responseId = response.id`),
+                            // covering streams that omit a prior response.created.
+                            if let Some(id) = response.get("id").and_then(|v| v.as_str()) {
+                                partial.response_id = Some(id.to_string());
+                            }
                             // Upstream does not capture response.model into responseModel.
                             if let Some(usage) = response.get("usage") {
                                 let mut parsed = crate::simple_options::parse_responses_usage(usage, model);
