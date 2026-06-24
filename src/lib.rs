@@ -113,6 +113,8 @@ mod openai_responses_terminal_event_test;
 #[cfg(test)]
 mod openai_responses_partial_json_cleanup_test;
 #[cfg(test)]
+mod openai_responses_tool_result_images_test;
+#[cfg(test)]
 mod codex_request_shape_test;
 #[cfg(test)]
 mod codex_ws_connection_limit_test;
