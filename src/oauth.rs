@@ -311,7 +311,7 @@ pub async fn refresh_codex_token_at(token_url: &str, refresh_token: &str) -> Res
     let status = resp.status();
     let body = resp.text().await.map_err(|e| format!("OpenAI Codex token refresh error: {e}"))?;
     if !status.is_success() {
-        return Err(format!("OpenAI Codex token refresh failed ({status}): {body}"));
+        return Err(format!("OpenAI Codex token refresh failed ({}): {body}", status.as_u16()));
     }
     let data: serde_json::Value = serde_json::from_str(&body)
         .map_err(|e| format!("OpenAI Codex token refresh invalid JSON: body={body}; details={e}"))?;

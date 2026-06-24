@@ -144,7 +144,7 @@ _Generated. Total **86** upstream test files — **PORTED 7** / COVERED 65 / N/A
 | 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
 | 47 | `oauth-device-code.test.ts` | yes | yes | src/oauth_device_code_test.rs (implemented generic poll_oauth_device_code_flow; tokio paused clock) |
 | 48 | `openai-codex-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
-| 49 | `openai-codex-oauth.test.ts` | n/a | — | credential/runtime-gated |
+| 49 | `openai-codex-oauth.test.ts` | partial | yes (1/8 portable) | src/openai_codex_oauth_test.rs (refresh-failure error shape; +fixed status to numeric (401) per upstream; 7 device-code login-flow cases N/A = MISSING interactive surface) |
 | 50 | `openai-codex-stream.test.ts` | no | — | 19 cases to port name-for-name |
 | 51 | `openai-completions-cache-control-format.test.ts` | no | — | 3 cases to port name-for-name |
 | 52 | `openai-completions-empty-tools.test.ts` | no | — | 9 cases to port name-for-name |
