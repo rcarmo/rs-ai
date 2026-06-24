@@ -114,7 +114,7 @@ _Generated. Total **86** upstream test files — **PORTED 31** / COVERED 38 / N/
 | 16 | `bedrock-convert-messages.test.ts` | partial | yes (5/9) | src/bedrock_convert_messages_test.rs (4 unknown-content/surrogate cases N/A: Rust exhaustive enum + no lone surrogates) |
 | 17 | `bedrock-custom-headers.test.ts` | partial | yes (reserved-header substance) | src/bedrock_custom_headers_test.rs (+fixed: skip x-amz-*/auth/host + override; SDK-middleware registration cases N/A) |
 | 18 | `bedrock-endpoint-resolution.test.ts` | no | — | 7 cases to port name-for-name |
-| 19 | `bedrock-models.test.ts` | no | — | 2 cases to port name-for-name |
+| 19 | `bedrock-models.test.ts` | partial | yes (catalog non-empty) | src/bedrock_images_models_test.rs (per-model live request cases N/A) |
 | 20 | `bedrock-thinking-payload.test.ts` | yes | yes (9/10) | src/bedrock_thinking_payload_test.rs (adaptive/govcloud/app-inference-profile; live max-tokens E2E N/A) |
 | 21 | `cache-retention.test.ts` | no | — | 16 cases to port name-for-name |
 | 22 | `compat-env.test.ts` | no | — | 1 cases to port name-for-name |
@@ -133,8 +133,8 @@ _Generated. Total **86** upstream test files — **PORTED 31** / COVERED 38 / N/
 | 35 | `google-thinking-signature.test.ts` | yes | yes | src/google_thinking_signature_test.rs |
 | 36 | `google-vertex-api-key-resolution.test.ts` | n/a | — | credential/runtime-gated |
 | 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
-| 38 | `images-models.test.ts` | no | — | 6 cases to port name-for-name |
-| 39 | `images.test.ts` | no | — | 3 cases to port name-for-name |
+| 38 | `images-models.test.ts` | partial | yes (builtin catalog) | src/bedrock_images_models_test.rs (instance ImagesModels collection = architectural diff) |
+| 39 | `images.test.ts` | n/a | — | live image generation (OPENROUTER_API_KEY) |
 | 40 | `interleaved-thinking.test.ts` | n/a | — | live model-behavior (bedrock/anthropic creds); asserts the model emits interleaved thinking+toolCall |
 | 41 | `lazy-module-load.test.ts` | n/a | — | credential/runtime-gated |
 | 42 | `mistral-reasoning-mode.test.ts` | yes | yes | src/mistral_reasoning_mode_test.rs |

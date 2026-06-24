@@ -107,6 +107,8 @@ mod fireworks_models_test;
 #[cfg(test)]
 mod models_runtime_auth_test;
 #[cfg(test)]
+mod bedrock_images_models_test;
+#[cfg(test)]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
 mod openai_completions_tool_choice_test;
