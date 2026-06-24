@@ -404,6 +404,44 @@ pub enum DevicePollStatus {
     Failed(String),
 }
 
+/// Outcome of a single device-code poll for the generic polling loop.
+pub enum DevicePollOutcome<T> {
+    Pending,
+    Complete(T),
+}
+
+/// Generic OAuth device-code polling loop (mirrors upstream `pollOAuthDeviceCodeFlow`):
+/// poll immediately, then every `interval_seconds` until the poll reports complete
+/// or the `expires_in_seconds` deadline passes. `cancel` resolving aborts the wait
+/// with `"Login cancelled"`. Production callers with no cancellation pass
+/// `std::future::pending()`.
+pub async fn poll_oauth_device_code_flow<T, P, Fut>(
+    interval_seconds: u64,
+    expires_in_seconds: u64,
+    mut poll: P,
+    cancel: impl std::future::Future<Output = ()>,
+) -> Result<T, String>
+where
+    P: FnMut() -> Fut,
+    Fut: std::future::Future<Output = DevicePollOutcome<T>>,
+{
+    let deadline = tokio::time::Instant::now() + std::time::Duration::from_secs(expires_in_seconds);
+    tokio::pin!(cancel);
+    loop {
+        match poll().await {
+            DevicePollOutcome::Complete(v) => return Ok(v),
+            DevicePollOutcome::Pending => {}
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("Device code expired".to_string());
+        }
+        tokio::select! {
+            _ = &mut cancel => return Err("Login cancelled".to_string()),
+            _ = tokio::time::sleep(std::time::Duration::from_secs(interval_seconds)) => {}
+        }
+    }
+}
+
 /// Poll once for a GitHub device-code access token (mirrors pollForGitHubAccessToken's poll).
 pub async fn poll_github_device_token(domain: &str, device_code: &str) -> DevicePollStatus {
     poll_github_device_token_at(&format!("https://{domain}/login/oauth/access_token"), COPILOT_CLIENT_ID, device_code).await

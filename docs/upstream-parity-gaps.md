@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 6** / COVERED 66 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 7** / COVERED 65 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -142,7 +142,7 @@ _Generated. Total **86** upstream test files — **PORTED 6** / COVERED 66 / N/A
 | 44 | `models-runtime.test.ts` | no | — | 16 cases to port name-for-name |
 | 45 | `node-http-proxy.test.ts` | n/a | — | credential/runtime-gated |
 | 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
-| 47 | `oauth-device-code.test.ts` | n/a | — | credential/runtime-gated |
+| 47 | `oauth-device-code.test.ts` | yes | yes | src/oauth_device_code_test.rs (implemented generic poll_oauth_device_code_flow; tokio paused clock) |
 | 48 | `openai-codex-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
 | 49 | `openai-codex-oauth.test.ts` | n/a | — | credential/runtime-gated |
 | 50 | `openai-codex-stream.test.ts` | no | — | 19 cases to port name-for-name |
