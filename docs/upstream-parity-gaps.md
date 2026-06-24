@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Total **87** upstream test files — **39 PORTED (yes/yes)** + **14 partial** (deterministic substance ported; live/WS-pooling/architectural remainder noted) + **11 N/A** (live-only / credential-gated / JS-runtime / architectural). All deterministic (live=0) files are ported or have a precise N/A rationale. The Vertex request path is now implemented (ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`), so `google-vertex-api-key-resolution` is PORTED rather than architectural-MISSING. 69 rs-ai test files, 667 tests, clippy clean._
+_Total **87** upstream test files — **40 PORTED (yes/yes)** + **13 partial** (deterministic substance ported; live/WS-pooling/architectural remainder noted) + **11 N/A** (live-only / credential-gated / JS-runtime / architectural) + a live-E2E backlog (`no`) that is behaviourally covered by deterministic unit tests but not name-for-name portable (each calls `complete`/`streamSimple` against real providers, no mocks). All deterministic (live=0) files are ported or have a precise N/A rationale. The Vertex request path is implemented (ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`); the Cloudflare-AI-Gateway client-construction cases are ported via `build_openai_request_parts`. 70 rs-ai test files, 670 tests, no new clippy warnings._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -131,7 +131,7 @@ _Total **87** upstream test files — **39 PORTED (yes/yes)** + **14 partial** (
 | 33 | `google-shared-image-tool-result-routing.test.ts` | yes | yes | src/google_image_tool_result_routing_test.rs |
 | 34 | `google-thinking-disable.test.ts` | no | — | 9 cases to port name-for-name |
 | 35 | `google-thinking-signature.test.ts` | yes | yes | src/google_thinking_signature_test.rs |
-| 36 | `google-vertex-api-key-resolution.test.ts` | partial | yes | src/google_vertex_request_path_test.rs (Vertex REST request path now implemented: project/location resolution from StreamOptions + GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT/GOOGLE_CLOUD_LOCATION env, `{location}` host substitution, placeholder-marker `<...>`/`gcp-vertex-credentials` api-key suppression → ADC URL, real-key append, custom base-url passthrough. Upstream's @google/genai SDK-constructor assertions are JS-runtime-specific; this port asserts the equivalent URL shape + resolution, mirroring go-ai `buildStreamURL`/`resolveVertexProjectLocation`.) |
+| 36 | `google-vertex-api-key-resolution.test.ts` | yes | yes | src/google_vertex_request_path_test.rs (Vertex REST request path implemented: project/location resolution from StreamOptions + GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT/GOOGLE_CLOUD_LOCATION env, `{location}` host substitution, placeholder-marker `<...>`/`gcp-vertex-credentials` api-key suppression → ADC URL, real-key append, custom base-url passthrough. Upstream's @google/genai SDK-constructor assertions are JS-runtime-specific; this port asserts the equivalent URL shape + resolution, mirroring go-ai `buildStreamURL`/`resolveVertexProjectLocation`.) |
 | 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
 | 38 | `images-models.test.ts` | partial | yes (builtin catalog) | src/bedrock_images_models_test.rs (instance ImagesModels collection = architectural diff) |
 | 39 | `images.test.ts` | n/a | — | live image generation (OPENROUTER_API_KEY) |
@@ -225,8 +225,9 @@ validation, xhigh, xiaomi-models, zen, empty.
 ## Coverage estimate
 
 - **Modules / exports:** ~88% functional coverage. Gaps are credential-gated
-  (Copilot, Vertex, interactive OAuth, credential-store) or architectural
-  (AbortSignal, HTTP proxy, CLI, lazy-loader).
+  (Copilot, interactive OAuth, credential-store) or architectural
+  (AbortSignal, HTTP proxy, CLI, lazy-loader). Google Vertex AI is now implemented
+  (project/location-scoped REST request path).
 - **Providers:** 100% catalog parity; runtime exercised for all non-credential-gated
   providers.
 - **Tests:** ~75 of 87 upstream test files are behaviourally covered by rs-ai's 397
