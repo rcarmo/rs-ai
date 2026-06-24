@@ -225,18 +225,33 @@ mod tests {
     #[test]
     fn test_adjust_max_tokens_basic() {
         let budgets = default_thinking_budgets();
+        // base+budget = 4096+16384 = 20480 < model cap 32000; 20480 > 16384 so budget stays.
         let (max, budget) = adjust_max_tokens_for_thinking(Some(4096), 32000, &ThinkingLevel::High, &budgets);
-        assert!(max <= 32000);
-        assert!(budget > 0);
-        assert!(budget <= 16384); // high budget capped at 16384
+        assert_eq!((max, budget), (20480, 16384));
     }
 
     #[test]
     fn test_adjust_max_tokens_capped() {
         let budgets = default_thinking_budgets();
+        // base+budget = 20480 clamped to model cap 8000; 8000 <= 16384 -> budget = 8000-1024.
         let (max, budget) = adjust_max_tokens_for_thinking(Some(4096), 8000, &ThinkingLevel::High, &budgets);
-        assert!(max <= 8000);
-        assert!(budget < 16384); // capped by model limit
+        assert_eq!((max, budget), (8000, 6976));
+    }
+
+    #[test]
+    fn test_adjust_max_tokens_no_cap_uses_model_cap() {
+        let budgets = default_thinking_budgets();
+        // None caller cap -> model cap; 32000 > 16384 so high budget stays full.
+        let (max, budget) = adjust_max_tokens_for_thinking(None, 32000, &ThinkingLevel::High, &budgets);
+        assert_eq!((max, budget), (32000, 16384));
+    }
+
+    #[test]
+    fn test_adjust_max_tokens_xhigh_clamps_to_high_budget() {
+        let budgets = default_thinking_budgets();
+        // clampReasoning(xhigh) -> high (16384), same as the basic high case.
+        let (max, budget) = adjust_max_tokens_for_thinking(Some(4096), 32000, &ThinkingLevel::XHigh, &budgets);
+        assert_eq!((max, budget), (20480, 16384));
     }
 
     // --- Helpers ---
