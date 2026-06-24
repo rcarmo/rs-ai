@@ -134,4 +134,39 @@ mod tests {
         let err = resolve_provider_auth("p1", &provider, &model(), &store, &ctx, None).await.unwrap_err();
         assert_eq!(err.code, ModelsErrorCode::Auth);
     }
+
+    // --- merge resolved auth into request (explicit wins per field) ---
+
+    use crate::auth::{merge_auth_into_request, ModelAuth};
+    use std::collections::HashMap;
+
+    #[test]
+    fn merges_resolved_auth_into_options_explicit_wins_per_field() {
+        let auth = AuthResult {
+            auth: ModelAuth {
+                api_key: Some("resolved-key".into()),
+                headers: Some(HashMap::from([("x-a".to_string(), "auth".to_string()), ("x-b".to_string(), "auth".to_string())])),
+                base_url: Some("https://auth.test/v1".into()),
+            },
+            env: None, source: None,
+        };
+        // With explicit options: explicit apiKey + header x-b win; resolved baseUrl applies.
+        let opts = crate::types::StreamOptions {
+            api_key: Some("explicit-key".into()),
+            headers: Some(HashMap::from([("x-b".to_string(), "explicit".to_string())])),
+            ..Default::default()
+        };
+        let (m, o) = merge_auth_into_request(&auth, model(), opts);
+        assert_eq!(o.api_key.as_deref(), Some("explicit-key"));
+        let h = o.headers.unwrap();
+        assert_eq!(h.get("x-a").map(String::as_str), Some("auth"));
+        assert_eq!(h.get("x-b").map(String::as_str), Some("explicit"));
+        assert_eq!(m.base_url, "https://auth.test/v1");
+
+        // Without explicit options: resolved auth applies.
+        let (m2, o2) = merge_auth_into_request(&auth, model(), crate::types::StreamOptions::default());
+        assert_eq!(o2.api_key.as_deref(), Some("resolved-key"));
+        assert_eq!(m2.base_url, "https://auth.test/v1");
+        assert_eq!(o2.headers.unwrap().get("x-a").map(String::as_str), Some("auth"));
+    }
 }

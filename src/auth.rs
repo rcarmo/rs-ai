@@ -350,6 +350,36 @@ fn now_millis() -> i64 {
     crate::utils::now_millis()
 }
 
+/// Merge a resolved `AuthResult` into the request: explicit options win per field,
+/// the resolved `base_url` is applied to the model, and resolved headers are
+/// overlaid under any explicit headers (mirrors the Models collection's auth
+/// merge before dispatch). Returns the (model, options) the provider sees.
+pub fn merge_auth_into_request(
+    auth: &AuthResult,
+    mut model: crate::types::Model,
+    mut opts: crate::types::StreamOptions,
+) -> (crate::types::Model, crate::types::StreamOptions) {
+    // api key: explicit option wins, else resolved.
+    if opts.api_key.is_none() {
+        opts.api_key = auth.auth.api_key.clone();
+    }
+    // base url: resolved auth overrides the model base url when present.
+    if let Some(base) = auth.auth.base_url.as_deref() {
+        model.base_url = base.to_string();
+    }
+    // headers: resolved first, then explicit overlaid per key (explicit wins).
+    if let Some(resolved_headers) = auth.auth.headers.as_ref() {
+        let mut merged = resolved_headers.clone();
+        if let Some(explicit) = opts.headers.as_ref() {
+            for (k, v) in explicit {
+                merged.insert(k.clone(), v.clone());
+            }
+        }
+        opts.headers = Some(merged);
+    }
+    (model, opts)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
