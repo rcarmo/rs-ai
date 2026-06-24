@@ -131,7 +131,7 @@ _Total **87** upstream test files — **38 PORTED (yes/yes)** + **14 partial** (
 | 33 | `google-shared-image-tool-result-routing.test.ts` | yes | yes | src/google_image_tool_result_routing_test.rs |
 | 34 | `google-thinking-disable.test.ts` | no | — | 9 cases to port name-for-name |
 | 35 | `google-thinking-signature.test.ts` | yes | yes | src/google_thinking_signature_test.rs |
-| 36 | `google-vertex-api-key-resolution.test.ts` | n/a | — | Vertex GCP/ADC (Application Default Credentials) — no GCP credential path in rs-ai (documented MISSING) |
+| 36 | `google-vertex-api-key-resolution.test.ts` | n/a | — | mock-based, but targets @google/genai **client construction** (ADC-marker `<authenticated>`/`gcp-vertex-credentials` → project/location fallback, apiKey path, baseUrl/apiVersion forwarding). rs-ai deliberately does **not** implement the Vertex request path (provider/mod.rs rejects `{location}`-scoped endpoints with "not supported"), so there is no client to construct = architectural MISSING |
 | 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
 | 38 | `images-models.test.ts` | partial | yes (builtin catalog) | src/bedrock_images_models_test.rs (instance ImagesModels collection = architectural diff) |
 | 39 | `images.test.ts` | n/a | — | live image generation (OPENROUTER_API_KEY) |
