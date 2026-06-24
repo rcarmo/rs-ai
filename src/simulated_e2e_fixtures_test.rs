@@ -111,6 +111,41 @@ mod tests {
         events
     }
 
+    /// Drive the right provider stream with caller-supplied options; capture request body.
+    async fn drive_opts(m: Model, c: Context, opts: StreamOptions, sse: &str) -> Value {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200)
+                .insert_header("content-type", "text/event-stream")
+                .set_body_string(sse.to_string()))
+            .mount(&server).await;
+        let mut m = m; m.base_url = server.uri();
+        let api = m.api.clone();
+        let mut stream = match api.as_str() {
+            "anthropic-messages" | "anthropic" => stream_anthropic(&m, &c, &opts),
+            "google-generative-ai" | "google" => stream_google(&m, &c, &opts),
+            "openai-responses" => stream_responses(&m, &c, &opts),
+            _ => stream_openai(&m, &c, &opts),
+        };
+        while stream.next().await.is_some() {}
+        let reqs = server.received_requests().await.unwrap();
+        serde_json::from_slice(&reqs.last().unwrap().body).unwrap_or(Value::Null)
+    }
+
+    const ANTHROPIC_OK: &str = concat!(
+        "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"role\":\"assistant\",\"content\":[],\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\n",
+        "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
+        "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"ok\"}}\n\n",
+        "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n",
+        "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}\n\n",
+        "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
+    );
+
+    fn sys_ctx() -> Context {
+        Context { system_prompt: Some("You are a helpful assistant.".into()), tools: Vec::new(),
+            messages: vec![msg(Role::User, "Hello")] }
+    }
+
     // ---------- responseid.test.ts ----------
 
     const OPENAI_COMPLETED: &str = concat!(
@@ -272,6 +307,48 @@ mod tests {
             let (_m, body) = drive(model("anthropic-messages", "anthropic", "x"), tool_result_ctx(emoji), sse).await;
             let serialized = serde_json::to_string(&body).unwrap();
             assert!(serialized.contains(emoji), "anthropic request body must contain intact emoji");
+        }
+    }
+
+    // ---------- cache-retention.test.ts ----------
+
+    use crate::types::{CacheRetention, ModelCompat};
+
+    fn anthropic_cache_model() -> Model {
+        let mut m = model("anthropic-messages", "anthropic", "x");
+        // Direct api.anthropic.com base so default (short) retention path is exercised.
+        m.base_url = "https://api.anthropic.com".into();
+        m
+    }
+
+    #[tokio::test]
+    async fn cache_retention_default_short_has_cache_control_without_ttl() {
+        for _ in 0..3 {
+            let body = drive_opts(anthropic_cache_model(), sys_ctx(), StreamOptions::default(), ANTHROPIC_OK).await;
+            let cc = &body["system"][0]["cache_control"];
+            assert_eq!(*cc, serde_json::json!({"type": "ephemeral"}), "default = ephemeral, no ttl");
+        }
+    }
+
+    #[tokio::test]
+    async fn cache_retention_long_adds_1h_ttl() {
+        let opts = StreamOptions { cache_retention: Some(CacheRetention::Long), ..Default::default() };
+        for _ in 0..3 {
+            let body = drive_opts(anthropic_cache_model(), sys_ctx(), opts.clone(), ANTHROPIC_OK).await;
+            let cc = &body["system"][0]["cache_control"];
+            assert_eq!(*cc, serde_json::json!({"type": "ephemeral", "ttl": "1h"}));
+        }
+    }
+
+    #[tokio::test]
+    async fn cache_retention_long_omitted_when_compat_unsupported() {
+        let mut m = anthropic_cache_model();
+        m.compat = ModelCompat { supports_long_cache_retention: Some(false), ..Default::default() };
+        let opts = StreamOptions { cache_retention: Some(CacheRetention::Long), ..Default::default() };
+        for _ in 0..3 {
+            let body = drive_opts(m.clone(), sys_ctx(), opts.clone(), ANTHROPIC_OK).await;
+            let cc = &body["system"][0]["cache_control"];
+            assert_eq!(*cc, serde_json::json!({"type": "ephemeral"}), "unsupported long retention omits ttl");
         }
     }
 
