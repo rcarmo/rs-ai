@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 22** / COVERED 48 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 22** / COVERED 47 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -115,7 +115,7 @@ _Generated. Total **86** upstream test files — **PORTED 22** / COVERED 48 / N/
 | 17 | `bedrock-custom-headers.test.ts` | partial | yes (reserved-header substance) | src/bedrock_custom_headers_test.rs (+fixed: skip x-amz-*/auth/host + override; SDK-middleware registration cases N/A) |
 | 18 | `bedrock-endpoint-resolution.test.ts` | no | — | 7 cases to port name-for-name |
 | 19 | `bedrock-models.test.ts` | no | — | 2 cases to port name-for-name |
-| 20 | `bedrock-thinking-payload.test.ts` | no | — | 10 cases to port name-for-name |
+| 20 | `bedrock-thinking-payload.test.ts` | partial | yes (6/10) | src/bedrock_thinking_payload_test.rs (adaptive/govcloud thinking; live max-tokens + app-inference-profile cases pending) |
 | 21 | `cache-retention.test.ts` | no | — | 16 cases to port name-for-name |
 | 22 | `compat-env.test.ts` | no | — | 1 cases to port name-for-name |
 | 23 | `context-overflow.test.ts` | no | — | 32 cases to port name-for-name |

@@ -376,7 +376,7 @@ fn bedrock_supports_native_xhigh_effort(model: &Model) -> bool {
 
 /// Build the Bedrock `additionalModelRequestFields` thinking config for Anthropic
 /// Claude models (mirrors buildAdditionalModelRequestFields).
-fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde_json::Value, Option<u32>)> {
+pub(crate) fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde_json::Value, Option<u32>)> {
     if !model.reasoning || !is_anthropic_claude_model(model) {
         return None;
     }
