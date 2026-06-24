@@ -92,16 +92,16 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 18** / COVERED 53 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 21** / COVERED 50 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
 | 1 | `abort.test.ts` | n/a | — | credential/runtime-gated |
-| 2 | `anthropic-adaptive-thinking-models.test.ts` | no | — | 2 cases to port name-for-name |
+| 2 | `anthropic-adaptive-thinking-models.test.ts` | yes | yes | src/anthropic_compat_test.rs |
 | 3 | `anthropic-cache-write-1h-cost.test.ts` | yes | yes | src/anthropic_cache_write_1h_cost_test.rs |
-| 4 | `anthropic-eager-tool-input-compat.test.ts` | no | — | 3 cases to port name-for-name |
+| 4 | `anthropic-eager-tool-input-compat.test.ts` | yes | yes | src/anthropic_compat_test.rs |
 | 5 | `anthropic-eager-tool-input-e2e.test.ts` | no | — | 3 cases to port name-for-name |
-| 6 | `anthropic-empty-thinking-signature-compat.test.ts` | no | — | 2 cases to port name-for-name |
+| 6 | `anthropic-empty-thinking-signature-compat.test.ts` | yes | yes | src/anthropic_compat_test.rs |
 | 7 | `anthropic-force-adaptive-thinking.test.ts` | no | — | 5 cases to port name-for-name |
 | 8 | `anthropic-long-cache-retention-e2e.test.ts` | no | — | 2 cases to port name-for-name |
 | 9 | `anthropic-oauth.test.ts` | partial | yes (3/3 portable) | src/anthropic_oauth_test.rs (token-endpoint + refresh-omits-scope + exchange-redirect_uri request shape; interactive login orchestration N/A = MISSING surface) |
