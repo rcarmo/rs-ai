@@ -541,7 +541,7 @@ fn convert_tool_result_content(content: &[ContentBlock]) -> Value {
 }
 
 /// Canonicalize a tool name to its Claude Code casing if it matches (mirrors toClaudeCodeName).
-fn to_claude_code_name(name: &str) -> String {
+pub(crate) fn to_claude_code_name(name: &str) -> String {
     let lower = name.to_lowercase();
     CLAUDE_CODE_TOOLS
         .iter()
@@ -551,7 +551,7 @@ fn to_claude_code_name(name: &str) -> String {
 }
 
 /// Map an incoming tool-call name back to a registered context tool name (mirrors fromClaudeCodeName).
-fn from_claude_code_name(name: &str, tools: &[Tool]) -> String {
+pub(crate) fn from_claude_code_name(name: &str, tools: &[Tool]) -> String {
     let lower = name.to_lowercase();
     tools
         .iter()

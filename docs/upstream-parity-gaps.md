@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 34** / COVERED 35 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 35** / COVERED 34 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -109,7 +109,7 @@ _Generated. Total **86** upstream test files — **PORTED 34** / COVERED 35 / N/
 | 11 | `anthropic-sse-parsing.test.ts` | yes | yes | src/anthropic_sse_parsing_test.rs |
 | 12 | `anthropic-temperature-compat.test.ts` | yes | yes | src/anthropic_temperature_compat_test.rs |
 | 13 | `anthropic-thinking-disable.test.ts` | yes | yes (6/7) | src/anthropic_thinking_disable_test.rs (live E2E N/A) |
-| 14 | `anthropic-tool-name-normalization.test.ts` | no | — | 4 cases to port name-for-name |
+| 14 | `anthropic-tool-name-normalization.test.ts` | yes | yes (name-mapping) | src/anthropic_tool_name_normalization_test.rs (live OAuth round-trip N/A) |
 | 15 | `azure-openai-base-url.test.ts` | yes | yes | src/azure_openai_base_url_test.rs |
 | 16 | `bedrock-convert-messages.test.ts` | partial | yes (5/9) | src/bedrock_convert_messages_test.rs (4 unknown-content/surrogate cases N/A: Rust exhaustive enum + no lone surrogates) |
 | 17 | `bedrock-custom-headers.test.ts` | partial | yes (reserved-header substance) | src/bedrock_custom_headers_test.rs (+fixed: skip x-amz-*/auth/host + override; SDK-middleware registration cases N/A) |

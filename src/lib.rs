@@ -115,6 +115,8 @@ mod compat_env_test;
 #[cfg(test)]
 mod env_api_keys_test;
 #[cfg(test)]
+mod anthropic_tool_name_normalization_test;
+#[cfg(test)]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
 mod openai_completions_tool_choice_test;
