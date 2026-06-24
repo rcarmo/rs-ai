@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 22** / COVERED 49 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 22** / COVERED 48 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -111,7 +111,7 @@ _Generated. Total **86** upstream test files — **PORTED 22** / COVERED 49 / N/
 | 13 | `anthropic-thinking-disable.test.ts` | yes | yes (6/7) | src/anthropic_thinking_disable_test.rs (live E2E N/A) |
 | 14 | `anthropic-tool-name-normalization.test.ts` | no | — | 4 cases to port name-for-name |
 | 15 | `azure-openai-base-url.test.ts` | yes | yes | src/azure_openai_base_url_test.rs |
-| 16 | `bedrock-convert-messages.test.ts` | no | — | 9 cases to port name-for-name |
+| 16 | `bedrock-convert-messages.test.ts` | partial | yes (5/9) | src/bedrock_convert_messages_test.rs (4 unknown-content/surrogate cases N/A: Rust exhaustive enum + no lone surrogates) |
 | 17 | `bedrock-custom-headers.test.ts` | no | — | 6 cases to port name-for-name |
 | 18 | `bedrock-endpoint-resolution.test.ts` | no | — | 7 cases to port name-for-name |
 | 19 | `bedrock-models.test.ts` | no | — | 2 cases to port name-for-name |

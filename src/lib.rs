@@ -85,6 +85,8 @@ mod bedrock_endpoint_test;
 #[cfg(test)]
 mod bedrock_coalesce_test;
 #[cfg(test)]
+mod bedrock_convert_messages_test;
+#[cfg(test)]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
 mod openai_completions_tool_choice_test;
