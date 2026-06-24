@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 28** / COVERED 41 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 30** / COVERED 39 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -170,7 +170,7 @@ _Generated. Total **86** upstream test files — **PORTED 28** / COVERED 41 / N/
 | 72 | `responseid.test.ts` | no | — | 11 cases to port name-for-name |
 | 73 | `stream.test.ts` | no | — | 214 cases to port name-for-name |
 | 74 | `supports-xhigh.test.ts` | no | — | 16 cases to port name-for-name |
-| 75 | `together-models.test.ts` | no | — | 3 cases to port name-for-name |
+| 75 | `together-models.test.ts` | yes | yes | src/together_xiaomi_models_test.rs |
 | 76 | `tokens.test.ts` | no | — | 26 cases to port name-for-name |
 | 77 | `tool-call-id-normalization.test.ts` | no | — | 4 cases to port name-for-name |
 | 78 | `tool-call-without-result.test.ts` | no | — | 26 cases to port name-for-name |
@@ -178,7 +178,7 @@ _Generated. Total **86** upstream test files — **PORTED 28** / COVERED 41 / N/
 | 80 | `transform-messages-copilot-openai-to-anthropic.test.ts` | n/a | — | credential/runtime-gated |
 | 81 | `unicode-surrogate.test.ts` | no | — | 78 cases to port name-for-name |
 | 82 | `validation.test.ts` | yes | yes | src/validation_upstream_test.rs |
-| 83 | `xhigh.test.ts` | no | — | 3 cases to port name-for-name |
+| 83 | `xhigh.test.ts` | n/a | — | live (OPENAI_API_KEY); the supported-levels logic is covered by supports-xhigh |
 | 84 | `xiaomi-models.test.ts` | no | — | 2 cases to port name-for-name |
 | 85 | `xiaomi-token-plan-ams-anthropic-empty-signature-smoke.test.ts` | n/a | — | credential/runtime-gated |
 | 86 | `zen.test.ts` | no | — | 1 cases to port name-for-name |
