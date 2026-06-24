@@ -427,7 +427,7 @@ pub(crate) fn convert_google_tools(tools: &[crate::types::Tool], use_parameters:
     Some(json!([{"functionDeclarations": decls}]))
 }
 
-fn google_normalize_tool_call_id(model_id: &str, id: &str) -> String {
+pub(crate) fn google_normalize_tool_call_id(model_id: &str, id: &str) -> String {
     if !google_requires_tool_call_id(model_id) {
         return id.to_string();
     }

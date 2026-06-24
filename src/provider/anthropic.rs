@@ -504,7 +504,7 @@ pub(crate) fn anthropic_needs_session_affinity(model: &Model) -> bool {
 
 /// Normalize a tool-call id for Anthropic (mirrors upstream `normalizeToolCallId`):
 /// replace any character outside `[a-zA-Z0-9_-]` with `_` and truncate to 64.
-fn normalize_anthropic_tool_call_id(id: &str) -> String {
+pub(crate) fn normalize_anthropic_tool_call_id(id: &str) -> String {
     let sanitized: String = id
         .chars()
         .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })

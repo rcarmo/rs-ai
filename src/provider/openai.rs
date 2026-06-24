@@ -1027,7 +1027,7 @@ fn resolve_chat_template_kwarg_value(
     }
 }
 
-fn normalize_tool_call_id(id: &str, provider: &str) -> String {
+pub(crate) fn normalize_tool_call_id(id: &str, provider: &str) -> String {
     if let Some((call_id, _)) = id.split_once('|') {
         return call_id
             .chars()

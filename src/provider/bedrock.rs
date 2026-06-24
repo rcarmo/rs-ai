@@ -50,7 +50,7 @@ fn is_anthropic_claude_model(model: &Model) -> bool {
 }
 
 /// Sanitize a tool-call id for Bedrock (alnum/_/- only, max 64 chars).
-fn normalize_bedrock_tool_call_id(id: &str) -> String {
+pub(crate) fn normalize_bedrock_tool_call_id(id: &str) -> String {
     let sanitized: String = id
         .chars()
         .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
