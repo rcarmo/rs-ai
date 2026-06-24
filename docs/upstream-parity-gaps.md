@@ -113,7 +113,7 @@ _Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/
 | 15 | `azure-openai-base-url.test.ts` | yes | yes | src/azure_openai_base_url_test.rs |
 | 16 | `bedrock-convert-messages.test.ts` | partial | yes (5/9) | src/bedrock_convert_messages_test.rs (4 unknown-content/surrogate cases N/A: Rust exhaustive enum + no lone surrogates) |
 | 17 | `bedrock-custom-headers.test.ts` | partial | yes (reserved-header substance) | src/bedrock_custom_headers_test.rs (+fixed: skip x-amz-*/auth/host + override; SDK-middleware registration cases N/A) |
-| 18 | `bedrock-endpoint-resolution.test.ts` | no | — | 7 cases to port name-for-name |
+| 18 | `bedrock-endpoint-resolution.test.ts` | yes (region-resolution) | yes | src/bedrock_endpoint_test.rs (SDK-client endpoint/profile config = AWS-SDK-internal)|
 | 19 | `bedrock-models.test.ts` | partial | yes (catalog non-empty) | src/bedrock_images_models_test.rs (per-model live request cases N/A) |
 | 20 | `bedrock-thinking-payload.test.ts` | yes | yes (9/10) | src/bedrock_thinking_payload_test.rs (adaptive/govcloud/app-inference-profile; live max-tokens E2E N/A) |
 | 21 | `cache-retention.test.ts` | no | — | 16 cases to port name-for-name |
@@ -151,7 +151,7 @@ _Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/
 | 53 | `openai-completions-prompt-cache.test.ts` | yes | yes | src/openai_completions_prompt_cache_test.rs |
 | 54 | `openai-completions-reasoning-details.test.ts` | yes | yes | src/openai_completions_reasoning_details_test.rs |
 | 55 | `openai-completions-response-model.test.ts` | yes | yes | src/openai_completions_response_model_test.rs |
-| 56 | `openai-completions-retry.test.ts` | no | — | 2 cases to port name-for-name |
+| 56 | `openai-completions-retry.test.ts` | n/a | — | SDK maxRetries client option; rs-ai uses its own retry.rs (tested separately)|
 | 57 | `openai-completions-thinking-as-text.test.ts` | yes | yes | src/openai_completions_thinking_as_text_test.rs |
 | 58 | `openai-completions-tool-choice.test.ts` | partial | yes (39/41) | src/openai_completions_tool_choice_test.rs (full incl. mixed-delta accumulation + openrouter role routing + reasoning-replay; 2 N/A: ant-ling native reasoningEffort-omit + per-contentIndex grouping = rs-ai event protocol is index-less) |
 | 59 | `openai-completions-tool-result-images.test.ts` | yes | yes | src/openai_completions_tool_result_images_test.rs |
@@ -169,7 +169,7 @@ _Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/
 | 71 | `providers.test.ts` | no | — | 13 cases to port name-for-name |
 | 72 | `responseid.test.ts` | no | — | 11 cases to port name-for-name |
 | 73 | `stream.test.ts` | no | — | 214 cases to port name-for-name |
-| 74 | `supports-xhigh.test.ts` | no | — | 16 cases to port name-for-name |
+| 74 | `supports-xhigh.test.ts` | yes | yes | src/supports_xhigh_test.rs|
 | 75 | `together-models.test.ts` | yes | yes | src/together_xiaomi_models_test.rs |
 | 76 | `tokens.test.ts` | no | — | 26 cases to port name-for-name |
 | 77 | `tool-call-id-normalization.test.ts` | partial | yes (issue 1022 fixture) | src/tool_call_id_normalization_test.rs (live handoff N/A) |
@@ -179,7 +179,7 @@ _Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/
 | 81 | `unicode-surrogate.test.ts` | no | — | 78 cases to port name-for-name |
 | 82 | `validation.test.ts` | yes | yes | src/validation_upstream_test.rs |
 | 83 | `xhigh.test.ts` | n/a | — | live (OPENAI_API_KEY); the supported-levels logic is covered by supports-xhigh |
-| 84 | `xiaomi-models.test.ts` | no | — | 2 cases to port name-for-name |
+| 84 | `xiaomi-models.test.ts` | yes | yes | src/together_xiaomi_models_test.rs|
 | 85 | `xiaomi-token-plan-ams-anthropic-empty-signature-smoke.test.ts` | n/a | — | credential/runtime-gated |
 | 86 | `zen.test.ts` | no | — | 1 cases to port name-for-name |
 

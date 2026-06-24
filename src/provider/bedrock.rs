@@ -304,7 +304,7 @@ pub(crate) fn bedrock_use_explicit_endpoint(model: &Model) -> bool {
 /// Resolve the Bedrock region (mirrors the upstream priority: ARN-embedded >
 /// configured env > standard-endpoint region (when explicit) > us-east-1 unless a
 /// profile is configured, in which case the SDK chain resolves it).
-fn resolve_bedrock_region(model: &Model) -> Option<String> {
+pub(crate) fn resolve_bedrock_region(model: &Model) -> Option<String> {
     if let Some(r) = bedrock_arn_region(&model.id) {
         return Some(r);
     }
