@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 14** / COVERED 57 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 15** / COVERED 56 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -107,7 +107,7 @@ _Generated. Total **86** upstream test files — **PORTED 14** / COVERED 57 / N/
 | 9 | `anthropic-oauth.test.ts` | partial | yes (3/3 portable) | src/anthropic_oauth_test.rs (token-endpoint + refresh-omits-scope + exchange-redirect_uri request shape; interactive login orchestration N/A = MISSING surface) |
 | 10 | `anthropic-opus-4-8-smoke.test.ts` | n/a | — | credential/runtime-gated |
 | 11 | `anthropic-sse-parsing.test.ts` | no | — | 3 cases to port name-for-name |
-| 12 | `anthropic-temperature-compat.test.ts` | no | — | 6 cases to port name-for-name |
+| 12 | `anthropic-temperature-compat.test.ts` | yes | yes | src/anthropic_temperature_compat_test.rs |
 | 13 | `anthropic-thinking-disable.test.ts` | no | — | 7 cases to port name-for-name |
 | 14 | `anthropic-tool-name-normalization.test.ts` | no | — | 4 cases to port name-for-name |
 | 15 | `azure-openai-base-url.test.ts` | yes | yes | src/azure_openai_base_url_test.rs |
