@@ -217,9 +217,12 @@ pub fn stream_anthropic<'a>(
                     return;
                 }
 
-                let data: Value = match serde_json::from_str(&evt.data) {
-                    Ok(v) => v,
-                    Err(_) => continue,
+                // Repair malformed SSE event JSON (invalid escapes, raw control chars)
+                // before parsing, mirroring upstream's parseJsonWithRepair; skip only when
+                // even repair cannot produce a value.
+                let data: Value = match crate::jsonparse::parse_json_with_repair(&evt.data) {
+                    Some(v) => v,
+                    None => continue,
                 };
 
                 let event_type = evt.event.as_str();
