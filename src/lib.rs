@@ -77,6 +77,8 @@ mod edge_case_test;
 #[cfg(test)]
 mod registration_test;
 #[cfg(test)]
+mod providers_upstream_test;
+#[cfg(test)]
 mod mistral_reasoning_mode_test;
 #[cfg(test)]
 mod azure_openai_base_url_test;

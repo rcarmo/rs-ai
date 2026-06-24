@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Total **87** upstream test files — **38 PORTED (yes/yes)** + **13 partial** (deterministic substance ported; live/WS-pooling/architectural remainder noted) + **12 N/A** (live-only / credential-gated / JS-runtime / architectural). All deterministic (live=0) files are ported or have a precise N/A rationale. 67 rs-ai test files, 654 tests, clippy clean._
+_Total **87** upstream test files — **38 PORTED (yes/yes)** + **14 partial** (deterministic substance ported; live/WS-pooling/architectural remainder noted) + **12 N/A** (live-only / credential-gated / JS-runtime / architectural). All deterministic (live=0) files are ported or have a precise N/A rationale. 68 rs-ai test files, 660 tests, clippy clean._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -166,7 +166,7 @@ _Total **87** upstream test files — **38 PORTED (yes/yes)** + **13 partial** (
 | 68 | `openrouter-cache-write-repro.test.ts` | no | — | 1 cases to port name-for-name |
 | 69 | `openrouter-images.test.ts` | yes | yes (2/3) | src/openrouter_images_test.rs (abort-signal case N/A) |
 | 70 | `overflow.test.ts` | yes | yes | src/overflow_test.rs |
-| 71 | `providers.test.ts` | no | — | 13 cases to port name-for-name |
+| 71 | `providers.test.ts` | partial | yes (6) | src/providers_upstream_test.rs (builtin registration + anthropic-OAuth/bedrock-AWS/cloudflare env precedence + no-api-impl stream error + fauxProvider queued stream; cloudflare/vertex scoped-baseUrl+AuthResult.env shaping, vertex ADC file path, envApiKeyAuth.login prompt, and dynamic refreshModels dedup = instance-collection/architectural N/A) |
 | 72 | `responseid.test.ts` | no | — | 11 cases to port name-for-name |
 | 73 | `stream.test.ts` | no | — | 214 cases to port name-for-name |
 | 74 | `supports-xhigh.test.ts` | yes | yes | src/supports_xhigh_test.rs|
