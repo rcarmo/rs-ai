@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 37** / COVERED 32 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -124,7 +124,7 @@ _Generated. Total **86** upstream test files — **PORTED 37** / COVERED 32 / N/
 | 26 | `env-api-keys.test.ts` | yes | yes | src/env_api_keys_test.rs |
 | 27 | `faux-provider.test.ts` | covered | — | rs-ai FauxProvider (provider/faux.rs) tested in provider_test/coverage; upstream harness API (closures/registration) differs; abort cases N/A (no AbortSignal) |
 | 28 | `fireworks-models.test.ts` | yes | yes | src/fireworks_models_test.rs |
-| 29 | `github-copilot-anthropic.test.ts` | n/a | — | credential/runtime-gated |
+| 29 | `github-copilot-anthropic.test.ts` | yes | yes | src/github_copilot_anthropic_test.rs |
 | 30 | `github-copilot-oauth.test.ts` | n/a | — | credential/runtime-gated |
 | 31 | `google-shared-convert-tools.test.ts` | yes | yes | src/google_shared_convert_tools_test.rs |
 | 32 | `google-shared-gemini3-unsigned-tool-call.test.ts` | yes | yes | src/google_gemini3_unsigned_tool_call_test.rs |

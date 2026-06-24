@@ -66,6 +66,11 @@ pub fn stream_anthropic<'a>(
         if let Ok(val) = HeaderValue::from_str(&format!("Bearer {}", api_key)) {
             headers.insert("cf-aig-authorization", val);
         }
+    } else if model.provider == "github-copilot" {
+        // GitHub Copilot: Bearer auth (the copilot session token), not x-api-key
+        // (mirrors createClient's `authToken: apiKey` branch). Static copilot headers
+        // come from model.headers; dynamic ones are added below.
+        headers.insert(reqwest::header::AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
     } else if is_oauth {
         headers.insert(reqwest::header::AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
         headers.insert("user-agent", HeaderValue::from_static("claude-cli/2.1.75"));
