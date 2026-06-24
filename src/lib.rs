@@ -129,6 +129,8 @@ mod github_copilot_oauth_test;
 #[cfg(test)]
 mod openai_completions_prompt_cache_test;
 #[cfg(test)]
+mod openai_codex_stream_test;
+#[cfg(test)]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
 mod openai_completions_tool_choice_test;
