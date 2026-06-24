@@ -92,13 +92,13 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 16** / COVERED 55 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 18** / COVERED 53 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
 | 1 | `abort.test.ts` | n/a | — | credential/runtime-gated |
 | 2 | `anthropic-adaptive-thinking-models.test.ts` | no | — | 2 cases to port name-for-name |
-| 3 | `anthropic-cache-write-1h-cost.test.ts` | no | — | 2 cases to port name-for-name |
+| 3 | `anthropic-cache-write-1h-cost.test.ts` | yes | yes | src/anthropic_cache_write_1h_cost_test.rs |
 | 4 | `anthropic-eager-tool-input-compat.test.ts` | no | — | 3 cases to port name-for-name |
 | 5 | `anthropic-eager-tool-input-e2e.test.ts` | no | — | 3 cases to port name-for-name |
 | 6 | `anthropic-empty-thinking-signature-compat.test.ts` | no | — | 2 cases to port name-for-name |
@@ -108,7 +108,7 @@ _Generated. Total **86** upstream test files — **PORTED 16** / COVERED 55 / N/
 | 10 | `anthropic-opus-4-8-smoke.test.ts` | n/a | — | credential/runtime-gated |
 | 11 | `anthropic-sse-parsing.test.ts` | yes | yes | src/anthropic_sse_parsing_test.rs |
 | 12 | `anthropic-temperature-compat.test.ts` | yes | yes | src/anthropic_temperature_compat_test.rs |
-| 13 | `anthropic-thinking-disable.test.ts` | no | — | 7 cases to port name-for-name |
+| 13 | `anthropic-thinking-disable.test.ts` | yes | yes (6/7) | src/anthropic_thinking_disable_test.rs (live E2E N/A) |
 | 14 | `anthropic-tool-name-normalization.test.ts` | no | — | 4 cases to port name-for-name |
 | 15 | `azure-openai-base-url.test.ts` | yes | yes | src/azure_openai_base_url_test.rs |
 | 16 | `bedrock-convert-messages.test.ts` | no | — | 9 cases to port name-for-name |

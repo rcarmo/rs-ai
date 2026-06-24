@@ -119,6 +119,10 @@ mod anthropic_temperature_compat_test;
 #[cfg(test)]
 mod anthropic_sse_parsing_test;
 #[cfg(test)]
+mod anthropic_thinking_disable_test;
+#[cfg(test)]
+mod anthropic_cache_write_1h_cost_test;
+#[cfg(test)]
 mod codex_request_shape_test;
 #[cfg(test)]
 mod codex_ws_connection_limit_test;
