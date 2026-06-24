@@ -145,7 +145,7 @@ _Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/
 | 47 | `oauth-device-code.test.ts` | yes | yes | src/oauth_device_code_test.rs (implemented generic poll_oauth_device_code_flow; tokio paused clock) |
 | 48 | `openai-codex-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
 | 49 | `openai-codex-oauth.test.ts` | partial | yes (1/8 portable) | src/openai_codex_oauth_test.rs (refresh-failure error shape; +fixed status to numeric (401) per upstream; 7 device-code login-flow cases N/A = MISSING interactive surface) |
-| 50 | `openai-codex-stream.test.ts` | no | — | 19 cases to port name-for-name |
+| 50 | `openai-codex-stream.test.ts` | partial | yes (SSE/header/cache subset) | src/openai_codex_stream_test.rs (WS-transport cases = WS-pooling gap) |
 | 51 | `openai-completions-cache-control-format.test.ts` | yes | yes | src/openai_completions_cache_control_format_test.rs |
 | 52 | `openai-completions-empty-tools.test.ts` | partial | yes (5/8) | src/openai_completions_empty_tools_test.rs (tools omit/empty-with-history + max_tokens; 3 cloudflare-gateway client-construction cases env-coupled) |
 | 53 | `openai-completions-prompt-cache.test.ts` | yes | yes | src/openai_completions_prompt_cache_test.rs |
