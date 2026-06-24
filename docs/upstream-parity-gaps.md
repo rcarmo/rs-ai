@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 32** / COVERED 37 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 33** / COVERED 36 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -117,12 +117,12 @@ _Generated. Total **86** upstream test files — **PORTED 32** / COVERED 37 / N/
 | 19 | `bedrock-models.test.ts` | partial | yes (catalog non-empty) | src/bedrock_images_models_test.rs (per-model live request cases N/A) |
 | 20 | `bedrock-thinking-payload.test.ts` | yes | yes (9/10) | src/bedrock_thinking_payload_test.rs (adaptive/govcloud/app-inference-profile; live max-tokens E2E N/A) |
 | 21 | `cache-retention.test.ts` | no | — | 16 cases to port name-for-name |
-| 22 | `compat-env.test.ts` | no | — | 1 cases to port name-for-name |
+| 22 | `compat-env.test.ts` | yes | yes | src/compat_env_test.rs |
 | 23 | `context-overflow.test.ts` | no | — | 32 cases to port name-for-name |
 | 24 | `cross-provider-handoff.test.ts` | no | — | 2 cases to port name-for-name |
 | 25 | `empty.test.ts` | no | — | 104 cases to port name-for-name |
 | 26 | `env-api-keys.test.ts` | no | — | 3 cases to port name-for-name |
-| 27 | `faux-provider.test.ts` | no | — | 22 cases to port name-for-name |
+| 27 | `faux-provider.test.ts` | covered | — | rs-ai FauxProvider (provider/faux.rs) tested in provider_test/coverage; upstream harness API (closures/registration) differs; abort cases N/A (no AbortSignal) |
 | 28 | `fireworks-models.test.ts` | yes | yes | src/fireworks_models_test.rs |
 | 29 | `github-copilot-anthropic.test.ts` | n/a | — | credential/runtime-gated |
 | 30 | `github-copilot-oauth.test.ts` | n/a | — | credential/runtime-gated |

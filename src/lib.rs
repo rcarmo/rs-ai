@@ -111,6 +111,8 @@ mod bedrock_images_models_test;
 #[cfg(test)]
 mod overflow_test;
 #[cfg(test)]
+mod compat_env_test;
+#[cfg(test)]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
 mod openai_completions_tool_choice_test;
