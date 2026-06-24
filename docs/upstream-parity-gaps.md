@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 7** / COVERED 65 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 7** / COVERED 64 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -138,7 +138,7 @@ _Generated. Total **86** upstream test files — **PORTED 7** / COVERED 65 / N/A
 | 40 | `interleaved-thinking.test.ts` | no | — | 4 cases to port name-for-name |
 | 41 | `lazy-module-load.test.ts` | n/a | — | credential/runtime-gated |
 | 42 | `mistral-reasoning-mode.test.ts` | yes | yes | src/mistral_reasoning_mode_test.rs |
-| 43 | `mistral-tool-schema.test.ts` | no | — | 1 cases to port name-for-name |
+| 43 | `mistral-tool-schema.test.ts` | n/a | — | TypeBox JS Symbol-key stripping has no Rust analogue (serde_json params carry no symbols) |
 | 44 | `models-runtime.test.ts` | no | — | 16 cases to port name-for-name |
 | 45 | `node-http-proxy.test.ts` | n/a | — | credential/runtime-gated |
 | 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
@@ -147,7 +147,7 @@ _Generated. Total **86** upstream test files — **PORTED 7** / COVERED 65 / N/A
 | 49 | `openai-codex-oauth.test.ts` | partial | yes (1/8 portable) | src/openai_codex_oauth_test.rs (refresh-failure error shape; +fixed status to numeric (401) per upstream; 7 device-code login-flow cases N/A = MISSING interactive surface) |
 | 50 | `openai-codex-stream.test.ts` | no | — | 19 cases to port name-for-name |
 | 51 | `openai-completions-cache-control-format.test.ts` | no | — | 3 cases to port name-for-name |
-| 52 | `openai-completions-empty-tools.test.ts` | no | — | 9 cases to port name-for-name |
+| 52 | `openai-completions-empty-tools.test.ts` | partial | yes (5/8) | src/openai_completions_empty_tools_test.rs (tools omit/empty-with-history + max_tokens; 3 cloudflare-gateway client-construction cases env-coupled) |
 | 53 | `openai-completions-prompt-cache.test.ts` | no | — | 9 cases to port name-for-name |
 | 54 | `openai-completions-reasoning-details.test.ts` | no | — | 1 cases to port name-for-name |
 | 55 | `openai-completions-response-model.test.ts` | no | — | 3 cases to port name-for-name |

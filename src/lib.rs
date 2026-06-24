@@ -97,6 +97,8 @@ mod oauth_device_code_test;
 #[cfg(test)]
 mod openai_codex_oauth_test;
 #[cfg(test)]
+mod openai_completions_empty_tools_test;
+#[cfg(test)]
 mod codex_request_shape_test;
 #[cfg(test)]
 mod codex_ws_connection_limit_test;
