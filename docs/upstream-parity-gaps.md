@@ -172,7 +172,7 @@ _Generated. Total **86** upstream test files — **PORTED 35** / COVERED 34 / N/
 | 74 | `supports-xhigh.test.ts` | no | — | 16 cases to port name-for-name |
 | 75 | `together-models.test.ts` | yes | yes | src/together_xiaomi_models_test.rs |
 | 76 | `tokens.test.ts` | no | — | 26 cases to port name-for-name |
-| 77 | `tool-call-id-normalization.test.ts` | no | — | 4 cases to port name-for-name |
+| 77 | `tool-call-id-normalization.test.ts` | partial | yes (issue 1022 fixture) | src/tool_call_id_normalization_test.rs (live handoff N/A) |
 | 78 | `tool-call-without-result.test.ts` | no | — | 26 cases to port name-for-name |
 | 79 | `total-tokens.test.ts` | no | — | 31 cases to port name-for-name |
 | 80 | `transform-messages-copilot-openai-to-anthropic.test.ts` | n/a | — | credential/runtime-gated |
