@@ -129,9 +129,9 @@ mod tests {
     #[tokio::test]
     async fn omits_session_affinity_headers_when_cache_retention_none() {
         let h = capture_headers(affinity_model(), session("session-affinity", Some(CacheRetention::None))).await;
-        assert!(h.get("session_id").is_none());
-        assert!(h.get("x-client-request-id").is_none());
-        assert!(h.get("x-session-affinity").is_none());
+        assert!(!h.contains_key("session_id"));
+        assert!(!h.contains_key("x-client-request-id"));
+        assert!(!h.contains_key("x-session-affinity"));
     }
 
     #[tokio::test]

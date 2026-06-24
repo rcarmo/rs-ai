@@ -52,9 +52,9 @@ mod tests {
         assert_eq!(request.get("host").map(String::as_str), Some("real-host"));
         assert_eq!(request.get("x-allowed").map(String::as_str), Some("ok"));
         // No mixed-case reserved leak.
-        assert!(request.get("Authorization").is_none());
-        assert!(request.get("X-Amz-Date").is_none());
-        assert!(request.get("HOST").is_none());
+        assert!(!request.contains_key("Authorization"));
+        assert!(!request.contains_key("X-Amz-Date"));
+        assert!(!request.contains_key("HOST"));
         let keys: Vec<&String> = request.keys().collect();
         assert_eq!(keys, vec!["authorization", "host", "x-allowed", "x-amz-date"]);
     }

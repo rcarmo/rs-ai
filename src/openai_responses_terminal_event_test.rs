@@ -108,9 +108,7 @@ mod tests {
 
     #[tokio::test]
     async fn rejects_failed_terminal_events_with_the_provider_error() {
-        let body = concat!(
-            "data: {\"type\":\"response.failed\",\"response\":{\"id\":\"resp_failed\",\"status\":\"failed\",\"error\":{\"code\":\"server_error\",\"message\":\"boom\"}}}\n\n",
-        ).to_string();
+        let body = "data: {\"type\":\"response.failed\",\"response\":{\"id\":\"resp_failed\",\"status\":\"failed\",\"error\":{\"code\":\"server_error\",\"message\":\"boom\"}}}\n\n".to_string();
         let (reason, err, _m) = run(body).await;
         assert!(matches!(reason, StopReason::Error));
         assert!(err.as_deref().is_some_and(|e| e.contains("server_error") && e.contains("boom")), "got: {err:?}");

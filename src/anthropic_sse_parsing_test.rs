@@ -49,8 +49,9 @@ mod tests {
         while let Some(evt) = stream.next().await {
             match evt {
                 Event::Done { reason, mut message } => { message.stop_reason = Some(reason); out = Some(message); }
-                Event::Error { reason, message, .. } => {
-                    if let Some(mut m) = message { m.stop_reason = Some(reason); out = Some(m); }
+                Event::Error { reason, message: Some(mut m), .. } => {
+                    m.stop_reason = Some(reason);
+                    out = Some(m);
                 }
                 _ => {}
             }
