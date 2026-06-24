@@ -389,6 +389,44 @@ fn google_requires_tool_call_id(model_id: &str) -> bool {
 }
 
 /// Normalize a tool-call id for Gemini when required (alnum/_/- only, max 64 chars).
+/// Recursively strip JSON Schema meta keys ($schema, $id, $comment, $defs,
+/// definitions) from a schema value, preserving `$ref` and everything else
+/// (mirrors the upstream convertTools `useParameters` stripper). Non-mutating.
+fn strip_json_schema_meta_keys(value: &Value) -> Value {
+    match value {
+        Value::Array(arr) => Value::Array(arr.iter().map(strip_json_schema_meta_keys).collect()),
+        Value::Object(map) => {
+            let mut out = serde_json::Map::new();
+            for (k, v) in map {
+                if matches!(k.as_str(), "$schema" | "$id" | "$comment" | "$defs" | "definitions") {
+                    continue;
+                }
+                out.insert(k.clone(), strip_json_schema_meta_keys(v));
+            }
+            Value::Object(out)
+        }
+        other => other.clone(),
+    }
+}
+
+/// Convert tools to the Google `functionDeclarations` form (mirrors convertTools).
+/// `use_parameters=true` emits the legacy OpenAPI-3 `parameters` field with JSON
+/// Schema meta keys stripped; otherwise the full-JSON-Schema `parametersJsonSchema`
+/// is preserved. Returns `None` for an empty tool list.
+pub(crate) fn convert_google_tools(tools: &[crate::types::Tool], use_parameters: bool) -> Option<Value> {
+    if tools.is_empty() {
+        return None;
+    }
+    let decls: Vec<Value> = tools.iter().map(|t| {
+        if use_parameters {
+            json!({"name": t.name, "description": t.description, "parameters": strip_json_schema_meta_keys(&t.parameters)})
+        } else {
+            json!({"name": t.name, "description": t.description, "parametersJsonSchema": t.parameters})
+        }
+    }).collect();
+    Some(json!([{"functionDeclarations": decls}]))
+}
+
 fn google_normalize_tool_call_id(model_id: &str, id: &str) -> String {
     if !google_requires_tool_call_id(model_id) {
         return id.to_string();
@@ -662,13 +700,9 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
         payload["generationConfig"] = config;
     }
 
-    if !context.tools.is_empty() {
-        let decls: Vec<Value> = context.tools.iter().map(|t| {
-            // Upstream convertTools defaults to parametersJsonSchema (full JSON Schema:
-            // anyOf/oneOf/const/$defs), not the legacy OpenAPI-3 `parameters` field.
-            json!({"name": t.name, "description": t.description, "parametersJsonSchema": t.parameters})
-        }).collect();
-        payload["tools"] = json!([{"functionDeclarations": decls}]);
+    if !context.tools.is_empty()
+        && let Some(tools) = convert_google_tools(&context.tools, false) {
+        payload["tools"] = tools;
 
         // Tool choice -> functionCallingConfig mode.
         if let Some(ref tc) = opts.tool_choice {

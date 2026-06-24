@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 23** / COVERED 46 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 24** / COVERED 45 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -126,7 +126,7 @@ _Generated. Total **86** upstream test files — **PORTED 23** / COVERED 46 / N/
 | 28 | `fireworks-models.test.ts` | no | — | 11 cases to port name-for-name |
 | 29 | `github-copilot-anthropic.test.ts` | n/a | — | credential/runtime-gated |
 | 30 | `github-copilot-oauth.test.ts` | n/a | — | credential/runtime-gated |
-| 31 | `google-shared-convert-tools.test.ts` | no | — | 7 cases to port name-for-name |
+| 31 | `google-shared-convert-tools.test.ts` | yes | yes | src/google_shared_convert_tools_test.rs |
 | 32 | `google-shared-gemini3-unsigned-tool-call.test.ts` | no | — | 4 cases to port name-for-name |
 | 33 | `google-shared-image-tool-result-routing.test.ts` | no | — | 2 cases to port name-for-name |
 | 34 | `google-thinking-disable.test.ts` | no | — | 9 cases to port name-for-name |
