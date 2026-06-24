@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/A 14._
+_Total **87** upstream test files — **38 PORTED (yes/yes)** + **13 partial** (deterministic substance ported; live/WS-pooling/architectural remainder noted) + **12 N/A** (live-only / credential-gated / JS-runtime / architectural). All deterministic (live=0) files are ported or have a precise N/A rationale. 67 rs-ai test files, 654 tests, clippy clean._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
