@@ -105,6 +105,8 @@ mod openai_completions_response_model_test;
 #[cfg(test)]
 mod openai_completions_cache_control_format_test;
 #[cfg(test)]
+mod openai_completions_reasoning_details_test;
+#[cfg(test)]
 mod codex_request_shape_test;
 #[cfg(test)]
 mod codex_ws_connection_limit_test;

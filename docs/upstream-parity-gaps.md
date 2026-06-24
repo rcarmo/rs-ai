@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 10** / COVERED 61 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 11** / COVERED 60 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -149,7 +149,7 @@ _Generated. Total **86** upstream test files — **PORTED 10** / COVERED 61 / N/
 | 51 | `openai-completions-cache-control-format.test.ts` | yes | yes | src/openai_completions_cache_control_format_test.rs |
 | 52 | `openai-completions-empty-tools.test.ts` | partial | yes (5/8) | src/openai_completions_empty_tools_test.rs (tools omit/empty-with-history + max_tokens; 3 cloudflare-gateway client-construction cases env-coupled) |
 | 53 | `openai-completions-prompt-cache.test.ts` | no | — | 9 cases to port name-for-name |
-| 54 | `openai-completions-reasoning-details.test.ts` | no | — | 1 cases to port name-for-name |
+| 54 | `openai-completions-reasoning-details.test.ts` | yes | yes | src/openai_completions_reasoning_details_test.rs |
 | 55 | `openai-completions-response-model.test.ts` | yes | yes | src/openai_completions_response_model_test.rs |
 | 56 | `openai-completions-retry.test.ts` | no | — | 2 cases to port name-for-name |
 | 57 | `openai-completions-thinking-as-text.test.ts` | yes | yes | src/openai_completions_thinking_as_text_test.rs |
