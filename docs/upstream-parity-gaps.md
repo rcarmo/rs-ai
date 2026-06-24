@@ -131,16 +131,16 @@ _Generated. Total **86** upstream test files — **PORTED 38** / COVERED 31 / N/
 | 33 | `google-shared-image-tool-result-routing.test.ts` | yes | yes | src/google_image_tool_result_routing_test.rs |
 | 34 | `google-thinking-disable.test.ts` | no | — | 9 cases to port name-for-name |
 | 35 | `google-thinking-signature.test.ts` | yes | yes | src/google_thinking_signature_test.rs |
-| 36 | `google-vertex-api-key-resolution.test.ts` | n/a | — | credential/runtime-gated |
+| 36 | `google-vertex-api-key-resolution.test.ts` | n/a | — | Vertex GCP/ADC (Application Default Credentials) — no GCP credential path in rs-ai (documented MISSING) |
 | 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
 | 38 | `images-models.test.ts` | partial | yes (builtin catalog) | src/bedrock_images_models_test.rs (instance ImagesModels collection = architectural diff) |
 | 39 | `images.test.ts` | n/a | — | live image generation (OPENROUTER_API_KEY) |
 | 40 | `interleaved-thinking.test.ts` | n/a | — | live model-behavior (bedrock/anthropic creds); asserts the model emits interleaved thinking+toolCall |
-| 41 | `lazy-module-load.test.ts` | n/a | — | credential/runtime-gated |
+| 41 | `lazy-module-load.test.ts` | n/a | — | JS lazy module loader (api/*.lazy.ts); rs-ai links statically |
 | 42 | `mistral-reasoning-mode.test.ts` | yes | yes | src/mistral_reasoning_mode_test.rs |
 | 43 | `mistral-tool-schema.test.ts` | n/a | — | TypeBox JS Symbol-key stripping has no Rust analogue (serde_json params carry no symbols) |
 | 44 | `models-runtime.test.ts` | partial | yes (auth-resolution + merge) | src/models_runtime_auth_test.rs + auth.rs/auth_providers.rs (incl. merge_auth_into_request; instance Models collection = global-registry architectural diff) |
-| 45 | `node-http-proxy.test.ts` | n/a | — | credential/runtime-gated |
+| 45 | `node-http-proxy.test.ts` | n/a | — | reqwest provides HTTP_PROXY/HTTPS_PROXY/NO_PROXY handling natively; no hand-rolled resolveHttpProxyUrlForTarget |
 | 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
 | 47 | `oauth-device-code.test.ts` | yes | yes | src/oauth_device_code_test.rs (implemented generic poll_oauth_device_code_flow; tokio paused clock) |
 | 48 | `openai-codex-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
