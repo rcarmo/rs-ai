@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Generated. Total **86** upstream test files — **PORTED 11** / COVERED 60 / N/A 14._
+_Generated. Total **86** upstream test files — **PORTED 12** / COVERED 59 / N/A 14._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -154,7 +154,7 @@ _Generated. Total **86** upstream test files — **PORTED 11** / COVERED 60 / N/
 | 56 | `openai-completions-retry.test.ts` | no | — | 2 cases to port name-for-name |
 | 57 | `openai-completions-thinking-as-text.test.ts` | yes | yes | src/openai_completions_thinking_as_text_test.rs |
 | 58 | `openai-completions-tool-choice.test.ts` | partial | yes (39/41) | src/openai_completions_tool_choice_test.rs (full incl. mixed-delta accumulation + openrouter role routing + reasoning-replay; 2 N/A: ant-ling native reasoningEffort-omit + per-contentIndex grouping = rs-ai event protocol is index-less) |
-| 59 | `openai-completions-tool-result-images.test.ts` | no | — | 1 cases to port name-for-name |
+| 59 | `openai-completions-tool-result-images.test.ts` | yes | yes | src/openai_completions_tool_result_images_test.rs |
 | 60 | `openai-responses-cache-affinity-e2e.test.ts` | no | — | 1 cases to port name-for-name |
 | 61 | `openai-responses-copilot-provider.test.ts` | n/a | — | credential/runtime-gated |
 | 62 | `openai-responses-foreign-toolcall-id.test.ts` | yes | yes | src/responses_foreign_toolcall_id_test.rs |
