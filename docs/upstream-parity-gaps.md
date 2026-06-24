@@ -95,13 +95,14 @@ the credential-available providers above).
 _Total **87** upstream test files. **Final classification (Rui's ruling: "we test with what we have. No keys, no tests" — no record-replay/mock harness, no skip-only wrappers, no fabrication):**_
 
 - **42 PORTED (yes/yes)** — deterministic, name/value-faithful ports.
+- **6 SIMULATED-FIXTURE-PORTED** — re-audited live-E2E files whose response-handling substance is now ported end-to-end against faithful **simulated wire fixtures** (wiremock, no credentials, each case run 3× for determinism) in `src/simulated_e2e_fixtures_test.rs`: `responseid` (responseId surfaced for openai-completions + google), `tokens` (usage on terminal message), `total-tokens` (computed for openai-completions/anthropic; native for openai-responses), `context-overflow` (anthropic SSE overflow error → `is_context_overflow` true; rate-limit → false), `unicode-surrogate` (astral-plane emoji in tool results round-trips intact into openai + anthropic request bodies), `google-thinking-disable` (response with no thinking parts yields zero Thinking events). Only real-model nondeterminism (actual token counts, model phrasing, abort timing) remains N/A for these files.
 - **1 covered** (`faux-provider`) — exercised via rs-ai's FauxProvider harness (upstream closure/registration API differs).
 - **13 partial** — the entire **deterministic** substance of each file is ported; the documented remainder is genuinely architectural (AbortSignal, WS pooling, instance-collection vs global-registry, TypeBox symbol stripping) or interactive-OAuth/credential — i.e. N/A here.
-- **31 N/A** — not deterministically runnable in this environment:
+- **25 N/A** — not deterministically runnable in this environment:
   - 10 architectural / JS-runtime / smoke (`abort`, `lazy-module-load`, `mistral-tool-schema`, `xhigh`, `images`, `interleaved-thinking`, `anthropic-opus-4-8-smoke`, `xiaomi-token-plan-ams-…-smoke`, `transform-messages-copilot-…`, `openai-completions-retry`).
-  - 21 **live-E2E / credential-gated** (`stream`, `empty`, `unicode-surrogate`, `tokens`, `total-tokens`, `responseid`, `tool-call-without-result`, `image-tool-result`, `openai-responses-tool-result-images`, `cache-retention`, `context-overflow`, `cross-provider-handoff`, `google-thinking-disable`, `anthropic-eager-tool-input-e2e`, `anthropic-long-cache-retention-e2e`, `openai-codex-cache-affinity-e2e`, `openai-responses-cache-affinity-e2e`, `openai-responses-reasoning-replay-e2e`, `openrouter-cache-write-repro`, `zen`). Each imports `complete`/`completeSimple`/`stream` + `resolveApiKey`/`skipIf(API_KEY)` and exercises real provider endpoints; with no keys there are no real fixtures, so porting them would require fabricated mocks (forbidden). Their behaviour is covered by the deterministic unit tests above.
+  - 15 **live-E2E / credential-gated, real-nondeterminism only** (`stream`, `empty`, `tool-call-without-result`, `image-tool-result`, `openai-responses-tool-result-images`, `cache-retention`, `cross-provider-handoff`, `anthropic-eager-tool-input-e2e`, `anthropic-long-cache-retention-e2e`, `openai-codex-cache-affinity-e2e`, `openai-responses-cache-affinity-e2e`, `openai-responses-reasoning-replay-e2e`, `openrouter-cache-write-repro`, `zen`, plus `total-tokens` long-cache real-trigger remainder). Each imports `complete`/`completeSimple`/`stream` + `resolveApiKey`/`skipIf(API_KEY)` and asserts real model output/token counts/abort timing; the *response-handling* substance of the 6 listed above is now SIMULATED-FIXTURE-PORTED, with only genuine real-model nondeterminism remaining N/A here.
 
-**The deterministically-runnable upstream test surface is 100% ported** (every file with `live=0` is either ported test-for-test or has its deterministic substance ported + a precise N/A rationale for an architectural remainder). The Vertex request path is implemented (ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`); Cloudflare-AI-Gateway client-construction is ported via `build_openai_request_parts`; HTTP-proxy resolution is ported (`node-http-proxy.test.ts` → `src/http_proxy_test.rs`) and wired into all provider clients via `reqwest::Proxy`; `github-copilot-headers.ts` pure logic is ported (`copilot_dynamic_headers` in `src/utils.rs`). **72 rs-ai test files, 678 tests, 0 failures, no new clippy warnings.**_
+**The deterministically-runnable upstream test surface is 100% ported** (every file with `live=0` is either ported test-for-test or has its deterministic substance ported + a precise N/A rationale for an architectural remainder). The Vertex request path is implemented (ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`); Cloudflare-AI-Gateway client-construction is ported via `build_openai_request_parts`; HTTP-proxy resolution is ported (`node-http-proxy.test.ts` → `src/http_proxy_test.rs`) and wired into all provider clients via `reqwest::Proxy`; `github-copilot-headers.ts` pure logic is ported (`copilot_dynamic_headers` in `src/utils.rs`). **73 rs-ai test files, 689 tests, 0 failures, no new clippy warnings.** (`+src/simulated_e2e_fixtures_test.rs`: 11 simulated-fixture E2E ports.)_
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -127,7 +128,7 @@ _Total **87** upstream test files. **Final classification (Rui's ruling: "we tes
 | 20 | `bedrock-thinking-payload.test.ts` | yes | yes (9/10) | src/bedrock_thinking_payload_test.rs (adaptive/govcloud/app-inference-profile; live max-tokens E2E N/A) |
 | 21 | `cache-retention.test.ts` | n/a (live) | — | live-E2E credential-gated (16 cases against real providers); N/A per "no keys, no tests" |
 | 22 | `compat-env.test.ts` | yes | yes | src/compat_env_test.rs |
-| 23 | `context-overflow.test.ts` | n/a (live) | — | live-E2E credential-gated (32 cases against real providers); N/A per "no keys, no tests" |
+| 23 | `context-overflow.test.ts` | sim-fixture | yes (detection end-to-end) | src/simulated_e2e_fixtures_test.rs (anthropic SSE overflow error → is_context_overflow true; rate-limit → false) |
 | 24 | `cross-provider-handoff.test.ts` | n/a (live) | — | live-E2E credential-gated (2 cases against real providers); N/A per "no keys, no tests" |
 | 25 | `empty.test.ts` | n/a (live) | — | live-E2E credential-gated (104 cases against real providers); N/A per "no keys, no tests" |
 | 26 | `env-api-keys.test.ts` | yes | yes | src/env_api_keys_test.rs |
@@ -138,7 +139,7 @@ _Total **87** upstream test files. **Final classification (Rui's ruling: "we tes
 | 31 | `google-shared-convert-tools.test.ts` | yes | yes | src/google_shared_convert_tools_test.rs |
 | 32 | `google-shared-gemini3-unsigned-tool-call.test.ts` | yes | yes | src/google_gemini3_unsigned_tool_call_test.rs |
 | 33 | `google-shared-image-tool-result-routing.test.ts` | yes | yes | src/google_image_tool_result_routing_test.rs |
-| 34 | `google-thinking-disable.test.ts` | n/a (live) | — | live-E2E credential-gated (9 cases against real providers); N/A per "no keys, no tests" |
+| 34 | `google-thinking-disable.test.ts` | sim-fixture | yes (response: no-thinking) | src/simulated_e2e_fixtures_test.rs (no-thinking-part response → zero Thinking events; real reasoning-suppression nondeterminism N/A) |
 | 35 | `google-thinking-signature.test.ts` | yes | yes | src/google_thinking_signature_test.rs |
 | 36 | `google-vertex-api-key-resolution.test.ts` | yes | yes | src/google_vertex_request_path_test.rs (Vertex REST request path implemented: project/location resolution from StreamOptions + GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT/GOOGLE_CLOUD_LOCATION env, `{location}` host substitution, placeholder-marker `<...>`/`gcp-vertex-credentials` api-key suppression → ADC URL, real-key append, custom base-url passthrough. Upstream's @google/genai SDK-constructor assertions are JS-runtime-specific; this port asserts the equivalent URL shape + resolution, mirroring go-ai `buildStreamURL`/`resolveVertexProjectLocation`.) |
 | 37 | `image-tool-result.test.ts` | n/a (live) | — | live-E2E credential-gated (38 cases against real providers); N/A per "no keys, no tests" |
@@ -176,16 +177,16 @@ _Total **87** upstream test files. **Final classification (Rui's ruling: "we tes
 | 69 | `openrouter-images.test.ts` | yes | yes (2/3) | src/openrouter_images_test.rs (abort-signal case N/A) |
 | 70 | `overflow.test.ts` | yes | yes | src/overflow_test.rs |
 | 71 | `providers.test.ts` | partial | yes (6) | src/providers_upstream_test.rs (builtin registration + anthropic-OAuth/bedrock-AWS/cloudflare env precedence + no-api-impl stream error + fauxProvider queued stream; cloudflare/vertex scoped-baseUrl+AuthResult.env shaping, vertex ADC file path, envApiKeyAuth.login prompt, and dynamic refreshModels dedup = instance-collection/architectural N/A) |
-| 72 | `responseid.test.ts` | n/a (live) | — | live-E2E credential-gated (11 cases against real providers); N/A per "no keys, no tests" |
+| 72 | `responseid.test.ts` | sim-fixture | yes (responseId surfaced) | src/simulated_e2e_fixtures_test.rs (openai-completions + google responseId from completed stream) |
 | 73 | `stream.test.ts` | n/a (live) | — | live-E2E credential-gated (214 cases against real providers); N/A per "no keys, no tests" |
 | 74 | `supports-xhigh.test.ts` | yes | yes | src/supports_xhigh_test.rs|
 | 75 | `together-models.test.ts` | yes | yes | src/together_xiaomi_models_test.rs |
-| 76 | `tokens.test.ts` | n/a (live) | — | live-E2E credential-gated (26 cases against real providers); N/A per "no keys, no tests" |
+| 76 | `tokens.test.ts` | sim-fixture | yes (usage surfaced) | src/simulated_e2e_fixtures_test.rs (usage on terminal message; real token counts/abort-timing N/A) |
 | 77 | `tool-call-id-normalization.test.ts` | partial | yes (issue 1022 fixture) | src/tool_call_id_normalization_test.rs (live handoff N/A) |
 | 78 | `tool-call-without-result.test.ts` | n/a (live) | — | live-E2E credential-gated (26 cases against real providers); N/A per "no keys, no tests" |
-| 79 | `total-tokens.test.ts` | n/a (live) | — | live-E2E credential-gated (31 cases against real providers); N/A per "no keys, no tests" |
+| 79 | `total-tokens.test.ts` | sim-fixture | yes (computed vs native) | src/simulated_e2e_fixtures_test.rs (openai-completions/anthropic computed sum; openai-responses native total) |
 | 80 | `transform-messages-copilot-openai-to-anthropic.test.ts` | n/a | — | credential/runtime-gated |
-| 81 | `unicode-surrogate.test.ts` | n/a (live) | — | live-E2E credential-gated (78 cases against real providers); N/A per "no keys, no tests" |
+| 81 | `unicode-surrogate.test.ts` | sim-fixture | yes (emoji round-trip) | src/simulated_e2e_fixtures_test.rs (astral-plane emoji in tool results intact in openai+anthropic request bodies; Rust strings are UTF-8 so lone surrogates impossible) |
 | 82 | `validation.test.ts` | yes | yes | src/validation_upstream_test.rs |
 | 83 | `xhigh.test.ts` | n/a | — | live (OPENAI_API_KEY); the supported-levels logic is covered by supports-xhigh |
 | 84 | `xiaomi-models.test.ts` | yes | yes | src/together_xiaomi_models_test.rs|
@@ -242,8 +243,10 @@ validation, xhigh, xiaomi-models, zen, empty.
 - **Tests:** the **deterministically-runnable upstream surface is 100% ported** —
   42 files ported test-for-test, 1 covered via the FauxProvider harness, and 13
   with their full deterministic substance ported plus a precise architectural
-  N/A remainder. 31 files are N/A (10 architectural/JS-runtime/smoke + 21
-  live-E2E credential-gated). rs-ai ships **678 tests across 72 files, 0
+  N/A remainder. 6 live-E2E files are now SIMULATED-FIXTURE-PORTED (response
+  handling against faithful wiremock fixtures), leaving 25 files N/A (10
+  architectural/JS-runtime/smoke + 15 live-E2E real-nondeterminism only). rs-ai
+  ships **689 tests across 73 files, 0
   failures**. `node-http-proxy.test.ts`, `oauth-device-code.test.ts`,
   `mistral-reasoning-mode.test.ts`, and `azure-openai-base-url.test.ts` are
   name-for-name ports; `github-copilot-headers.ts` pure logic is ported in

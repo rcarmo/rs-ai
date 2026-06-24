@@ -171,6 +171,7 @@ mod openai_responses_tool_result_images_test;
 mod anthropic_temperature_compat_test;
 #[cfg(test)]
 mod anthropic_sse_parsing_test;
+mod simulated_e2e_fixtures_test;
 #[cfg(test)]
 mod anthropic_thinking_disable_test;
 #[cfg(test)]
