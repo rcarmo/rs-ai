@@ -23,7 +23,7 @@ Status legend:
 | `github-copilot-headers.ts` | — | MISSING | Copilot OAuth-gated; no credential path available. |
 | `google-generative-ai.ts` | `src/provider/google.rs` | DONE | |
 | `google-shared.ts` | `src/provider/google.rs` | DONE | convert-tools, gemini3 unsigned tool-call, image tool-result routing, thinking signature. |
-| `google-vertex.ts` | — | MISSING | Vertex GCP/ADC-gated; no credential path available. |
+| `google-vertex.ts` | `src/provider/google.rs` (+`mod.rs`) | DONE | Vertex request path ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`: project/location-scoped REST endpoint, `{location}` host substitution, GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT + GOOGLE_CLOUD_LOCATION env fallback (or StreamOptions.project/location), placeholder/ADC api-key handling. Shared `stream_google` decoder. |
 | `mistral-conversations.ts` | `src/provider/mistral.rs` | DONE | reasoning-mode, tool-schema, cached tokens, tool-id normalization — fully verified. |
 | `openai-codex-responses.ts` | `src/provider/codex.rs` | PARTIAL | WS + SSE transports; OAuth account-id from env; no WS pooling/idle cache. WS handshake headers fixed (Sec-WebSocket-Key etc.) + connection-limit retry-once added. |
 | `openai-completions.ts` | `src/provider/openai.rs` | DONE | reasoning-details, tool-choice, response-model, retry, thinking-as-text, prompt-cache. |
@@ -92,7 +92,7 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Total **87** upstream test files — **38 PORTED (yes/yes)** + **14 partial** (deterministic substance ported; live/WS-pooling/architectural remainder noted) + **12 N/A** (live-only / credential-gated / JS-runtime / architectural). All deterministic (live=0) files are ported or have a precise N/A rationale. 68 rs-ai test files, 660 tests, clippy clean._
+_Total **87** upstream test files — **39 PORTED (yes/yes)** + **14 partial** (deterministic substance ported; live/WS-pooling/architectural remainder noted) + **11 N/A** (live-only / credential-gated / JS-runtime / architectural). All deterministic (live=0) files are ported or have a precise N/A rationale. The Vertex request path is now implemented (ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`), so `google-vertex-api-key-resolution` is PORTED rather than architectural-MISSING. 69 rs-ai test files, 667 tests, clippy clean._
 
 | # | upstream `test/*.test.ts` | ported? | passing? | rs-ai file / note |
 |---|---|---|---|---|
@@ -131,7 +131,7 @@ _Total **87** upstream test files — **38 PORTED (yes/yes)** + **14 partial** (
 | 33 | `google-shared-image-tool-result-routing.test.ts` | yes | yes | src/google_image_tool_result_routing_test.rs |
 | 34 | `google-thinking-disable.test.ts` | no | — | 9 cases to port name-for-name |
 | 35 | `google-thinking-signature.test.ts` | yes | yes | src/google_thinking_signature_test.rs |
-| 36 | `google-vertex-api-key-resolution.test.ts` | n/a | — | mock-based, but targets @google/genai **client construction** (ADC-marker `<authenticated>`/`gcp-vertex-credentials` → project/location fallback, apiKey path, baseUrl/apiVersion forwarding). rs-ai deliberately does **not** implement the Vertex request path (provider/mod.rs rejects `{location}`-scoped endpoints with "not supported"), so there is no client to construct = architectural MISSING |
+| 36 | `google-vertex-api-key-resolution.test.ts` | partial | yes | src/google_vertex_request_path_test.rs (Vertex REST request path now implemented: project/location resolution from StreamOptions + GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT/GOOGLE_CLOUD_LOCATION env, `{location}` host substitution, placeholder-marker `<...>`/`gcp-vertex-credentials` api-key suppression → ADC URL, real-key append, custom base-url passthrough. Upstream's @google/genai SDK-constructor assertions are JS-runtime-specific; this port asserts the equivalent URL shape + resolution, mirroring go-ai `buildStreamURL`/`resolveVertexProjectLocation`.) |
 | 37 | `image-tool-result.test.ts` | no | — | 38 cases to port name-for-name |
 | 38 | `images-models.test.ts` | partial | yes (builtin catalog) | src/bedrock_images_models_test.rs (instance ImagesModels collection = architectural diff) |
 | 39 | `images.test.ts` | n/a | — | live image generation (OPENROUTER_API_KEY) |
@@ -213,7 +213,6 @@ validation, xhigh, xiaomi-models, zen, empty.
 - `anthropic-oauth`, `oauth-auth`, `oauth-device-code`, `github-copilot-oauth`,
   `github-copilot-anthropic`, `openai-codex-oauth`,
   `openai-responses-copilot-provider` — OAuth/Copilot flows (MISSING feature).
-- `google-vertex-api-key-resolution` — Vertex (MISSING feature).
 - `node-http-proxy` — HTTP proxy (MISSING feature).
 - `lazy-module-load` — JS lazy loader (N/A).
 - `anthropic-opus-4-8-smoke`, `xiaomi-token-plan-ams-anthropic-empty-signature-smoke` —

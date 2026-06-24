@@ -40,12 +40,17 @@ pub fn stream_google<'a>(
             }
         }
     }
-    let url = format!(
-        "{}/models/{}:streamGenerateContent?alt=sse&key={}",
-        model.base_url.trim_end_matches('/'),
-        url_encode(&model.id),
-        url_encode(&api_key),
-    );
+    let url = match build_stream_url(model, &api_key, opts) {
+        Ok(u) => u,
+        Err(e) => {
+            let err = Event::Error {
+                reason: StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(e)),
+                message: None,
+            };
+            return Box::pin(stream::once(async { err }));
+        }
+    };
 
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
@@ -740,4 +745,63 @@ fn url_encode(s: &str) -> String {
         .replace(' ', "%20")
         .replace('+', "%2B")
         .replace('/', "%2F")
+}
+
+/// Build the streaming REST endpoint for Gemini or Vertex AI.
+/// Mirrors upstream go-ai `buildStreamURL` / `resolveVertexProjectLocation`.
+pub(crate) fn build_stream_url(model: &Model, api_key: &str, opts: &StreamOptions) -> Result<String, String> {
+    if model.api == crate::types::api::GOOGLE_VERTEX {
+        let (project, location) = resolve_vertex_project_location(opts)?;
+        let mut base_url = model.base_url.clone();
+        if base_url.is_empty() {
+            base_url = "https://{location}-aiplatform.googleapis.com".to_string();
+        }
+        base_url = base_url.replace("{location}", &location);
+        let mut endpoint = format!(
+            "{}/v1/projects/{}/locations/{}/publishers/google/models/{}:streamGenerateContent?alt=sse",
+            base_url.trim_end_matches('/'),
+            url_encode(&project),
+            url_encode(&location),
+            url_encode(&model.id),
+        );
+        if !api_key.is_empty() && !api_key.starts_with('<') {
+            endpoint.push_str("&key=");
+            endpoint.push_str(&url_encode(api_key));
+        }
+        return Ok(endpoint);
+    }
+    let mut base_url = model.base_url.clone();
+    if base_url.is_empty() {
+        base_url = "https://generativelanguage.googleapis.com/v1beta".to_string();
+    }
+    Ok(format!(
+        "{}/models/{}:streamGenerateContent?alt=sse&key={}",
+        base_url.trim_end_matches('/'),
+        url_encode(&model.id),
+        url_encode(api_key),
+    ))
+}
+
+/// Resolve the Vertex AI project and location from options or environment.
+/// Mirrors upstream go-ai `resolveVertexProjectLocation`.
+pub(crate) fn resolve_vertex_project_location(opts: &StreamOptions) -> Result<(String, String), String> {
+    let env_value = |name: &str| std::env::var(name).ok().filter(|v| !v.is_empty());
+    let mut project = opts.project.clone().filter(|v| !v.is_empty());
+    let mut location = opts.location.clone().filter(|v| !v.is_empty());
+    if project.is_none() {
+        project = env_value("GOOGLE_CLOUD_PROJECT");
+    }
+    if project.is_none() {
+        project = env_value("GCLOUD_PROJECT");
+    }
+    if location.is_none() {
+        location = env_value("GOOGLE_CLOUD_LOCATION");
+    }
+    let project = project.ok_or_else(|| {
+        "vertex AI requires a project ID; set GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT or pass Project in options".to_string()
+    })?;
+    let location = location.ok_or_else(|| {
+        "vertex AI requires a location; set GOOGLE_CLOUD_LOCATION or pass Location in options".to_string()
+    })?;
+    Ok((project, location))
 }

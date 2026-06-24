@@ -391,6 +391,10 @@ pub struct StreamOptions {
     pub thinking_display: Option<String>,
     pub on_payload: Option<PayloadHook>,
     pub on_response: Option<ResponseHook>,
+    /// Google Vertex AI project ID (overrides GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT).
+    pub project: Option<String>,
+    /// Google Vertex AI location (overrides GOOGLE_CLOUD_LOCATION).
+    pub location: Option<String>,
 }
 
 impl std::fmt::Debug for StreamOptions {
@@ -417,6 +421,8 @@ impl std::fmt::Debug for StreamOptions {
             .field("interleaved_thinking", &self.interleaved_thinking)
             .field("thinking_display", &self.thinking_display)
             .field("thinking_budgets", &self.thinking_budgets.as_ref().map(|_| "..."))
+            .field("project", &self.project)
+            .field("location", &self.location)
             .finish()
     }
 }

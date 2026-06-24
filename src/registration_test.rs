@@ -7,7 +7,7 @@ mod tests {
     use tokio_stream::StreamExt;
 
     #[tokio::test]
-    async fn test_vertex_location_placeholder_errors_clearly() {
+    async fn test_vertex_requires_project_location() {
         provider::register_builtin_providers();
         let mut model = openai_model();
         model.api = "google-vertex".into();
@@ -15,12 +15,20 @@ mod tests {
         model.base_url = "https://{location}-aiplatform.googleapis.com".into();
         let ctx = Context { system_prompt: None, messages: vec![], tools: vec![] };
         let opts = StreamOptions::default();
+        // Skip when the host environment actually configures Vertex project/location.
+        if std::env::var("GOOGLE_CLOUD_PROJECT").is_ok()
+            || std::env::var("GCLOUD_PROJECT").is_ok()
+        {
+            return;
+        }
         let mut stream = registry::stream(&model, &ctx, &opts);
         let mut err = None;
         while let Some(evt) = stream.next().await {
             if let crate::events::Event::Error { error, .. } = evt { err = Some(error.to_string()); }
         }
-        assert!(err.unwrap().contains("Google Vertex AI is not supported"));
+        // Vertex is now implemented (project/location-scoped REST endpoint); without
+        // project/location configured it surfaces the project-required resolution error.
+        assert!(err.unwrap().contains("project ID"));
     }
 
     fn openai_model() -> Model {

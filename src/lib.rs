@@ -101,6 +101,8 @@ mod google_image_tool_result_routing_test;
 #[cfg(test)]
 mod google_thinking_signature_test;
 #[cfg(test)]
+mod google_vertex_request_path_test;
+#[cfg(test)]
 mod supports_xhigh_test;
 #[cfg(test)]
 mod together_xiaomi_models_test;
