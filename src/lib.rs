@@ -121,6 +121,8 @@ mod tool_call_id_normalization_test;
 #[cfg(test)]
 mod openrouter_images_test;
 #[cfg(test)]
+mod openai_responses_copilot_provider_test;
+#[cfg(test)]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
 mod openai_completions_tool_choice_test;

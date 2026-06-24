@@ -210,9 +210,14 @@ fn stream_responses_inner<'a>(
             && let Ok(val) = HeaderValue::from_str(&format!("Bearer {}", api_key)) {
             headers.insert("cf-aig-authorization", val);
         }
-        // Session headers (non-Azure): upstream gates on a truthy sessionId; sends
-        // `session_id` only when compat.sendSessionIdHeader (default true), `x-client-request-id` always.
-        if let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
+        // Session headers (non-Azure): the session id is cleared when caching is off
+        // (upstream `cacheSessionId = retention === "none" ? undefined : sessionId`), so
+        // affinity headers are omitted. `session_id` only when compat.sendSessionIdHeader
+        // (default true); `x-client-request-id` always (when a session id remains).
+        let affinity_caching_on =
+            crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref()) != crate::types::CacheRetention::None;
+        if affinity_caching_on
+            && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
             && let Ok(val) = HeaderValue::from_str(session_id) {
                 if model.compat.send_session_id_header.unwrap_or(true) {
                     headers.insert("session_id", val.clone());
