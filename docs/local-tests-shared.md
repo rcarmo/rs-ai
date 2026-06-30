@@ -10,6 +10,130 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 (behaviourally guarded by an existing rs-ai test), **PENDING**, **N/A**
 (feature gated/architectural — see parity-gaps doc).
 
+## v0.80.3 conformance fixtures (for go-ai / swift-ai adoption)
+
+Upstream **0.80.3** feature release. Authoritative constants + truth-tables so
+all three ports use identical expected values. Source of truth:
+`@earendil-works/pi-ai@0.80.3` `utils/{estimate,retry,error-body}.ts`,
+`api/simple-options.ts`. rs-ai tests named per item.
+
+### A. `estimateContextTokens` / text-token estimation
+
+Constants: `CHARS_PER_TOKEN = 4`, `ESTIMATED_IMAGE_CHARS = 4800`.
+`estimateTextTokens(s) = ceil(s.length / 4)`; an image block counts as 4800
+chars (= 1200 tokens). rs-ai: `src/estimate.rs`, `src/estimate_test.rs`.
+
+| case | input | expected |
+|---|---|---|
+| text ceil-div-4 | `"12345678"` (8) / `"123456789"` (9) / `""` | `2` / `3` / `0` |
+| text+image content | `[text "abcd"(4), image]` = 4804 chars | `ceil(4804/4) = 1201` tokens |
+| `calculateContextTokens` prefers total | usage `{in:10,out:20,total:99}` | `99` |
+| …else sums in+out+cacheRead+cacheWrite | `{in:10,out:20,total:0,cR:5,cW:3}` | `38` |
+| assistant msg = text+thinking+toolcall-JSON | `"hello"(5)+"think"(5)+(2+len('{"a":1}')=7)` = 19 chars | `ceil(19/4) = 5` |
+| context anchors on last **non-aborted** assistant usage | sys `"sys"`, [user(ignored), assistant total=100, user `"abcd"`] | `tokens=101` (usage 100 + trailing 1; **no** system prefix when anchored), `lastUsageIndex=1` |
+| no usage anchor → adds system prefix | sys `"12345678"`(2 tok), [assistant total=500 **aborted**, user `"abcd"`] | `tokens=4` (msgs 1+1 + sys 2; aborted usage skipped), `lastUsageIndex=None` |
+
+### B. `clampMaxTokensToContext` boundary values
+
+Constants: `CONTEXT_SAFETY_TOKENS = 4096`, `MIN_MAX_TOKENS = 1`. Formula:
+```
+if contextWindow <= 0:            return max(MIN_MAX_TOKENS, maxTokens)        # unknown window: floor only
+used      = estimateContextTokens(context).tokens + CONTEXT_SAFETY_TOKENS
+available = max(MIN_MAX_TOKENS, contextWindow - used)
+return min(maxTokens, available)
+```
+rs-ai: `src/simple_options.rs`, `src/simple_options_test.rs`.
+
+| case | inputs | expected |
+|---|---|---|
+| unknown window only floors | `contextWindow=0`, empty ctx, `maxTokens=5000` | `5000` |
+| unknown window floors to MIN | `contextWindow=0`, `maxTokens=0` | `1` |
+| room available, request fits | `contextWindow=200000`, small ctx, `maxTokens=8192` | `8192` (unchanged) |
+| request exceeds available → clamp down | `contextWindow=10000`, `used` s.t. available `< maxTokens` | `available` |
+| available underflows → floor | `contextWindow - used < 1` | `1` |
+
+_Wiring note (architectural, document per port): clamp affects the **request**
+only on the `streamSimple`/`buildBaseOptions` path. Upstream calls it for
+anthropic + bedrock (which fold thinking-budget re-fit
+`min(thinkingBudget, max(0, maxTokens - 1024))`); other providers' clamp lives
+only in `streamSimple`. rs-ai has no separate `streamSimple` layer, so it wires
+clamp into its anthropic + bedrock stream paths and exposes
+`clamp_max_tokens_to_context` as a public utility. Ports that DO mirror
+`streamSimple` should clamp there._
+
+### C. `Usage.reasoning` — `thinking_tokens` / `reasoning_tokens` mapping
+
+New `Usage.reasoning` field. Capture per provider (all are a **subset of
+output**, not added to it):
+
+| provider / api | source field | absent → |
+|---|---|---|
+| anthropic-messages | `usage.output_tokens_details.thinking_tokens` (message_delta) | `None` (optional) |
+| openai-completions | `usage.completion_tokens_details.reasoning_tokens` | `Some(0)` (`\|\| 0`) |
+| openai-responses(+shared) | `usage.output_tokens_details.reasoning_tokens` | `Some(0)` (`\|\| 0`) |
+| google-generative-ai / google-vertex | `usageMetadata.thoughtsTokenCount` | `Some(0)` (`\|\| 0`) |
+| bedrock / mistral / codex | — (no upstream breakdown) | `None` |
+
+Fixtures: anthropic delta `output_tokens_details.thinking_tokens=25` →
+`reasoning=Some(25)`; openai `completion_tokens_details.reasoning_tokens=30` →
+`Some(30)`, absent → `Some(0)`; responses `output_tokens_details.reasoning_tokens=12`
+→ `Some(12)`. rs-ai: `simple_options_test.rs`, `anthropic_sse_parsing_test.rs`.
+
+### D. `isRetryableAssistantError` truth-table
+
+Gate: returns `false` unless `stopReason == "error"` **and** `errorMessage` is
+non-empty. Then **non-retryable (quota/billing) wins** over retryable; checked
+case-insensitively. rs-ai: `src/retry.rs`, `src/retry_classify_test.rs`.
+
+| errorMessage (stopReason=error) | result |
+|---|---|
+| `"overloaded"` / `"429 Too Many Requests"` / `"rate limit"` / `"rate-limit"` / `"ratelimit"` | `true` |
+| `"503 Service Unavailable"` / `"internal server error"` / `"Provider returned error"` | `true` |
+| `"fetch failed"` / `"upstream connect error"` / `"socket hang up"` / `"connection refused"` | `true` |
+| `"Request timed out"` / `"request timeout"` / `"WebSocket closed"` | `true` |
+| `"stream ended before message_stop"` / `"ended without a stop reason"` / `"http2 request did not get a response"` / `"you can retry your request"` | `true` |
+| `"GoUsageLimitError"` / `"FreeUsageLimitError"` / `"Monthly usage limit reached"` / `"available balance"` | `false` |
+| `"insufficient_quota"` / `"out of budget"` / `"quota exceeded"` / `"billing issue"` | `false` |
+| `"429 insufficient_quota: out of credits"` (both present) | `false` (non-retryable precedence) |
+| `"invalid api key"` (unrelated) | `false` |
+| any retryable text but `stopReason != error`, or empty message | `false` |
+
+Pattern families (regex `.?` = optional single char between segments;
+`timed? out` = `"timed out"`/`"time out"`): retryable =
+`overloaded, rate.?limit, too many requests, 429/500/502/503/504,
+service.?unavailable, server.?error, internal.?error, provider.?returned.?error,
+network.?error, connection.?error/refused/lost, other side closed, fetch failed,
+upstream.?connect, reset before headers, socket hang up, timed?out/timeout,
+terminated, websocket.?closed/error, ended without,
+stream ended before message_stop, http2 request did not get a response,
+retry delay, you can/try/please retry…`. non-retryable =
+`GoUsageLimitError, FreeUsageLimitError, monthly usage limit reached,
+available balance, insufficient_quota, out of budget, quota exceeded, billing`.
+
+### E. error-body normalization + truncation
+
+`MAX_PROVIDER_ERROR_BODY_CHARS = 4000`. Body is **trimmed**; over-cap bodies get
+`"<first 4000 chars>... [truncated N chars]"` (N = totalChars − 4000). Format:
+`"{status}: {body}"`, or branded `"{prefix} ({status}): {body}"` for
+openai-responses (`"OpenAI API error"`) / azure (`"Azure OpenAI API error"`).
+Empty body → `"{status}"` (or `"{prefix} ({status})"`). rs-ai: `src/error_body.rs`,
+`src/error_body_test.rs`.
+
+| case | inputs | expected |
+|---|---|---|
+| no prefix | `403`, `{"error":"forbidden"}` | `403: {"error":"forbidden"}` |
+| responses prefix | `429`, `rate limited` | `OpenAI API error (429): rate limited` |
+| azure prefix | `500`, `boom` | `Azure OpenAI API error (500): boom` |
+| trims body | `503`, `"   spaced   "` | `503: spaced` |
+| empty body | `503`, `"   "` | `503` |
+| empty + prefix | `503`, `""`, `OpenAI API error` | `OpenAI API error (503)` |
+| truncation | `400`, `"x"*4025` | `400: ` + `"x"*4000` + `... [truncated 25 chars]` |
+
+Consumers: openai-completions / openai-responses(+azure) / google(+vertex) /
+openrouter-images use the format above. codex (plain-Error friendly message)
+and bedrock (SDK already folds body via `messageCarriesBody`) are **no-ops**;
+anthropic + mistral are **not** error-body consumers.
+
 ## Shareable conformance corpus (for go-ai / swift-ai adoption)
 
 Per the parity auditor, the following rs-ai work is adoptable cross-port. Each
