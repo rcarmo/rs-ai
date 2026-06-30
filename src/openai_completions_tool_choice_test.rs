@@ -127,7 +127,7 @@ mod tests {
             (ThinkingLevel::XHigh, "max"),
         ] {
             let p = payload(&cat("zai", "glm-5.2"), &user_ctx(), &reasoning(level.clone()));
-            assert_eq!(p["thinking"], json!({"type": "enabled"}), "level {level:?}");
+            assert_eq!(p["thinking"], json!({"type": "enabled", "clear_thinking": false}), "level {level:?}");
             assert_eq!(p["reasoning_effort"], json!(effort), "level {level:?}");
         }
     }

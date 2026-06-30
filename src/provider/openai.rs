@@ -796,7 +796,11 @@ pub(crate) fn build_payload(
         };
         match compat.thinking_format.as_deref() {
             Some("zai") => {
-                payload["thinking"] = json!({"type": if clamped_effort.is_some() { "enabled" } else { "disabled" }});
+                payload["thinking"] = if clamped_effort.is_some() {
+                    json!({"type": "enabled", "clear_thinking": false})
+                } else {
+                    json!({"type": "disabled"})
+                };
                 if let Some(ref level) = clamped_effort
                     && compat.supports_reasoning_effort == Some(true) {
                         // effort = thinkingLevelMap[level] (string) else the level; null -> omit.
