@@ -369,4 +369,72 @@ mod tests {
             assert!(text.contains("pong"));
         }
     }
+
+    // ---------- error-body.test.ts / provider-error-body-*.test.ts ----------
+    //
+    // Upstream's three new 0.80.3 error-body files mock the JS SDKs so a 403
+    // gateway response with a body the SDK folds into an opaque "403 status code
+    // (no body)" message still surfaces status + body. rs-ai's reqwest path reads
+    // `resp.text()` directly (it never had the JS-SDK body-hiding bug), so here we
+    // port the deterministic *behavioral contract* against a real 403-with-body
+    // wire response: providers must surface both the status and the body reason,
+    // with the responses/azure branded prefix. Stronger than the JS mocks (real
+    // transport), each asserted 3x for determinism.
+
+    /// Drive a provider against a single non-2xx response carrying `body`; return
+    /// the terminal error message string.
+    async fn drive_http_error(m: Model, status: u16, body: &str) -> String {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(status)
+                .insert_header("content-type", "application/json")
+                .set_body_string(body.to_string()))
+            .mount(&server).await;
+        let mut m = m; m.base_url = server.uri();
+        let opts = StreamOptions::default();
+        let api = m.api.clone();
+        let c = user_ctx("hi");
+        let mut stream = match api.as_str() {
+            "google-generative-ai" | "google" => stream_google(&m, &c, &opts),
+            "openai-responses" => stream_responses(&m, &c, &opts),
+            _ => stream_openai(&m, &c, &opts),
+        };
+        let mut err: Option<String> = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+        }
+        err.expect("a terminal error")
+    }
+
+    #[tokio::test]
+    async fn error_body_openai_completions_surfaces_status_and_body() {
+        let body = r#"{"error":"blocked by gateway WAF"}"#;
+        for _ in 0..3 {
+            let msg = drive_http_error(model("openai-completions", "openrouter", "x"), 403, body).await;
+            assert!(msg.contains("403"), "status surfaced: {msg}");
+            assert!(msg.contains("blocked by gateway WAF"), "body reason surfaced: {msg}");
+            assert_eq!(msg, format!("403: {body}"));
+        }
+    }
+
+    #[tokio::test]
+    async fn error_body_openai_responses_keeps_prefix_and_surfaces_body() {
+        let body = r#"{"error":"blocked by gateway WAF"}"#;
+        for _ in 0..3 {
+            let msg = drive_http_error(model("openai-responses", "openai", "x"), 403, body).await;
+            assert!(msg.contains("OpenAI API error (403)"), "branded prefix + status: {msg}");
+            assert!(msg.contains("blocked by gateway WAF"), "body reason surfaced: {msg}");
+            assert_eq!(msg, format!("OpenAI API error (403): {body}"));
+        }
+    }
+
+    #[tokio::test]
+    async fn error_body_google_surfaces_status_and_body() {
+        let body = r#"{"error":{"code":403,"message":"Permission denied"}}"#;
+        for _ in 0..3 {
+            let msg = drive_http_error(model("google-generative-ai", "google", "x"), 403, body).await;
+            assert!(msg.contains("403") && msg.contains("Permission denied"), "status+body: {msg}");
+            assert_eq!(msg, format!("403: {body}"));
+        }
+    }
 }

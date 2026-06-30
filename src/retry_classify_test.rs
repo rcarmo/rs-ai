@@ -97,4 +97,27 @@ mod tests {
         let m = err_msg(Some("invalid api key"), Some(StopReason::Error));
         assert!(!is_retryable_assistant_error(&m));
     }
+
+    // Verbatim fixtures from upstream `test/retry.test.ts` (0.80.3).
+    const OPENAI_EXPLICIT_RETRY: &str = "An error occurred while processing your request. You can retry your request, or contact us through our help center at help.openai.com if the error persists. Please include the request ID req_******** in your message.";
+    const BEDROCK_EXPLICIT_RETRY: &str = "{\"message\":\"The system encountered an unexpected error during processing. Try your request again.\"}";
+
+    #[test]
+    fn matches_explicit_provider_retry_guidance() {
+        assert!(is_retryable_assistant_error(&err_msg(Some(OPENAI_EXPLICIT_RETRY), Some(StopReason::Error))));
+        assert!(is_retryable_assistant_error(&err_msg(Some(BEDROCK_EXPLICIT_RETRY), Some(StopReason::Error))));
+    }
+
+    #[test]
+    fn keeps_provider_limit_errors_non_retryable_upstream_fixture() {
+        // "429 quota exceeded": 429 is retryable but "quota exceeded" wins.
+        assert!(!is_retryable_assistant_error(&err_msg(Some("429 quota exceeded"), Some(StopReason::Error))));
+    }
+
+    #[test]
+    fn classifies_overloaded_error_and_non_error_fixture() {
+        assert!(is_retryable_assistant_error(&err_msg(Some("overloaded_error"), Some(StopReason::Error))));
+        // fauxAssistantMessage("not an error") has no error stop reason.
+        assert!(!is_retryable_assistant_error(&err_msg(None, None)));
+    }
 }

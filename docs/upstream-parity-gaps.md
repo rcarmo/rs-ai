@@ -127,7 +127,33 @@ the credential-available providers above).
 
 ## 5a. Per-file upstream test port tracker (bar #2)
 
-_Total **87** upstream test files. **Final classification (Rui's ruling: "we test with what we have. No keys, no tests" — no record-replay/mock harness, no skip-only wrappers, no fabrication):**_
+> **0.80.3 inventory update.** Verified against the upstream git tags
+> (`earendil-works/pi` `v0.80.2`→`v0.80.3`, `packages/ai/test`): the denominator
+> moved **86 → 90 test files** (+4 new, 0 removed). New files + rs-ai disposition:
+> - **`retry.test.ts`** — **PORTED**. `isRetryableAssistantError` classification incl.
+>   the verbatim OpenAI/Bedrock explicit-retry messages, `"429 quota exceeded"`
+>   (non-retryable precedence), `"overloaded_error"`, non-error. `src/retry_classify_test.rs`.
+> - **`error-body.test.ts`** — **PORTED (compose/truncation) + N/A (SDK extraction)**.
+>   `formatProviderError` compose + `MAX_PROVIDER_ERROR_BODY_CHARS` truncation cases
+>   ported in `src/error_body_test.rs`; the `normalizeProviderError` cases that
+>   extract status/body from JS-SDK error-object shapes (Mistral `statusCode/body`,
+>   openai `APIError.error`, `@google/genai` folded message, Bedrock `$response`,
+>   non-Error fallback, `messageCarriesBody`) are **N/A** — rs-ai's reqwest path reads
+>   `resp.text()` directly and never had the JS-SDK body-hiding bug those guard.
+> - **`provider-error-body-passthrough.test.ts`** + **`provider-error-body-regression.test.ts`**
+>   — **SIMULATED-FIXTURE-PORTED**. Upstream mocks the JS SDKs to throw an opaque
+>   `"403 status code (no body)"` APIError; rs-ai ports the deterministic contract
+>   against a **real 403-with-body wire response** (wiremock, 3×) for
+>   openai-completions (`403: {body}`), openai-responses (branded
+>   `OpenAI API error (403): {body}`), and google (`403: {body}`) in
+>   `src/simulated_e2e_fixtures_test.rs`. Bedrock tier is covered by
+>   `format_bedrock_error` already folding the SDK body; openrouter-images surfaces
+>   `format_provider_http_error` on non-2xx (unit-covered in `error_body_test.rs`).
+>
+> Running totals after 0.80.3: **PORTED 43, SIMULATED-FIXTURE 9** (the original 7
+> + the 2 error-body regression files). The 0.80.2 table below is unchanged.
+
+_Total **87** upstream test files (0.80.2 snapshot; see 0.80.3 update above → 90). **Final classification (Rui's ruling: "we test with what we have. No keys, no tests" — no record-replay/mock harness, no skip-only wrappers, no fabrication):**_
 
 - **42 PORTED (yes/yes)** — deterministic, name/value-faithful ports.
 - **7 SIMULATED-FIXTURE-PORTED** — re-audited live-E2E files whose response-handling / request-payload substance is now ported end-to-end against faithful **simulated wire fixtures** (wiremock, no credentials, each case run 3× for determinism) in `src/simulated_e2e_fixtures_test.rs`: `responseid` (responseId surfaced for openai-completions + google), `tokens` (usage on terminal message), `total-tokens` (computed for openai-completions/anthropic; native for openai-responses), `context-overflow` (anthropic SSE overflow error → `is_context_overflow` true; rate-limit → false), `unicode-surrogate` (astral-plane emoji in tool results round-trips intact into openai + anthropic request bodies), `google-thinking-disable` (response with no thinking parts yields zero Thinking events), `cache-retention` (anthropic system-block `cache_control`: default ephemeral/no-ttl, long → `ttl:1h`, `supportsLongCacheRetention:false` → ttl omitted, captured from the live request body). Only real-model nondeterminism (actual token counts, model phrasing, abort timing) remains N/A for these files.
