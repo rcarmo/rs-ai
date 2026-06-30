@@ -245,3 +245,125 @@ pub async fn do_with_retry(
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Assistant-error classification (port of upstream utils/retry.ts, v0.80.3).
+//
+// `is_retryable_assistant_error` classifies whether a failed assistant message
+// looks like a transient provider/transport error so callers can decide whether
+// to restart the last assistant turn. It does NOT implement retry policy.
+// ---------------------------------------------------------------------------
+
+/// A single classification pattern. `Plain` is a case-insensitive substring;
+/// `Gap` is literal segments separated by an optional single character (regex
+/// `.?`) — e.g. `["rate","limit"]` matches "ratelimit", "rate limit", "rate-limit".
+enum ErrPat {
+    Plain(&'static str),
+    Gap(&'static [&'static str]),
+}
+
+impl ErrPat {
+    /// `haystack` must already be lowercased.
+    fn matches(&self, haystack: &str) -> bool {
+        match self {
+            ErrPat::Plain(needle) => haystack.contains(needle),
+            ErrPat::Gap(segs) => contains_with_gaps(haystack, segs),
+        }
+    }
+}
+
+/// Match `segs` in `haystack` where consecutive segments may be separated by an
+/// optional single arbitrary character (regex `.?`). Byte-safe: a non-char-boundary
+/// gap simply fails to match rather than panicking.
+fn contains_with_gaps(haystack: &str, segs: &[&str]) -> bool {
+    let first = segs[0];
+    let mut start = 0;
+    while let Some(idx) = haystack[start..].find(first) {
+        let abs = start + idx;
+        let mut pos = abs + first.len();
+        let mut ok = true;
+        for seg in &segs[1..] {
+            if haystack.get(pos..).is_some_and(|s| s.starts_with(seg)) {
+                pos += seg.len();
+            } else if haystack.get(pos + 1..).is_some_and(|s| s.starts_with(seg)) {
+                pos += 1 + seg.len();
+            } else {
+                ok = false;
+                break;
+            }
+        }
+        if ok {
+            return true;
+        }
+        start = abs + 1;
+    }
+    false
+}
+
+/// Subscription / quota / billing limits that should NOT be auto-retried.
+const NON_RETRYABLE_PROVIDER_LIMIT: &[ErrPat] = &[
+    ErrPat::Plain("gousagelimiterror"),
+    ErrPat::Plain("freeusagelimiterror"),
+    ErrPat::Plain("monthly usage limit reached"),
+    ErrPat::Plain("available balance"),
+    ErrPat::Plain("insufficient_quota"),
+    ErrPat::Plain("out of budget"),
+    ErrPat::Plain("quota exceeded"),
+    ErrPat::Plain("billing"),
+];
+
+/// Transient provider / transport / stream errors that may be retried.
+const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
+    ErrPat::Plain("overloaded"),
+    ErrPat::Gap(&["rate", "limit"]),
+    ErrPat::Plain("too many requests"),
+    ErrPat::Plain("429"),
+    ErrPat::Plain("500"),
+    ErrPat::Plain("502"),
+    ErrPat::Plain("503"),
+    ErrPat::Plain("504"),
+    ErrPat::Gap(&["service", "unavailable"]),
+    ErrPat::Gap(&["server", "error"]),
+    ErrPat::Gap(&["internal", "error"]),
+    ErrPat::Gap(&["provider", "returned", "error"]),
+    ErrPat::Gap(&["network", "error"]),
+    ErrPat::Gap(&["connection", "error"]),
+    ErrPat::Gap(&["connection", "refused"]),
+    ErrPat::Gap(&["connection", "lost"]),
+    ErrPat::Plain("other side closed"),
+    ErrPat::Plain("fetch failed"),
+    ErrPat::Gap(&["upstream", "connect"]),
+    ErrPat::Plain("reset before headers"),
+    ErrPat::Plain("socket hang up"),
+    // `timed? out` — optional literal `d`.
+    ErrPat::Plain("timed out"),
+    ErrPat::Plain("time out"),
+    ErrPat::Plain("timeout"),
+    ErrPat::Plain("terminated"),
+    ErrPat::Gap(&["websocket", "closed"]),
+    ErrPat::Gap(&["websocket", "error"]),
+    ErrPat::Plain("ended without"),
+    ErrPat::Plain("stream ended before message_stop"),
+    ErrPat::Plain("http2 request did not get a response"),
+    ErrPat::Plain("retry delay"),
+    ErrPat::Plain("you can retry your request"),
+    ErrPat::Plain("try your request again"),
+    ErrPat::Plain("please retry your request"),
+];
+
+/// Classify whether a failed assistant message looks like a transient provider
+/// or transport error, so callers can decide if the last assistant turn should
+/// be restarted. Mirrors upstream `isRetryableAssistantError`.
+pub fn is_retryable_assistant_error(message: &crate::types::Message) -> bool {
+    if !matches!(message.stop_reason, Some(crate::types::StopReason::Error)) {
+        return false;
+    }
+    let Some(err) = message.error_message.as_deref() else {
+        return false;
+    };
+    let haystack = err.to_lowercase();
+    if NON_RETRYABLE_PROVIDER_LIMIT.iter().any(|p| p.matches(&haystack)) {
+        return false;
+    }
+    RETRYABLE_PROVIDER_ERROR.iter().any(|p| p.matches(&haystack))
+}

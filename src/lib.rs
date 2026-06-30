@@ -73,6 +73,7 @@ mod provider_test;
 mod coverage_test;
 #[cfg(test)]
 mod provider_retry_test;
+mod retry_classify_test;
 #[cfg(test)]
 mod extra_coverage_test;
 #[cfg(test)]
