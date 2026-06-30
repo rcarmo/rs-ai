@@ -52,11 +52,41 @@ mod tests {
     }
 
     #[test]
-    fn does_not_send_default_max_token_fields() {
+    fn sends_default_max_tokens_as_model_max_tokens() {
+        // v0.80.3: streamSimple defaults maxTokens to model.maxTokens and clamps it;
+        // with a large context window "hi" does not clamp, so the model cap is sent.
         let ctx = Context { system_prompt: None, tools: Vec::new(), messages: vec![user("hi")] };
         let p = payload(&ctx, &StreamOptions::default());
         assert!(p.get("max_tokens").is_none());
-        assert!(p.get("max_completion_tokens").is_none());
+        assert_eq!(p["max_completion_tokens"], serde_json::json!(gpt_4o_mini().max_tokens));
+    }
+
+    /// gpt-4o-mini with an overridden small window so the clamp boundary bites
+    /// (mirrors upstream `{ ...baseModel, contextWindow: 10000, maxTokens: 8000 }`).
+    fn clamp_payload(ctx: &Context, opts: &StreamOptions) -> Value {
+        let mut m = gpt_4o_mini();
+        m.context_window = 10000;
+        m.max_tokens = 8000;
+        build_payload(&m, ctx, opts, &detect_compat(&m))
+    }
+
+    #[test]
+    fn clamps_default_max_tokens_to_remaining_context() {
+        // contextWindow=10000, "x"*8000 (2000 tokens), default maxTokens=8000.
+        // used = 2000 + 4096 = 6096; available = 3904; min(8000, 3904) = 3904.
+        let ctx = Context { system_prompt: None, tools: Vec::new(), messages: vec![user(&"x".repeat(8000))] };
+        let p = clamp_payload(&ctx, &StreamOptions::default());
+        assert!(p.get("max_tokens").is_none());
+        assert_eq!(p["max_completion_tokens"], serde_json::json!(3904));
+    }
+
+    #[test]
+    fn clamps_explicit_max_tokens_to_remaining_context() {
+        let ctx = Context { system_prompt: None, tools: Vec::new(), messages: vec![user(&"x".repeat(8000))] };
+        let opts = StreamOptions { max_tokens: Some(7000), ..Default::default() };
+        let p = clamp_payload(&ctx, &opts);
+        assert!(p.get("max_tokens").is_none());
+        assert_eq!(p["max_completion_tokens"], serde_json::json!(3904));
     }
 
     #[test]

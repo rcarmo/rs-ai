@@ -648,9 +648,13 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
     }
 
     let mut config = json!({});
-    if let Some(max) = opts.max_tokens {
-        config["maxOutputTokens"] = json!(max);
-    }
+    // Fold streamSimple's buildBaseOptions clamped/defaulted cap. google's inner gate
+    // is `maxTokens !== undefined`, and base.maxTokens is always defined, so the field
+    // is always emitted (including a clamped 0).
+    let max_output_tokens = crate::simple_options::clamp_max_tokens_to_context(
+        model, context, opts.max_tokens.unwrap_or(model.max_tokens),
+    );
+    config["maxOutputTokens"] = json!(max_output_tokens);
     if let Some(temp) = opts.temperature {
         config["temperature"] = json!(temp);
     }

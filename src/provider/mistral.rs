@@ -492,9 +492,13 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
         "stream": true,
     });
 
-    if let Some(max) = opts.max_tokens {
-        payload["max_tokens"] = json!(max);
-    }
+    // Fold streamSimple's buildBaseOptions clamped/defaulted cap. mistral's inner gate
+    // is `maxTokens !== undefined`, and base.maxTokens is always defined, so the field
+    // is always emitted (including a clamped 0).
+    let max_tokens_value = crate::simple_options::clamp_max_tokens_to_context(
+        model, context, opts.max_tokens.unwrap_or(model.max_tokens),
+    );
+    payload["max_tokens"] = json!(max_tokens_value);
     if let Some(temp) = opts.temperature {
         payload["temperature"] = json!(temp);
     }

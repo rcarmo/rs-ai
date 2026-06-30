@@ -53,14 +53,19 @@ rs-ai: `src/simple_options.rs`, `src/simple_options_test.rs`.
 | **canon request-path boundary** | `contextWindow=5000`, `"hello"` (2 tokens), `maxTokens=2000` | `902` (`5000-(2+4096)`) — asserted on the **anthropic** request `max_tokens` and the **bedrock** inferenceConfig resolver |
 | available underflows → floor | `contextWindow - used < 1` | `1` |
 
-_Wiring note (architectural, document per port): clamp affects the **request**
-only on the `streamSimple`/`buildBaseOptions` path. Upstream calls it for
-anthropic + bedrock (which fold thinking-budget re-fit
-`min(thinkingBudget, max(0, maxTokens - 1024))`); other providers' clamp lives
-only in `streamSimple`. rs-ai has no separate `streamSimple` layer, so it wires
-clamp into its anthropic + bedrock stream paths and exposes
-`clamp_max_tokens_to_context` as a public utility. Ports that DO mirror
-`streamSimple` should clamp there._
+_Wiring note (architectural, document per port): in upstream v0.80.3
+`buildBaseOptions(model, context, options, apiKey)` clamps
+`base.maxTokens = clamp(model, context, options?.maxTokens ?? model.maxTokens)`,
+and `streamSimple` feeds that into the inner stream for **all** providers, so the
+request param is defaulted + clamped for openai-completions, openai-responses
+(+azure), google, vertex, mistral, anthropic and bedrock (anthropic/bedrock also
+fold the thinking-budget re-fit `min(thinkingBudget, max(0, maxTokens - 1024))`).
+codex sends no max-tokens field. rs-ai has no separate `streamSimple` layer, so
+it folds default+clamp into every provider builder, matching each provider's
+inner gate (openai/responses truthy → omit a clamped 0; google/mistral
+`!== undefined` → always emit). The shared canon fixture (contextWindow=10000,
+`"x"*8000`, maxTokens=8000 → **3904**) is asserted on the openai-completions wire
+param (`openai_completions_empty_tools_test.rs`)._
 
 ### C. `Usage.reasoning` — `thinking_tokens` / `reasoning_tokens` mapping
 

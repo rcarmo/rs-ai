@@ -932,9 +932,13 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
         }
     }
 
-    // Upstream gates max_output_tokens on a truthy check, so a 0 is treated as unset.
-    if let Some(max) = opts.max_tokens.filter(|m| *m != 0) {
-        payload["max_output_tokens"] = json!(max);
+    // Fold streamSimple's buildBaseOptions cap: clamp(model, context,
+    // options?.maxTokens ?? model.maxTokens); the inner stream gates on truthiness.
+    let max_output = crate::simple_options::clamp_max_tokens_to_context(
+        model, context, opts.max_tokens.unwrap_or(model.max_tokens),
+    );
+    if max_output != 0 {
+        payload["max_output_tokens"] = json!(max_output);
     }
     if let Some(temp) = opts.temperature {
         payload["temperature"] = json!(temp);

@@ -18,12 +18,19 @@ Port: `rs-ai` (crate `rs-ai`), branch `main`, tag `v0.80.3`.
 >   crate (`src/retry.rs`; `src/retry_classify_test.rs`).
 > - **`estimate_context_tokens`** (`utils/estimate.ts`) public utility
 >   (`src/estimate.rs`; `src/estimate_test.rs`).
-> - **`clamp_max_tokens_to_context`** (`simple-options.ts`) wired into the
->   anthropic + bedrock stream paths (which fold `streamSimple`'s
->   `buildBaseOptions` clamp + thinking-budget re-fit `min(budget, max(0,
->   maxTokens-1024))`); other providers' clamp lives only in `streamSimple`,
->   which rs-ai does not implement (pre-existing architectural parity decision).
->   (`src/simple_options.rs`; `src/simple_options_test.rs`.)
+> - **`clamp_max_tokens_to_context`** (`simple-options.ts`) is folded into **every**
+>   provider's request path. Upstream v0.80.3 changed `buildBaseOptions` to
+>   `buildBaseOptions(model, context, options, apiKey)` and clamps
+>   `base.maxTokens = clampMaxTokensToContext(model, context, options?.maxTokens ?? model.maxTokens)`;
+>   `streamSimple` passes that defaulted+clamped cap into the inner stream, so the
+>   wire param ends up clamped for openai-completions, openai-responses (+azure),
+>   google, vertex, mistral, anthropic and bedrock. rs-ai has no separate
+>   `streamSimple` layer, so each builder defaults `maxTokens` to `model.maxTokens`
+>   and clamps it (matching each provider's inner gate: openai/responses use a
+>   truthy gate so a clamped 0 is omitted; google/mistral use `!== undefined` so
+>   the field is always emitted). codex sends no max-tokens field upstream, so it
+>   is a no-op. (`src/simple_options.rs`, `provider/{openai,responses,google,mistral,anthropic,bedrock}.rs`;
+>   `src/simple_options_test.rs`, `openai_completions_empty_tools_test.rs`.)
 > - **z.ai thinking** sends `{ type: "enabled", clear_thinking: false }`
 >   (`provider/openai.rs`; `openai_completions_tool_choice_test.rs`).
 > - **Provider error-body formatting** (`utils/error-body.ts`): `"{status}: {body}"`

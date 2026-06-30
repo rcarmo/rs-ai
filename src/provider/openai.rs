@@ -767,9 +767,15 @@ pub(crate) fn build_payload(
         payload["prompt_cache_retention"] = json!("24h");
     }
 
-    // Upstream gates max tokens on a truthy check, so a 0 is treated as unset.
-    if let Some(max) = opts.max_tokens.filter(|m| *m != 0) {
-        payload[max_tokens_field] = json!(max);
+    // streamSimple's buildBaseOptions always supplies a clamped, defaulted cap:
+    // base.maxTokens = clampMaxTokensToContext(model, context, options?.maxTokens ?? model.maxTokens).
+    // The inner stream then gates on a truthy check (0 treated as unset). rs-ai has
+    // no separate streamSimple layer, so it folds that here for wire parity.
+    let max_tokens_value = crate::simple_options::clamp_max_tokens_to_context(
+        model, context, opts.max_tokens.unwrap_or(model.max_tokens),
+    );
+    if max_tokens_value != 0 {
+        payload[max_tokens_field] = json!(max_tokens_value);
     }
 
     if let Some(temp) = opts.temperature {
