@@ -1,8 +1,43 @@
 # Upstream parity gap analysis
 
-Canonical upstream: `@earendil-works/pi-ai` **v0.80.2**
+Canonical upstream: `@earendil-works/pi-ai` **v0.80.3**
 (`github.com/earendil-works/pi`, `packages/ai`, commit `ec6311b`).
-Port: `rs-ai` (crate `rs-ai`), branch `main`, tag `v0.80.2`.
+Port: `rs-ai` (crate `rs-ai`), branch `main`, tag `v0.80.3`.
+
+> **0.80.3 upgrade (feature release).** Audited the full 0.80.2→0.80.3 `api/`,
+> `utils/`, `index.js` and provider-catalog diff. Ported, with new tests:
+> - **`Usage.reasoning`** capture across providers: anthropic
+>   (`output_tokens_details.thinking_tokens`, optional), openai-completions
+>   (`completion_tokens_details.reasoning_tokens`, `|| 0`), openai-responses
+>   (`output_tokens_details.reasoning_tokens`, `|| 0`), google + vertex
+>   (`thoughtsTokenCount`, `|| 0`). bedrock/mistral/codex unchanged (no upstream
+>   breakdown). (`src/types.rs`, `simple_options.rs`, `provider/{anthropic,google}.rs`;
+>   tests in `simple_options_test.rs`, `anthropic_sse_parsing_test.rs`.)
+> - **`is_retryable_assistant_error`** + provider-error pattern matcher
+>   (`utils/retry.ts`), faithful `.?`/`d?` matcher without adding the `regex`
+>   crate (`src/retry.rs`; `src/retry_classify_test.rs`).
+> - **`estimate_context_tokens`** (`utils/estimate.ts`) public utility
+>   (`src/estimate.rs`; `src/estimate_test.rs`).
+> - **`clamp_max_tokens_to_context`** (`simple-options.ts`) wired into the
+>   anthropic + bedrock stream paths (which fold `streamSimple`'s
+>   `buildBaseOptions` clamp + thinking-budget re-fit `min(budget, max(0,
+>   maxTokens-1024))`); other providers' clamp lives only in `streamSimple`,
+>   which rs-ai does not implement (pre-existing architectural parity decision).
+>   (`src/simple_options.rs`; `src/simple_options_test.rs`.)
+> - **z.ai thinking** sends `{ type: "enabled", clear_thinking: false }`
+>   (`provider/openai.rs`; `openai_completions_tool_choice_test.rs`).
+> - **Provider error-body formatting** (`utils/error-body.ts`): `"{status}: {body}"`
+>   (branded `"OpenAI/Azure API error ({status}): {body}"` for responses), trimmed +
+>   truncated to 4000 chars. Applied to openai-completions / responses(+azure) /
+>   google / openrouter-images; codex (plain-Error path) + bedrock (SDK already
+>   folds body) are no-ops; anthropic/mistral are not consumers.
+>   (`src/error_body.rs`; `src/error_body_test.rs`.)
+> - **Model catalogs** regenerated to 0.80.3 (1029 models / 35 providers + 35 image
+>   models), incl. `anthropic/claude-sonnet-5` (`forceAdaptiveThinking`).
+>   (`src/models_generated.rs`, `src/images/models_generated.rs`.)
+>
+> Result: **722 tests, 0 failures, 0 clippy warnings** (each run verified 3× for
+> determinism).
 
 Status legend:
 - **DONE** — functional parity verified; behaviour + semantics match.
