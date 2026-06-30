@@ -78,4 +78,25 @@ mod tests {
         let out = generate_openrouter(&model(&s.uri(), vec!["image"]), &ctx(), &opts(captured)).await;
         assert!(out.output.iter().any(|o| matches!(o, ImageOutput::Image { .. })));
     }
+
+    /// Port of `provider-error-body-passthrough.test.ts`: a 403 from a gateway
+    /// carrying the real reason in the body must surface status + body, not an
+    /// opaque "403 status code (no body)" message. rs-ai reads `resp.text()`
+    /// directly, so we assert the real-transport contract via wiremock.
+    #[tokio::test]
+    async fn surfaces_http_body_reason_instead_of_opaque_sdk_message() {
+        let s = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(403)
+                .insert_header("content-type", "application/json")
+                .set_body_string(r#"{"error":"blocked by gateway WAF"}"#))
+            .mount(&s).await;
+        let captured: Arc<Mutex<Option<Value>>> = Arc::new(Mutex::new(None));
+        let out = generate_openrouter(&model(&s.uri(), vec!["image"]), &ctx(), &opts(captured)).await;
+        assert!(matches!(out.stop_reason, StopReason::Error));
+        let msg = out.error_message.expect("error message");
+        assert!(msg.contains("403"), "status surfaced: {msg}");
+        assert!(msg.contains("blocked by gateway WAF"), "body reason surfaced: {msg}");
+        assert_ne!(msg, "403 status code (no body)");
+    }
 }

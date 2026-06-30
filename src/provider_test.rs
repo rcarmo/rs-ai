@@ -2432,6 +2432,9 @@ mod tests {
         let m = err_msg.unwrap();
         assert!(m.contains("upstream error"));
         assert!(m.contains("quota exceeded"));
+        // Regression (provider-error-body-regression.test.ts): the OpenRouter
+        // metadata.raw extra must be appended exactly once, not double-printed.
+        assert_eq!(m.matches("quota exceeded").count(), 1, "raw metadata printed once: {m}");
     }
 
     #[tokio::test]

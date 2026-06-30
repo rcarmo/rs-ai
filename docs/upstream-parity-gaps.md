@@ -169,8 +169,20 @@ the credential-available providers above).
 >   openai-completions (`403: {body}`), openai-responses (branded
 >   `OpenAI API error (403): {body}`), and google (`403: {body}`) in
 >   `src/simulated_e2e_fixtures_test.rs`. Bedrock tier is covered by
->   `format_bedrock_error` already folding the SDK body; openrouter-images surfaces
->   `format_provider_http_error` on non-2xx (unit-covered in `error_body_test.rs`).
+>   `format_bedrock_error` already folding the SDK body; the OpenRouter
+>   `metadata.raw` non-double-print regression is asserted (count==1) in
+>   `provider_test.rs`; the openrouter-images passthrough case (403-with-body →
+>   status + body, not the opaque SDK message) is ported as a real-transport
+>   wiremock test in `src/openrouter_images_test.rs`.
+>
+> **Auditor re-confirm (source diff vs `/tmp/pi803-tests/`).** All `it()` cases in
+> the 4 upstream-new files were diffed against the rs-ai ports: retry (3 cases),
+> error-body formatProviderError compose/truncation (no-prefix `{status}: {body}`,
+> branded `{prefix} ({status}): {body}`, `... [truncated N chars]` — verified
+> against `error-body.ts` L112/L117), passthrough (openrouter-images), and the
+> 4 per-tier regression cases (completions body, metadata.raw no-double-print,
+> responses prefix, bedrock body-blind). normalizeProviderError SDK-extraction
+> stays N/A (auditor-accepted).
 >
 > Running totals after 0.80.3: **PORTED 43, SIMULATED-FIXTURE 9** (the original 7
 > + the 2 error-body regression files). The 0.80.2 table below is unchanged.
