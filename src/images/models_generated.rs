@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (34 image models, 1 provider)
-//! Generated: 2026-06-18T17:16:06.386699+00:00
+//! Source: image-models.generated.js (35 image models, 1 provider)
+//! Generated: 2026-06-30T22:25:04.714395+00:00
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
@@ -110,6 +110,16 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             cost: ModelCost { input: 0.5_f64, output: 3_f64, cache_read: 0_f64, cache_write: 0_f64 },
         },
         ImagesModel {
+            id: "google/gemini-3.1-flash-lite-image".into(),
+            name: "Google: Nano Banana 2 Lite (Gemini 3.1 Flash Lite Image)".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["image".into(), "text".into()],
+            output: vec!["image".into(), "text".into()],
+            cost: ModelCost { input: 0.25_f64, output: 1.5_f64, cache_read: 0_f64, cache_write: 0_f64 },
+        },
+        ImagesModel {
             id: "microsoft/mai-image-2.5".into(),
             name: "Microsoft: MAI-Image-2.5".into(),
             api: "openrouter-images".into(),
@@ -148,6 +158,36 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
             cost: ModelCost { input: 8_f64, output: 15_f64, cache_read: 2_f64, cache_write: 0_f64 },
+        },
+        ImagesModel {
+            id: "openai/gpt-image-1".into(),
+            name: "OpenAI: GPT Image 1".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost { input: 10_f64, output: 10_f64, cache_read: 1.25_f64, cache_write: 0_f64 },
+        },
+        ImagesModel {
+            id: "openai/gpt-image-1-mini".into(),
+            name: "OpenAI: GPT Image 1 Mini".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost { input: 2.5_f64, output: 2.5_f64, cache_read: 0.25_f64, cache_write: 0_f64 },
+        },
+        ImagesModel {
+            id: "openai/gpt-image-2".into(),
+            name: "OpenAI: GPT Image 2".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost { input: 8_f64, output: 8_f64, cache_read: 2_f64, cache_write: 0_f64 },
         },
         ImagesModel {
             id: "openrouter/auto".into(),
@@ -280,38 +320,8 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
         },
         ImagesModel {
-            id: "sourceful/riverflow-v2-fast-preview".into(),
-            name: "Sourceful: Riverflow V2 Fast Preview".into(),
-            api: "openrouter-images".into(),
-            provider: "openrouter".into(),
-            base_url: "https://openrouter.ai/api/v1".into(),
-            input: vec!["text".into(), "image".into()],
-            output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
-        },
-        ImagesModel {
-            id: "sourceful/riverflow-v2-max-preview".into(),
-            name: "Sourceful: Riverflow V2 Max Preview".into(),
-            api: "openrouter-images".into(),
-            provider: "openrouter".into(),
-            base_url: "https://openrouter.ai/api/v1".into(),
-            input: vec!["text".into(), "image".into()],
-            output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
-        },
-        ImagesModel {
             id: "sourceful/riverflow-v2-pro".into(),
             name: "Sourceful: Riverflow V2 Pro".into(),
-            api: "openrouter-images".into(),
-            provider: "openrouter".into(),
-            base_url: "https://openrouter.ai/api/v1".into(),
-            input: vec!["text".into(), "image".into()],
-            output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
-        },
-        ImagesModel {
-            id: "sourceful/riverflow-v2-standard-preview".into(),
-            name: "Sourceful: Riverflow V2 Standard Preview".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),

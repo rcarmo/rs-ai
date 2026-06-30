@@ -113,10 +113,12 @@ mod tests {
         }
     }
 
-    /// Mirrors the upstream regex /(opus[-.]4[-.][678]|sonnet[-.]4[-.]6|fable[-.]5)/.
+    /// Mirrors the upstream adaptive-thinking model families
+    /// (opus 4.6/4.7/4.8, sonnet 4.6, sonnet 5, fable 5).
     fn regex_lite_matches(id: &str) -> bool {
         let opus = id.contains("opus") && (id.contains("4-6") || id.contains("4.6") || id.contains("4-7") || id.contains("4.7") || id.contains("4-8") || id.contains("4.8"));
-        let sonnet = id.contains("sonnet") && (id.contains("4-6") || id.contains("4.6"));
+        let sonnet = id.contains("sonnet")
+            && (id.contains("4-6") || id.contains("4.6") || id.contains("sonnet-5") || id.contains("sonnet.5"));
         let fable = id.contains("fable-5") || id.contains("fable.5");
         opus || sonnet || fable
     }
