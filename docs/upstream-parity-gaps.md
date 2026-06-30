@@ -36,7 +36,29 @@ Port: `rs-ai` (crate `rs-ai`), branch `main`, tag `v0.80.3`.
 >   models), incl. `anthropic/claude-sonnet-5` (`forceAdaptiveThinking`).
 >   (`src/models_generated.rs`, `src/images/models_generated.rs`.)
 >
-> Result: **722 tests, 0 failures, 0 clippy warnings** (each run verified 3× for
+> **Deep source-diff follow-up (existing test files changed in 0.80.3).** A second
+> pass diffed the *contents* of unchanged-name upstream test files between
+> `v0.80.2`→`v0.80.3` and surfaced behaviours the dist sweep had buried inside
+> larger hunks. Ported, with tests:
+> - **`output_config: { effort }`** for adaptive-thinking (`forceAdaptiveThinking`)
+>   models — already emitted by anthropic (`provider/anthropic.rs`) and bedrock
+>   (`provider/bedrock.rs`); added `claude-sonnet-5` cases
+>   (`anthropic_thinking_disable_test.rs`, `bedrock_thinking_payload_test.rs`).
+>   Bedrock `supports_adaptive_thinking` matcher synced to upstream (adds
+>   `sonnet-5`).
+> - **Azure Microsoft Foundry** base-URL normalization: `.ai.azure.com` /
+>   `.services.ai.azure.com` hosts and the `/openai/v1/responses` path now
+>   normalize to `/openai/v1` (`provider/responses.rs`;
+>   `azure_openai_base_url_test.rs`).
+> - **Codex SSE header timeout**: a timed-out SSE GET now surfaces the exact
+>   `"Codex SSE response headers timed out after {ms}ms"` message when
+>   `timeout_ms` is set (`provider/codex.rs`; `openai_codex_stream_test.rs`).
+> - **z.ai reasoning_content replay**: confirmed the dynamic-signature replay
+>   (first thinking block's signature becomes the message key) keeps z.ai
+>   thinking `{enabled, clear_thinking:false}` — added the combined replay test
+>   (`openai_completions_tool_choice_test.rs`).
+>
+> Result: **733 tests, 0 failures, 0 clippy warnings** (each run verified 3× for
 > determinism).
 
 Status legend:

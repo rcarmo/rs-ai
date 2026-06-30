@@ -191,16 +191,26 @@ pub fn stream_codex<'a>(
                     }
                 }
                 let mut req = req.json(&payload);
-                if let Some(ms) = opts.timeout_ms {
+                let header_timeout_ms = opts.timeout_ms;
+                if let Some(ms) = header_timeout_ms {
                     req = req.timeout(std::time::Duration::from_millis(ms));
                 }
                 let resp = req.send().await;
                 let resp = match resp {
                     Ok(r) => r,
                     Err(e) => {
+                        // Mirror upstream's SSE header-timeout: when the response headers do
+                        // not arrive within the configured HTTP timeout, surface the exact
+                        // `Codex SSE response headers timed out after {ms}ms` message.
+                        let err: Box<dyn std::error::Error + Send + Sync> = match header_timeout_ms {
+                            Some(ms) if e.is_timeout() => {
+                                format!("Codex SSE response headers timed out after {ms}ms").into()
+                            }
+                            _ => Box::new(e),
+                        };
                         yield Event::Error {
                             reason: StopReason::Error,
-                            error: Arc::from(Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
+                            error: Arc::from(err),
                             message: None,
                         };
                         return;

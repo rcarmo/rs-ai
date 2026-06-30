@@ -362,7 +362,7 @@ fn bedrock_model_match_candidates(model: &Model) -> Vec<String> {
 pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
     bedrock_model_match_candidates(model).iter().any(|s| {
         s.contains("opus-4-6") || s.contains("opus-4-7") || s.contains("opus-4-8")
-            || s.contains("sonnet-4-6") || s.contains("fable-5")
+            || s.contains("sonnet-4-6") || s.contains("sonnet-5") || s.contains("fable-5")
     })
 }
 

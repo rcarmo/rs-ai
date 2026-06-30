@@ -69,6 +69,14 @@ mod tests {
     }
 
     #[test]
+    fn uses_adaptive_thinking_for_claude_sonnet_5_when_reasoning_enabled() {
+        // v0.80.3: claude-sonnet-5 ships compat.forceAdaptiveThinking=true.
+        let p = payload("claude-sonnet-5", Some(ThinkingLevel::High));
+        assert_eq!(p["thinking"], json!({"type": "adaptive", "display": "summarized"}));
+        assert_eq!(p["output_config"], json!({"effort": "high"}));
+    }
+
+    #[test]
     fn maps_xhigh_reasoning_to_effort_xhigh_for_claude_opus_4_8() {
         let p = payload("claude-opus-4-8", Some(ThinkingLevel::XHigh));
         assert_eq!(p["thinking"], json!({"type": "adaptive", "display": "summarized"}));

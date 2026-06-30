@@ -102,6 +102,24 @@ mod tests {
         );
     }
 
+    // --- v0.80.3: Microsoft Foundry (.ai.azure.com) normalization ---
+
+    #[test]
+    fn normalizes_microsoft_foundry_root_endpoints_to_openai_v1() {
+        assert_eq!(
+            normalize_azure_base_url("https://marc-quicktests-resource.ai.azure.com"),
+            Ok("https://marc-quicktests-resource.ai.azure.com/openai/v1".to_string())
+        );
+    }
+
+    #[test]
+    fn normalizes_foundry_openai_v1_responses_to_openai_v1() {
+        assert_eq!(
+            normalize_azure_base_url("https://my-resource.services.ai.azure.com/openai/v1/responses"),
+            Ok("https://my-resource.services.ai.azure.com/openai/v1".to_string())
+        );
+    }
+
     #[test]
     fn preserves_openai_v1_endpoints() {
         assert_eq!(

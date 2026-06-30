@@ -38,6 +38,16 @@ mod tests {
     }
 
     #[test]
+    fn uses_adaptive_thinking_for_claude_sonnet_5_when_reasoning_enabled() {
+        // v0.80.3: bedrock global.anthropic.claude-sonnet-5 ships adaptive thinking.
+        let m = get_model("amazon-bedrock", "global.anthropic.claude-sonnet-5").unwrap();
+        let f = fields(&m, ThinkingLevel::High);
+        assert_eq!(f["thinking"], json!({"type": "adaptive", "display": "summarized"}));
+        assert_eq!(f["output_config"], json!({"effort": "high"}));
+        assert!(f.get("anthropic_beta").is_none());
+    }
+
+    #[test]
     fn uses_adaptive_thinking_for_claude_fable_5_when_reasoning_enabled() {
         let m = get_model("amazon-bedrock", "global.anthropic.claude-fable-5").unwrap();
         let f = fields(&m, ThinkingLevel::High);

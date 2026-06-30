@@ -140,6 +140,56 @@ mod tests {
     }
 
     #[test]
+    fn preserves_zai_thinking_when_replaying_reasoning_content() {
+        // v0.80.3: a replayed assistant thinking block serializes as `reasoning_content`
+        // and the z.ai thinking payload stays `{enabled, clear_thinking:false}`.
+        let mut thinking_args = std::collections::HashMap::new();
+        thinking_args.insert("path".to_string(), json!("README.md"));
+        let assistant = Message {
+            role: Role::Assistant,
+            content: vec![
+                ContentBlock::Thinking {
+                    thinking: "prior reasoning".into(),
+                    thinking_signature: Some("reasoning_content".into()),
+                    redacted: false,
+                },
+                ContentBlock::ToolCall {
+                    id: "call_1".into(), name: "read".into(),
+                    arguments: thinking_args, thought_signature: None,
+                },
+            ],
+            timestamp: 0, api: Some("openai-completions".into()), provider: Some("zai".into()),
+            model: Some("glm-5.2".into()), response_id: None,
+            response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: None, error_message: None,
+            tool_call_id: None, tool_name: None, is_error: false, details: None,
+        };
+        let tool_result = Message {
+            role: Role::ToolResult,
+            content: vec![ContentBlock::Text { text: "contents".into(), text_signature: None }],
+            timestamp: 0, api: None, provider: None, model: None, response_id: None,
+            response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: None, error_message: None,
+            tool_call_id: Some("call_1".into()), tool_name: Some("read".into()),
+            is_error: false, details: None,
+        };
+        let ctx = Context {
+            system_prompt: None, tools: Vec::new(),
+            messages: vec![
+                msg(Role::User, "Read README.md"),
+                assistant,
+                tool_result,
+                msg(Role::User, "Continue"),
+            ],
+        };
+        let p = payload(&cat("zai", "glm-5.2"), &ctx, &reasoning(ThinkingLevel::High));
+        let replayed = p["messages"].as_array().unwrap().iter()
+            .find(|m| m["role"] == json!("assistant")).expect("assistant message");
+        assert_eq!(replayed["reasoning_content"], json!("prior reasoning"));
+        assert_eq!(p["thinking"], json!({"type": "enabled", "clear_thinking": false}));
+    }
+
+    #[test]
     fn sends_thinking_disabled_for_opencode_go_kimi_when_off() {
         let p = payload(&cat("opencode-go", "kimi-k2.6"), &user_ctx(), &StreamOptions::default());
         assert_eq!(p["thinking"], json!({"type": "disabled"}));

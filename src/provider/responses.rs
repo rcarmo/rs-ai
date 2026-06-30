@@ -41,9 +41,14 @@ pub(crate) fn normalize_azure_base_url(base: &str) -> Result<String, String> {
         .map_err(|_| format!("Invalid Azure OpenAI base URL: {base}"))?;
     let host = url.host_str().unwrap_or("").to_string();
     let is_azure_host = host.ends_with(".openai.azure.com")
-        || host.ends_with(".cognitiveservices.azure.com");
+        || host.ends_with(".cognitiveservices.azure.com")
+        || host.ends_with(".ai.azure.com");
     let normalized_path = url.path().trim_end_matches('/').to_string();
-    if is_azure_host && (normalized_path.is_empty() || normalized_path == "/openai") {
+    if is_azure_host
+        && (normalized_path.is_empty()
+            || normalized_path == "/openai"
+            || normalized_path == "/openai/v1/responses")
+    {
         url.set_path("/openai/v1");
         url.set_query(None);
     }

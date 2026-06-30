@@ -85,6 +85,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn sse_header_timeout_surfaces_codex_message() {
+        // v0.80.3: when response headers do not arrive within the configured HTTP
+        // timeout, surface `Codex SSE response headers timed out after {ms}ms`.
+        use std::time::Duration;
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200)
+                .insert_header("content-type", "text/event-stream")
+                .set_delay(Duration::from_secs(30))
+                .set_body_string(COMPLETED_SSE))
+            .mount(&server).await;
+        let model = codex_model(&server.uri());
+        let c = ctx();
+        let o = StreamOptions { transport: Some(Transport::Sse), timeout_ms: Some(10), ..Default::default() };
+        let mut stream = stream_codex(&model, &c, &o);
+        let mut err: Option<String> = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+        }
+        assert_eq!(err.as_deref(), Some("Codex SSE response headers timed out after 10ms"));
+    }
+
+    #[tokio::test]
     async fn maps_response_incomplete_to_length() {
         let sse = concat!(
             "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Hi\"}\n\n",
