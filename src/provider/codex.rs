@@ -618,7 +618,7 @@ impl CodexWsState {
                         let output = usage.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
                         let total = usage.get("total_tokens").and_then(|v| v.as_u64()).unwrap_or((input + output + cached) as u64) as u32;
                         let mut u = Usage {
-                            input, output, cache_read: cached, cache_write: 0, cache_write_1h: None, total_tokens: total, cost: Default::default(),
+                            input, output, cache_read: cached, cache_write: 0, cache_write_1h: None, reasoning: None, total_tokens: total, cost: Default::default(),
                         };
                         let m = 1_000_000.0;
                         u.cost = crate::types::CostBreakdown {

@@ -584,7 +584,7 @@ fn mistral_parse_usage(usage: &Value, model: &Model) -> crate::types::Usage {
         .unwrap_or(input + completion + cached);
     let mut u = crate::types::Usage {
         input, output: completion, cache_read: cached, cache_write: 0,
-        cache_write_1h: None, total_tokens: total, cost: Default::default(),
+        cache_write_1h: None, reasoning: None, total_tokens: total, cost: Default::default(),
     };
     u.cost = crate::simple_options::calculate_cost(model, &u);
     u

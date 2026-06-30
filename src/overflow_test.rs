@@ -34,7 +34,7 @@ mod tests {
             role: Role::Assistant, content: Vec::new(), timestamp: 0,
             api: Some("openai-completions".into()), provider: Some("xiaomi".into()), model: Some("mimo-v2.5-pro".into()),
             response_id: None, response_model: None, diagnostics: Vec::new(),
-            usage: Some(Usage { input, output, cache_read, cache_write: 0, cache_write_1h: None,
+            usage: Some(Usage { input, output, cache_read, cache_write: 0, cache_write_1h: None, reasoning: None,
                 total_tokens: input + cache_read + output, cost: Default::default() }),
             stop_reason: Some(StopReason::Length), error_message: None,
             tool_call_id: None, tool_name: None, is_error: false, details: None,

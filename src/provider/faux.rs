@@ -101,7 +101,7 @@ fn with_usage_estimate(
         cache_read,
         cache_write,
         cache_write_1h: None,
-        total_tokens: input + output + cache_read + cache_write,
+        reasoning: None, total_tokens: input + output + cache_read + cache_write,
         cost: CostBreakdown::default(),
     }
 }
@@ -282,7 +282,7 @@ pub fn stream_faux_text<'a>(
             usage: Some(Usage {
                 input: 10,
                 output: text.len() as u32 / 4,
-                total_tokens: 10 + text.len() as u32 / 4,
+                reasoning: None, total_tokens: 10 + text.len() as u32 / 4,
                 ..Default::default()
             }),
             stop_reason: None,

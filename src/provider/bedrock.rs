@@ -509,7 +509,9 @@ pub fn stream_bedrock<'a>(
             .or(opts.max_tokens)
             .or_else(|| {
                 if is_anthropic_claude_model(model) && model.max_tokens > 0 { Some(model.max_tokens) } else { None }
-            });
+            })
+            // Clamp the effective cap to the context window (mirrors clampMaxTokensToContext).
+            .map(|mt| crate::simple_options::clamp_max_tokens_to_context(model, context, mt));
         if inference_max_tokens.is_some() || opts.temperature.is_some() {
             let mut ic = aws_sdk_bedrockruntime::types::InferenceConfiguration::builder();
             if let Some(mt) = inference_max_tokens {
@@ -556,7 +558,13 @@ pub fn stream_bedrock<'a>(
         }
 
         // Enable thinking for Anthropic Claude models on Bedrock (additionalModelRequestFields).
-        if let Some((fields, _)) = thinking {
+        if let Some((mut fields, _)) = thinking {
+            // Re-fit the thinking budget under the context-clamped cap (mirrors upstream
+            // `min(thinkingBudget, max(0, maxTokens - 1024))`).
+            if let (Some(cap), Some(budget)) = (inference_max_tokens, fields["thinking"]["budget_tokens"].as_u64()) {
+                let refit = (budget as u32).min(cap.saturating_sub(1024));
+                fields["thinking"]["budget_tokens"] = serde_json::json!(refit);
+            }
             req = req.additional_model_request_fields(json_to_document(&fields));
         }
 

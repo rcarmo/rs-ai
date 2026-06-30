@@ -164,6 +164,10 @@ pub struct Usage {
     /// 1-hour cache-write tokens (Anthropic `ephemeral_1h_input_tokens`), charged at 2x base input.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cache_write_1h: Option<u32>,
+    /// Reasoning/thinking tokens when the provider reports them. Subset of `output`
+    /// (output already includes these). `None` when the provider exposes no breakdown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reasoning: Option<u32>,
     pub total_tokens: u32,
     pub cost: CostBreakdown,
 }

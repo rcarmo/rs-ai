@@ -746,7 +746,7 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
         "model": model.id,
         "messages": messages,
         "stream": true,
-        "max_tokens": opts.max_tokens.unwrap_or(model.max_tokens),
+        "max_tokens": crate::simple_options::clamp_max_tokens_to_context(model, context, opts.max_tokens.unwrap_or(model.max_tokens)),
     });
 
     let mut system_blocks: Vec<Value> = Vec::new();
@@ -799,6 +799,11 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
                 let (adj_max, budget) = crate::simple_options::adjust_max_tokens_for_thinking(
                     opts.max_tokens, model.max_tokens, &level, &budgets_map,
                 );
+                // Clamp the thinking-adjusted cap to the context window, then re-fit the
+                // thinking budget under it (mirrors upstream clampMaxTokensToContext +
+                // `min(thinkingBudget, max(0, maxTokens - 1024))`).
+                let adj_max = crate::simple_options::clamp_max_tokens_to_context(model, context, adj_max);
+                let budget = budget.min(adj_max.saturating_sub(1024));
                 payload["max_tokens"] = json!(adj_max);
                 // Mirror upstream `budget_tokens: options.thinkingBudgetTokens || 1024`: a
                 // computed budget of 0 (tiny max_tokens cap) clamps up to Anthropic's 1024
@@ -867,7 +872,7 @@ fn parse_anthropic_usage(usage: &Value) -> Usage {
         cache_read: usage.get("cache_read_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
         cache_write: usage.get("cache_creation_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
         cache_write_1h: Some(usage.pointer("/cache_creation/ephemeral_1h_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32),
-        total_tokens: 0,
+        reasoning: None, total_tokens: 0,
         cost: CostBreakdown::default(),
     }
 }

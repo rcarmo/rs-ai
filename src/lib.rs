@@ -28,6 +28,7 @@ pub mod transports;
 pub mod images;
 pub mod models_generated;
 pub mod transform;
+pub mod estimate;
 pub mod simple_options;
 pub mod retry;
 pub mod logger;
@@ -60,6 +61,7 @@ mod env_test;
 #[cfg(test)]
 mod compat_test;
 #[cfg(test)]
+mod estimate_test;
 mod simple_options_test;
 #[cfg(test)]
 mod harness_test;

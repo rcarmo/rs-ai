@@ -1,7 +1,24 @@
 //! Thinking level mapping and simple option helpers.
 
 use std::collections::HashMap;
-use crate::types::{Model, ThinkingLevel, ModelThinkingLevel};
+use crate::types::{Context, Model, ThinkingLevel, ModelThinkingLevel};
+
+/// Headroom reserved below the context window when clamping `max_tokens`.
+const CONTEXT_SAFETY_TOKENS: u32 = 4096;
+/// Floor for a clamped `max_tokens` so a request never asks for zero output.
+const MIN_MAX_TOKENS: u32 = 1;
+
+/// Clamp `max_tokens` so estimated input + reserved headroom fits the context
+/// window (port of upstream `clampMaxTokensToContext`, v0.80.3). Models with an
+/// unknown context window (`<= 0`) only floor at [`MIN_MAX_TOKENS`].
+pub fn clamp_max_tokens_to_context(model: &Model, context: &Context, max_tokens: u32) -> u32 {
+    if model.context_window == 0 {
+        return max_tokens.max(MIN_MAX_TOKENS);
+    }
+    let used = crate::estimate::estimate_context_tokens(context).tokens + CONTEXT_SAFETY_TOKENS;
+    let available = model.context_window.saturating_sub(used).max(MIN_MAX_TOKENS);
+    max_tokens.min(available)
+}
 
 /// Default thinking budget per level (tokens).
 pub fn default_thinking_budgets() -> HashMap<ThinkingLevel, u32> {
@@ -161,7 +178,7 @@ pub fn parse_openai_usage(raw: &serde_json::Value, model: &Model) -> crate::type
         cache_read,
         cache_write,
         cache_write_1h: None,
-        total_tokens: input + output + cache_read + cache_write,
+        reasoning: None, total_tokens: input + output + cache_read + cache_write,
         cost: Default::default(),
     };
     usage.cost = calculate_cost(model, &usage);
@@ -177,7 +194,7 @@ pub fn parse_responses_usage(raw: &serde_json::Value, model: &Model) -> crate::t
     let output = raw.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let total = raw.get("total_tokens").and_then(|v| v.as_u64()).unwrap_or((input + output + cached) as u64) as u32;
     let mut usage = crate::types::Usage {
-        input, output, cache_read: cached, cache_write: 0, cache_write_1h: None, total_tokens: total, cost: Default::default(),
+        input, output, cache_read: cached, cache_write: 0, cache_write_1h: None, reasoning: None, total_tokens: total, cost: Default::default(),
     };
     usage.cost = calculate_cost(model, &usage);
     usage

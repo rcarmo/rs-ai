@@ -200,7 +200,7 @@ mod tests {
         model.cost = ModelCost { input: 1.0, output: 2.0, cache_read: 0.5, cache_write: 0.0 };
         let base = crate::types::Usage {
             input: 1_000_000, output: 1_000_000, cache_read: 1_000_000, cache_write: 0,
-            cache_write_1h: None,
+            cache_write_1h: None, reasoning: None,
             total_tokens: 3_000_000, cost: Default::default(),
         };
         // flex halves the cost.
@@ -219,5 +219,27 @@ mod tests {
         u.cost = calculate_cost(&model, &u);
         apply_service_tier_pricing(&model, &mut u, None);
         assert!((u.cost.total - full_total).abs() < 1e-9);
+    }
+
+    #[test]
+    fn clamp_unknown_context_window_only_floors() {
+        let mut model = reasoning_model(None);
+        model.context_window = 0;
+        let ctx = crate::types::Context { system_prompt: None, tools: Vec::new(), messages: Vec::new() };
+        assert_eq!(clamp_max_tokens_to_context(&model, &ctx, 5000), 5000);
+        assert_eq!(clamp_max_tokens_to_context(&model, &ctx, 0), 1); // floored to MIN_MAX_TOKENS
+    }
+
+    #[test]
+    fn clamp_fits_max_tokens_under_context_window() {
+        let mut model = reasoning_model(None);
+        let ctx = crate::types::Context { system_prompt: None, tools: Vec::new(), messages: Vec::new() };
+        // empty context -> estimate.tokens = 0, available = cw - 4096.
+        model.context_window = 200000;
+        assert_eq!(clamp_max_tokens_to_context(&model, &ctx, 8192), 8192); // available 195904 >= 8192
+        model.context_window = 5000;
+        assert_eq!(clamp_max_tokens_to_context(&model, &ctx, 8192), 904); // available 5000-4096
+        model.context_window = 4096;
+        assert_eq!(clamp_max_tokens_to_context(&model, &ctx, 8192), 1); // available max(1, 0)
     }
 }
