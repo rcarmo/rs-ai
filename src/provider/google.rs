@@ -329,6 +329,8 @@ pub fn stream_google<'a>(
                         // candidatesTokenCount excludes reasoning tokens; add thoughtsTokenCount.
                         output: candidates + thoughts,
                         cache_read: cached,
+                        // Google reports reasoning tokens via thoughtsTokenCount (subset of output).
+                        reasoning: Some(thoughts),
                         total_tokens: usage.get("totalTokenCount").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
                         ..Default::default()
                     });

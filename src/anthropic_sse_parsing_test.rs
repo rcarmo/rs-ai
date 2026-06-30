@@ -124,4 +124,15 @@ mod tests {
         assert_eq!(m.content.len(), 1);
         assert!(matches!(&m.content[0], ContentBlock::Text { text, .. } if text == "Hello"));
     }
+
+    #[tokio::test]
+    async fn captures_reasoning_tokens_from_message_delta() {
+        let body = concat!(
+            "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_test\",\"usage\":{\"input_tokens\":12,\"output_tokens\":0}}}\n\n",
+            "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"input_tokens\":12,\"output_tokens\":40,\"output_tokens_details\":{\"thinking_tokens\":25}}}\n\n",
+            "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
+        ).to_string();
+        let m = run(anthropic("claude-haiku-4-5", "http://x"), user_ctx("Think.", Vec::new()), body).await;
+        assert_eq!(m.usage.as_ref().and_then(|u| u.reasoning), Some(25));
+    }
 }

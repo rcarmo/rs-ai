@@ -231,6 +231,31 @@ mod tests {
     }
 
     #[test]
+    fn openai_usage_captures_reasoning_tokens() {
+        let model = reasoning_model(None);
+        let raw = serde_json::json!({
+            "prompt_tokens": 100, "completion_tokens": 50,
+            "completion_tokens_details": { "reasoning_tokens": 30 }
+        });
+        assert_eq!(parse_openai_usage(&raw, &model).reasoning, Some(30));
+        // absent details -> Some(0) (mirrors `|| 0`).
+        let raw2 = serde_json::json!({ "prompt_tokens": 100, "completion_tokens": 50 });
+        assert_eq!(parse_openai_usage(&raw2, &model).reasoning, Some(0));
+    }
+
+    #[test]
+    fn responses_usage_captures_reasoning_tokens() {
+        let model = reasoning_model(None);
+        let raw = serde_json::json!({
+            "input_tokens": 100, "output_tokens": 50,
+            "output_tokens_details": { "reasoning_tokens": 12 }
+        });
+        assert_eq!(parse_responses_usage(&raw, &model).reasoning, Some(12));
+        let raw2 = serde_json::json!({ "input_tokens": 100, "output_tokens": 50 });
+        assert_eq!(parse_responses_usage(&raw2, &model).reasoning, Some(0));
+    }
+
+    #[test]
     fn clamp_fits_max_tokens_under_context_window() {
         let mut model = reasoning_model(None);
         let ctx = crate::types::Context { system_prompt: None, tools: Vec::new(), messages: Vec::new() };

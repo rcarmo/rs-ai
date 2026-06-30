@@ -421,6 +421,11 @@ pub fn stream_anthropic<'a>(
                                 if let Some(v) = usage.get("output_tokens").and_then(|v| v.as_u64()) {
                                     u.output = v as u32;
                                 }
+                                // Anthropic reports reasoning tokens in output_tokens_details.thinking_tokens
+                                // on the final message_delta usage (a subset of output_tokens).
+                                if let Some(v) = usage.pointer("/output_tokens_details/thinking_tokens").and_then(|v| v.as_u64()) {
+                                    u.reasoning = Some(v as u32);
+                                }
                                 if let Some(v) = usage.get("cache_read_input_tokens").and_then(|v| v.as_u64()) {
                                     u.cache_read = v as u32;
                                 }
@@ -872,7 +877,10 @@ fn parse_anthropic_usage(usage: &Value) -> Usage {
         cache_read: usage.get("cache_read_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
         cache_write: usage.get("cache_creation_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
         cache_write_1h: Some(usage.pointer("/cache_creation/ephemeral_1h_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32),
-        reasoning: None, total_tokens: 0,
+        // Anthropic reports reasoning tokens in `output_tokens_details.thinking_tokens`
+        // on the final message_delta usage (a subset of output_tokens).
+        reasoning: usage.pointer("/output_tokens_details/thinking_tokens").and_then(|v| v.as_u64()).map(|v| v as u32),
+        total_tokens: 0,
         cost: CostBreakdown::default(),
     }
 }

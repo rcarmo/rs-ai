@@ -178,7 +178,9 @@ pub fn parse_openai_usage(raw: &serde_json::Value, model: &Model) -> crate::type
         cache_read,
         cache_write,
         cache_write_1h: None,
-        reasoning: None, total_tokens: input + output + cache_read + cache_write,
+        // OpenAI reports reasoning tokens in completion_tokens_details (subset of output).
+        reasoning: Some(raw.pointer("/completion_tokens_details/reasoning_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32),
+        total_tokens: input + output + cache_read + cache_write,
         cost: Default::default(),
     };
     usage.cost = calculate_cost(model, &usage);
@@ -194,7 +196,9 @@ pub fn parse_responses_usage(raw: &serde_json::Value, model: &Model) -> crate::t
     let output = raw.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
     let total = raw.get("total_tokens").and_then(|v| v.as_u64()).unwrap_or((input + output + cached) as u64) as u32;
     let mut usage = crate::types::Usage {
-        input, output, cache_read: cached, cache_write: 0, cache_write_1h: None, reasoning: None, total_tokens: total, cost: Default::default(),
+        input, output, cache_read: cached, cache_write: 0, cache_write_1h: None,
+        reasoning: Some(raw.pointer("/output_tokens_details/reasoning_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32),
+        total_tokens: total, cost: Default::default(),
     };
     usage.cost = calculate_cost(model, &usage);
     usage
