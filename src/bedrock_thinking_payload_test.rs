@@ -4,9 +4,9 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::bedrock::bedrock_thinking_fields;
+    use crate::provider::bedrock::{bedrock_inference_max_tokens, bedrock_thinking_fields};
     use crate::registry::get_model;
-    use crate::types::{Model, StreamOptions, ThinkingLevel};
+    use crate::types::{Context, Model, StreamOptions, ThinkingLevel};
     use serde_json::{json, Value};
 
     fn fields(model: &Model, reasoning: ThinkingLevel) -> Value {
@@ -20,6 +20,30 @@ mod tests {
         m.id = "global.anthropic.claude-opus-4-8-v1".into();
         m.name = "Claude Opus 4.8 (Global)".into();
         m
+    }
+
+    #[test]
+    fn clamps_request_max_tokens_to_remaining_context() {
+        // Shared canon clamp boundary (docs/local-tests-shared.md §B):
+        // contextWindow=5000, "hello" (2 tokens), maxTokens=2000 -> 902.
+        // Asserted on the actual bedrock inferenceConfig max_tokens resolver.
+        let mut model = get_model("amazon-bedrock", "global.anthropic.claude-opus-4-6-v1").unwrap();
+        model.context_window = 5000;
+        model.max_tokens = 8192;
+        let ctx = Context {
+            system_prompt: None, tools: Vec::new(),
+            messages: vec![crate::types::Message {
+                role: crate::types::Role::User,
+                content: vec![crate::types::ContentBlock::Text { text: "hello".into(), text_signature: None }],
+                timestamp: 0, api: None, provider: None, model: None, response_id: None,
+                response_model: None, diagnostics: Vec::new(), usage: None,
+                stop_reason: None, error_message: None,
+                tool_call_id: None, tool_name: None, is_error: false, details: None,
+            }],
+        };
+        let opts = StreamOptions { max_tokens: Some(2000), ..Default::default() };
+        // No thinking adjustment (reasoning not requested) -> caller cap is clamped.
+        assert_eq!(bedrock_inference_max_tokens(&model, &ctx, &opts, None), Some(902));
     }
 
     #[test]

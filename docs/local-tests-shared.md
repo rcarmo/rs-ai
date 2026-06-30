@@ -50,6 +50,7 @@ rs-ai: `src/simple_options.rs`, `src/simple_options_test.rs`.
 | unknown window floors to MIN | `contextWindow=0`, `maxTokens=0` | `1` |
 | room available, request fits | `contextWindow=200000`, small ctx, `maxTokens=8192` | `8192` (unchanged) |
 | request exceeds available → clamp down | `contextWindow=10000`, `used` s.t. available `< maxTokens` | `available` |
+| **canon request-path boundary** | `contextWindow=5000`, `"hello"` (2 tokens), `maxTokens=2000` | `902` (`5000-(2+4096)`) — asserted on the **anthropic** request `max_tokens` and the **bedrock** inferenceConfig resolver |
 | available underflows → floor | `contextWindow - used < 1` | `1` |
 
 _Wiring note (architectural, document per port): clamp affects the **request**

@@ -374,6 +374,24 @@ fn bedrock_supports_native_xhigh_effort(model: &Model) -> bool {
     })
 }
 
+/// Resolve the Bedrock inference-config `max_tokens` (mirrors stream's inferenceConfig):
+/// thinking-adjusted cap, else caller cap, else the model cap for Claude; clamped to the
+/// context window via `clampMaxTokensToContext`. `thinking_max` is the optional thinking-
+/// adjusted cap from `bedrock_thinking_fields`.
+pub(crate) fn bedrock_inference_max_tokens(
+    model: &Model,
+    context: &Context,
+    opts: &StreamOptions,
+    thinking_max: Option<u32>,
+) -> Option<u32> {
+    thinking_max
+        .or(opts.max_tokens)
+        .or_else(|| {
+            if is_anthropic_claude_model(model) && model.max_tokens > 0 { Some(model.max_tokens) } else { None }
+        })
+        .map(|mt| crate::simple_options::clamp_max_tokens_to_context(model, context, mt))
+}
+
 /// Build the Bedrock `additionalModelRequestFields` thinking config for Anthropic
 /// Claude models (mirrors buildAdditionalModelRequestFields).
 pub(crate) fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde_json::Value, Option<u32>)> {
@@ -505,13 +523,12 @@ pub fn stream_bedrock<'a>(
         let thinking = bedrock_thinking_fields(model, opts);
         // Inference config: max output tokens (adjusted for thinking when applicable, else the
         // caller cap, else the model cap for Claude) and temperature (mirrors inferenceConfig).
-        let inference_max_tokens = thinking.as_ref().and_then(|(_, m)| *m)
-            .or(opts.max_tokens)
-            .or_else(|| {
-                if is_anthropic_claude_model(model) && model.max_tokens > 0 { Some(model.max_tokens) } else { None }
-            })
-            // Clamp the effective cap to the context window (mirrors clampMaxTokensToContext).
-            .map(|mt| crate::simple_options::clamp_max_tokens_to_context(model, context, mt));
+        let inference_max_tokens = bedrock_inference_max_tokens(
+            model,
+            context,
+            opts,
+            thinking.as_ref().and_then(|(_, m)| *m),
+        );
         if inference_max_tokens.is_some() || opts.temperature.is_some() {
             let mut ic = aws_sdk_bedrockruntime::types::InferenceConfiguration::builder();
             if let Some(mt) = inference_max_tokens {

@@ -58,7 +58,7 @@ Port: `rs-ai` (crate `rs-ai`), branch `main`, tag `v0.80.3`.
 >   thinking `{enabled, clear_thinking:false}` — added the combined replay test
 >   (`openai_completions_tool_choice_test.rs`).
 >
-> Result: **733 tests, 0 failures, 0 clippy warnings** (each run verified 3× for
+> Result: **735 tests, 0 failures, 0 clippy warnings** (each run verified 3× for
 > determinism).
 
 Status legend:
