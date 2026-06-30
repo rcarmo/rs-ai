@@ -91,7 +91,7 @@ pub fn stream_openai<'a>(
             yield Event::Error {
                 reason: StopReason::Error,
                 error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                    format!("HTTP {}: {}", status, body),
+                    crate::error_body::format_provider_http_error(status, &body, None),
                 )),
                 message: None,
             };

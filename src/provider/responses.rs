@@ -280,10 +280,13 @@ fn stream_responses_inner<'a>(
 
         if !resp.status().is_success() {
             let body = resp.text().await.unwrap_or_default();
+            // openai-responses brands errors "OpenAI API error"; azure-openai-responses
+            // brands "Azure OpenAI API error" (mirrors formatProviderError prefixes).
+            let prefix = if is_azure { "Azure OpenAI API error" } else { "OpenAI API error" };
             yield Event::Error {
                 reason: StopReason::Error,
                 error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                    format!("HTTP {}: {}", status, body),
+                    crate::error_body::format_provider_http_error(status, &body, Some(prefix)),
                 )),
                 message: None,
             };

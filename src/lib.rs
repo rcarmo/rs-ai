@@ -28,6 +28,7 @@ pub mod transports;
 pub mod images;
 pub mod models_generated;
 pub mod transform;
+pub mod error_body;
 pub mod estimate;
 pub mod simple_options;
 pub mod retry;
@@ -74,6 +75,7 @@ mod coverage_test;
 #[cfg(test)]
 mod provider_retry_test;
 mod retry_classify_test;
+mod error_body_test;
 #[cfg(test)]
 mod extra_coverage_test;
 #[cfg(test)]

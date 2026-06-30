@@ -154,7 +154,7 @@ pub async fn generate_openrouter(
         if status >= 300 {
             let body_text = resp.text().await.unwrap_or_default();
             out.stop_reason = StopReason::Error;
-            out.error_message = Some(format!("HTTP {}: {}", status, body_text));
+            out.error_message = Some(crate::error_body::format_provider_http_error(status, &body_text, None));
             return out;
         }
 
