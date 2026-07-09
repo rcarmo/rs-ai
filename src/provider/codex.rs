@@ -22,6 +22,24 @@ fn compress_request_body_zstd(body_json: &str) -> Option<Vec<u8>> {
     zstd::stream::encode_all(body_json.as_bytes(), REQUEST_COMPRESSION_ZSTD_LEVEL).ok()
 }
 
+/// Maximum age of a cached Codex session WebSocket before it must be recycled
+/// (upstream `SESSION_WEBSOCKET_MAX_AGE_MS`, 55 minutes). The backend enforces a
+/// connection age limit; reusing a socket at/after this age risks a mid-stream
+/// close, so a fresh connection is opened instead.
+#[cfg(test)]
+pub(crate) const SESSION_WEBSOCKET_MAX_AGE_MS: u64 = 55 * 60 * 1000;
+
+/// Whether a cached session WebSocket opened at `created_at_ms` has reached the
+/// backend connection age limit at `now_ms` and must be recycled before reuse
+/// (mirrors upstream `isWebSocketSessionExpired`). rs-ai currently opens a fresh
+/// WebSocket per request (no live socket pool), so this invariant is always
+/// satisfied; the guard exists so any future socket-reuse path recycles a stale
+/// connection instead of sending on it.
+#[cfg(test)]
+pub(crate) fn codex_websocket_session_expired(created_at_ms: u64, now_ms: u64) -> bool {
+    now_ms.saturating_sub(created_at_ms) >= SESSION_WEBSOCKET_MAX_AGE_MS
+}
+
 /// Build the Codex User-Agent, mirroring upstream `pi (${os.platform()} ${os.release()}; ${os.arch()})`
 /// as closely as std allows. Platform/arch are mapped to Node's naming (darwin/win32, x64/arm64);
 /// the OS release is omitted (std exposes no portable release without a libc/uname dependency).

@@ -217,8 +217,12 @@ the credential-available providers above).
 >    decodes back to the payload. **WS connection-age recycling** (55-min
 >    `SESSION_WEBSOCKET_MAX_AGE_MS`, `connection_age_limit` close) is part of the
 >    upstream WS session-cache/pool, which rs-ai does not implement (fresh WS per
->    request); it stays inside the documented **WS-pooling** partial gap (file #92
->    `openai-codex-responses.ts`).
+>    request — so the socket is never older than one request). The recycle
+>    invariant is nonetheless encoded faithfully: `SESSION_WEBSOCKET_MAX_AGE_MS`
+>    (55 min) + `codex_websocket_session_expired(created_at, now)` with a test
+>    (older than 55 min → expired/fresh; younger → reusable), ready to gate any
+>    future socket-reuse path; the live pool stays inside the documented
+>    **WS-pooling** partial gap (file #92 `openai-codex-responses.ts`).
 > 2. **overflow DS4** — **PORTED** (`src/context.rs`, invariant-substring match; no
 >    regex crate). `src/overflow_test.rs`.
 > 3. **retry `524`/`socket connection was closed`/`ResourceExhausted`** — **PORTED**

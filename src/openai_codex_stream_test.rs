@@ -182,4 +182,20 @@ mod tests {
         let body: Value = serde_json::from_slice(&decoded).unwrap();
         assert_eq!(body["model"], serde_json::json!("gpt-5.5"));
     }
+
+    #[test]
+    fn recycles_cached_websocket_at_backend_connection_age_limit() {
+        // v0.80.5: a cached session WebSocket is recycled once its age reaches the
+        // backend connection age limit (SESSION_WEBSOCKET_MAX_AGE_MS = 55 min); a
+        // younger socket stays reusable.
+        use crate::provider::codex::{codex_websocket_session_expired, SESSION_WEBSOCKET_MAX_AGE_MS};
+        let now = 3_600_000_u64; // 60 min
+        // Older than 55 min -> expired (open a fresh connection).
+        let old_created = now - SESSION_WEBSOCKET_MAX_AGE_MS; // exactly 55 min old
+        assert!(codex_websocket_session_expired(old_created, now));
+        assert!(codex_websocket_session_expired(now - (56 * 60 * 1000), now));
+        // Younger than 55 min -> reusable.
+        assert!(!codex_websocket_session_expired(now - (54 * 60 * 1000), now));
+        assert!(!codex_websocket_session_expired(now, now));
+    }
 }
