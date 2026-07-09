@@ -11,6 +11,17 @@ use crate::provider::responses;
 use crate::transports::sse;
 use crate::types::*;
 
+/// zstd compression level for Codex SSE request bodies (upstream
+/// `REQUEST_COMPRESSION_ZSTD_LEVEL`). The Codex backend accepts zstd-compressed
+/// request bodies on the responses endpoint, matching the official Codex client.
+const REQUEST_COMPRESSION_ZSTD_LEVEL: i32 = 3;
+
+/// Returns the zstd-compressed body bytes, or `None` when compression fails.
+/// Callers fall back to sending the uncompressed JSON when this returns `None`.
+fn compress_request_body_zstd(body_json: &str) -> Option<Vec<u8>> {
+    zstd::stream::encode_all(body_json.as_bytes(), REQUEST_COMPRESSION_ZSTD_LEVEL).ok()
+}
+
 /// Build the Codex User-Agent, mirroring upstream `pi (${os.platform()} ${os.release()}; ${os.arch()})`
 /// as closely as std allows. Platform/arch are mapped to Node's naming (darwin/win32, x64/arm64);
 /// the OS release is omitted (std exposes no portable release without a libc/uname dependency).
@@ -173,7 +184,6 @@ pub fn stream_codex<'a>(
                 let client = crate::http_proxy::client_for_target(&url, None);
                 let mut req = client
                     .post(&url)
-                    .header("content-type", "application/json")
                     .header("accept", "text/event-stream")
                     .header("OpenAI-Beta", "responses=experimental")
                     .header("authorization", format!("Bearer {}", api_key))
@@ -190,7 +200,19 @@ pub fn stream_codex<'a>(
                         req = req.header(k, v);
                     }
                 }
-                let mut req = req.json(&payload);
+                // The Codex backend decodes `Content-Encoding: zstd` request bodies on
+                // the SSE responses endpoint (matching the official Codex client). Compress
+                // the body once at REQUEST_COMPRESSION_ZSTD_LEVEL; fall back to raw JSON if
+                // serialization or compression fails. The WebSocket transport above sends
+                // the uncompressed JSON frame.
+                let body_json = serde_json::to_string(&payload).unwrap_or_default();
+                let mut req = match compress_request_body_zstd(&body_json) {
+                    Some(compressed) => req
+                        .header("content-type", "application/json")
+                        .header("content-encoding", "zstd")
+                        .body(compressed),
+                    None => req.header("content-type", "application/json").body(body_json),
+                };
                 let header_timeout_ms = opts.timeout_ms;
                 if let Some(ms) = header_timeout_ms {
                     req = req.timeout(std::time::Duration::from_millis(ms));

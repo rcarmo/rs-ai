@@ -89,7 +89,7 @@ Status legend:
 | `google-shared.ts` | `src/provider/google.rs` | DONE | convert-tools, gemini3 unsigned tool-call, image tool-result routing, thinking signature. |
 | `google-vertex.ts` | `src/provider/google.rs` (+`mod.rs`) | DONE | Vertex request path ported from go-ai `buildStreamURL`/`resolveVertexProjectLocation`: project/location-scoped REST endpoint, `{location}` host substitution, GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT + GOOGLE_CLOUD_LOCATION env fallback (or StreamOptions.project/location), placeholder/ADC api-key handling. Shared `stream_google` decoder. |
 | `mistral-conversations.ts` | `src/provider/mistral.rs` | DONE | reasoning-mode, tool-schema, cached tokens, tool-id normalization — fully verified. |
-| `openai-codex-responses.ts` | `src/provider/codex.rs` | PARTIAL | WS + SSE transports; OAuth account-id from env; no WS pooling/idle cache. WS handshake headers fixed (Sec-WebSocket-Key etc.) + connection-limit retry-once added. |
+| `openai-codex-responses.ts` | `src/provider/codex.rs` | PARTIAL | WS + SSE transports; OAuth account-id from env; no WS pooling/idle cache (incl. 55-min connection-age recycling). WS handshake headers fixed (Sec-WebSocket-Key etc.) + connection-limit retry-once added. SSE request body zstd-compressed (level 3, `Content-Encoding: zstd`) matching the official Codex client. |
 | `openai-completions.ts` | `src/provider/openai.rs` | DONE | reasoning-details, tool-choice, response-model, retry, thinking-as-text, prompt-cache. |
 | `openai-prompt-cache.ts` | `src/prompt_cache.rs` | DONE | `clamp_openai_prompt_cache_key` (64 codepoints). |
 | `openai-responses-shared.ts` | `src/provider/responses.rs` | DONE | terminal-event enforcement, mapStopReason, foreign tool-call id, message-id. |
@@ -193,6 +193,51 @@ the credential-available providers above).
 >
 > Running totals after 0.80.3: **PORTED 43, SIMULATED-FIXTURE 9** (the original 7
 > + the 2 error-body regression files). The 0.80.2 table below is unchanged.
+
+> **0.80.5 inventory update** (`earendil-works/pi` `v0.80.3`→`v0.80.5`, commit
+> `cc62baa`, `packages/ai/test`). Denominator **90 → 92 test files** (+2 new, 0
+> removed). New files + rs-ai disposition:
+> - **`lax-message-content.test.ts`** — **PORTED**. Null/missing untyped
+>   user/assistant/toolResult `content` normalizes to an empty slice before
+>   conversion/image-downgrade. rs-ai does this at deserialization
+>   (`de_null_content_as_empty` in `src/types.rs`) so `transform_messages` relies
+>   on the type contract; `src/lax_message_content_test.rs` deserializes the
+>   null-content history and asserts every `content` is `[]` after transform
+>   (issues #6259, #6276).
+> - **`openai-responses-empty-tool-result.test.ts`** — **PORTED**. A blank
+>   text-only tool result (no images) serializes as `"(no tool output)"`, not the
+>   image placeholder. `src/openai_responses_empty_tool_result_test.rs`.
+>
+> In-place behavioral deltas (existing files), rs-ai disposition:
+> 1. **codex zstd request compression** — **PORTED (real zstd)**. Codex SSE
+>    responses body is zstd-compressed at level 3 (`REQUEST_COMPRESSION_ZSTD_LEVEL`)
+>    with `Content-Encoding: zstd` (`compress_request_body_zstd` in
+>    `src/provider/codex.rs`, `zstd` crate). `compresses_sse_request_body_with_zstd`
+>    asserts the captured request is really zstd-framed (magic `28 B5 2F FD`) and
+>    decodes back to the payload. **WS connection-age recycling** (55-min
+>    `SESSION_WEBSOCKET_MAX_AGE_MS`, `connection_age_limit` close) is part of the
+>    upstream WS session-cache/pool, which rs-ai does not implement (fresh WS per
+>    request); it stays inside the documented **WS-pooling** partial gap (file #92
+>    `openai-codex-responses.ts`).
+> 2. **overflow DS4** — **PORTED** (`src/context.rs`, invariant-substring match; no
+>    regex crate). `src/overflow_test.rs`.
+> 3. **retry `524`/`socket connection was closed`/`ResourceExhausted`** — **PORTED**
+>    (`src/retry.rs`, `src/retry_classify_test.rs`).
+> 4. **device-code wait-before-first-poll + slow_down interval** — **PORTED**
+>    (`src/oauth.rs`, `src/oauth_device_code_test.rs`).
+> 5. **openai-completions `"(no tool output)"` placeholder** — **PORTED**
+>    (`src/provider/openai.rs`, `src/openai_completions_tool_result_images_test.rs`
+>    + `src/provider_test.rs`).
+> 6. **Catalog regen v0.80.5** — **DONE**. `src/models_generated.rs` = **1059
+>    models / 35 providers** (matches go-ai); `src/images/models_generated.rs` = 35
+>    image models / 1 provider. Catalog-driven test deltas ported: supports-xhigh
+>    (gpt-5.6 codex/openai variants), xiaomi (mimo-v2-omni API-billing-only),
+>    fireworks (GLM 5.2 Fast mirrors GLM 5.2 config). `openai-responses-copilot-provider`
+>    / `openai-responses-tool-result-images` deltas were whitespace/assertion-helper
+>    refactors only (`isResponsePayload` → `Array.isArray(input)`), already covered.
+>
+> Running totals after 0.80.5: **PORTED 46, SIMULATED-FIXTURE 9**. Denominator **92**.
+> **748 tests, 0 failures, 0 clippy warnings.**
 
 _Total **87** upstream test files (0.80.2 snapshot; see 0.80.3 update above → 90). **Final classification (Rui's ruling: "we test with what we have. No keys, no tests" — no record-replay/mock harness, no skip-only wrappers, no fabrication):**_
 

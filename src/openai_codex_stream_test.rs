@@ -73,8 +73,18 @@ mod tests {
         let reqs = server.received_requests().await.unwrap();
         let req = reqs.last().unwrap();
         let headers = req.headers.iter().map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string())).collect();
-        let body: Value = serde_json::from_slice(&req.body).unwrap();
+        let body: Value = decode_request_body(req.headers.get("content-encoding").and_then(|v| v.to_str().ok()), &req.body);
         (text, reason, headers, body)
+    }
+
+    /// Decode a captured Codex SSE request body, decompressing zstd frames.
+    fn decode_request_body(content_encoding: Option<&str>, body: &[u8]) -> Value {
+        let raw = if content_encoding == Some("zstd") {
+            zstd::stream::decode_all(body).expect("body is a valid zstd frame")
+        } else {
+            body.to_vec()
+        };
+        serde_json::from_slice(&raw).unwrap()
     }
 
     #[tokio::test]
@@ -141,5 +151,35 @@ mod tests {
         assert!(!h.contains_key("session-id"));
         assert!(!h.contains_key("x-client-request-id"));
         assert!(b.get("prompt_cache_key").is_none());
+    }
+
+    #[tokio::test]
+    async fn compresses_sse_request_body_with_zstd() {
+        // v0.80.5: the Codex SSE responses request body is zstd-compressed
+        // (Content-Encoding: zstd), matching the official Codex client. Assert the
+        // captured request is really zstd-framed and decodes back to the payload.
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(COMPLETED_SSE))
+            .mount(&server).await;
+        let model = codex_model(&server.uri());
+        let c = ctx();
+        let o = StreamOptions { transport: Some(Transport::Sse), ..Default::default() };
+        let mut stream = stream_codex(&model, &c, &o);
+        while stream.next().await.is_some() {}
+
+        let reqs = server.received_requests().await.unwrap();
+        let req = reqs.last().unwrap();
+        assert_eq!(
+            req.headers.get("content-encoding").and_then(|v| v.to_str().ok()),
+            Some("zstd"),
+            "content-encoding must be zstd"
+        );
+        // zstd magic number: 0x28 0xB5 0x2F 0xFD (little-endian 0xFD2FB528).
+        assert_eq!(&req.body[0..4], &[0x28, 0xB5, 0x2F, 0xFD], "body must be a zstd frame");
+        // The frame decompresses back to the JSON payload with the expected model.
+        let decoded = zstd::stream::decode_all(&req.body[..]).expect("valid zstd frame");
+        let body: Value = serde_json::from_slice(&decoded).unwrap();
+        assert_eq!(body["model"], serde_json::json!("gpt-5.5"));
     }
 }
