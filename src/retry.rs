@@ -322,6 +322,7 @@ const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Plain("502"),
     ErrPat::Plain("503"),
     ErrPat::Plain("504"),
+    ErrPat::Plain("524"),
     ErrPat::Gap(&["service", "unavailable"]),
     ErrPat::Gap(&["server", "error"]),
     ErrPat::Gap(&["internal", "error"]),
@@ -335,6 +336,7 @@ const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Gap(&["upstream", "connect"]),
     ErrPat::Plain("reset before headers"),
     ErrPat::Plain("socket hang up"),
+    ErrPat::Plain("socket connection was closed"),
     // `timed? out` — optional literal `d`.
     ErrPat::Plain("timed out"),
     ErrPat::Plain("time out"),
@@ -349,6 +351,8 @@ const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Plain("you can retry your request"),
     ErrPat::Plain("try your request again"),
     ErrPat::Plain("please retry your request"),
+    // gRPC based providers (e.g. NVIDIA NIM).
+    ErrPat::Plain("resourceexhausted"),
 ];
 
 /// Classify whether a failed assistant message looks like a transient provider

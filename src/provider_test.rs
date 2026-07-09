@@ -3086,8 +3086,8 @@ mod tests {
     #[test]
     fn test_responses_empty_tool_result_falls_back_to_placeholder() {
         use crate::provider::responses::build_responses_payload;
-        // A tool result with no text and no image should emit the upstream
-        // "(see attached image)" placeholder, not an empty string.
+        // A tool result with no text and no image emits the upstream
+        // "(no tool output)" placeholder (v0.80.5), not an empty string.
         let model = test_model("openai-responses", "openai", "https://example.com");
         let tool_result = Message {
             role: Role::ToolResult,
@@ -3101,7 +3101,7 @@ mod tests {
         let payload = build_responses_payload(&model, &ctx, &StreamOptions::default());
         let item = payload["input"].as_array().unwrap().iter()
             .find(|i| i["type"] == "function_call_output").unwrap();
-        assert_eq!(item["output"], "(see attached image)");
+        assert_eq!(item["output"], "(no tool output)");
     }
 
     #[test]

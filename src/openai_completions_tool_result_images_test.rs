@@ -79,4 +79,49 @@ mod tests {
             .count();
         assert_eq!(image_parts, 2);
     }
+
+    #[test]
+    fn uses_no_tool_output_placeholder_for_empty_tool_results_without_images() {
+        // v0.80.5: a blank text-only tool result (no images) serializes as the
+        // "(no tool output)" placeholder, not the image placeholder.
+        let model = image_model();
+        let assistant = Message {
+            role: Role::Assistant,
+            content: vec![tool_call("tool-1", "noop")],
+            timestamp: 0,
+            api: Some(model.api.clone()), provider: Some(model.provider.clone()), model: Some(model.id.clone()),
+            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: Some(StopReason::ToolUse), error_message: None,
+            tool_call_id: None, tool_name: None, is_error: false, details: None,
+        };
+        let empty_tool_result = Message {
+            role: Role::ToolResult,
+            content: vec![ContentBlock::Text { text: "".into(), text_signature: None }],
+            timestamp: 1, api: None, provider: None, model: None, response_id: None,
+            response_model: None, diagnostics: Vec::new(), usage: None,
+            stop_reason: None, error_message: None,
+            tool_call_id: Some("tool-1".into()), tool_name: Some("read".into()), is_error: false, details: None,
+        };
+        let ctx = Context {
+            system_prompt: None, tools: Vec::new(),
+            messages: vec![
+                Message {
+                    role: Role::User, content: vec![ContentBlock::Text { text: "Run it".into(), text_signature: None }],
+                    timestamp: 0, api: None, provider: None, model: None, response_id: None,
+                    response_model: None, diagnostics: Vec::new(), usage: None,
+                    stop_reason: None, error_message: None,
+                    tool_call_id: None, tool_name: None, is_error: false, details: None,
+                },
+                assistant,
+                empty_tool_result,
+            ],
+        };
+
+        let payload = build_payload(&model, &ctx, &StreamOptions::default(), &detect_compat(&model));
+        let messages = payload["messages"].as_array().unwrap();
+        let tool_msg = messages.iter().find(|m| m["role"].as_str() == Some("tool")).expect("a tool message");
+        let content = tool_msg["content"].as_str().expect("string tool content");
+        assert_eq!(content, "(no tool output)");
+        assert!(!content.contains("see attached image"));
+    }
 }

@@ -26,6 +26,8 @@ fn supports_bedrock_prompt_caching(model: &Model) -> bool {
         return std::env::var("AWS_BEDROCK_FORCE_CACHE").ok().as_deref() == Some("1");
     }
     any("-4-") || any("claude-3-7-sonnet") || any("claude-3-5-haiku")
+        // v0.80.5: Claude 5 models (fable-5, sonnet-5) support prompt caching.
+        || any("fable-5") || any("sonnet-5")
 }
 
 /// Build a Bedrock cache-point block with an optional 1h TTL for long retention.

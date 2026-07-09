@@ -205,11 +205,23 @@ pub struct ModelCost {
     pub cache_write: f64,
 }
 
+/// Deserialize `content`, treating `null`/missing as an empty vec (v0.80.5
+/// lax-message-content normalization).
+fn de_null_content_as_empty<'de, D>(deserializer: D) -> Result<Vec<ContentBlock>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Option::<Vec<ContentBlock>>::deserialize(deserializer)?.unwrap_or_default())
+}
+
 /// A conversation message.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Message {
     pub role: Role,
+    // v0.80.5: normalize null/missing content from untyped callers (custom tools,
+    // hand-built histories, old session files) to an empty vec instead of crashing.
+    #[serde(default, deserialize_with = "de_null_content_as_empty")]
     pub content: Vec<ContentBlock>,
     #[serde(default)]
     pub timestamp: i64,

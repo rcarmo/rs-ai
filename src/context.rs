@@ -43,6 +43,7 @@ pub fn is_context_overflow(msg: &Message, model: &Model) -> bool {
             "token limit exceeded",               // generic
             "too many tokens",                    // generic
             "input token count",                  // Google (with "exceeds the maximum")
+            "but the configured context size is", // DS4 server
         ];
         let is_non_overflow = NON_OVERFLOW.iter().any(|n| lower.contains(n));
         if !is_non_overflow {

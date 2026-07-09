@@ -575,7 +575,14 @@ pub(crate) fn build_payload(
                     _ => None,
                 }).collect::<Vec<_>>().join("\n");
                 let has_images = tr.content.iter().any(|b| matches!(b, ContentBlock::Image { .. }));
-                let content = if text_result.is_empty() { "(see attached image)".to_string() } else { text_result };
+                let content = if !text_result.is_empty() {
+                    text_result
+                } else if has_images {
+                    "(see attached image)".to_string()
+                } else {
+                    // v0.80.5: empty tool result with no images sends a placeholder.
+                    "(no tool output)".to_string()
+                };
                 let mut tm = json!({
                     "role": "tool",
                     "content": content,

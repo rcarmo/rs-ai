@@ -109,4 +109,17 @@ mod tests {
     fn ignores_length_stops_far_below_context() {
         assert!(!overflow(&length_message(100, 0, 0), 200000));
     }
+
+    #[test]
+    fn detects_ds4_configured_context_size_errors() {
+        // v0.80.5: DS4 server phrasing, with and without thousands separators.
+        assert!(overflow(
+            &error_message("400 Prompt has 256468 tokens, but the configured context size is 256000 tokens"),
+            256000,
+        ));
+        assert!(overflow(
+            &error_message("Prompt has 5,958,968 tokens, but the configured context size is 256,000 tokens"),
+            256000,
+        ));
+    }
 }

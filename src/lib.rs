@@ -122,6 +122,8 @@ mod models_runtime_auth_test;
 mod bedrock_images_models_test;
 #[cfg(test)]
 mod overflow_test;
+mod lax_message_content_test;
+mod openai_responses_empty_tool_result_test;
 #[cfg(test)]
 mod compat_env_test;
 #[cfg(test)]

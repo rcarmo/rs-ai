@@ -888,10 +888,10 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
                         "output": output,
                     }));
                 } else {
-                    // Mirror upstream: an empty (no-text) tool result falls back to a
-                    // placeholder rather than an empty string.
+                    // No image parts: empty tool text falls back to a placeholder.
+                    // v0.80.5 changed this from "(see attached image)" to "(no tool output)".
                     let output = if text_result.is_empty() {
-                        "(see attached image)".to_string()
+                        "(no tool output)".to_string()
                     } else {
                         text_result
                     };
@@ -934,11 +934,14 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
 
     // Fold streamSimple's buildBaseOptions cap: clamp(model, context,
     // options?.maxTokens ?? model.maxTokens); the inner stream gates on truthiness.
+    // v0.80.5: OpenAI Responses rejects max_output_tokens below 16 (#6265), so the
+    // emitted value is floored to OPENAI_RESPONSES_MIN_OUTPUT_TOKENS.
+    const OPENAI_RESPONSES_MIN_OUTPUT_TOKENS: u32 = 16;
     let max_output = crate::simple_options::clamp_max_tokens_to_context(
         model, context, opts.max_tokens.unwrap_or(model.max_tokens),
     );
     if max_output != 0 {
-        payload["max_output_tokens"] = json!(max_output);
+        payload["max_output_tokens"] = json!(max_output.max(OPENAI_RESPONSES_MIN_OUTPUT_TOKENS));
     }
     if let Some(temp) = opts.temperature {
         payload["temperature"] = json!(temp);

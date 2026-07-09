@@ -57,6 +57,10 @@ mod tests {
             "stream ended without a stop reason",
             "http2 request did not get a response",
             "you can retry your request",
+            // v0.80.5 additions.
+            "524 status code (no body)",
+            "The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()",
+            "ResourceExhausted: Worker local total request limit reached (288/48)",
         ] {
             assert!(
                 is_retryable_assistant_error(&err_msg(Some(text), Some(StopReason::Error))),

@@ -400,7 +400,8 @@ pub async fn start_github_device_flow_at(device_code_url: &str, client_id: &str)
 pub enum DevicePollStatus {
     Complete(String),
     Pending,
-    SlowDown,
+    /// `slow_down`; optional server-provided interval (seconds) from the response (v0.80.5).
+    SlowDown(Option<u64>),
     Failed(String),
 }
 
@@ -408,7 +409,9 @@ pub enum DevicePollStatus {
 /// (mirrors upstream `OAuthDeviceCodePollResult`).
 pub enum DevicePollOutcome<T> {
     Pending,
-    SlowDown,
+    /// `slow_down`; optional server-provided interval (seconds) overriding the
+    /// RFC 8628 §3.5 fixed increment (v0.80.5).
+    SlowDown(Option<u64>),
     Failed(String),
     Complete(T),
 }
@@ -429,6 +432,7 @@ const SLOW_DOWN_INTERVAL_INCREMENT_MS: u64 = 5000;
 pub async fn poll_oauth_device_code_flow<T, P, Fut>(
     interval_seconds: u64,
     expires_in_seconds: u64,
+    wait_before_first_poll: bool,
     mut poll: P,
     cancel: impl std::future::Future<Output = ()>,
 ) -> Result<T, String>
@@ -440,14 +444,31 @@ where
     let mut interval_ms = std::cmp::max(MINIMUM_INTERVAL_MS, interval_seconds.saturating_mul(1000));
     let mut slow_down_responses: u64 = 0;
     tokio::pin!(cancel);
+    // v0.80.5: optionally wait one interval before the first poll (GitHub Copilot).
+    if wait_before_first_poll {
+        let now = tokio::time::Instant::now();
+        if now < deadline {
+            let remaining = deadline - now;
+            let wait = std::cmp::min(std::time::Duration::from_millis(interval_ms), remaining);
+            tokio::select! {
+                _ = &mut cancel => return Err(CANCEL_MESSAGE.to_string()),
+                _ = tokio::time::sleep(wait) => {}
+            }
+        }
+    }
     loop {
         match poll().await {
             DevicePollOutcome::Complete(v) => return Ok(v),
             DevicePollOutcome::Failed(message) => return Err(message),
-            DevicePollOutcome::SlowDown => {
+            DevicePollOutcome::SlowDown(server_interval) => {
                 slow_down_responses += 1;
-                // RFC 8628 §3.5: apply this increase to this and all subsequent requests.
-                interval_ms = std::cmp::max(MINIMUM_INTERVAL_MS, interval_ms + SLOW_DOWN_INTERVAL_INCREMENT_MS);
+                // v0.80.5: trust the server-provided interval when present (GitHub reports
+                // the new required minimum in `interval`); otherwise apply RFC 8628 §3.5
+                // (+5s). Both clamp to a 1s minimum.
+                interval_ms = match server_interval {
+                    Some(s) if s > 0 => std::cmp::max(MINIMUM_INTERVAL_MS, s.saturating_mul(1000)),
+                    _ => std::cmp::max(MINIMUM_INTERVAL_MS, interval_ms + SLOW_DOWN_INTERVAL_INCREMENT_MS),
+                };
             }
             DevicePollOutcome::Pending => {}
         }
@@ -516,7 +537,9 @@ pub async fn poll_github_device_token_at(access_token_url: &str, client_id: &str
     if let Some(error) = data.get("error").and_then(|v| v.as_str()) {
         return match error {
             "authorization_pending" => DevicePollStatus::Pending,
-            "slow_down" => DevicePollStatus::SlowDown,
+            "slow_down" => DevicePollStatus::SlowDown(
+                data.get("interval").and_then(|v| v.as_u64()),
+            ),
             other => {
                 let desc = data.get("error_description").and_then(|v| v.as_str())
                     .map(|d| format!(": {d}")).unwrap_or_default();
@@ -707,7 +730,7 @@ mod tests {
         Mock::given(method("POST")).and(path("/t"))
             .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"error":"slow_down"}"#))
             .mount(&s2).await;
-        assert_eq!(poll_github_device_token_at(&format!("{}/t", s2.uri()), COPILOT_CLIENT_ID, "dc").await, DevicePollStatus::SlowDown);
+        assert_eq!(poll_github_device_token_at(&format!("{}/t", s2.uri()), COPILOT_CLIENT_ID, "dc").await, DevicePollStatus::SlowDown(None));
         // complete
         let s3 = MockServer::start().await;
         Mock::given(method("POST")).and(path("/t"))
