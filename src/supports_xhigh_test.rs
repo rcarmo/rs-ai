@@ -41,8 +41,15 @@ mod tests {
 
     #[test]
     fn includes_xhigh_for_codex_gpt_5_4_and_5_5() {
-        for id in ["gpt-5.4", "gpt-5.5"] {
+        for id in ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] {
             assert!(levels(&m("openai-codex", id)).iter().any(|l| l == "xhigh"), "model {id}");
+        }
+    }
+
+    #[test]
+    fn includes_xhigh_for_openai_gpt_5_6_models() {
+        for id in ["gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] {
+            assert!(levels(&m("openai", id)).iter().any(|l| l == "xhigh"), "model {id}");
         }
     }
 

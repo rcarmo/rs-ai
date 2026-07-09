@@ -65,14 +65,18 @@ mod tests {
 
     #[test]
     fn xiaomi_keeps_mimo_v2_flash_on_the_api_billing_provider() {
-        assert!(get_model("xiaomi", "mimo-v2-flash").is_some());
+        // v0.80.5: mimo-v2-flash and mimo-v2-omni stay on the API billing provider.
+        for id in ["mimo-v2-flash", "mimo-v2-omni"] {
+            assert!(get_model("xiaomi", id).is_some(), "xiaomi must keep {id}");
+        }
     }
 
     #[test]
     fn xiaomi_omits_mimo_v2_flash_from_token_plan_providers() {
         for provider in ["xiaomi-token-plan-cn", "xiaomi-token-plan-ams", "xiaomi-token-plan-sgp"] {
-            let has = list_models(Some(provider)).iter().any(|m| m.id == "mimo-v2-flash");
-            assert!(!has, "{provider} must omit mimo-v2-flash");
+            let ids: Vec<String> = list_models(Some(provider)).iter().map(|m| m.id.clone()).collect();
+            assert!(!ids.iter().any(|id| id == "mimo-v2-flash"), "{provider} must omit mimo-v2-flash");
+            assert!(!ids.iter().any(|id| id == "mimo-v2-omni"), "{provider} must omit mimo-v2-omni");
         }
     }
 }

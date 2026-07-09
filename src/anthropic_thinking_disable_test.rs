@@ -82,7 +82,7 @@ mod tests {
         // contextWindow=5000, "hello" (5 chars -> 2 tokens), maxTokens=2000.
         // used = 2 + CONTEXT_SAFETY_TOKENS(4096) = 4098; available = 5000-4098 = 902;
         // min(2000, 902) = 902. Asserted on the actual anthropic request param.
-        let mut model = anthropic("claude-3-haiku-20240307");
+        let mut model = anthropic("claude-haiku-4-5");
         model.reasoning = false; // isolate the clamp from thinking-budget adjustment
         model.context_window = 5000;
         model.max_tokens = 8192;

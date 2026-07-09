@@ -150,4 +150,15 @@ mod tests {
         let (body, _a) = capture(native(), StreamOptions::default()).await;
         assert_eq!(body["tools"][0]["eager_input_streaming"], json!(true));
     }
+
+    #[test]
+    fn aligns_glm_5_2_fast_with_glm_5_2_openai_compatible_config() {
+        // v0.80.5: the GLM 5.2 Fast router mirrors GLM 5.2's OpenAI-compatible config.
+        let base = get_model("fireworks", "accounts/fireworks/models/glm-5p2").expect("glm-5p2");
+        let fast = get_model("fireworks", "accounts/fireworks/routers/glm-5p2-fast").expect("glm-5p2-fast");
+        assert_eq!(fast.api, base.api);
+        assert_eq!(fast.base_url, base.base_url);
+        assert_eq!(fast.compat, base.compat);
+        assert_eq!(fast.thinking_level_map, base.thinking_level_map);
+    }
 }
