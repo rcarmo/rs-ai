@@ -563,6 +563,7 @@ fn stream_responses_inner<'a>(
                                 partial.response_id = Some(id.to_string());
                             }
                             // Upstream does not capture response.model into responseModel.
+                            backfill_reasoning_encrypted_content(&mut partial, response);
                             if let Some(usage) = response.get("usage") {
                                 let mut parsed = crate::simple_options::parse_responses_usage(usage, model);
                                 // Resolve the effective service tier (response value wins) and
@@ -684,6 +685,53 @@ fn stream_responses_inner<'a>(
             }
         }
     })
+}
+
+fn backfill_reasoning_encrypted_content(partial: &mut Message, response: &Value) {
+    let Some(output) = response.get("output").and_then(|v| v.as_array()) else {
+        return;
+    };
+    for completed in output
+        .iter()
+        .filter(|item| item.get("type").and_then(|v| v.as_str()) == Some("reasoning"))
+    {
+        let Some(completed_id) = completed.get("id").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        let Some(completed_encrypted) = completed.get("encrypted_content") else {
+            continue;
+        };
+        if completed_encrypted.is_null() {
+            continue;
+        }
+        for block in &mut partial.content {
+            let ContentBlock::Thinking {
+                thinking_signature: Some(sig),
+                ..
+            } = block
+            else {
+                continue;
+            };
+            let Ok(done_item) = serde_json::from_str::<Value>(sig) else {
+                continue;
+            };
+            if done_item.get("type").and_then(|v| v.as_str()) != Some("reasoning") {
+                continue;
+            }
+            if done_item.get("id").and_then(|v| v.as_str()) != Some(completed_id) {
+                continue;
+            }
+            if done_item
+                .get("encrypted_content")
+                .is_some_and(|v| !v.is_null())
+            {
+                continue;
+            }
+            let mut merged = done_item;
+            merged["encrypted_content"] = completed_encrypted.clone();
+            *sig = merged.to_string();
+        }
+    }
 }
 
 /// Encode an assistant text item id (+ optional phase) as a v1 text signature

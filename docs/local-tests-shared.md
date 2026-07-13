@@ -18,6 +18,12 @@ Status: **ADAPTED**. The Rust tests cover the upstream branches for `addedToolNa
 
 This is an upstream parity fixture, not counted as a local-only conformance test.
 
+## Current upstream test-for-test fixture: Azure Responses reasoning replay
+
+Source: upstream main `packages/ai/test/azure-openai-responses-reasoning-replay.test.ts` at `0e6909f050eeb15e8f6c05185511f3788357ddb3`. rs-ai adaptation: `src/azure_openai_responses_reasoning_replay_test.rs`.
+
+Status: **ADAPTED**. The two deterministic cases verify that completed-output `encrypted_content` backfill preserves `response.output_item.done` when it already included encrypted content, and uses terminal `response.completed.output` only when the done item omitted it.
+
 ## v0.80.3 conformance fixtures (for go-ai / swift-ai adoption)
 
 Upstream **0.80.3** feature release. Authoritative constants + truth-tables so

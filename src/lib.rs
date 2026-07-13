@@ -73,6 +73,8 @@ mod anthropic_tool_name_normalization_test;
 #[cfg(test)]
 mod azure_openai_base_url_test;
 #[cfg(test)]
+mod azure_openai_responses_reasoning_replay_test;
+#[cfg(test)]
 mod bedrock_coalesce_test;
 #[cfg(test)]
 mod bedrock_convert_messages_test;
