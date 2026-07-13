@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::simple_options::*;
-    use crate::types::{Model, ModelCost, ThinkingLevel, ModelThinkingLevel};
+    use crate::types::{Model, ModelCost, ModelThinkingLevel, ThinkingLevel};
     use std::collections::HashMap;
 
     fn reasoning_model(map: Option<HashMap<String, Option<String>>>) -> Model {
@@ -81,9 +81,7 @@ mod tests {
 
     #[test]
     fn test_map_thinking_level() {
-        let map = HashMap::from([
-            ("high".into(), Some("custom_value".into())),
-        ]);
+        let map = HashMap::from([("high".into(), Some("custom_value".into()))]);
         let model = reasoning_model(Some(map));
         let mapped = map_thinking_level(&model, &ModelThinkingLevel::High);
         assert_eq!(mapped, Some("custom_value".into()));
@@ -102,13 +100,17 @@ mod tests {
     #[test]
     fn test_clamp_reasoning() {
         assert_eq!(clamp_reasoning(&ThinkingLevel::XHigh), ThinkingLevel::High);
-        assert_eq!(clamp_reasoning(&ThinkingLevel::Medium), ThinkingLevel::Medium);
+        assert_eq!(
+            clamp_reasoning(&ThinkingLevel::Medium),
+            ThinkingLevel::Medium
+        );
     }
 
     #[test]
     fn test_adjust_max_tokens() {
         let budgets = default_thinking_budgets();
-        let (max, budget) = adjust_max_tokens_for_thinking(Some(4096), 16384, &ThinkingLevel::Medium, &budgets);
+        let (max, budget) =
+            adjust_max_tokens_for_thinking(Some(4096), 16384, &ThinkingLevel::Medium, &budgets);
         assert!(max <= 16384);
         assert!(budget > 0);
         assert!(budget <= max);
@@ -117,8 +119,19 @@ mod tests {
     #[test]
     fn test_calculate_cost() {
         let model = reasoning_model(None);
-        let model = Model { cost: ModelCost { input: 3.0, output: 15.0, ..Default::default() }, ..model };
-        let usage = crate::types::Usage { input: 1000, output: 500, ..Default::default() };
+        let model = Model {
+            cost: ModelCost {
+                input: 3.0,
+                output: 15.0,
+                ..Default::default()
+            },
+            ..model
+        };
+        let usage = crate::types::Usage {
+            input: 1000,
+            output: 500,
+            ..Default::default()
+        };
         let cost = calculate_cost(&model, &usage);
         assert!((cost.input - 0.003).abs() < 0.0001);
         assert!((cost.output - 0.0075).abs() < 0.0001);
@@ -129,7 +142,13 @@ mod tests {
         // 1h cache writes are charged at 2x base input; the remaining cacheWrite at the cacheWrite rate.
         let model = reasoning_model(None);
         let model = Model {
-            cost: ModelCost { input: 3.0, output: 15.0, cache_write: 3.75, cache_read: 0.3 },
+            cost: ModelCost {
+                input: 3.0,
+                output: 15.0,
+                cache_write: 3.75,
+                cache_read: 0.3,
+                tiers: vec![],
+            },
             ..model
         };
         // 1000 total cache-write tokens, of which 400 are 1h writes.
@@ -141,7 +160,11 @@ mod tests {
         let cost = calculate_cost(&model, &usage);
         // short = 600 @ 3.75 + long = 400 @ (3.0*2) = (2250 + 2400)/1e6
         let expected = (3.75 * 600.0 + 3.0 * 2.0 * 400.0) / 1_000_000.0;
-        assert!((cost.cache_write - expected).abs() < 1e-9, "got {}", cost.cache_write);
+        assert!(
+            (cost.cache_write - expected).abs() < 1e-9,
+            "got {}",
+            cost.cache_write
+        );
         // Without the 1h split it would have been the flat 1000 @ 3.75.
         assert!((cost.cache_write - 1000.0 * 3.75 / 1_000_000.0).abs() > 1e-9);
     }
@@ -152,8 +175,14 @@ mod tests {
         assert_eq!(map_openai_finish_reason("stop").0, StopReason::Stop);
         assert_eq!(map_openai_finish_reason("end").0, StopReason::Stop);
         assert_eq!(map_openai_finish_reason("length").0, StopReason::Length);
-        assert_eq!(map_openai_finish_reason("function_call").0, StopReason::ToolUse);
-        assert_eq!(map_openai_finish_reason("tool_calls").0, StopReason::ToolUse);
+        assert_eq!(
+            map_openai_finish_reason("function_call").0,
+            StopReason::ToolUse
+        );
+        assert_eq!(
+            map_openai_finish_reason("tool_calls").0,
+            StopReason::ToolUse
+        );
         let (r, msg) = map_openai_finish_reason("content_filter");
         assert_eq!(r, StopReason::Error);
         assert!(msg.unwrap().contains("content_filter"));
@@ -165,7 +194,16 @@ mod tests {
     #[test]
     fn test_parse_openai_usage_subtracts_cache_and_computes_cost() {
         let model = reasoning_model(None);
-        let model = Model { cost: ModelCost { input: 3.0, output: 15.0, cache_read: 0.3, cache_write: 0.0 }, ..model };
+        let model = Model {
+            cost: ModelCost {
+                input: 3.0,
+                output: 15.0,
+                cache_read: 0.3,
+                cache_write: 0.0,
+                tiers: vec![],
+            },
+            ..model
+        };
         let raw = serde_json::json!({
             "prompt_tokens": 1000,
             "completion_tokens": 200,
@@ -197,11 +235,22 @@ mod tests {
     #[test]
     fn test_apply_service_tier_pricing() {
         let mut model = reasoning_model(None);
-        model.cost = ModelCost { input: 1.0, output: 2.0, cache_read: 0.5, cache_write: 0.0 };
+        model.cost = ModelCost {
+            input: 1.0,
+            output: 2.0,
+            cache_read: 0.5,
+            cache_write: 0.0,
+            tiers: vec![],
+        };
         let base = crate::types::Usage {
-            input: 1_000_000, output: 1_000_000, cache_read: 1_000_000, cache_write: 0,
-            cache_write_1h: None, reasoning: None,
-            total_tokens: 3_000_000, cost: Default::default(),
+            input: 1_000_000,
+            output: 1_000_000,
+            cache_read: 1_000_000,
+            cache_write: 0,
+            cache_write_1h: None,
+            reasoning: None,
+            total_tokens: 3_000_000,
+            cost: Default::default(),
         };
         // flex halves the cost.
         let mut u = base.clone();
@@ -225,7 +274,11 @@ mod tests {
     fn clamp_unknown_context_window_only_floors() {
         let mut model = reasoning_model(None);
         model.context_window = 0;
-        let ctx = crate::types::Context { system_prompt: None, tools: Vec::new(), messages: Vec::new() };
+        let ctx = crate::types::Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: Vec::new(),
+        };
         assert_eq!(clamp_max_tokens_to_context(&model, &ctx, 5000), 5000);
         assert_eq!(clamp_max_tokens_to_context(&model, &ctx, 0), 1); // floored to MIN_MAX_TOKENS
     }
@@ -258,7 +311,11 @@ mod tests {
     #[test]
     fn clamp_fits_max_tokens_under_context_window() {
         let mut model = reasoning_model(None);
-        let ctx = crate::types::Context { system_prompt: None, tools: Vec::new(), messages: Vec::new() };
+        let ctx = crate::types::Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: Vec::new(),
+        };
         // empty context -> estimate.tokens = 0, available = cw - 4096.
         model.context_window = 200000;
         assert_eq!(clamp_max_tokens_to_context(&model, &ctx, 8192), 8192); // available 195904 >= 8192

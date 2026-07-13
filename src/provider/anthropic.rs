@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use futures::{stream, StreamExt};
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
-use serde_json::{json, Value};
+use futures::{StreamExt, stream};
+use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
+use serde_json::{Value, json};
 
 use crate::env::client_api_key;
 use crate::events::Event;
@@ -21,9 +21,10 @@ pub fn stream_anthropic<'a>(
     if api_key.is_none() {
         let err = Event::Error {
             reason: StopReason::Error,
-            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                format!("No API key for provider: {}", model.provider),
-            )),
+            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                "No API key for provider: {}",
+                model.provider
+            ))),
             message: None,
         };
         return Box::pin(stream::once(async { err }));
@@ -35,12 +36,19 @@ pub fn stream_anthropic<'a>(
         match hook(payload.clone(), model) {
             Ok(next) => payload = next,
             Err(err) => {
-                let err = Event::Error { reason: StopReason::Error, error: Arc::from(err), message: None };
+                let err = Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(err),
+                    message: None,
+                };
                 return Box::pin(stream::once(async { err }));
             }
         }
     }
-    let base = match crate::utils::resolve_cloudflare_base_url(model.base_url.trim_end_matches('/'), &model.provider) {
+    let base = match crate::utils::resolve_cloudflare_base_url(
+        model.base_url.trim_end_matches('/'),
+        &model.provider,
+    ) {
         Ok(b) => b,
         Err(msg) => {
             let err = Event::Error {
@@ -58,7 +66,10 @@ pub fn stream_anthropic<'a>(
     headers.insert("accept", HeaderValue::from_static("text/event-stream"));
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
     // Upstream's anthropic createClient sets this on every request (dangerouslyAllowBrowser).
-    headers.insert("anthropic-dangerous-direct-browser-access", HeaderValue::from_static("true"));
+    headers.insert(
+        "anthropic-dangerous-direct-browser-access",
+        HeaderValue::from_static("true"),
+    );
 
     let is_oauth = api_key.contains("sk-ant-oat");
     if model.provider == "cloudflare-ai-gateway" {
@@ -70,9 +81,15 @@ pub fn stream_anthropic<'a>(
         // GitHub Copilot: Bearer auth (the copilot session token), not x-api-key
         // (mirrors createClient's `authToken: apiKey` branch). Static copilot headers
         // come from model.headers; dynamic ones are added below.
-        headers.insert(reqwest::header::AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+        );
     } else if is_oauth {
-        headers.insert(reqwest::header::AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+        );
         headers.insert("user-agent", HeaderValue::from_static("claude-cli/2.1.75"));
         headers.insert("x-app", HeaderValue::from_static("cli"));
     } else {
@@ -80,10 +97,16 @@ pub fn stream_anthropic<'a>(
     }
 
     // Beta features (prompt caching is GA and no longer requires a beta header).
-    let beta_features = anthropic_beta_features(model, context, is_oauth, opts.interleaved_thinking != Some(false));
+    let beta_features = anthropic_beta_features(
+        model,
+        context,
+        is_oauth,
+        opts.interleaved_thinking != Some(false),
+    );
     if !beta_features.is_empty()
-        && let Ok(val) = HeaderValue::from_str(&beta_features.join(",")) {
-            headers.insert("anthropic-beta", val);
+        && let Ok(val) = HeaderValue::from_str(&beta_features.join(","))
+    {
+        headers.insert("anthropic-beta", val);
     }
 
     // Session affinity header for providers that require it (mirrors getAnthropicCompat
@@ -91,13 +114,15 @@ pub fn stream_anthropic<'a>(
     // The session id used for affinity is cleared when caching is off
     // (upstream `cacheSessionId = retention === "none" ? undefined : sessionId`).
     let affinity_caching_on =
-        crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref()) != crate::types::CacheRetention::None;
+        crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref())
+            != crate::types::CacheRetention::None;
     if affinity_caching_on
         && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
         && anthropic_needs_session_affinity(model)
-        && let Ok(val) = HeaderValue::from_str(session_id) {
-            headers.insert("x-session-affinity", val);
-        }
+        && let Ok(val) = HeaderValue::from_str(session_id)
+    {
+        headers.insert("x-session-affinity", val);
+    }
 
     if let Some(ref model_headers) = model.headers {
         for (k, v) in model_headers {
@@ -501,9 +526,23 @@ pub fn stream_anthropic<'a>(
 
 /// Claude Code canonical tool names (used to canonicalize tool names for OAuth requests).
 const CLAUDE_CODE_TOOLS: &[&str] = &[
-    "Read", "Write", "Edit", "Bash", "Grep", "Glob", "AskUserQuestion", "EnterPlanMode",
-    "ExitPlanMode", "KillShell", "NotebookEdit", "Skill", "Task", "TaskOutput", "TodoWrite",
-    "WebFetch", "WebSearch",
+    "Read",
+    "Write",
+    "Edit",
+    "Bash",
+    "Grep",
+    "Glob",
+    "AskUserQuestion",
+    "EnterPlanMode",
+    "ExitPlanMode",
+    "KillShell",
+    "NotebookEdit",
+    "Skill",
+    "Task",
+    "TaskOutput",
+    "TodoWrite",
+    "WebFetch",
+    "WebSearch",
 ];
 
 /// Whether to send the Anthropic `x-session-affinity` header (mirrors getAnthropicCompat
@@ -517,9 +556,19 @@ pub(crate) fn anthropic_needs_session_affinity(model: &Model) -> bool {
 pub(crate) fn normalize_anthropic_tool_call_id(id: &str) -> String {
     let sanitized: String = id
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
-    if sanitized.len() > 64 { sanitized[..64].to_string() } else { sanitized }
+    if sanitized.len() > 64 {
+        sanitized[..64].to_string()
+    } else {
+        sanitized
+    }
 }
 
 /// Convert tool-result content blocks to Anthropic `tool_result.content` (mirrors
@@ -527,23 +576,34 @@ pub(crate) fn normalize_anthropic_tool_call_id(id: &str) -> String {
 /// it becomes a block array, prepending a "(see attached image)" placeholder when there
 /// is no text block.
 fn convert_tool_result_content(content: &[ContentBlock]) -> Value {
-    let has_images = content.iter().any(|b| matches!(b, ContentBlock::Image { .. }));
+    let has_images = content
+        .iter()
+        .any(|b| matches!(b, ContentBlock::Image { .. }));
     if !has_images {
-        let joined = content.iter().filter_map(|b| match b {
-            ContentBlock::Text { text, .. } => Some(text.as_str()),
-            _ => None,
-        }).collect::<Vec<_>>().join("\n");
+        let joined = content
+            .iter()
+            .filter_map(|b| match b {
+                ContentBlock::Text { text, .. } => Some(text.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
         return json!(joined);
     }
-    let mut blocks: Vec<Value> = content.iter().map(|b| match b {
-        ContentBlock::Image { data, mime_type } => json!({
-            "type": "image",
-            "source": {"type": "base64", "media_type": mime_type, "data": data}
-        }),
-        ContentBlock::Text { text, .. } => json!({"type": "text", "text": text}),
-        _ => json!({"type": "text", "text": ""}),
-    }).collect();
-    let has_text = blocks.iter().any(|b| b.get("type").and_then(|t| t.as_str()) == Some("text"));
+    let mut blocks: Vec<Value> = content
+        .iter()
+        .map(|b| match b {
+            ContentBlock::Image { data, mime_type } => json!({
+                "type": "image",
+                "source": {"type": "base64", "media_type": mime_type, "data": data}
+            }),
+            ContentBlock::Text { text, .. } => json!({"type": "text", "text": text}),
+            _ => json!({"type": "text", "text": ""}),
+        })
+        .collect();
+    let has_text = blocks
+        .iter()
+        .any(|b| b.get("type").and_then(|t| t.as_str()) == Some("text"));
     if !has_text {
         blocks.insert(0, json!({"type": "text", "text": "(see attached image)"}));
     }
@@ -583,9 +643,15 @@ pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
     // 0.80.2 made these static defaults (was `!isFireworks`); fireworks-specific values
     // now come from explicit per-model compat baked into the catalog.
     AnthropicCompat {
-        supports_eager_tool_input_streaming: model.compat.supports_eager_tool_input_streaming.unwrap_or(true),
+        supports_eager_tool_input_streaming: model
+            .compat
+            .supports_eager_tool_input_streaming
+            .unwrap_or(true),
         supports_long_cache_retention: model.compat.supports_long_cache_retention.unwrap_or(true),
-        supports_cache_control_on_tools: model.compat.supports_cache_control_on_tools.unwrap_or(true),
+        supports_cache_control_on_tools: model
+            .compat
+            .supports_cache_control_on_tools
+            .unwrap_or(true),
         supports_temperature: model.compat.supports_temperature.unwrap_or(true),
         allow_empty_signature: model.compat.allow_empty_signature.unwrap_or(false),
     }
@@ -593,7 +659,12 @@ pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
 
 /// Compute the Anthropic `anthropic-beta` feature list for a request (mirrors the
 /// upstream createClient beta-header logic).
-pub(crate) fn anthropic_beta_features<'a>(model: &'a Model, context: &Context, is_oauth: bool, interleaved_thinking: bool) -> Vec<&'a str> {
+pub(crate) fn anthropic_beta_features<'a>(
+    model: &'a Model,
+    context: &Context,
+    is_oauth: bool,
+    interleaved_thinking: bool,
+) -> Vec<&'a str> {
     let mut beta_features: Vec<&str> = Vec::new();
     if is_oauth {
         beta_features.push("claude-code-20250219");
@@ -618,7 +689,8 @@ fn map_anthropic_effort(model: &Model, level: Option<&ThinkingLevel>) -> String 
     if let Some(level) = level {
         let key = format!("{level:?}").to_lowercase();
         if let Some(map) = &model.thinking_level_map
-            && let Some(Some(mapped)) = map.get(&key) {
+            && let Some(Some(mapped)) = map.get(&key)
+        {
             return mapped.clone();
         }
         match key.as_str() {
@@ -631,9 +703,15 @@ fn map_anthropic_effort(model: &Model, level: Option<&ThinkingLevel>) -> String 
     }
 }
 
-pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &StreamOptions) -> Value {
+pub(crate) fn build_anthropic_payload(
+    model: &Model,
+    context: &Context,
+    opts: &StreamOptions,
+) -> Value {
     let mut messages: Vec<Value> = Vec::new();
-    let is_oauth = crate::env::resolve_api_key(model, opts).map(|k| k.contains("sk-ant-oat")).unwrap_or(false);
+    let is_oauth = crate::env::resolve_api_key(model, opts)
+        .map(|k| k.contains("sk-ant-oat"))
+        .unwrap_or(false);
 
     let transformed_messages = crate::transform::transform_messages(&context.messages, model);
 
@@ -644,7 +722,8 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
             // Merge all consecutive tool-result messages into a single user message,
             // as Anthropic requires (and parallel tool calls produce multiple results).
             let mut tool_results: Vec<Value> = Vec::new();
-            while i < transformed_messages.len() && transformed_messages[i].role == Role::ToolResult {
+            while i < transformed_messages.len() && transformed_messages[i].role == Role::ToolResult
+            {
                 let tr = &transformed_messages[i];
                 let mut tool_result = json!({
                     "type": "tool_result",
@@ -684,11 +763,12 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
                     // Send the opaque payload back as redacted_thinking.
                     return Some(json!({"type": "redacted_thinking", "data": thinking_signature.clone().unwrap_or_default()}));
                 }
-                // Skip empty thinking blocks (mirrors upstream convertMessages).
-                if thinking.trim().is_empty() {
+                // v0.80.6: keep the block if it carries a valid signature even when
+                // the thinking text is empty; only skip when both are empty.
+                let sig = thinking_signature.as_deref().filter(|s| !s.trim().is_empty());
+                if thinking.trim().is_empty() && sig.is_none() {
                     return None;
                 }
-                let sig = thinking_signature.as_deref().filter(|s| !s.trim().is_empty());
                 Some(match sig {
                     Some(s) => json!({"type": "thinking", "thinking": thinking, "signature": s}),
                     None => {
@@ -740,12 +820,16 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
         && let Some(last_msg) = messages.last_mut()
         && last_msg.get("role").and_then(|r| r.as_str()) == Some("user")
         && let Some(blocks) = last_msg.get_mut("content").and_then(|c| c.as_array_mut())
-        && let Some(last_block) = blocks.last_mut() {
-            let block_type = last_block.get("type").and_then(|t| t.as_str());
-            if matches!(block_type, Some("text") | Some("image") | Some("tool_result")) {
-                last_block["cache_control"] = cc.clone();
-            }
+        && let Some(last_block) = blocks.last_mut()
+    {
+        let block_type = last_block.get("type").and_then(|t| t.as_str());
+        if matches!(
+            block_type,
+            Some("text") | Some("image") | Some("tool_result")
+        ) {
+            last_block["cache_control"] = cc.clone();
         }
+    }
 
     let mut payload = json!({
         "model": model.id,
@@ -778,9 +862,10 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
     let thinking_enabled = opts.reasoning.is_some() && model.reasoning;
     if let Some(temp) = opts.temperature
         && !thinking_enabled
-        && anthropic_compat(model).supports_temperature {
-            payload["temperature"] = json!(temp);
-        }
+        && anthropic_compat(model).supports_temperature
+    {
+        payload["temperature"] = json!(temp);
+    }
 
     // Thinking/reasoning: adaptive, budget-based, or explicitly disabled (mirrors buildParams).
     if model.reasoning {
@@ -795,30 +880,46 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
                 // max_tokens to fit thinking + output (mirrors adjustMaxTokensForThinking).
                 let mut budgets_map = std::collections::HashMap::new();
                 if let Some(b) = opts.thinking_budgets.as_ref() {
-                    if let Some(v) = b.minimal { budgets_map.insert(ThinkingLevel::Minimal, v); }
-                    if let Some(v) = b.low { budgets_map.insert(ThinkingLevel::Low, v); }
-                    if let Some(v) = b.medium { budgets_map.insert(ThinkingLevel::Medium, v); }
-                    if let Some(v) = b.high { budgets_map.insert(ThinkingLevel::High, v); }
+                    if let Some(v) = b.minimal {
+                        budgets_map.insert(ThinkingLevel::Minimal, v);
+                    }
+                    if let Some(v) = b.low {
+                        budgets_map.insert(ThinkingLevel::Low, v);
+                    }
+                    if let Some(v) = b.medium {
+                        budgets_map.insert(ThinkingLevel::Medium, v);
+                    }
+                    if let Some(v) = b.high {
+                        budgets_map.insert(ThinkingLevel::High, v);
+                    }
                 }
                 let level = opts.reasoning.clone().unwrap_or(ThinkingLevel::Medium);
                 let (adj_max, budget) = crate::simple_options::adjust_max_tokens_for_thinking(
-                    opts.max_tokens, model.max_tokens, &level, &budgets_map,
+                    opts.max_tokens,
+                    model.max_tokens,
+                    &level,
+                    &budgets_map,
                 );
                 // Clamp the thinking-adjusted cap to the context window, then re-fit the
                 // thinking budget under it (mirrors upstream clampMaxTokensToContext +
                 // `min(thinkingBudget, max(0, maxTokens - 1024))`).
-                let adj_max = crate::simple_options::clamp_max_tokens_to_context(model, context, adj_max);
+                let adj_max =
+                    crate::simple_options::clamp_max_tokens_to_context(model, context, adj_max);
                 let budget = budget.min(adj_max.saturating_sub(1024));
                 payload["max_tokens"] = json!(adj_max);
                 // Mirror upstream `budget_tokens: options.thinkingBudgetTokens || 1024`: a
                 // computed budget of 0 (tiny max_tokens cap) clamps up to Anthropic's 1024
                 // minimum rather than sending an invalid 0.
                 let budget = if budget == 0 { 1024 } else { budget };
-                payload["thinking"] = json!({"type": "enabled", "budget_tokens": budget, "display": display});
+                payload["thinking"] =
+                    json!({"type": "enabled", "budget_tokens": budget, "display": display});
             }
         } else {
             // Explicitly disable thinking unless the model maps `off` to null.
-            let off_is_null = matches!(model.thinking_level_map.as_ref().and_then(|m| m.get("off")), Some(None));
+            let off_is_null = matches!(
+                model.thinking_level_map.as_ref().and_then(|m| m.get("off")),
+                Some(None)
+            );
             if !off_is_null {
                 payload["thinking"] = json!({"type": "disabled"});
             }
@@ -846,9 +947,10 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
         // Cache control on the last tool definition (only when supported).
         if compat.supports_cache_control_on_tools
             && let Some(ref cc) = cache_control
-            && let Some(last) = tools.last_mut() {
-                last["cache_control"] = cc.clone();
-            }
+            && let Some(last) = tools.last_mut()
+        {
+            last["cache_control"] = cc.clone();
+        }
         payload["tools"] = json!(tools);
     }
 
@@ -863,23 +965,44 @@ pub(crate) fn build_anthropic_payload(model: &Model, context: &Context, opts: &S
 
     // Metadata: only user_id is forwarded (mirrors upstream).
     if let Some(ref metadata) = opts.metadata
-        && let Some(user_id) = metadata.get("user_id").and_then(|v| v.as_str()) {
-            payload["metadata"] = json!({"user_id": user_id});
-        }
+        && let Some(user_id) = metadata.get("user_id").and_then(|v| v.as_str())
+    {
+        payload["metadata"] = json!({"user_id": user_id});
+    }
 
     payload
 }
 
 fn parse_anthropic_usage(usage: &Value) -> Usage {
     Usage {
-        input: usage.get("input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
-        output: usage.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
-        cache_read: usage.get("cache_read_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
-        cache_write: usage.get("cache_creation_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
-        cache_write_1h: Some(usage.pointer("/cache_creation/ephemeral_1h_input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32),
+        input: usage
+            .get("input_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as u32,
+        output: usage
+            .get("output_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as u32,
+        cache_read: usage
+            .get("cache_read_input_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as u32,
+        cache_write: usage
+            .get("cache_creation_input_tokens")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0) as u32,
+        cache_write_1h: Some(
+            usage
+                .pointer("/cache_creation/ephemeral_1h_input_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0) as u32,
+        ),
         // Anthropic reports reasoning tokens in `output_tokens_details.thinking_tokens`
         // on the final message_delta usage (a subset of output_tokens).
-        reasoning: usage.pointer("/output_tokens_details/thinking_tokens").and_then(|v| v.as_u64()).map(|v| v as u32),
+        reasoning: usage
+            .pointer("/output_tokens_details/thinking_tokens")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as u32),
         total_tokens: 0,
         cost: CostBreakdown::default(),
     }

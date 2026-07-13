@@ -1,7 +1,7 @@
 //! Thinking level mapping and simple option helpers.
 
+use crate::types::{Context, Model, ModelThinkingLevel, ThinkingLevel};
 use std::collections::HashMap;
-use crate::types::{Context, Model, ThinkingLevel, ModelThinkingLevel};
 
 /// Headroom reserved below the context window when clamping `max_tokens`.
 const CONTEXT_SAFETY_TOKENS: u32 = 4096;
@@ -16,7 +16,10 @@ pub fn clamp_max_tokens_to_context(model: &Model, context: &Context, max_tokens:
         return max_tokens.max(MIN_MAX_TOKENS);
     }
     let used = crate::estimate::estimate_context_tokens(context).tokens + CONTEXT_SAFETY_TOKENS;
-    let available = model.context_window.saturating_sub(used).max(MIN_MAX_TOKENS);
+    let available = model
+        .context_window
+        .saturating_sub(used)
+        .max(MIN_MAX_TOKENS);
     max_tokens.min(available)
 }
 
@@ -38,6 +41,7 @@ const LEVELS: &[ModelThinkingLevel] = &[
     ModelThinkingLevel::Medium,
     ModelThinkingLevel::High,
     ModelThinkingLevel::XHigh,
+    ModelThinkingLevel::Max,
 ];
 
 /// Get supported thinking levels for a model.
@@ -54,15 +58,15 @@ pub fn get_supported_thinking_levels(model: &Model) -> Vec<ModelThinkingLevel> {
                 Some(None) => continue, // explicitly disabled
                 Some(Some(_)) => out.push(level.clone()),
                 None => {
-                    // xhigh must be explicit
-                    if *level == ModelThinkingLevel::XHigh {
+                    // xhigh / max must be explicit
+                    if *level == ModelThinkingLevel::XHigh || *level == ModelThinkingLevel::Max {
                         continue;
                     }
                     out.push(level.clone());
                 }
             }
         } else {
-            if *level == ModelThinkingLevel::XHigh {
+            if *level == ModelThinkingLevel::XHigh || *level == ModelThinkingLevel::Max {
                 continue;
             }
             out.push(level.clone());
@@ -85,7 +89,12 @@ pub fn clamp_thinking_level(model: &Model, level: &ModelThinkingLevel) -> ModelT
     let idx = LEVELS.iter().position(|l| l == level);
     let idx = match idx {
         Some(i) => i,
-        None => return available.first().cloned().unwrap_or(ModelThinkingLevel::Off),
+        None => {
+            return available
+                .first()
+                .cloned()
+                .unwrap_or(ModelThinkingLevel::Off);
+        }
     };
     // Prefer upgrade (search from the requested index upward).
     for level in LEVELS.iter().skip(idx) {
@@ -99,16 +108,20 @@ pub fn clamp_thinking_level(model: &Model, level: &ModelThinkingLevel) -> ModelT
             return LEVELS[i].clone();
         }
     }
-    available.first().cloned().unwrap_or(ModelThinkingLevel::Off)
+    available
+        .first()
+        .cloned()
+        .unwrap_or(ModelThinkingLevel::Off)
 }
 
 /// Map a thinking level to its provider-specific string value.
 pub fn map_thinking_level(model: &Model, level: &ModelThinkingLevel) -> Option<String> {
     let clamped = clamp_thinking_level(model, level);
     if let Some(ref map) = model.thinking_level_map
-        && let Some(mapped) = map.get(&clamped.to_string()) {
-            return mapped.clone();
-        }
+        && let Some(mapped) = map.get(&clamped.to_string())
+    {
+        return mapped.clone();
+    }
     if clamped == ModelThinkingLevel::Off {
         return Some("none".to_string());
     }
@@ -124,6 +137,7 @@ impl std::fmt::Display for ModelThinkingLevel {
             Self::Medium => write!(f, "medium"),
             Self::High => write!(f, "high"),
             Self::XHigh => write!(f, "xhigh"),
+            Self::Max => write!(f, "max"),
         }
     }
 }
@@ -131,16 +145,40 @@ impl std::fmt::Display for ModelThinkingLevel {
 /// Calculate cost from model pricing and usage.
 pub fn calculate_cost(model: &Model, usage: &crate::types::Usage) -> crate::types::CostBreakdown {
     let m = 1_000_000.0;
-    let input = f64::from(usage.input) * model.cost.input / m;
-    let output = f64::from(usage.output) * model.cost.output / m;
-    let cache_read = f64::from(usage.cache_read) * model.cost.cache_read / m;
+    // Select the highest matching request-wide pricing tier (v0.80.6). The tier
+    // whose `input_tokens_above` threshold is the largest one still exceeded by
+    // total input usage applies to the entire request.
+    let input_tokens =
+        u64::from(usage.input) + u64::from(usage.cache_read) + u64::from(usage.cache_write);
+    let mut rate_input = model.cost.input;
+    let mut rate_output = model.cost.output;
+    let mut rate_cache_read = model.cost.cache_read;
+    let mut rate_cache_write = model.cost.cache_write;
+    let mut matched_threshold: i128 = -1;
+    for tier in &model.cost.tiers {
+        if input_tokens > tier.input_tokens_above
+            && i128::from(tier.input_tokens_above) > matched_threshold
+        {
+            rate_input = tier.input;
+            rate_output = tier.output;
+            rate_cache_read = tier.cache_read;
+            rate_cache_write = tier.cache_write;
+            matched_threshold = i128::from(tier.input_tokens_above);
+        }
+    }
+    let input = f64::from(usage.input) * rate_input / m;
+    let output = f64::from(usage.output) * rate_output / m;
+    let cache_read = f64::from(usage.cache_read) * rate_cache_read / m;
     // Anthropic charges 2x base input for 1h cache writes; the rest at the cacheWrite rate.
     let long_write = usage.cache_write_1h.unwrap_or(0);
     let short_write = usage.cache_write.saturating_sub(long_write);
-    let cache_write = (model.cost.cache_write * f64::from(short_write)
-        + model.cost.input * 2.0 * f64::from(long_write)) / m;
+    let cache_write =
+        (rate_cache_write * f64::from(short_write) + rate_input * 2.0 * f64::from(long_write)) / m;
     crate::types::CostBreakdown {
-        input, output, cache_read, cache_write,
+        input,
+        output,
+        cache_read,
+        cache_write,
         total: input + output + cache_read + cache_write,
     }
 }
@@ -153,25 +191,44 @@ pub fn map_openai_finish_reason(reason: &str) -> (crate::types::StopReason, Opti
         "stop" | "end" => (StopReason::Stop, None),
         "length" => (StopReason::Length, None),
         "function_call" | "tool_calls" => (StopReason::ToolUse, None),
-        "content_filter" => (StopReason::Error, Some("Provider finish_reason: content_filter".to_string())),
-        "network_error" => (StopReason::Error, Some("Provider finish_reason: network_error".to_string())),
-        other => (StopReason::Error, Some(format!("Provider finish_reason: {}", other))),
+        "content_filter" => (
+            StopReason::Error,
+            Some("Provider finish_reason: content_filter".to_string()),
+        ),
+        "network_error" => (
+            StopReason::Error,
+            Some("Provider finish_reason: network_error".to_string()),
+        ),
+        other => (
+            StopReason::Error,
+            Some(format!("Provider finish_reason: {}", other)),
+        ),
     }
 }
 
 /// Parse OpenAI-style chunk usage, accounting for cache read/write tokens and cost
 /// (mirrors upstream `parseChunkUsage`).
 pub fn parse_openai_usage(raw: &serde_json::Value, model: &Model) -> crate::types::Usage {
-    let prompt_tokens = raw.get("prompt_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let cache_read = raw.pointer("/prompt_tokens_details/cached_tokens")
+    let prompt_tokens = raw
+        .get("prompt_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let cache_read = raw
+        .pointer("/prompt_tokens_details/cached_tokens")
         .and_then(|v| v.as_u64())
         .or_else(|| raw.get("prompt_cache_hit_tokens").and_then(|v| v.as_u64()))
         .unwrap_or(0) as u32;
-    let cache_write = raw.pointer("/prompt_tokens_details/cache_write_tokens")
+    let cache_write = raw
+        .pointer("/prompt_tokens_details/cache_write_tokens")
         .and_then(|v| v.as_u64())
         .unwrap_or(0) as u32;
-    let input = prompt_tokens.saturating_sub(cache_read).saturating_sub(cache_write);
-    let output = raw.get("completion_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+    let input = prompt_tokens
+        .saturating_sub(cache_read)
+        .saturating_sub(cache_write);
+    let output = raw
+        .get("completion_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
     let mut usage = crate::types::Usage {
         input,
         output,
@@ -179,7 +236,11 @@ pub fn parse_openai_usage(raw: &serde_json::Value, model: &Model) -> crate::type
         cache_write,
         cache_write_1h: None,
         // OpenAI reports reasoning tokens in completion_tokens_details (subset of output).
-        reasoning: Some(raw.pointer("/completion_tokens_details/reasoning_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32),
+        reasoning: Some(
+            raw.pointer("/completion_tokens_details/reasoning_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0) as u32,
+        ),
         total_tokens: input + output + cache_read + cache_write,
         cost: Default::default(),
     };
@@ -190,15 +251,43 @@ pub fn parse_openai_usage(raw: &serde_json::Value, model: &Model) -> crate::type
 /// Parse OpenAI Responses-style usage (input_tokens/output_tokens with cached
 /// tokens) including cost.
 pub fn parse_responses_usage(raw: &serde_json::Value, model: &Model) -> crate::types::Usage {
-    let cached = raw.pointer("/input_tokens_details/cached_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let input_total = raw.get("input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let input = input_total.saturating_sub(cached);
-    let output = raw.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let total = raw.get("total_tokens").and_then(|v| v.as_u64()).unwrap_or((input + output + cached) as u64) as u32;
+    let cached = raw
+        .pointer("/input_tokens_details/cached_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    // v0.80.6: OpenAI includes cache-write tokens in input_tokens, so subtract both.
+    let cache_write = raw
+        .pointer("/input_tokens_details/cache_write_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let input_total = raw
+        .get("input_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let input = input_total
+        .saturating_sub(cached)
+        .saturating_sub(cache_write);
+    let output = raw
+        .get("output_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let total = raw
+        .get("total_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or((input + output + cached + cache_write) as u64) as u32;
     let mut usage = crate::types::Usage {
-        input, output, cache_read: cached, cache_write: 0, cache_write_1h: None,
-        reasoning: Some(raw.pointer("/output_tokens_details/reasoning_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32),
-        total_tokens: total, cost: Default::default(),
+        input,
+        output,
+        cache_read: cached,
+        cache_write,
+        cache_write_1h: None,
+        reasoning: Some(
+            raw.pointer("/output_tokens_details/reasoning_tokens")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0) as u32,
+        ),
+        total_tokens: total,
+        cost: Default::default(),
     };
     usage.cost = calculate_cost(model, &usage);
     usage
@@ -206,10 +295,20 @@ pub fn parse_responses_usage(raw: &serde_json::Value, model: &Model) -> crate::t
 
 /// Apply OpenAI service-tier cost multipliers to a usage record (mirrors
 /// applyServiceTierPricing): flex 0.5x, priority 2x (2.5x for gpt-5.5).
-pub fn apply_service_tier_pricing(model: &Model, usage: &mut crate::types::Usage, service_tier: Option<&str>) {
+pub fn apply_service_tier_pricing(
+    model: &Model,
+    usage: &mut crate::types::Usage,
+    service_tier: Option<&str>,
+) {
     let multiplier = match service_tier {
         Some("flex") => 0.5,
-        Some("priority") => if model.id == "gpt-5.5" { 2.5 } else { 2.0 },
+        Some("priority") => {
+            if model.id == "gpt-5.5" {
+                2.5
+            } else {
+                2.0
+            }
+        }
         _ => 1.0,
     };
     if multiplier == 1.0 {
@@ -219,7 +318,8 @@ pub fn apply_service_tier_pricing(model: &Model, usage: &mut crate::types::Usage
     usage.cost.output *= multiplier;
     usage.cost.cache_read *= multiplier;
     usage.cost.cache_write *= multiplier;
-    usage.cost.total = usage.cost.input + usage.cost.output + usage.cost.cache_read + usage.cost.cache_write;
+    usage.cost.total =
+        usage.cost.input + usage.cost.output + usage.cost.cache_read + usage.cost.cache_write;
 }
 
 /// Recompute cost for a usage record (for providers that build usage incrementally
@@ -228,10 +328,10 @@ pub fn finalize_usage(model: &Model, usage: &mut crate::types::Usage) {
     usage.cost = calculate_cost(model, usage);
 }
 
-/// Clamp xhigh to high for legacy callers.
+/// Clamp xhigh/max to high for legacy callers.
 pub fn clamp_reasoning(level: &ThinkingLevel) -> ThinkingLevel {
     match level {
-        ThinkingLevel::XHigh => ThinkingLevel::High,
+        ThinkingLevel::XHigh | ThinkingLevel::Max => ThinkingLevel::High,
         other => other.clone(),
     }
 }
@@ -247,6 +347,7 @@ pub fn clamp_reasoning_for_model(model: &Model, level: &ThinkingLevel) -> Option
         ThinkingLevel::Medium => ModelThinkingLevel::Medium,
         ThinkingLevel::High => ModelThinkingLevel::High,
         ThinkingLevel::XHigh => ModelThinkingLevel::XHigh,
+        ThinkingLevel::Max => ModelThinkingLevel::Max,
     };
     match clamp_thinking_level(model, &requested) {
         ModelThinkingLevel::Off => None,
@@ -255,13 +356,13 @@ pub fn clamp_reasoning_for_model(model: &Model, level: &ThinkingLevel) -> Option
         ModelThinkingLevel::Medium => Some(ThinkingLevel::Medium),
         ModelThinkingLevel::High => Some(ThinkingLevel::High),
         ModelThinkingLevel::XHigh => Some(ThinkingLevel::XHigh),
+        ModelThinkingLevel::Max => Some(ThinkingLevel::Max),
     }
 }
 
 /// Check if a model supports xhigh thinking.
 pub fn supports_xhigh(model: &Model) -> bool {
-    get_supported_thinking_levels(model)
-        .contains(&ModelThinkingLevel::XHigh)
+    get_supported_thinking_levels(model).contains(&ModelThinkingLevel::XHigh)
 }
 
 /// Adjust max tokens for thinking budget.
@@ -272,8 +373,12 @@ pub fn adjust_max_tokens_for_thinking(
     budgets: &std::collections::HashMap<ThinkingLevel, u32>,
 ) -> (u32, u32) {
     let clamped = clamp_reasoning(level);
-    let mut thinking_budget = budgets.get(&clamped).copied()
-        .unwrap_or_else(|| default_thinking_budgets().get(&clamped).copied().unwrap_or(8192));
+    let mut thinking_budget = budgets.get(&clamped).copied().unwrap_or_else(|| {
+        default_thinking_budgets()
+            .get(&clamped)
+            .copied()
+            .unwrap_or(8192)
+    });
     // No explicit caller cap -> use the model cap; otherwise fit thinking inside base+budget.
     let max_tokens = match base_max_tokens {
         None => model_max_tokens,

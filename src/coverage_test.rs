@@ -2,13 +2,13 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::retry::*;
-    use crate::context::*;
-    use crate::simple_options::*;
     use crate::compaction::*;
+    use crate::context::*;
     use crate::logger::*;
-    use crate::utils::*;
+    use crate::retry::*;
+    use crate::simple_options::*;
     use crate::types::*;
+    use crate::utils::*;
     use std::time::Duration;
 
     // --- Retry tests ---
@@ -39,7 +39,10 @@ mod tests {
 
     #[test]
     fn test_backoff_caps_at_max() {
-        let cfg = RetryConfig { max_delay: Duration::from_secs(2), ..default_retry_config() };
+        let cfg = RetryConfig {
+            max_delay: Duration::from_secs(2),
+            ..default_retry_config()
+        };
         let d = compute_backoff(10, &cfg);
         assert!(d.as_secs_f64() <= 2.0);
     }
@@ -70,10 +73,23 @@ mod tests {
     #[test]
     fn test_calculate_cost_basic() {
         let model = Model {
-            cost: ModelCost { input: 3.0, output: 15.0, cache_read: 0.3, cache_write: 3.75 },
+            cost: ModelCost {
+                input: 3.0,
+                output: 15.0,
+                cache_read: 0.3,
+                cache_write: 3.75,
+                tiers: vec![],
+            },
             ..test_model_base()
         };
-        let usage = Usage { input: 1000, output: 500, cache_read: 200, cache_write: 50, total_tokens: 1750, ..Default::default() };
+        let usage = Usage {
+            input: 1000,
+            output: 500,
+            cache_read: 200,
+            cache_write: 50,
+            total_tokens: 1750,
+            ..Default::default()
+        };
         let cost = calculate_cost(&model, &usage);
         assert!((cost.input - 0.003).abs() < 0.0001);
         assert!((cost.output - 0.0075).abs() < 0.0001);
@@ -97,11 +113,18 @@ mod tests {
 
     #[test]
     fn test_overflow_stop_reason_length() {
-        let model = Model { context_window: 100, ..test_model_base() };
+        let model = Model {
+            context_window: 100,
+            ..test_model_base()
+        };
         // Length stop with output==0 and input filling the window is overflow.
         let msg = Message {
             stop_reason: Some(StopReason::Length),
-            usage: Some(Usage { input: 100, output: 0, ..Default::default() }),
+            usage: Some(Usage {
+                input: 100,
+                output: 0,
+                ..Default::default()
+            }),
             ..base_msg()
         };
         assert!(is_context_overflow(&msg, &model));
@@ -120,11 +143,19 @@ mod tests {
 
     #[test]
     fn test_overflow_token_limit() {
-        let model = Model { context_window: 100, ..test_model_base() };
+        let model = Model {
+            context_window: 100,
+            ..test_model_base()
+        };
         // Silent overflow: successful stop but input exceeds the context window.
         let msg = Message {
             stop_reason: Some(StopReason::Stop),
-            usage: Some(Usage { input: 110, output: 0, total_tokens: 110, ..Default::default() }),
+            usage: Some(Usage {
+                input: 110,
+                output: 0,
+                total_tokens: 110,
+                ..Default::default()
+            }),
             ..base_msg()
         };
         assert!(is_context_overflow(&msg, &model));
@@ -186,15 +217,37 @@ mod tests {
 
     #[test]
     fn test_resolve_cloudflare_base_url_substitutes_env() {
-        unsafe { std::env::set_var("RS_AI_TEST_ACCT", "acct123"); }
-        let resolved = resolve_cloudflare_base_url("https://gateway.ai.cloudflare.com/v1/{RS_AI_TEST_ACCT}/openai", "cloudflare-ai-gateway");
-        assert_eq!(resolved.unwrap(), "https://gateway.ai.cloudflare.com/v1/acct123/openai");
+        unsafe {
+            std::env::set_var("RS_AI_TEST_ACCT", "acct123");
+        }
+        let resolved = resolve_cloudflare_base_url(
+            "https://gateway.ai.cloudflare.com/v1/{RS_AI_TEST_ACCT}/openai",
+            "cloudflare-ai-gateway",
+        );
+        assert_eq!(
+            resolved.unwrap(),
+            "https://gateway.ai.cloudflare.com/v1/acct123/openai"
+        );
         // No placeholders -> pass-through.
-        assert_eq!(resolve_cloudflare_base_url("https://example.com", "openai").unwrap(), "https://example.com");
-        unsafe { std::env::remove_var("RS_AI_TEST_ACCT"); }
+        assert_eq!(
+            resolve_cloudflare_base_url("https://example.com", "openai").unwrap(),
+            "https://example.com"
+        );
+        unsafe {
+            std::env::remove_var("RS_AI_TEST_ACCT");
+        }
         // A missing/unset variable is an error (matches upstream throw).
-        let err = resolve_cloudflare_base_url("https://x/{RS_AI_DEFINITELY_UNSET_VAR}/y", "cloudflare-workers-ai").unwrap_err();
-        assert!(err.contains("RS_AI_DEFINITELY_UNSET_VAR is required for provider cloudflare-workers-ai"), "{err}");
+        let err = resolve_cloudflare_base_url(
+            "https://x/{RS_AI_DEFINITELY_UNSET_VAR}/y",
+            "cloudflare-workers-ai",
+        )
+        .unwrap_err();
+        assert!(
+            err.contains(
+                "RS_AI_DEFINITELY_UNSET_VAR is required for provider cloudflare-workers-ai"
+            ),
+            "{err}"
+        );
     }
 
     #[test]
@@ -226,7 +279,8 @@ mod tests {
     fn test_adjust_max_tokens_basic() {
         let budgets = default_thinking_budgets();
         // base+budget = 4096+16384 = 20480 < model cap 32000; 20480 > 16384 so budget stays.
-        let (max, budget) = adjust_max_tokens_for_thinking(Some(4096), 32000, &ThinkingLevel::High, &budgets);
+        let (max, budget) =
+            adjust_max_tokens_for_thinking(Some(4096), 32000, &ThinkingLevel::High, &budgets);
         assert_eq!((max, budget), (20480, 16384));
     }
 
@@ -234,7 +288,8 @@ mod tests {
     fn test_adjust_max_tokens_capped() {
         let budgets = default_thinking_budgets();
         // base+budget = 20480 clamped to model cap 8000; 8000 <= 16384 -> budget = 8000-1024.
-        let (max, budget) = adjust_max_tokens_for_thinking(Some(4096), 8000, &ThinkingLevel::High, &budgets);
+        let (max, budget) =
+            adjust_max_tokens_for_thinking(Some(4096), 8000, &ThinkingLevel::High, &budgets);
         assert_eq!((max, budget), (8000, 6976));
     }
 
@@ -242,7 +297,8 @@ mod tests {
     fn test_adjust_max_tokens_no_cap_uses_model_cap() {
         let budgets = default_thinking_budgets();
         // None caller cap -> model cap; 32000 > 16384 so high budget stays full.
-        let (max, budget) = adjust_max_tokens_for_thinking(None, 32000, &ThinkingLevel::High, &budgets);
+        let (max, budget) =
+            adjust_max_tokens_for_thinking(None, 32000, &ThinkingLevel::High, &budgets);
         assert_eq!((max, budget), (32000, 16384));
     }
 
@@ -250,7 +306,8 @@ mod tests {
     fn test_adjust_max_tokens_xhigh_clamps_to_high_budget() {
         let budgets = default_thinking_budgets();
         // clampReasoning(xhigh) -> high (16384), same as the basic high case.
-        let (max, budget) = adjust_max_tokens_for_thinking(Some(4096), 32000, &ThinkingLevel::XHigh, &budgets);
+        let (max, budget) =
+            adjust_max_tokens_for_thinking(Some(4096), 32000, &ThinkingLevel::XHigh, &budgets);
         assert_eq!((max, budget), (20480, 16384));
     }
 
@@ -258,11 +315,19 @@ mod tests {
 
     fn test_model_base() -> Model {
         Model {
-            id: "test".into(), name: "Test".into(), api: "openai-completions".into(),
-            provider: "openai".into(), base_url: "".into(), reasoning: false,
-            thinking_level_map: None, input: vec!["text".into()],
-            cost: ModelCost::default(), context_window: 128000, max_tokens: 4096,
-            headers: None, api_key: None,
+            id: "test".into(),
+            name: "Test".into(),
+            api: "openai-completions".into(),
+            provider: "openai".into(),
+            base_url: "".into(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 128000,
+            max_tokens: 4096,
+            headers: None,
+            api_key: None,
             compat: Default::default(),
         }
     }
@@ -270,13 +335,23 @@ mod tests {
     fn base_msg() -> Message {
         Message {
             role: Role::Assistant,
-            content: vec![ContentBlock::Text { text: "hi".into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: "hi".into(),
+                text_signature: None,
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
             response_model: None,
             diagnostics: Vec::new(),
-            usage: None, stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false,
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
             details: None,
         }
     }

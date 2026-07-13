@@ -49,7 +49,22 @@ def gen_model(m) -> str:
     co = cost.get("output", 0)
     cr = cost.get("cacheRead", 0)
     cw = cost.get("cacheWrite", 0)
-    lines.append(f"            cost: ModelCost {{ input: {ci}_f64, output: {co}_f64, cache_read: {cr}_f64, cache_write: {cw}_f64 }},")
+    tiers = cost.get("tiers", []) or []
+    if tiers:
+        tier_items = ", ".join(
+            "ModelCostTier {{ input_tokens_above: {ta}_u64, input: {i}_f64, output: {o}_f64, cache_read: {r}_f64, cache_write: {w}_f64 }}".format(
+                ta=t.get("inputTokensAbove", 0),
+                i=t.get("input", 0),
+                o=t.get("output", 0),
+                r=t.get("cacheRead", 0),
+                w=t.get("cacheWrite", 0),
+            )
+            for t in tiers
+        )
+        tiers_str = f"vec![{tier_items}]"
+    else:
+        tiers_str = "vec![]"
+    lines.append(f"            cost: ModelCost {{ input: {ci}_f64, output: {co}_f64, cache_read: {cr}_f64, cache_write: {cw}_f64, tiers: {tiers_str} }},")
     lines.append(f"            context_window: {m.get('contextWindow', 0)},")
     lines.append(f"            max_tokens: {m.get('maxTokens', 0)},")
     
@@ -132,7 +147,7 @@ def main():
     out.append("#![allow(clippy::approx_constant)]")
     out.append("")
     out.append("use std::collections::HashMap;")
-    out.append("use crate::types::{Model, ModelCost, ModelCompat};")
+    out.append("use crate::types::{Model, ModelCost, ModelCostTier, ModelCompat};")
     out.append("")
     out.append("/// Returns all built-in models from the upstream pi-ai registry.")
     out.append("pub fn builtin_models() -> Vec<Model> {")

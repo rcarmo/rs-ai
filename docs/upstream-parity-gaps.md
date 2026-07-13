@@ -243,6 +243,42 @@ the credential-available providers above).
 > Running totals after 0.80.5: **PORTED 46, SIMULATED-FIXTURE 9**. Denominator **92**.
 > **748 tests, 0 failures, 0 clippy warnings.**
 
+
+> **0.80.6 inventory update** (`earendil-works/pi` `v0.80.5`→`v0.80.6`, commit
+> `2b3fda9`, `packages/ai/test`). Denominator **92 → 94 test files** (+2 new, 0
+> removed). New files + rs-ai disposition:
+> - **`context-estimate.test.ts`** — **PORTED**. `estimateContextTokens` now ignores
+>   a stale assistant usage anchor when a newer prefix message (for example a
+>   compaction summary) was inserted before it; it resumes anchoring after a newer
+>   assistant response. `src/estimate.rs` tracks `latest_prefix_timestamp`; exact
+>   upstream values are asserted in `src/estimate_test.rs` (`tokens=1005`,
+>   `maxTokens=4899`; then `tokens=2001`, `lastUsageIndex=3`).
+> - **`max-thinking.test.ts`** — **PORTED**. `max` is opt-in for ordinary reasoning
+>   models, explicit on `gpt-5.6-{luna,sol,terra}`, supports a high→max hole when
+>   `xhigh` is disabled, and serializes Codex Responses `reasoning.effort="max"`.
+>   `src/max_thinking_test.rs`.
+>
+> In-place behavioral deltas (existing files), rs-ai disposition:
+> 1. **Catalog regen v0.80.6** — **DONE**. `src/models_generated.rs` = **1057
+>    models / 35 providers**; `src/images/models_generated.rs` remains 35 image
+>    models / 1 provider. `ModelCost.tiers` is ported and `calculate_cost` applies
+>    request-wide tier thresholds before service-tier multipliers.
+> 2. **Anthropic/Bedrock adaptive + empty thinking** — **PORTED**. Catalog-driven
+>    adaptive-thinking updates and request builders preserve an empty thinking text
+>    when a signature is present; empty/blank signatures still follow the existing
+>    compatibility gate. `src/anthropic_compat_test.rs`.
+> 3. **Thinking-level catalog/test deltas** — **PORTED**. Sonnet 4.6 exposes native
+>    `max` instead of `xhigh`; Opus/OpenRouter/Codex/GitHub Copilot cases and
+>    supports-xhigh expectations are updated. `src/supports_xhigh_test.rs`,
+>    `src/github_copilot_anthropic_test.rs`.
+> 4. **OpenAI Responses/Copilot request deltas** — **PORTED**. `verbosity`,
+>    provider/model request-shape updates, terminal-event/tool-choice assertion
+>    deltas and catalog-driven fixture changes are covered by the existing payload
+>    tests (`src/openai_responses_copilot_provider_test.rs`, `src/provider_test.rs`).
+>
+> Running totals after 0.80.6: **PORTED 48, SIMULATED-FIXTURE 9**. Denominator **94**.
+> **756 tests ×3, 0 failures, 0 clippy warnings.**
+
 _Total **87** upstream test files (0.80.2 snapshot; see 0.80.3 update above → 90). **Final classification (Rui's ruling: "we test with what we have. No keys, no tests" — no record-replay/mock harness, no skip-only wrappers, no fabrication):**_
 
 - **42 PORTED (yes/yes)** — deterministic, name/value-faithful ports.

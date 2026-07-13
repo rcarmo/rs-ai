@@ -32,6 +32,8 @@ chars (= 1200 tokens). rs-ai: `src/estimate.rs`, `src/estimate_test.rs`.
 | assistant msg = text+thinking+toolcall-JSON | `"hello"(5)+"think"(5)+(2+len('{"a":1}')=7)` = 19 chars | `ceil(19/4) = 5` |
 | context anchors on last **non-aborted** assistant usage | sys `"sys"`, [user(ignored), assistant total=100, user `"abcd"`] | `tokens=101` (usage 100 + trailing 1; **no** system prefix when anchored), `lastUsageIndex=1` |
 | no usage anchor → adds system prefix | sys `"12345678"`(2 tok), [assistant total=500 **aborted**, user `"abcd"`] | `tokens=4` (msgs 1+1 + sys 2; aborted usage skipped), `lastUsageIndex=None` |
+| v0.80.6 stale usage after inserted prefix | sys `"system"`, [user `"summary"` ts=200, assistant usage=9500 ts=100, user `"x"*4000` ts=300] | `tokens=1005`, `usageTokens=0`, `trailingTokens=1005`, `lastUsageIndex=None`; context clamp for 10k/8k model → `maxTokens=4899` |
+| v0.80.6 usage resumes after newer assistant | [user ts=200, stale assistant ts=100, user ts=300, assistant usage=2000 ts=400, user `"tail"` ts=500] | `tokens=2001`, `usageTokens=2000`, `trailingTokens=1`, `lastUsageIndex=3` |
 
 ### B. `clampMaxTokensToContext` boundary values
 

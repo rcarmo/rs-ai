@@ -5,7 +5,7 @@
 //! char-per-token ratio, image char weighting, last-assistant-usage anchoring,
 //! and prefix (system + tools) accounting exactly.
 
-use crate::types::{Context, ContentBlock, Message, Role, StopReason, Usage};
+use crate::types::{ContentBlock, Context, Message, Role, StopReason, Usage};
 
 const CHARS_PER_TOKEN: usize = 4;
 const ESTIMATED_IMAGE_CHARS: usize = 4800;
@@ -38,10 +38,13 @@ pub fn estimate_text_tokens(text: &str) -> u32 {
 }
 
 fn content_chars(content: &[ContentBlock]) -> usize {
-    content.iter().map(|b| match b {
-        ContentBlock::Text { text, .. } => text.len(),
-        _ => ESTIMATED_IMAGE_CHARS,
-    }).sum()
+    content
+        .iter()
+        .map(|b| match b {
+            ContentBlock::Text { text, .. } => text.len(),
+            _ => ESTIMATED_IMAGE_CHARS,
+        })
+        .sum()
 }
 
 /// Text + image content tokens (used for user / toolResult messages, which carry
@@ -59,9 +62,13 @@ pub fn estimate_message_tokens(message: &Message) -> u32 {
         match block {
             ContentBlock::Text { text, .. } => chars += text.len(),
             ContentBlock::Thinking { thinking, .. } => chars += thinking.len(),
-            ContentBlock::ToolCall { name, arguments, .. } => {
+            ContentBlock::ToolCall {
+                name, arguments, ..
+            } => {
                 chars += name.len();
-                chars += serde_json::to_string(arguments).unwrap_or_else(|_| "undefined".into()).len();
+                chars += serde_json::to_string(arguments)
+                    .unwrap_or_else(|_| "undefined".into())
+                    .len();
             }
             ContentBlock::Image { .. } => chars += ESTIMATED_IMAGE_CHARS,
         }
@@ -69,28 +76,41 @@ pub fn estimate_message_tokens(message: &Message) -> u32 {
     ceil_div(chars, CHARS_PER_TOKEN)
 }
 
-/// Most recent assistant message with positive usage that did not abort/error.
+/// Most recent *applicable* assistant message with positive usage that did not
+/// abort/error. v0.80.6: an assistant usage block only describes the current
+/// prefix if no newer prefix message (e.g. a compaction summary) was inserted
+/// after it — tracked via `latest_prefix_timestamp`.
 fn last_assistant_usage(messages: &[Message]) -> Option<(usize, &Usage)> {
-    for (i, message) in messages.iter().enumerate().rev() {
-        if message.role != Role::Assistant {
-            continue;
+    let mut latest_prefix_timestamp = i64::MIN;
+    let mut usage_info: Option<(usize, &Usage)> = None;
+    for (i, message) in messages.iter().enumerate() {
+        if message.role == Role::Assistant {
+            // A newer prefix message was inserted after this response (for example,
+            // a compaction summary), so its usage cannot describe the current prefix.
+            let usage_applies_to_prefix = message.timestamp >= latest_prefix_timestamp;
+            if usage_applies_to_prefix
+                && !matches!(
+                    message.stop_reason,
+                    Some(StopReason::Aborted) | Some(StopReason::Error)
+                )
+                && let Some(usage) = &message.usage
+                && calculate_context_tokens(usage) > 0
+            {
+                usage_info = Some((i, usage));
+            }
         }
-        if matches!(message.stop_reason, Some(StopReason::Aborted) | Some(StopReason::Error)) {
-            continue;
-        }
-        if let Some(usage) = &message.usage
-            && calculate_context_tokens(usage) > 0
-        {
-            return Some((i, usage));
-        }
+        latest_prefix_timestamp = latest_prefix_timestamp.max(message.timestamp);
     }
-    None
+    usage_info
 }
 
 fn estimate_messages(messages: &[Message]) -> ContextEstimate {
     if let Some((index, usage)) = last_assistant_usage(messages) {
         let usage_tokens = calculate_context_tokens(usage);
-        let trailing_tokens: u32 = messages[index + 1..].iter().map(estimate_message_tokens).sum();
+        let trailing_tokens: u32 = messages[index + 1..]
+            .iter()
+            .map(estimate_message_tokens)
+            .sum();
         return ContextEstimate {
             tokens: usage_tokens + trailing_tokens,
             usage_tokens,
@@ -99,7 +119,12 @@ fn estimate_messages(messages: &[Message]) -> ContextEstimate {
         };
     }
     let tokens: u32 = messages.iter().map(estimate_message_tokens).sum();
-    ContextEstimate { tokens, usage_tokens: 0, trailing_tokens: tokens, last_usage_index: None }
+    ContextEstimate {
+        tokens,
+        usage_tokens: 0,
+        trailing_tokens: tokens,
+        last_usage_index: None,
+    }
 }
 
 /// Estimate a full context's token footprint. When no last-assistant usage
@@ -109,9 +134,13 @@ pub fn estimate_context_tokens(context: &Context) -> ContextEstimate {
     if estimate.last_usage_index.is_some() {
         return estimate;
     }
-    let mut prefix_tokens = context.system_prompt.as_deref().map_or(0, estimate_text_tokens);
+    let mut prefix_tokens = context
+        .system_prompt
+        .as_deref()
+        .map_or(0, estimate_text_tokens);
     if !context.tools.is_empty() {
-        let tools_json = serde_json::to_string(&context.tools).unwrap_or_else(|_| "undefined".into());
+        let tools_json =
+            serde_json::to_string(&context.tools).unwrap_or_else(|_| "undefined".into());
         prefix_tokens += estimate_text_tokens(&tools_json);
     }
     ContextEstimate {

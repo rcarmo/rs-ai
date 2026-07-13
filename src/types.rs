@@ -55,6 +55,7 @@ pub enum ThinkingLevel {
     High,
     #[serde(rename = "xhigh")]
     XHigh,
+    Max,
 }
 
 /// Extended thinking level (includes "off").
@@ -68,6 +69,7 @@ pub enum ModelThinkingLevel {
     High,
     #[serde(rename = "xhigh")]
     XHigh,
+    Max,
 }
 
 /// Message sender role.
@@ -128,10 +130,7 @@ pub enum ContentBlock {
         redacted: bool,
     },
     #[serde(rename = "image")]
-    Image {
-        data: String,
-        mime_type: String,
-    },
+    Image { data: String, mime_type: String },
     #[serde(rename = "toolCall")]
     ToolCall {
         id: String,
@@ -195,7 +194,30 @@ pub struct AssistantMessageDiagnostic {
     pub details: Option<HashMap<String, serde_json::Value>>,
 }
 
-/// Per-million-token costs for a model.
+/// Per-million-token cost rates (base tier or a request-wide pricing tier).
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelCostRates {
+    pub input: f64,
+    pub output: f64,
+    pub cache_read: f64,
+    pub cache_write: f64,
+}
+
+/// A request-wide pricing tier. The highest matching `input_tokens_above`
+/// threshold applies to the full request (v0.80.6 tiered pricing).
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelCostTier {
+    /// Use this tier for requests whose total input usage exceeds this token count.
+    pub input_tokens_above: u64,
+    pub input: f64,
+    pub output: f64,
+    pub cache_read: f64,
+    pub cache_write: f64,
+}
+
+/// Per-million-token costs for a model, with optional request-wide tiers.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelCost {
@@ -203,6 +225,10 @@ pub struct ModelCost {
     pub output: f64,
     pub cache_read: f64,
     pub cache_write: f64,
+    /// Request-wide pricing tiers. The highest matching input threshold applies
+    /// to the full request.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tiers: Vec<ModelCostTier>,
 }
 
 /// Deserialize `content`, treating `null`/missing as an empty vec (v0.80.5
@@ -376,7 +402,14 @@ pub struct ThinkingBudgets {
     pub high: Option<u32>,
 }
 
-pub type PayloadHook = Arc<dyn Fn(serde_json::Value, &Model) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>;
+pub type PayloadHook = Arc<
+    dyn Fn(
+            serde_json::Value,
+            &Model,
+        ) -> Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync,
+>;
 pub type ResponseHook = Arc<dyn Fn(u16, &HashMap<String, String>, &Model) + Send + Sync>;
 
 #[derive(Clone, Default)]
@@ -436,7 +469,10 @@ impl std::fmt::Debug for StreamOptions {
             .field("text_verbosity", &self.text_verbosity)
             .field("interleaved_thinking", &self.interleaved_thinking)
             .field("thinking_display", &self.thinking_display)
-            .field("thinking_budgets", &self.thinking_budgets.as_ref().map(|_| "..."))
+            .field(
+                "thinking_budgets",
+                &self.thinking_budgets.as_ref().map(|_| "..."),
+            )
             .field("project", &self.project)
             .field("location", &self.location)
             .finish()

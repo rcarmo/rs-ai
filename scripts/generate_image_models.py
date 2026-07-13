@@ -35,7 +35,7 @@ def gen_model(m) -> str:
     co = cost.get("output", 0)
     cr = cost.get("cacheRead", 0)
     cw = cost.get("cacheWrite", 0)
-    lines.append(f"            cost: ModelCost {{ input: {ci}_f64, output: {co}_f64, cache_read: {cr}_f64, cache_write: {cw}_f64 }},")
+    lines.append(f"            cost: ModelCost {{ input: {ci}_f64, output: {co}_f64, cache_read: {cr}_f64, cache_write: {cw}_f64, tiers: vec![] }},")
     lines.append("        }")
     return "\n".join(lines)
 

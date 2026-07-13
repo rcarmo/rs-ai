@@ -5,32 +5,55 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::events::Event;
     use crate::provider::anthropic::stream_anthropic;
     use crate::registry::get_model;
     use crate::simple_options::get_supported_thinking_levels;
-    use crate::types::{Context, ContentBlock, Message, Model, Role, StreamOptions};
-    use crate::events::Event;
+    use crate::types::{ContentBlock, Context, Message, Model, Role, StreamOptions};
     use serde_json::Value;
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn ctx() -> Context {
         Context {
-            system_prompt: Some("You are a helpful assistant.".into()), tools: Vec::new(),
+            system_prompt: Some("You are a helpful assistant.".into()),
+            tools: Vec::new(),
             messages: vec![Message {
-                role: Role::User, content: vec![ContentBlock::Text { text: "Hello".into(), text_signature: None }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role: Role::User,
+                content: vec![ContentBlock::Text {
+                    text: "Hello".into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
 
     fn levels(m: &Model) -> Vec<String> {
-        get_supported_thinking_levels(m).into_iter()
-            .map(|l| serde_json::to_value(l).unwrap().as_str().unwrap().to_string()).collect()
+        get_supported_thinking_levels(m)
+            .into_iter()
+            .map(|l| {
+                serde_json::to_value(l)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string()
+            })
+            .collect()
     }
 
     #[test]
@@ -39,13 +62,17 @@ mod tests {
         let map = opus47.thinking_level_map.as_ref().unwrap();
         assert_eq!(map.get("minimal"), Some(&Some("low".to_string())));
         assert_eq!(map.get("xhigh"), Some(&Some("xhigh".to_string())));
+        assert_eq!(map.get("max"), Some(&Some("max".to_string())));
         assert!(levels(&opus47).iter().any(|l| l == "xhigh"));
 
+        // v0.80.6: Sonnet 4.6 exposes native "max" (mapped from "max"), not "xhigh".
         let sonnet46 = get_model("github-copilot", "claude-sonnet-4.6").unwrap();
         let map = sonnet46.thinking_level_map.as_ref().unwrap();
         assert_eq!(map.get("minimal"), Some(&Some("low".to_string())));
-        assert_eq!(map.get("xhigh"), Some(&Some("max".to_string())));
-        assert!(levels(&sonnet46).iter().any(|l| l == "xhigh"));
+        assert_eq!(map.get("max"), Some(&Some("max".to_string())));
+        let l = levels(&sonnet46);
+        assert!(l.iter().any(|x| x == "max"), "{l:?}");
+        assert!(!l.iter().any(|x| x == "xhigh"), "{l:?}");
     }
 
     async fn run(opts: StreamOptions) -> (Value, std::collections::HashMap<String, String>) {
@@ -62,12 +89,16 @@ mod tests {
         let c = ctx();
         let mut stream = stream_anthropic(&model, &c, &opts);
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Done { .. } | Event::Error { .. }) { break; }
+            if matches!(evt, Event::Done { .. } | Event::Error { .. }) {
+                break;
+            }
         }
         let reqs = server.received_requests().await.unwrap();
         let req = reqs.last().unwrap();
         let body: Value = serde_json::from_slice(&req.body).unwrap();
-        let headers = req.headers.iter()
+        let headers = req
+            .headers
+            .iter()
             .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string()))
             .collect();
         (body, headers)
@@ -78,18 +109,37 @@ mod tests {
         let model = get_model("github-copilot", "claude-sonnet-4.6").unwrap();
         assert_eq!(model.api, "anthropic-messages");
 
-        let opts = StreamOptions { api_key: Some("tid_copilot_session_test_token".into()), ..Default::default() };
+        let opts = StreamOptions {
+            api_key: Some("tid_copilot_session_test_token".into()),
+            ..Default::default()
+        };
         let (body, headers) = run(opts).await;
 
         // Bearer auth (not x-api-key).
-        assert_eq!(headers.get("authorization").map(String::as_str), Some("Bearer tid_copilot_session_test_token"));
-        assert!(!headers.contains_key("x-api-key"), "copilot must not send x-api-key");
+        assert_eq!(
+            headers.get("authorization").map(String::as_str),
+            Some("Bearer tid_copilot_session_test_token")
+        );
+        assert!(
+            !headers.contains_key("x-api-key"),
+            "copilot must not send x-api-key"
+        );
 
         // Static copilot headers (from catalog) + dynamic headers.
-        assert!(headers.get("user-agent").is_some_and(|v| v.contains("GitHubCopilotChat")));
-        assert_eq!(headers.get("copilot-integration-id").map(String::as_str), Some("vscode-chat"));
+        assert!(
+            headers
+                .get("user-agent")
+                .is_some_and(|v| v.contains("GitHubCopilotChat"))
+        );
+        assert_eq!(
+            headers.get("copilot-integration-id").map(String::as_str),
+            Some("vscode-chat")
+        );
         assert_eq!(headers.get("x-initiator").map(String::as_str), Some("user"));
-        assert_eq!(headers.get("openai-intent").map(String::as_str), Some("conversation-edits"));
+        assert_eq!(
+            headers.get("openai-intent").map(String::as_str),
+            Some("conversation-edits")
+        );
 
         // No fine-grained-tool-streaming beta for Copilot.
         let beta = headers.get("anthropic-beta").cloned().unwrap_or_default();
@@ -111,6 +161,9 @@ mod tests {
         };
         let (_body, headers) = run(opts).await;
         let beta = headers.get("anthropic-beta").cloned().unwrap_or_default();
-        assert!(!beta.contains("interleaved-thinking-2025-05-14"), "adaptive models omit interleaved-thinking beta: {beta}");
+        assert!(
+            !beta.contains("interleaved-thinking-2025-05-14"),
+            "adaptive models omit interleaved-thinking beta: {beta}"
+        );
     }
 }

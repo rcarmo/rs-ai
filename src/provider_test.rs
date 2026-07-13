@@ -2,16 +2,16 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::openai::stream_openai;
-    use crate::provider::anthropic::stream_anthropic;
-    use crate::provider::mistral::stream_mistral;
-    use crate::provider::responses::stream_responses;
-    use crate::provider::codex::{build_codex_payload, replay_codex_ws_events};
-    use crate::types::*;
     use crate::events::Event;
+    use crate::provider::anthropic::stream_anthropic;
+    use crate::provider::codex::{build_codex_payload, replay_codex_ws_events};
+    use crate::provider::mistral::stream_mistral;
+    use crate::provider::openai::stream_openai;
+    use crate::provider::responses::stream_responses;
+    use crate::types::*;
     use tokio_stream::StreamExt;
-    use wiremock::{MockServer, Mock, ResponseTemplate};
-    use wiremock::matchers::{method, path, header};
+    use wiremock::matchers::{header, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn test_model(api: &str, provider: &str, base_url: &str) -> Model {
         Model {
@@ -41,7 +41,10 @@ mod tests {
     }
 
     fn sse_response(events: &[&str]) -> String {
-        events.iter().map(|e| format!("data: {}\n\n", e)).collect::<String>()
+        events
+            .iter()
+            .map(|e| format!("data: {}\n\n", e))
+            .collect::<String>()
             + "data: [DONE]\n\n"
     }
 
@@ -57,16 +60,33 @@ mod tests {
                 role: Role::User,
                 content: vec![],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         let msgs = payload["messages"].as_array().unwrap();
-        assert!(msgs.iter().all(|m| m["role"] != "user"), "empty user message must be skipped");
+        assert!(
+            msgs.iter().all(|m| m["role"] != "user"),
+            "empty user message must be skipped"
+        );
     }
 
     #[test]
@@ -77,18 +97,42 @@ mod tests {
         let model = test_model("openai-completions", "openai", "https://example.com");
         let ws = Message {
             role: Role::Assistant,
-            content: vec![ContentBlock::Text { text: "   \n  ".into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: "   \n  ".into(),
+                text_signature: None,
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![ws], tools: vec![] };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![ws],
+            tools: vec![],
+        };
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         let msgs = payload["messages"].as_array().unwrap();
-        assert!(msgs.iter().all(|m| m["role"] != "assistant"),
-            "whitespace-only assistant message must be skipped, got: {:?}", msgs);
+        assert!(
+            msgs.iter().all(|m| m["role"] != "assistant"),
+            "whitespace-only assistant message must be skipped, got: {:?}",
+            msgs
+        );
     }
 
     #[tokio::test]
@@ -113,11 +157,18 @@ mod tests {
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut err_msg: Option<Message> = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { message, .. } = evt { err_msg = message; }
+            if let Event::Error { message, .. } = evt {
+                err_msg = message;
+            }
         }
         let msg = err_msg.expect("truncated stream should emit an Error with a message");
-        assert!(msg.content.iter().any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "partial answer")),
-            "truncated stream must keep accumulated content: {:?}", msg.content);
+        assert!(
+            msg.content
+                .iter()
+                .any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "partial answer")),
+            "truncated stream must keep accumulated content: {:?}",
+            msg.content
+        );
     }
 
     #[tokio::test]
@@ -148,11 +199,24 @@ mod tests {
 
         // Verify event sequence
         assert!(matches!(&events[0], Event::Start { .. }));
-        let text: String = events.iter().filter_map(|e| {
-            if let Event::TextDelta { delta } = e { Some(delta.as_str()) } else { None }
-        }).collect();
+        let text: String = events
+            .iter()
+            .filter_map(|e| {
+                if let Event::TextDelta { delta } = e {
+                    Some(delta.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect();
         assert_eq!(text, "Hello world");
-        assert!(matches!(events.last().unwrap(), Event::Done { reason: StopReason::Stop, .. }));
+        assert!(matches!(
+            events.last().unwrap(),
+            Event::Done {
+                reason: StopReason::Stop,
+                ..
+            }
+        ));
 
         if let Event::Done { message, .. } = events.last().unwrap() {
             assert_eq!(message.response_id.as_deref(), Some("resp-1"));
@@ -184,16 +248,34 @@ mod tests {
         let opts = StreamOptions::default();
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut events = Vec::new();
-        while let Some(evt) = stream.next().await { events.push(evt); }
+        while let Some(evt) = stream.next().await {
+            events.push(evt);
+        }
 
         // No Error event should be produced by the empty finish_reason.
-        assert!(!events.iter().any(|e| matches!(e, Event::Error { .. })),
-            "empty finish_reason must not produce an error: {:?}", events);
-        let text: String = events.iter().filter_map(|e| {
-            if let Event::TextDelta { delta } = e { Some(delta.as_str()) } else { None }
-        }).collect();
+        assert!(
+            !events.iter().any(|e| matches!(e, Event::Error { .. })),
+            "empty finish_reason must not produce an error: {:?}",
+            events
+        );
+        let text: String = events
+            .iter()
+            .filter_map(|e| {
+                if let Event::TextDelta { delta } = e {
+                    Some(delta.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect();
         assert_eq!(text, "Hi there");
-        assert!(matches!(events.last().unwrap(), Event::Done { reason: StopReason::Stop, .. }));
+        assert!(matches!(
+            events.last().unwrap(),
+            Event::Done {
+                reason: StopReason::Stop,
+                ..
+            }
+        ));
     }
 
     #[tokio::test]
@@ -294,7 +376,9 @@ mod tests {
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut done: Option<Message> = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { done = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                done = Some(message);
+            }
         }
         assert_eq!(done.unwrap().response_id.as_deref(), Some("first"));
     }
@@ -318,7 +402,12 @@ mod tests {
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut tool_end = None;
         while let Some(evt) = stream.next().await {
-            if let Event::ToolCallEnd { id, name, arguments } = evt {
+            if let Event::ToolCallEnd {
+                id,
+                name,
+                arguments,
+            } = evt
+            {
                 tool_end = Some((id, name, arguments));
             }
         }
@@ -347,11 +436,15 @@ mod tests {
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                msg = Some(message);
+            }
         }
         let m = msg.expect("done");
         let sig = m.content.iter().find_map(|b| match b {
-            ContentBlock::ToolCall { thought_signature, .. } => thought_signature.clone(),
+            ContentBlock::ToolCall {
+                thought_signature, ..
+            } => thought_signature.clone(),
             _ => None,
         });
         // The encrypted reasoning detail is captured and attached to the tool call.
@@ -384,13 +477,23 @@ mod tests {
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                msg = Some(message);
+            }
         }
         let m = msg.expect("done");
-        let sig = m.content.iter().find_map(|b| match b {
-            ContentBlock::ToolCall { id, thought_signature, .. } if id == "tcX" => Some(thought_signature.clone()),
-            _ => None,
-        }).expect("tcX tool call");
+        let sig = m
+            .content
+            .iter()
+            .find_map(|b| match b {
+                ContentBlock::ToolCall {
+                    id,
+                    thought_signature,
+                    ..
+                } if id == "tcX" => Some(thought_signature.clone()),
+                _ => None,
+            })
+            .expect("tcX tool call");
         let sig = sig.expect("signature paired despite earlier arrival");
         assert!(sig.contains("ENCX"));
     }
@@ -412,13 +515,19 @@ mod tests {
             .mount(&server)
             .await;
 
-        let model = test_model("azure-openai-responses", "azure-openai-responses", &server.uri());
+        let model = test_model(
+            "azure-openai-responses",
+            "azure-openai-responses",
+            &server.uri(),
+        );
         let opts = StreamOptions::default();
         let ctx = test_context();
         let mut stream = stream_azure_responses(&model, &ctx, &opts);
         let mut text = String::new();
         while let Some(evt) = stream.next().await {
-            if let Event::TextDelta { delta } = evt { text.push_str(&delta); }
+            if let Event::TextDelta { delta } = evt {
+                text.push_str(&delta);
+            }
         }
         // Only matches if api-key header + api-version query were present.
         assert_eq!(text, "hi");
@@ -429,7 +538,11 @@ mod tests {
         use crate::provider::responses::resolve_azure_base_url_from;
         // AZURE_OPENAI_BASE_URL wins, normalized.
         assert_eq!(
-            resolve_azure_base_url_from(Some("https://a.openai.azure.com"), Some("res"), "https://m.openai.azure.com/openai/v1"),
+            resolve_azure_base_url_from(
+                Some("https://a.openai.azure.com"),
+                Some("res"),
+                "https://m.openai.azure.com/openai/v1"
+            ),
             Ok(Some("https://a.openai.azure.com/openai/v1".to_string()))
         );
         // Resource name builds the default host when no base URL.
@@ -445,8 +558,10 @@ mod tests {
         // Nothing configured -> Ok(None).
         assert_eq!(resolve_azure_base_url_from(None, None, ""), Ok(None));
         // Empty/whitespace env values are ignored.
-        assert_eq!(resolve_azure_base_url_from(Some("  "), None, "https://m.openai.azure.com"),
-            Ok(Some("https://m.openai.azure.com/openai/v1".to_string())));
+        assert_eq!(
+            resolve_azure_base_url_from(Some("  "), None, "https://m.openai.azure.com"),
+            Ok(Some("https://m.openai.azure.com/openai/v1".to_string()))
+        );
     }
 
     #[test]
@@ -460,10 +575,19 @@ mod tests {
             "my-deploy"
         );
         // Unmapped id with a map present -> falls back to model id.
-        assert_eq!(resolve_azure_deployment_from_map(Some("gpt-4o=other"), "gpt-5"), "gpt-5");
+        assert_eq!(
+            resolve_azure_deployment_from_map(Some("gpt-4o=other"), "gpt-5"),
+            "gpt-5"
+        );
         // Empty deployment value -> skipped, falls back to model id (upstream !deploymentName).
-        assert_eq!(resolve_azure_deployment_from_map(Some("gpt-5="), "gpt-5"), "gpt-5");
-        assert_eq!(resolve_azure_deployment_from_map(Some("gpt-5=  "), "gpt-5"), "gpt-5");
+        assert_eq!(
+            resolve_azure_deployment_from_map(Some("gpt-5="), "gpt-5"),
+            "gpt-5"
+        );
+        assert_eq!(
+            resolve_azure_deployment_from_map(Some("gpt-5=  "), "gpt-5"),
+            "gpt-5"
+        );
         // Duplicate keys: upstream builds a Map (map.set), so the LAST entry wins.
         assert_eq!(
             resolve_azure_deployment_from_map(Some("gpt-5=first, gpt-5=second"), "gpt-5"),
@@ -495,7 +619,10 @@ mod tests {
             Ok("https://my-rg.openai.azure.com/openai/v1".to_string())
         );
         // Non-Azure host untouched.
-        assert_eq!(normalize_azure_base_url("https://example.com/v1"), Ok("https://example.com/v1".to_string()));
+        assert_eq!(
+            normalize_azure_base_url("https://example.com/v1"),
+            Ok("https://example.com/v1".to_string())
+        );
     }
 
     #[tokio::test]
@@ -517,7 +644,9 @@ mod tests {
         let mut stream = stream_responses(&model, &ctx, &opts);
         let mut err = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+            if let Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+            }
         }
         // Formatted as "code: message".
         assert_eq!(err.as_deref(), Some("rate_limit: slow down"));
@@ -552,8 +681,14 @@ mod tests {
                 _ => {}
             }
         }
-        assert!(saw_error, "no-terminal responses stream must produce an Error");
-        assert!(!saw_done, "no-terminal responses stream must not produce a Done");
+        assert!(
+            saw_error,
+            "no-terminal responses stream must produce an Error"
+        );
+        assert!(
+            !saw_done,
+            "no-terminal responses stream must not produce a Done"
+        );
     }
 
     #[tokio::test]
@@ -595,11 +730,16 @@ mod tests {
         // is supplied.
         let mut model = test_model("openai-responses", "openai", "https://example.com");
         model.reasoning = false;
-        let opts = StreamOptions { reasoning_summary: Some("detailed".into()), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning_summary: Some("detailed".into()),
+            ..Default::default()
+        };
         let ctx = test_context();
         let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &opts);
-        assert!(payload.get("reasoning").is_none(),
-            "non-reasoning model must not emit reasoning params: {payload}");
+        assert!(
+            payload.get("reasoning").is_none(),
+            "non-reasoning model must not emit reasoning params: {payload}"
+        );
         assert!(payload.get("include").is_none());
 
         // Sanity: a reasoning model WITH a summary does emit them.
@@ -633,7 +773,9 @@ mod tests {
         let mut stream = stream_responses(&model, &ctx, &opts);
         let mut reason = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { reason: r, .. } = evt { reason = Some(r); }
+            if let Event::Done { reason: r, .. } = evt {
+                reason = Some(r);
+            }
         }
         assert_eq!(reason, Some(StopReason::Length));
     }
@@ -670,7 +812,10 @@ mod tests {
             }
         }
         assert_eq!(reason, Some(StopReason::Length));
-        assert_eq!(err_msg, None, "incomplete (length) must not carry an error message");
+        assert_eq!(
+            err_msg, None,
+            "incomplete (length) must not carry an error message"
+        );
     }
 
     #[tokio::test]
@@ -683,7 +828,10 @@ mod tests {
                 .insert_header("content-type", "text/event-stream"))
             .mount(&server).await;
         let model = test_model("openai-responses", "openai", &server.uri());
-        let opts = StreamOptions { session_id: Some("".into()), ..Default::default() };
+        let opts = StreamOptions {
+            session_id: Some("".into()),
+            ..Default::default()
+        };
         let ctx = test_context();
         let mut s = stream_responses(&model, &ctx, &opts);
         while s.next().await.is_some() {}
@@ -694,51 +842,94 @@ mod tests {
 
     #[tokio::test]
     async fn test_responses_session_header_gating() {
-        use wiremock::matchers::header_exists;
         use crate::provider::responses::stream_azure_responses;
+        use wiremock::matchers::header_exists;
         let body = "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n";
-        let opts = StreamOptions { session_id: Some("sess-1".into()), ..Default::default() };
+        let opts = StreamOptions {
+            session_id: Some("sess-1".into()),
+            ..Default::default()
+        };
         let ctx = test_context();
 
         // Non-Azure default: session_id + x-client-request-id present.
         let oai = MockServer::start().await;
-        Mock::given(method("POST")).and(path("/responses"))
-            .and(header_exists("session_id")).and(header_exists("x-client-request-id"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(body).insert_header("content-type", "text/event-stream"))
-            .mount(&oai).await;
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .and(header_exists("session_id"))
+            .and(header_exists("x-client-request-id"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(body)
+                    .insert_header("content-type", "text/event-stream"),
+            )
+            .mount(&oai)
+            .await;
         let omodel = test_model("openai-responses", "openai", &oai.uri());
         let mut s = stream_responses(&omodel, &ctx, &opts);
         let mut done = false;
-        while let Some(e) = s.next().await { if matches!(e, Event::Done { .. }) { done = true; } }
+        while let Some(e) = s.next().await {
+            if matches!(e, Event::Done { .. }) {
+                done = true;
+            }
+        }
         assert!(done, "default should send session_id + x-client-request-id");
 
         // compat.send_session_id_header = false: session_id omitted, x-client-request-id kept.
         let oai2 = MockServer::start().await;
-        Mock::given(method("POST")).and(path("/responses"))
+        Mock::given(method("POST"))
+            .and(path("/responses"))
             .and(header_exists("x-client-request-id"))
             .and(|req: &wiremock::Request| req.headers.get("session_id").is_none())
-            .respond_with(ResponseTemplate::new(200).set_body_string(body).insert_header("content-type", "text/event-stream"))
-            .mount(&oai2).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(body)
+                    .insert_header("content-type", "text/event-stream"),
+            )
+            .mount(&oai2)
+            .await;
         let mut omodel2 = test_model("openai-responses", "openai", &oai2.uri());
         omodel2.compat.send_session_id_header = Some(false);
         let mut s2 = stream_responses(&omodel2, &ctx, &opts);
         let mut done2 = false;
-        while let Some(e) = s2.next().await { if matches!(e, Event::Done { .. }) { done2 = true; } }
-        assert!(done2, "send_session_id_header=false should omit session_id but keep x-client-request-id");
+        while let Some(e) = s2.next().await {
+            if matches!(e, Event::Done { .. }) {
+                done2 = true;
+            }
+        }
+        assert!(
+            done2,
+            "send_session_id_header=false should omit session_id but keep x-client-request-id"
+        );
 
         // Azure: no session correlation headers at all.
         let azure = MockServer::start().await;
-        Mock::given(method("POST")).and(path("/responses"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(body).insert_header("content-type", "text/event-stream"))
-            .mount(&azure).await;
-        let mut amodel = test_model("azure-openai-responses", "azure", &format!("{}/openai/v1", azure.uri()));
+        Mock::given(method("POST"))
+            .and(path("/responses"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(body)
+                    .insert_header("content-type", "text/event-stream"),
+            )
+            .mount(&azure)
+            .await;
+        let mut amodel = test_model(
+            "azure-openai-responses",
+            "azure",
+            &format!("{}/openai/v1", azure.uri()),
+        );
         amodel.api_key = Some("k".into());
         let mut s3 = stream_azure_responses(&amodel, &ctx, &opts);
         while s3.next().await.is_some() {}
         let reqs = azure.received_requests().await.unwrap();
         assert!(!reqs.is_empty());
-        assert!(reqs[0].headers.get("session_id").is_none(), "azure must not send session_id");
-        assert!(reqs[0].headers.get("x-client-request-id").is_none(), "azure must not send x-client-request-id");
+        assert!(
+            reqs[0].headers.get("session_id").is_none(),
+            "azure must not send session_id"
+        );
+        assert!(
+            reqs[0].headers.get("x-client-request-id").is_none(),
+            "azure must not send x-client-request-id"
+        );
     }
 
     #[tokio::test]
@@ -762,7 +953,9 @@ mod tests {
         let mut stream = stream_responses(&model, &ctx, &opts);
         let mut done = false;
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Done { .. }) { done = true; }
+            if matches!(evt, Event::Done { .. }) {
+                done = true;
+            }
         }
         // Missing the Copilot headers would fail the wiremock match -> no Done.
         assert!(done);
@@ -803,7 +996,11 @@ mod tests {
                     saw_tool_start = true;
                 }
                 Event::ToolCallDelta { delta } => deltas.push_str(&delta),
-                Event::ToolCallEnd { id, name, arguments } => {
+                Event::ToolCallEnd {
+                    id,
+                    name,
+                    arguments,
+                } => {
                     assert_eq!(id, "call_1");
                     assert_eq!(name, "search");
                     assert_eq!(arguments["q"], "rust");
@@ -814,7 +1011,9 @@ mod tests {
                     assert_eq!(message.response_id.as_deref(), Some("resp-2"));
                     // Upstream does not set responseModel for responses.
                     assert_eq!(message.response_model, None);
-                    assert!(message.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search")));
+                    assert!(message.content.iter().any(
+                        |b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search")
+                    ));
                 }
                 _ => {}
             }
@@ -847,12 +1046,19 @@ mod tests {
         let mut stream = stream_responses(&model, &ctx, &opts);
         let mut msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                msg = Some(message);
+            }
         }
-        let sig = msg.unwrap().content.iter().find_map(|b| match b {
-            ContentBlock::Text { text_signature, .. } => text_signature.clone(),
-            _ => None,
-        }).expect("text signature");
+        let sig = msg
+            .unwrap()
+            .content
+            .iter()
+            .find_map(|b| match b {
+                ContentBlock::Text { text_signature, .. } => text_signature.clone(),
+                _ => None,
+            })
+            .expect("text signature");
         // Encoded as {v:1,id,phase}; round-trips through parse on replay.
         assert!(sig.contains("msg_xyz"));
         assert!(sig.contains("final_answer"));
@@ -895,7 +1101,9 @@ mod tests {
 
         let message = done.expect("done message");
         assert!(saw_thinking);
-        assert!(message.content.iter().any(|b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "think-1")));
+        assert!(message.content.iter().any(
+            |b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "think-1")
+        ));
         assert!(message.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { id, name, .. } if id == "tc1" && name == "search")));
     }
 
@@ -935,7 +1143,9 @@ mod tests {
 
         let message = done.expect("done message");
         assert!(saw_thinking);
-        assert!(message.content.iter().any(|b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "step one")));
+        assert!(message.content.iter().any(
+            |b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "step one")
+        ));
         // Upstream does not set responseModel for responses.
         assert_eq!(message.response_model, None);
     }
@@ -959,23 +1169,37 @@ mod tests {
                 .insert_header("content-type", "text/event-stream"))
             .mount(&server)
             .await;
-        let mut model = test_model("azure-openai-responses", "azure-openai-responses", &server.uri());
+        let mut model = test_model(
+            "azure-openai-responses",
+            "azure-openai-responses",
+            &server.uri(),
+        );
         model.api_key = Some("k".into());
         let opts = StreamOptions::default();
         let ctx = test_context();
         let mut stream = stream_azure_responses(&model, &ctx, &opts);
         let mut done: Option<Message> = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { done = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                done = Some(message);
+            }
         }
         let message = done.expect("done");
-        let sig = message.content.iter().find_map(|b| match b {
-            ContentBlock::Thinking { thinking, thinking_signature, .. } => {
-                assert_eq!(thinking, "think");
-                thinking_signature.clone()
-            }
-            _ => None,
-        }).expect("thinking signature");
+        let sig = message
+            .content
+            .iter()
+            .find_map(|b| match b {
+                ContentBlock::Thinking {
+                    thinking,
+                    thinking_signature,
+                    ..
+                } => {
+                    assert_eq!(thinking, "think");
+                    thinking_signature.clone()
+                }
+                _ => None,
+            })
+            .expect("thinking signature");
         // Signature is the original reasoning item JSON, retaining `content`.
         assert!(sig.contains("\"content\""), "{sig}");
         assert!(!sig.contains("\"summary\""), "{sig}");
@@ -985,19 +1209,38 @@ mod tests {
     fn test_openrouter_anthropic_cache_control() {
         // OpenRouter anthropic/* models get Anthropic-style cache_control on system,
         // last conversation message, and last tool.
-        let model = test_model("openai-completions", "openrouter", "https://openrouter.ai/api/v1");
-        let mut model = Model { id: "anthropic/claude-sonnet-4".into(), ..model };
+        let model = test_model(
+            "openai-completions",
+            "openrouter",
+            "https://openrouter.ai/api/v1",
+        );
+        let mut model = Model {
+            id: "anthropic/claude-sonnet-4".into(),
+            ..model
+        };
         // 0.80.x: compat is baked per-model, not URL-detected.
         model.compat.cache_control_format = Some("anthropic".into());
         let ctx = Context {
             system_prompt: Some("sys".into()),
             messages: vec![user_message("hi")],
-            tools: vec![Tool { name: "t".into(), description: "d".into(), parameters: serde_json::json!({"type":"object"}) }],
+            tools: vec![Tool {
+                name: "t".into(),
+                description: "d".into(),
+                parameters: serde_json::json!({"type":"object"}),
+            }],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         let msgs = payload["messages"].as_array().unwrap();
         // system/developer message got cache_control on its text part.
-        let sys = msgs.iter().find(|m| m["role"] == "system" || m["role"] == "developer").unwrap();
+        let sys = msgs
+            .iter()
+            .find(|m| m["role"] == "system" || m["role"] == "developer")
+            .unwrap();
         assert_eq!(sys["content"][0]["cache_control"]["type"], "ephemeral");
         // last user message text part got cache_control.
         let last = &msgs[msgs.len() - 1];
@@ -1016,18 +1259,34 @@ mod tests {
             messages: vec![Message {
                 role: Role::Assistant,
                 content: vec![ContentBlock::ToolCall {
-                    id: "tc1".into(), name: "s".into(),
-                    arguments: std::collections::HashMap::new(), thought_signature: None,
+                    id: "tc1".into(),
+                    name: "s".into(),
+                    arguments: std::collections::HashMap::new(),
+                    thought_signature: None,
                 }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::ToolUse), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::ToolUse),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         assert_eq!(payload["tools"], serde_json::json!([]));
     }
 
@@ -1040,16 +1299,41 @@ mod tests {
         let tr = Message {
             role: Role::ToolResult,
             content: vec![
-                ContentBlock::Text { text: "result text".into(), text_signature: None },
-                ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() },
+                ContentBlock::Text {
+                    text: "result text".into(),
+                    text_signature: None,
+                },
+                ContentBlock::Image {
+                    data: "abc".into(),
+                    mime_type: "image/png".into(),
+                },
             ],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None, response_model: None,
-            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-            tool_call_id: Some("call_1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some("call_1".into()),
+            tool_name: Some("t".into()),
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![tr], tools: vec![] };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![tr],
+            tools: vec![],
+        };
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         let msgs = payload["messages"].as_array().unwrap();
         let tool_msg = msgs.iter().find(|m| m["role"] == "tool").unwrap();
         // Tool message content is a plain string (not an array with image_url).
@@ -1067,15 +1351,42 @@ mod tests {
         model.input = vec!["text".into(), "image".into()];
         let tr = Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() }],
+            content: vec![ContentBlock::Image {
+                data: "abc".into(),
+                mime_type: "image/png".into(),
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None, response_model: None,
-            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-            tool_call_id: Some("call_1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some("call_1".into()),
+            tool_name: Some("t".into()),
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![tr], tools: vec![] };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
-        let tool_msg = payload["messages"].as_array().unwrap().iter().find(|m| m["role"] == "tool").unwrap();
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![tr],
+            tools: vec![],
+        };
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
+        let tool_msg = payload["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["role"] == "tool")
+            .unwrap();
         assert_eq!(tool_msg["content"], "(see attached image)");
     }
 
@@ -1084,23 +1395,60 @@ mod tests {
         // OpenRouter routing -> provider; Vercel gateway routing -> providerOptions.gateway.
         let ctx = test_context();
 
-        let mut or_model = test_model("openai-completions", "openrouter", "https://openrouter.ai/api/v1");
-        or_model.compat.open_router_routing = Some(serde_json::json!({"order": ["openai", "azure"]}));
-        let p1 = crate::provider::openai::build_payload(&or_model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&or_model));
-        assert_eq!(p1["provider"], serde_json::json!({"order": ["openai", "azure"]}));
+        let mut or_model = test_model(
+            "openai-completions",
+            "openrouter",
+            "https://openrouter.ai/api/v1",
+        );
+        or_model.compat.open_router_routing =
+            Some(serde_json::json!({"order": ["openai", "azure"]}));
+        let p1 = crate::provider::openai::build_payload(
+            &or_model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&or_model),
+        );
+        assert_eq!(
+            p1["provider"],
+            serde_json::json!({"order": ["openai", "azure"]})
+        );
 
-        let mut vg_model = test_model("openai-completions", "vercel", "https://ai-gateway.vercel.sh/v1");
-        vg_model.compat.vercel_gateway_routing = Some(serde_json::json!({"only": ["bedrock"], "order": ["bedrock"]}));
-        let p2 = crate::provider::openai::build_payload(&vg_model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&vg_model));
-        assert_eq!(p2["providerOptions"]["gateway"]["only"], serde_json::json!(["bedrock"]));
-        assert_eq!(p2["providerOptions"]["gateway"]["order"], serde_json::json!(["bedrock"]));
+        let mut vg_model = test_model(
+            "openai-completions",
+            "vercel",
+            "https://ai-gateway.vercel.sh/v1",
+        );
+        vg_model.compat.vercel_gateway_routing =
+            Some(serde_json::json!({"only": ["bedrock"], "order": ["bedrock"]}));
+        let p2 = crate::provider::openai::build_payload(
+            &vg_model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&vg_model),
+        );
+        assert_eq!(
+            p2["providerOptions"]["gateway"]["only"],
+            serde_json::json!(["bedrock"])
+        );
+        assert_eq!(
+            p2["providerOptions"]["gateway"]["order"],
+            serde_json::json!(["bedrock"])
+        );
 
         // 0.80.x: Vercel routing applies whenever compat.vercelGatewayRouting is set,
         // regardless of base URL (the ai-gateway.vercel.sh gate was removed upstream).
         let mut non_vg = test_model("openai-completions", "openai", "https://example.com");
         non_vg.compat.vercel_gateway_routing = Some(serde_json::json!({"only": ["x"]}));
-        let p3 = crate::provider::openai::build_payload(&non_vg, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&non_vg));
-        assert_eq!(p3["providerOptions"]["gateway"]["only"], serde_json::json!(["x"]));
+        let p3 = crate::provider::openai::build_payload(
+            &non_vg,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&non_vg),
+        );
+        assert_eq!(
+            p3["providerOptions"]["gateway"]["only"],
+            serde_json::json!(["x"])
+        );
     }
 
     #[test]
@@ -1140,11 +1488,21 @@ mod tests {
         let ctx = test_context();
         let opts = StreamOptions::default();
         // Default: stream_options present.
-        let p1 = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        let p1 = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &opts,
+            &crate::compat::detect_compat(&model),
+        );
         assert!(p1.get("stream_options").is_some());
         // Override false -> omitted.
         model.compat.supports_usage_in_streaming = Some(false);
-        let p2 = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        let p2 = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &opts,
+            &crate::compat::detect_compat(&model),
+        );
         assert!(p2.get("stream_options").is_none());
     }
 
@@ -1154,7 +1512,10 @@ mod tests {
         // supportsTemperature gate); a compat flag must not suppress it.
         let model = test_model("openai-completions", "openai", "https://example.com");
         let ctx = test_context();
-        let opts = StreamOptions { temperature: Some(0.7), ..Default::default() };
+        let opts = StreamOptions {
+            temperature: Some(0.7),
+            ..Default::default()
+        };
         let mut compat = crate::compat::detect_compat(&model);
         compat.supports_temperature = Some(false);
         let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
@@ -1165,16 +1526,30 @@ mod tests {
     fn test_openai_developer_role_only_for_reasoning_models() {
         // Upstream uses the `developer` system role only when model.reasoning &&
         // supportsDeveloperRole; a non-reasoning model must use `system`.
-        let ctx = Context { system_prompt: Some("sys".into()), messages: vec![], tools: vec![] };
+        let ctx = Context {
+            system_prompt: Some("sys".into()),
+            messages: vec![],
+            tools: vec![],
+        };
 
         let mut non_reasoning = test_model("openai-completions", "openai", "https://example.com");
         non_reasoning.reasoning = false;
-        let p1 = crate::provider::openai::build_payload(&non_reasoning, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&non_reasoning));
+        let p1 = crate::provider::openai::build_payload(
+            &non_reasoning,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&non_reasoning),
+        );
         assert_eq!(p1["messages"][0]["role"], "system");
 
         let mut reasoning = test_model("openai-completions", "openai", "https://example.com");
         reasoning.reasoning = true;
-        let p2 = crate::provider::openai::build_payload(&reasoning, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&reasoning));
+        let p2 = crate::provider::openai::build_payload(
+            &reasoning,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&reasoning),
+        );
         assert_eq!(p2["messages"][0]["role"], "developer");
     }
 
@@ -1182,37 +1557,73 @@ mod tests {
     fn test_openai_no_tools_field_without_history() {
         let model = test_model("openai-completions", "openai", "https://example.com");
         let ctx = test_context();
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         assert!(payload.get("tools").is_none());
     }
 
     #[test]
     fn test_openai_thinking_signature_replay() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "openai", "https://example.com") };
+        let model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "openai", "https://example.com")
+        };
         let ctx = Context {
             system_prompt: None,
             messages: vec![Message {
                 role: Role::Assistant,
                 content: vec![
-                    ContentBlock::Thinking { thinking: "reasoned".into(), thinking_signature: Some("reasoning_content".into()), redacted: false },
-                    ContentBlock::Text { text: "answer".into(), text_signature: None },
+                    ContentBlock::Thinking {
+                        thinking: "reasoned".into(),
+                        thinking_signature: Some("reasoning_content".into()),
+                        redacted: false,
+                    },
+                    ContentBlock::Text {
+                        text: "answer".into(),
+                        text_signature: None,
+                    },
                 ],
                 timestamp: 0,
-                api: Some("openai-completions".into()), provider: Some("openai".into()), model: Some("test-model".into()), response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("openai-completions".into()),
+                provider: Some("openai".into()),
+                model: Some("test-model".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         assert_eq!(payload["messages"][0]["reasoning_content"], "reasoned");
         assert_eq!(payload["messages"][0]["content"], "answer");
     }
 
     #[test]
     fn test_openai_tool_call_reasoning_details_replay() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "openrouter", "https://openrouter.ai/api/v1") };
+        let model = Model {
+            reasoning: true,
+            ..test_model(
+                "openai-completions",
+                "openrouter",
+                "https://openrouter.ai/api/v1",
+            )
+        };
         let ctx = Context {
             system_prompt: None,
             messages: vec![Message {
@@ -1220,18 +1631,37 @@ mod tests {
                 content: vec![ContentBlock::ToolCall {
                     id: "tc1".into(),
                     name: "search".into(),
-                    arguments: std::collections::HashMap::from([("q".to_string(), serde_json::json!("rust"))]),
-                    thought_signature: Some("{\"type\":\"reasoning.text\",\"text\":\"why\"}".into()),
+                    arguments: std::collections::HashMap::from([(
+                        "q".to_string(),
+                        serde_json::json!("rust"),
+                    )]),
+                    thought_signature: Some(
+                        "{\"type\":\"reasoning.text\",\"text\":\"why\"}".into(),
+                    ),
                 }],
                 timestamp: 0,
-                api: Some("openai-completions".into()), provider: Some("openrouter".into()), model: Some("test-model".into()), response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::ToolUse), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("openai-completions".into()),
+                provider: Some("openrouter".into()),
+                model: Some("test-model".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::ToolUse),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         let details = &payload["messages"][0]["reasoning_details"];
         assert_eq!(details[0]["type"], "reasoning.text");
         assert_eq!(details[0]["text"], "why");
@@ -1239,26 +1669,53 @@ mod tests {
 
     #[test]
     fn test_openai_thinking_as_text() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "openai", "https://example.com") };
-        let overrides = crate::compat::OpenAICompletionsCompat { requires_thinking_as_text: Some(true), ..Default::default() };
+        let model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "openai", "https://example.com")
+        };
+        let overrides = crate::compat::OpenAICompletionsCompat {
+            requires_thinking_as_text: Some(true),
+            ..Default::default()
+        };
         let compat = crate::compat::detect_compat_for_model(&model, Some(&overrides));
         let ctx = Context {
             system_prompt: None,
             messages: vec![Message {
                 role: Role::Assistant,
                 content: vec![
-                    ContentBlock::Thinking { thinking: "reasoned".into(), thinking_signature: None, redacted: false },
-                    ContentBlock::Text { text: "answer".into(), text_signature: None },
+                    ContentBlock::Thinking {
+                        thinking: "reasoned".into(),
+                        thinking_signature: None,
+                        redacted: false,
+                    },
+                    ContentBlock::Text {
+                        text: "answer".into(),
+                        text_signature: None,
+                    },
                 ],
                 timestamp: 0,
-                api: Some("openai-completions".into()), provider: Some("openai".into()), model: Some("test-model".into()), response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("openai-completions".into()),
+                provider: Some("openai".into()),
+                model: Some("test-model".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &compat);
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &compat,
+        );
         let content = &payload["messages"][0]["content"];
         assert!(content.is_array());
         assert_eq!(content[0]["text"], "reasoned");
@@ -1279,47 +1736,94 @@ mod tests {
                     thought_signature: None,
                 }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::ToolUse), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::ToolUse),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
-        let id = payload["messages"][0]["tool_calls"][0]["id"].as_str().unwrap();
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
+        let id = payload["messages"][0]["tool_calls"][0]["id"]
+            .as_str()
+            .unwrap();
         assert_eq!(id, "call_abc");
         assert!(!id.contains('|'));
     }
 
     #[test]
     fn test_openai_deepseek_reasoning_content_on_assistant() {
-        let mut model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
-        model.compat.requires_reasoning_content_on_assistant_messages = Some(true);
+        let mut model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "deepseek", "https://api.deepseek.com")
+        };
+        model
+            .compat
+            .requires_reasoning_content_on_assistant_messages = Some(true);
         let ctx = Context {
             system_prompt: None,
             messages: vec![Message {
                 role: Role::Assistant,
-                content: vec![ContentBlock::Text { text: "hi".into(), text_signature: None }],
+                content: vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    text_signature: None,
+                }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         assert_eq!(payload["messages"][0]["reasoning_content"], "");
     }
 
     #[test]
     fn test_openai_qwen_chat_template_thinking() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "openai", "https://example.com") };
-        let overrides = crate::compat::OpenAICompletionsCompat { thinking_format: Some("qwen-chat-template".into()), ..Default::default() };
+        let model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "openai", "https://example.com")
+        };
+        let overrides = crate::compat::OpenAICompletionsCompat {
+            thinking_format: Some("qwen-chat-template".into()),
+            ..Default::default()
+        };
         let compat = crate::compat::detect_compat_for_model(&model, Some(&overrides));
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
         assert_eq!(payload["chat_template_kwargs"]["enable_thinking"], true);
         assert_eq!(payload["chat_template_kwargs"]["preserve_thinking"], true);
@@ -1327,22 +1831,42 @@ mod tests {
 
     #[test]
     fn test_openai_string_thinking_format() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "openai", "https://example.com") };
-        let overrides = crate::compat::OpenAICompletionsCompat { thinking_format: Some("string-thinking".into()), ..Default::default() };
+        let model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "openai", "https://example.com")
+        };
+        let overrides = crate::compat::OpenAICompletionsCompat {
+            thinking_format: Some("string-thinking".into()),
+            ..Default::default()
+        };
         let compat = crate::compat::detect_compat_for_model(&model, Some(&overrides));
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::Medium), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::Medium),
+            ..Default::default()
+        };
         let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
         assert_eq!(payload["thinking"], "medium");
     }
 
     #[test]
     fn test_openai_zai_thinking_format() {
-        let mut model = Model { reasoning: true, ..test_model("openai-completions", "zai", "https://z.ai/api") };
+        let mut model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "zai", "https://z.ai/api")
+        };
         model.compat.thinking_format = Some("zai".into());
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &opts,
+            &crate::compat::detect_compat(&model),
+        );
         // zai must use a thinking object, not enable_thinking.
         assert_eq!(payload["thinking"]["type"], "enabled");
         assert!(payload.get("enable_thinking").is_none());
@@ -1350,11 +1874,22 @@ mod tests {
 
     #[test]
     fn test_openai_deepseek_thinking_object() {
-        let mut model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
+        let mut model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "deepseek", "https://api.deepseek.com")
+        };
         model.compat.thinking_format = Some("deepseek".into());
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &opts,
+            &crate::compat::detect_compat(&model),
+        );
         assert_eq!(payload["thinking"]["type"], "enabled");
         assert_eq!(payload["reasoning_effort"], "high");
     }
@@ -1364,8 +1899,14 @@ mod tests {
         // chat-template format: literal passthrough, $var thinking.enabled, omitWhenOff,
         // and thinkingLevelMap effort resolution (mirrors buildChatTemplateKwargs).
         use std::collections::HashMap;
-        let mut model = Model { reasoning: true, ..test_model("openai-completions", "openai", "https://example.com") };
-        model.thinking_level_map = Some(HashMap::from([("high".to_string(), Some("max".to_string()))]));
+        let mut model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "openai", "https://example.com")
+        };
+        model.thinking_level_map = Some(HashMap::from([(
+            "high".to_string(),
+            Some("max".to_string()),
+        )]));
         model.compat.thinking_format = Some("chat-template".into());
         model.compat.chat_template_kwargs = Some(serde_json::json!({
             "enable_thinking": {"$var": "thinking.enabled"},
@@ -1375,13 +1916,21 @@ mod tests {
         let compat = crate::compat::detect_compat(&model);
         let ctx = test_context();
         // With reasoning High.
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         let p = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
         assert_eq!(p["chat_template_kwargs"]["enable_thinking"], true);
         assert_eq!(p["chat_template_kwargs"]["mode"], "fast");
         assert_eq!(p["chat_template_kwargs"]["budget"], "max"); // high -> mapped "max"
         // Without reasoning: enable_thinking false, budget omitted (omitWhenOff).
-        let p2 = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &compat);
+        let p2 = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &compat,
+        );
         assert_eq!(p2["chat_template_kwargs"]["enable_thinking"], false);
         assert_eq!(p2["chat_template_kwargs"]["mode"], "fast");
         assert!(p2["chat_template_kwargs"].get("budget").is_none());
@@ -1392,14 +1941,24 @@ mod tests {
         // 0.79.5: zai sends reasoning_effort (mapped via thinkingLevelMap) when
         // supportsReasoningEffort. high -> "max" via the map.
         use std::collections::HashMap;
-        let mut model = Model { reasoning: true, ..test_model("openai-completions", "zai", "https://z.ai/api") };
+        let mut model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "zai", "https://z.ai/api")
+        };
         let mut map = HashMap::new();
         map.insert("high".to_string(), Some("max".to_string()));
         model.thinking_level_map = Some(map);
-        let overrides = crate::compat::OpenAICompletionsCompat { thinking_format: Some("zai".into()), supports_reasoning_effort: Some(true), ..Default::default() };
+        let overrides = crate::compat::OpenAICompletionsCompat {
+            thinking_format: Some("zai".into()),
+            supports_reasoning_effort: Some(true),
+            ..Default::default()
+        };
         let compat = crate::compat::detect_compat_for_model(&model, Some(&overrides));
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &compat);
         assert_eq!(payload["thinking"]["type"], "enabled");
         assert_eq!(payload["reasoning_effort"], "max");
@@ -1410,8 +1969,14 @@ mod tests {
         // 0.79.5: deepseek omits thinking:{disabled} when thinkingLevelMap.off === null,
         // but still emits it when off is unset.
         use std::collections::HashMap;
-        let mut model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
-        let overrides = crate::compat::OpenAICompletionsCompat { thinking_format: Some("deepseek".into()), ..Default::default() };
+        let mut model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "deepseek", "https://api.deepseek.com")
+        };
+        let overrides = crate::compat::OpenAICompletionsCompat {
+            thinking_format: Some("deepseek".into()),
+            ..Default::default()
+        };
         let compat = crate::compat::detect_compat_for_model(&model, Some(&overrides));
         let ctx = test_context();
         let opts = StreamOptions::default();
@@ -1434,9 +1999,20 @@ mod tests {
         let ctx = test_context();
         let opts = StreamOptions::default();
         for id in ["gemini-flash-latest", "gemini-flash-lite-latest"] {
-            let model = Model { reasoning: true, id: id.into(), ..test_model("google", "google", "https://generativelanguage.googleapis.com") };
+            let model = Model {
+                reasoning: true,
+                id: id.into(),
+                ..test_model(
+                    "google",
+                    "google",
+                    "https://generativelanguage.googleapis.com",
+                )
+            };
             let payload = crate::provider::google::build_google_payload_public(&model, &ctx, &opts);
-            assert_eq!(payload["generationConfig"]["thinkingConfig"]["thinkingLevel"], "MINIMAL", "{id}");
+            assert_eq!(
+                payload["generationConfig"]["thinkingConfig"]["thinkingLevel"], "MINIMAL",
+                "{id}"
+            );
         }
     }
 
@@ -1444,8 +2020,16 @@ mod tests {
     fn test_openai_tool_choice_passthrough() {
         let model = test_model("openai-completions", "openai", "https://example.com");
         let ctx = test_context();
-        let opts = StreamOptions { tool_choice: Some(serde_json::json!("required")), ..Default::default() };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        let opts = StreamOptions {
+            tool_choice: Some(serde_json::json!("required")),
+            ..Default::default()
+        };
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &opts,
+            &crate::compat::detect_compat(&model),
+        );
         assert_eq!(payload["tool_choice"], "required");
     }
 
@@ -1454,18 +2038,37 @@ mod tests {
         // test_model has reasoning: false → supported levels = [off] → reasoning clamped away.
         let model = test_model("openai-completions", "deepseek", "https://api.deepseek.com");
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &opts,
+            &crate::compat::detect_compat(&model),
+        );
         assert!(payload.get("reasoning_effort").is_none());
         assert!(payload.get("reasoning").is_none());
     }
 
     #[test]
     fn test_openai_reasoning_kept_for_reasoning_model() {
-        let model = Model { reasoning: true, ..test_model("openai-completions", "deepseek", "https://api.deepseek.com") };
+        let model = Model {
+            reasoning: true,
+            ..test_model("openai-completions", "deepseek", "https://api.deepseek.com")
+        };
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &opts, &crate::compat::detect_compat(&model));
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &opts,
+            &crate::compat::detect_compat(&model),
+        );
         assert_eq!(payload["reasoning_effort"], "high");
     }
 
@@ -1478,20 +2081,43 @@ mod tests {
             messages: vec![Message {
                 role: Role::User,
                 content: vec![
-                    ContentBlock::Text { text: "see".into(), text_signature: None },
-                    ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() },
+                    ContentBlock::Text {
+                        text: "see".into(),
+                        text_signature: None,
+                    },
+                    ContentBlock::Image {
+                        data: "abc".into(),
+                        mime_type: "image/png".into(),
+                    },
                 ],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         let serialized = serde_json::to_string(&payload).unwrap();
-        assert!(!serialized.contains("image_url"), "image must be downgraded for non-vision model");
+        assert!(
+            !serialized.contains("image_url"),
+            "image must be downgraded for non-vision model"
+        );
         assert!(serialized.contains("omitted"));
     }
 
@@ -1505,7 +2131,10 @@ mod tests {
                 content: vec![ContentBlock::ToolCall {
                     id: "tc1".into(),
                     name: "search".into(),
-                    arguments: std::collections::HashMap::from([("q".into(), serde_json::json!("rust"))]),
+                    arguments: std::collections::HashMap::from([(
+                        "q".into(),
+                        serde_json::json!("rust"),
+                    )]),
                     thought_signature: None,
                 }],
                 timestamp: 0,
@@ -1525,7 +2154,12 @@ mod tests {
             }],
             tools: vec![],
         };
-        let payload = crate::provider::openai::build_payload(&model, &ctx, &StreamOptions::default(), &crate::compat::detect_compat(&model));
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
         let msg = &payload["messages"][0];
         assert_eq!(msg["role"], "assistant");
         assert!(msg["tool_calls"].is_array());
@@ -1541,19 +2175,44 @@ mod tests {
             messages: vec![Message {
                 role: Role::Assistant,
                 content: vec![
-                    ContentBlock::Thinking { thinking: "r".into(), thinking_signature: Some("{\"type\":\"reasoning\",\"id\":\"rs_1\"}".into()), redacted: false },
-                    ContentBlock::Text { text: "answer".into(), text_signature: None },
-                    ContentBlock::ToolCall { id: "call_1|fc_1".into(), name: "t".into(), arguments: std::collections::HashMap::new(), thought_signature: None },
+                    ContentBlock::Thinking {
+                        thinking: "r".into(),
+                        thinking_signature: Some("{\"type\":\"reasoning\",\"id\":\"rs_1\"}".into()),
+                        redacted: false,
+                    },
+                    ContentBlock::Text {
+                        text: "answer".into(),
+                        text_signature: None,
+                    },
+                    ContentBlock::ToolCall {
+                        id: "call_1|fc_1".into(),
+                        name: "t".into(),
+                        arguments: std::collections::HashMap::new(),
+                        thought_signature: None,
+                    },
                 ],
                 timestamp: 0,
-                api: Some("openai-responses".into()), provider: Some("openai".into()), model: Some("test-model".into()), response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::ToolUse), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("openai-responses".into()),
+                provider: Some("openai".into()),
+                model: Some("test-model".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::ToolUse),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &StreamOptions::default());
+        let payload = crate::provider::responses::build_responses_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+        );
         let input = payload["input"].as_array().unwrap();
         // Order: reasoning item, then message (output_text), then function_call.
         assert_eq!(input[0]["type"], "reasoning");
@@ -1569,7 +2228,11 @@ mod tests {
         // for a single text block (rs-ai previously emitted a bare string).
         use crate::provider::responses::build_responses_payload;
         let model = test_model("openai-responses", "openai", "https://example.com");
-        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
         let p = build_responses_payload(&model, &ctx, &StreamOptions::default());
         let m = &p["input"][0];
         assert_eq!(m["role"], "user");
@@ -1589,14 +2252,29 @@ mod tests {
             messages: vec![Message {
                 role: Role::Assistant,
                 content: vec![
-                    ContentBlock::Text { text: "".into(), text_signature: None },
-                    ContentBlock::Text { text: "second".into(), text_signature: None },
+                    ContentBlock::Text {
+                        text: "".into(),
+                        text_signature: None,
+                    },
+                    ContentBlock::Text {
+                        text: "second".into(),
+                        text_signature: None,
+                    },
                 ],
                 timestamp: 0,
-                api: Some("openai-responses".into()), provider: Some("openai".into()), model: Some("other-model".into()), response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("openai-responses".into()),
+                provider: Some("openai".into()),
+                model: Some("other-model".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
@@ -1614,14 +2292,18 @@ mod tests {
         use crate::provider::responses::build_responses_payload;
         let ctx = test_context();
         // Reasoning-capable model, no reasoning requested -> effort "none".
-        let model = Model { reasoning: true, ..test_model("openai-responses", "openai", "https://example.com") };
+        let model = Model {
+            reasoning: true,
+            ..test_model("openai-responses", "openai", "https://example.com")
+        };
         let p = build_responses_payload(&model, &ctx, &StreamOptions::default());
         assert_eq!(p["reasoning"]["effort"], "none");
         assert!(p.get("tool_choice").is_none());
 
         // Model that maps `off` to null -> reasoning omitted entirely.
         let mut model2 = model.clone();
-        model2.thinking_level_map = Some(std::collections::HashMap::from([("off".to_string(), None)]));
+        model2.thinking_level_map =
+            Some(std::collections::HashMap::from([("off".to_string(), None)]));
         let p2 = build_responses_payload(&model2, &ctx, &StreamOptions::default());
         assert!(p2.get("reasoning").is_none());
 
@@ -1640,19 +2322,40 @@ mod tests {
                 role: Role::Assistant,
                 content: vec![
                     // Signed text block carries an explicit id + phase.
-                    ContentBlock::Text { text: "hi".into(), text_signature: Some("{\"v\":1,\"id\":\"msg_abc\",\"phase\":\"final_answer\"}".into()) },
+                    ContentBlock::Text {
+                        text: "hi".into(),
+                        text_signature: Some(
+                            "{\"v\":1,\"id\":\"msg_abc\",\"phase\":\"final_answer\"}".into(),
+                        ),
+                    },
                     // Unsigned second text block falls back to a deterministic msg_pi id.
-                    ContentBlock::Text { text: "more".into(), text_signature: None },
+                    ContentBlock::Text {
+                        text: "more".into(),
+                        text_signature: None,
+                    },
                 ],
                 timestamp: 0,
-                api: Some("openai-responses".into()), provider: Some("openai".into()), model: Some("test-model".into()), response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("openai-responses".into()),
+                provider: Some("openai".into()),
+                model: Some("test-model".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
-        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &StreamOptions::default());
+        let payload = crate::provider::responses::build_responses_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+        );
         let input = payload["input"].as_array().unwrap();
         assert_eq!(input[0]["id"], "msg_abc");
         assert_eq!(input[0]["phase"], "final_answer");
@@ -1673,14 +2376,36 @@ mod tests {
                 thought_signature: None,
             }],
             timestamp: 0,
-            api: Some("anthropic-messages".into()), provider: Some("anthropic".into()), model: Some("claude".into()),
-            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: Some(StopReason::ToolUse), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            api: Some("anthropic-messages".into()),
+            provider: Some("anthropic".into()),
+            model: Some("claude".into()),
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(StopReason::ToolUse),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![msg.clone()], tools: vec![] };
-        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &StreamOptions::default());
-        let fc = payload["input"].as_array().unwrap().iter().find(|i| i["type"] == "function_call").unwrap();
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![msg.clone()],
+            tools: vec![],
+        };
+        let payload = crate::provider::responses::build_responses_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+        );
+        let fc = payload["input"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["type"] == "function_call")
+            .unwrap();
         assert_eq!(fc["call_id"], "call_1");
         assert!(fc["id"].as_str().unwrap().starts_with("fc_"));
 
@@ -1688,10 +2413,25 @@ mod tests {
         msg.provider = Some("openai".into());
         msg.api = Some("openai-responses".into());
         msg.model = Some("gpt-other".into());
-        if let ContentBlock::ToolCall { id, .. } = &mut msg.content[0] { *id = "call_1|fc_abc".into(); }
-        let ctx = Context { system_prompt: None, messages: vec![msg], tools: vec![] };
-        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &StreamOptions::default());
-        let fc = payload["input"].as_array().unwrap().iter().find(|i| i["type"] == "function_call").unwrap();
+        if let ContentBlock::ToolCall { id, .. } = &mut msg.content[0] {
+            *id = "call_1|fc_abc".into();
+        }
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![msg],
+            tools: vec![],
+        };
+        let payload = crate::provider::responses::build_responses_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+        );
+        let fc = payload["input"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["type"] == "function_call")
+            .unwrap();
         assert_eq!(fc["call_id"], "call_1");
         assert!(fc["id"].is_null());
     }
@@ -1700,22 +2440,50 @@ mod tests {
     fn test_responses_azure_provider_is_tool_call_provider() {
         // Azure models (provider azure-openai-responses) must apply the composite
         // call|item id logic, matching upstream AZURE_TOOL_CALL_PROVIDERS.
-        let model = test_model("azure-openai-responses", "azure-openai-responses", "https://x.openai.azure.com/openai/v1");
+        let model = test_model(
+            "azure-openai-responses",
+            "azure-openai-responses",
+            "https://x.openai.azure.com/openai/v1",
+        );
         let msg = Message {
             role: Role::Assistant,
             content: vec![ContentBlock::ToolCall {
-                id: "call_9|fc_xyz".into(), name: "t".into(),
-                arguments: std::collections::HashMap::new(), thought_signature: None,
+                id: "call_9|fc_xyz".into(),
+                name: "t".into(),
+                arguments: std::collections::HashMap::new(),
+                thought_signature: None,
             }],
             timestamp: 0,
-            api: Some("azure-openai-responses".into()), provider: Some("azure-openai-responses".into()), model: Some("test-model".into()),
-            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: Some(StopReason::ToolUse), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            api: Some("azure-openai-responses".into()),
+            provider: Some("azure-openai-responses".into()),
+            model: Some("test-model".into()),
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(StopReason::ToolUse),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![msg], tools: vec![] };
-        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &StreamOptions::default());
-        let fc = payload["input"].as_array().unwrap().iter().find(|i| i["type"] == "function_call").unwrap();
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![msg],
+            tools: vec![],
+        };
+        let payload = crate::provider::responses::build_responses_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+        );
+        let fc = payload["input"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["type"] == "function_call")
+            .unwrap();
         // Composite split applied: call_id is the part before `|`, item id retained (same model).
         assert_eq!(fc["call_id"], "call_9");
         assert_eq!(fc["id"], "fc_xyz");
@@ -1732,7 +2500,10 @@ mod tests {
                     content: vec![ContentBlock::ToolCall {
                         id: "call_1|fc_1".into(),
                         name: "search".into(),
-                        arguments: std::collections::HashMap::from([("q".into(), serde_json::json!("rust"))]),
+                        arguments: std::collections::HashMap::from([(
+                            "q".into(),
+                            serde_json::json!("rust"),
+                        )]),
                         thought_signature: None,
                     }],
                     timestamp: 0,
@@ -1752,7 +2523,10 @@ mod tests {
                 },
                 Message {
                     role: Role::ToolResult,
-                    content: vec![ContentBlock::Text { text: "done".into(), text_signature: None }],
+                    content: vec![ContentBlock::Text {
+                        text: "done".into(),
+                        text_signature: None,
+                    }],
                     timestamp: 0,
                     api: None,
                     provider: None,
@@ -1767,15 +2541,23 @@ mod tests {
                     tool_name: Some("search".into()),
                     is_error: false,
                     details: None,
-                }
+                },
             ],
             tools: vec![],
         };
-        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &StreamOptions::default());
+        let payload = crate::provider::responses::build_responses_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+        );
         assert!(payload["input"].is_array());
         let arr = payload["input"].as_array().unwrap();
-        assert!(arr.iter().any(|v| v["type"] == "function_call" && v["call_id"] == "call_1" && v["name"] == "search"));
-        assert!(arr.iter().any(|v| v["type"] == "function_call_output" && v["call_id"] == "call_1" && v["output"] == "done"));
+        assert!(arr.iter().any(|v| v["type"] == "function_call"
+            && v["call_id"] == "call_1"
+            && v["name"] == "search"));
+        assert!(arr.iter().any(|v| v["type"] == "function_call_output"
+            && v["call_id"] == "call_1"
+            && v["output"] == "done"));
     }
 
     #[test]
@@ -1789,7 +2571,10 @@ mod tests {
                     content: vec![ContentBlock::ToolCall {
                         id: "call_1|fc_1".into(),
                         name: "search".into(),
-                        arguments: std::collections::HashMap::from([("q".into(), serde_json::json!("rust"))]),
+                        arguments: std::collections::HashMap::from([(
+                            "q".into(),
+                            serde_json::json!("rust"),
+                        )]),
                         thought_signature: None,
                     }],
                     timestamp: 0,
@@ -1809,7 +2594,10 @@ mod tests {
                 },
                 Message {
                     role: Role::ToolResult,
-                    content: vec![ContentBlock::Text { text: "done".into(), text_signature: None }],
+                    content: vec![ContentBlock::Text {
+                        text: "done".into(),
+                        text_signature: None,
+                    }],
                     timestamp: 0,
                     api: None,
                     provider: None,
@@ -1824,26 +2612,43 @@ mod tests {
                     tool_name: Some("search".into()),
                     is_error: false,
                     details: None,
-                }
+                },
             ],
             tools: vec![],
         };
         let payload = build_codex_payload(&model, &ctx, &StreamOptions::default());
         let arr = payload["input"].as_array().unwrap();
-        assert!(arr.iter().any(|v| v["type"] == "function_call" && v["call_id"] == "call_1"));
-        assert!(arr.iter().any(|v| v["type"] == "function_call_output" && v["call_id"] == "call_1"));
+        assert!(
+            arr.iter()
+                .any(|v| v["type"] == "function_call" && v["call_id"] == "call_1")
+        );
+        assert!(
+            arr.iter()
+                .any(|v| v["type"] == "function_call_output" && v["call_id"] == "call_1")
+        );
     }
 
     #[test]
     fn test_codex_payload_structure() {
         use crate::provider::codex::build_codex_payload;
-        let model = Model { reasoning: true, ..test_model("openai-codex-responses", "openai", "https://chatgpt.com/backend-api") };
+        let model = Model {
+            reasoning: true,
+            ..test_model(
+                "openai-codex-responses",
+                "openai",
+                "https://chatgpt.com/backend-api",
+            )
+        };
         let ctx = Context {
             system_prompt: Some("custom sys".into()),
             messages: vec![user_message("hi")],
             tools: vec![],
         };
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::Medium), session_id: Some("s1".into()), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::Medium),
+            session_id: Some("s1".into()),
+            ..Default::default()
+        };
         let payload = build_codex_payload(&model, &ctx, &opts);
         assert_eq!(payload["store"], false);
         assert_eq!(payload["instructions"], "custom sys");
@@ -1854,19 +2659,33 @@ mod tests {
         assert_eq!(payload["reasoning"]["summary"], "auto");
         // System prompt must NOT be duplicated in input.
         let input = payload["input"].as_array().unwrap();
-        assert!(!input.iter().any(|m| matches!(m.get("role").and_then(|r| r.as_str()), Some("system") | Some("developer"))));
+        assert!(!input.iter().any(|m| matches!(
+            m.get("role").and_then(|r| r.as_str()),
+            Some("system") | Some("developer")
+        )));
     }
 
     #[test]
     fn test_codex_text_verbosity_option() {
         use crate::provider::codex::build_codex_payload;
-        let model = test_model("openai-codex-responses", "openai", "https://chatgpt.com/backend-api");
-        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        let model = test_model(
+            "openai-codex-responses",
+            "openai",
+            "https://chatgpt.com/backend-api",
+        );
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
         // Defaults to "low".
         let p1 = build_codex_payload(&model, &ctx, &StreamOptions::default());
         assert_eq!(p1["text"]["verbosity"], "low");
         // Honors an explicit verbosity (mirrors upstream textVerbosity).
-        let opts = StreamOptions { text_verbosity: Some("high".into()), ..Default::default() };
+        let opts = StreamOptions {
+            text_verbosity: Some("high".into()),
+            ..Default::default()
+        };
         let p2 = build_codex_payload(&model, &ctx, &opts);
         assert_eq!(p2["text"]["verbosity"], "high");
     }
@@ -1874,11 +2693,19 @@ mod tests {
     #[test]
     fn test_codex_payload_tool_strict_null() {
         use crate::provider::codex::build_codex_payload;
-        let model = test_model("openai-codex-responses", "openai", "https://chatgpt.com/backend-api");
+        let model = test_model(
+            "openai-codex-responses",
+            "openai",
+            "https://chatgpt.com/backend-api",
+        );
         let ctx = Context {
             system_prompt: None,
             messages: vec![user_message("hi")],
-            tools: vec![Tool { name: "t".into(), description: "d".into(), parameters: serde_json::json!({"type":"object"}) }],
+            tools: vec![Tool {
+                name: "t".into(),
+                description: "d".into(),
+                parameters: serde_json::json!({"type":"object"}),
+            }],
         };
         let payload = build_codex_payload(&model, &ctx, &StreamOptions::default());
         assert!(payload["tools"][0]["strict"].is_null());
@@ -1892,7 +2719,10 @@ mod tests {
             serde_json::json!({"type":"error","code":"rate_limited","message":"slow down"}),
         ];
         let replayed = replay_codex_ws_events(&model, &events);
-        let err = replayed.iter().find_map(|e| match e { Event::Error { error, .. } => Some(error.to_string()), _ => None });
+        let err = replayed.iter().find_map(|e| match e {
+            Event::Error { error, .. } => Some(error.to_string()),
+            _ => None,
+        });
         assert!(err.unwrap().contains("slow down"));
         // No Done event after an error.
         assert!(!replayed.iter().any(|e| matches!(e, Event::Done { .. })));
@@ -1909,7 +2739,13 @@ mod tests {
             serde_json::json!({"type":"response.failed","response":{"error":{"code":"server_error","message":"boom"}}}),
         ];
         let replayed = replay_codex_ws_events(&model, &events);
-        let err = replayed.iter().find_map(|e| match e { Event::Error { error, .. } => Some(error.to_string()), _ => None }).unwrap();
+        let err = replayed
+            .iter()
+            .find_map(|e| match e {
+                Event::Error { error, .. } => Some(error.to_string()),
+                _ => None,
+            })
+            .unwrap();
         assert_eq!(err, "boom");
 
         // No error.message -> generic fallback.
@@ -1918,7 +2754,13 @@ mod tests {
             serde_json::json!({"type":"response.failed","response":{}}),
         ];
         let replayed2 = replay_codex_ws_events(&model, &events2);
-        let err2 = replayed2.iter().find_map(|e| match e { Event::Error { error, .. } => Some(error.to_string()), _ => None }).unwrap();
+        let err2 = replayed2
+            .iter()
+            .find_map(|e| match e {
+                Event::Error { error, .. } => Some(error.to_string()),
+                _ => None,
+            })
+            .unwrap();
         assert_eq!(err2, "Codex response failed");
     }
 
@@ -1946,10 +2788,16 @@ mod tests {
         let mut diag_found = false;
         while let Some(evt) = stream.next().await {
             if let Event::Done { message, .. } = evt {
-                diag_found = message.diagnostics.iter().any(|d| d.diagnostic_type == "provider_transport_failure");
+                diag_found = message
+                    .diagnostics
+                    .iter()
+                    .any(|d| d.diagnostic_type == "provider_transport_failure");
             }
         }
-        assert!(diag_found, "SSE-fallback Done message should carry a transport-failure diagnostic");
+        assert!(
+            diag_found,
+            "SSE-fallback Done message should carry a transport-failure diagnostic"
+        );
     }
 
     #[tokio::test]
@@ -1966,7 +2814,10 @@ mod tests {
             .await;
         let mut model = test_model("openai-codex-responses", "openai", &server.uri());
         model.api_key = Some("test-key".into());
-        let opts = StreamOptions { transport: Some(Transport::Sse), ..Default::default() };
+        let opts = StreamOptions {
+            transport: Some(Transport::Sse),
+            ..Default::default()
+        };
         let ctx = test_context();
         let mut stream = stream_codex(&model, &ctx, &opts);
         let mut diag = false;
@@ -1974,7 +2825,10 @@ mod tests {
         while let Some(evt) = stream.next().await {
             if let Event::Done { message, .. } = evt {
                 done = true;
-                diag = message.diagnostics.iter().any(|d| d.diagnostic_type == "provider_transport_failure");
+                diag = message
+                    .diagnostics
+                    .iter()
+                    .any(|d| d.diagnostic_type == "provider_transport_failure");
             }
         }
         // transport=sse skips the WS attempt entirely -> no transport-failure diagnostic.
@@ -2001,7 +2855,10 @@ mod tests {
             .await;
         let mut model = test_model("openai-codex-responses", "openai", &server.uri());
         model.api_key = Some("test-key".into());
-        let opts = StreamOptions { transport: Some(Transport::Sse), ..Default::default() };
+        let opts = StreamOptions {
+            transport: Some(Transport::Sse),
+            ..Default::default()
+        };
         let ctx = test_context();
         let mut stream = stream_codex(&model, &ctx, &opts);
         let mut saw_error = false;
@@ -2009,7 +2866,10 @@ mod tests {
         let mut err_msg = String::new();
         while let Some(evt) = stream.next().await {
             match evt {
-                Event::Error { error, .. } => { saw_error = true; err_msg = error.to_string(); }
+                Event::Error { error, .. } => {
+                    saw_error = true;
+                    err_msg = error.to_string();
+                }
                 Event::Done { .. } => saw_done = true,
                 _ => {}
             }
@@ -2018,12 +2878,15 @@ mod tests {
         assert!(!saw_done, "no-terminal codex SSE must not produce a Done");
         // Codex SSE is consumed via the shared responses decoder, so the exact upstream
         // message is the responses one, not a codex-specific variant.
-        assert_eq!(err_msg, "OpenAI Responses stream ended before a terminal response event");
+        assert_eq!(
+            err_msg,
+            "OpenAI Responses stream ended before a terminal response event"
+        );
     }
 
     #[tokio::test]
     async fn test_codex_ws_fallback_is_sticky_per_session() {
-        use crate::provider::codex::{stream_codex, clear_ws_fallback};
+        use crate::provider::codex::{clear_ws_fallback, stream_codex};
         clear_ws_fallback(Some("sess-sticky"));
         let server = MockServer::start().await;
         Mock::given(method("POST"))
@@ -2037,7 +2900,10 @@ mod tests {
             .await;
         let mut model = test_model("openai-codex-responses", "openai", &server.uri());
         model.api_key = Some("test-key".into());
-        let opts = StreamOptions { session_id: Some("sess-sticky".into()), ..Default::default() };
+        let opts = StreamOptions {
+            session_id: Some("sess-sticky".into()),
+            ..Default::default()
+        };
         let ctx = test_context();
 
         // First request: WS fails -> SSE + diagnostic, and the session is marked.
@@ -2045,7 +2911,10 @@ mod tests {
         let mut first_diag = false;
         while let Some(evt) = s1.next().await {
             if let Event::Done { message, .. } = evt {
-                first_diag = message.diagnostics.iter().any(|d| d.diagnostic_type == "provider_transport_failure");
+                first_diag = message
+                    .diagnostics
+                    .iter()
+                    .any(|d| d.diagnostic_type == "provider_transport_failure");
             }
         }
         assert!(first_diag);
@@ -2055,10 +2924,16 @@ mod tests {
         let mut second_diag = false;
         while let Some(evt) = s2.next().await {
             if let Event::Done { message, .. } = evt {
-                second_diag = message.diagnostics.iter().any(|d| d.diagnostic_type == "provider_transport_failure");
+                second_diag = message
+                    .diagnostics
+                    .iter()
+                    .any(|d| d.diagnostic_type == "provider_transport_failure");
             }
         }
-        assert!(!second_diag, "sticky fallback should skip WS without re-recording a diagnostic");
+        assert!(
+            !second_diag,
+            "sticky fallback should skip WS without re-recording a diagnostic"
+        );
         clear_ws_fallback(Some("sess-sticky"));
     }
 
@@ -2066,8 +2941,10 @@ mod tests {
     async fn test_codex_sse_fallback_sends_required_headers() {
         use crate::provider::codex::stream_codex;
         use base64::Engine;
-        let payload = serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": "acc_h"}});
-        let payload_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(serde_json::to_vec(&payload).unwrap());
+        let payload =
+            serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": "acc_h"}});
+        let payload_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(serde_json::to_vec(&payload).unwrap());
         let jwt = format!("h.{payload_b64}.s");
         let server = MockServer::start().await;
         Mock::given(method("POST"))
@@ -2082,12 +2959,17 @@ mod tests {
             .await;
         let mut model = test_model("openai-codex-responses", "openai", &server.uri());
         model.api_key = Some(jwt);
-        let opts = StreamOptions { session_id: Some("sess-h".into()), ..Default::default() };
+        let opts = StreamOptions {
+            session_id: Some("sess-h".into()),
+            ..Default::default()
+        };
         let ctx = test_context();
         let mut stream = stream_codex(&model, &ctx, &opts);
         let mut done = false;
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Done { .. }) { done = true; }
+            if matches!(evt, Event::Done { .. }) {
+                done = true;
+            }
         }
         // If the required headers were missing, the wiremock match would fail (no 200).
         assert!(done);
@@ -2109,15 +2991,37 @@ mod tests {
             serde_json::json!({"type":"response.completed","response":{"id":"resp-c1","model":"codex-mini","usage":{"input_tokens":5,"output_tokens":3,"total_tokens":8}}}),
         ];
         let replayed = replay_codex_ws_events(&model, &events);
-        assert!(replayed.iter().any(|e| matches!(e, Event::ThinkingDelta { delta } if delta == "ponder")));
+        assert!(
+            replayed
+                .iter()
+                .any(|e| matches!(e, Event::ThinkingDelta { delta } if delta == "ponder"))
+        );
         assert!(replayed.iter().any(|e| matches!(e, Event::ToolCallEnd { id, name, arguments } if id == "call_1" && name == "search" && arguments["q"] == "rust")));
-        let done = replayed.iter().find_map(|e| match e { Event::Done { message, .. } => Some(message), _ => None }).expect("done");
+        let done = replayed
+            .iter()
+            .find_map(|e| match e {
+                Event::Done { message, .. } => Some(message),
+                _ => None,
+            })
+            .expect("done");
         assert_eq!(done.response_id.as_deref(), Some("resp-c1"));
         // Upstream does not set responseModel for codex responses.
         assert_eq!(done.response_model, None);
-        assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "ponder")));
-        assert!(done.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search")));
-        assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "answer")));
+        assert!(
+            done.content.iter().any(
+                |b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "ponder")
+            )
+        );
+        assert!(
+            done.content
+                .iter()
+                .any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search"))
+        );
+        assert!(
+            done.content
+                .iter()
+                .any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "answer"))
+        );
     }
 
     #[test]
@@ -2132,7 +3036,12 @@ mod tests {
             serde_json::json!({"type":"response.done","response":{"id":"d1","status":"completed","usage":{"input_tokens":4,"output_tokens":2,"total_tokens":6}}}),
         ];
         let replayed = replay_codex_ws_events(&model, &events);
-        let done = replayed.iter().find_map(|e| match e { Event::Done { reason, message } => Some((reason.clone(), message)), _ => None })
+        let done = replayed
+            .iter()
+            .find_map(|e| match e {
+                Event::Done { reason, message } => Some((reason.clone(), message)),
+                _ => None,
+            })
             .expect("response.done must produce a terminal Done event");
         assert_eq!(done.0, StopReason::Stop);
         assert_eq!(done.1.response_id.as_deref(), Some("d1"));
@@ -2144,7 +3053,13 @@ mod tests {
             serde_json::json!({"type":"response.incomplete","response":{"id":"d2","status":"incomplete","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}),
         ];
         let replayed2 = replay_codex_ws_events(&model, &events2);
-        let reason2 = replayed2.iter().find_map(|e| match e { Event::Done { reason, .. } => Some(reason.clone()), _ => None }).expect("done");
+        let reason2 = replayed2
+            .iter()
+            .find_map(|e| match e {
+                Event::Done { reason, .. } => Some(reason.clone()),
+                _ => None,
+            })
+            .expect("done");
         assert_eq!(reason2, StopReason::Length);
     }
 
@@ -2163,10 +3078,22 @@ mod tests {
         ];
         let replayed = replay_codex_ws_events(&model, &events);
         assert!(replayed.iter().any(|e| matches!(e, Event::TextStart)));
-        assert!(replayed.iter().any(|e| matches!(e, Event::TextDelta { delta } if delta == "I can't help with that")));
+        assert!(
+            replayed.iter().any(
+                |e| matches!(e, Event::TextDelta { delta } if delta == "I can't help with that")
+            )
+        );
         assert!(replayed.iter().any(|e| matches!(e, Event::TextEnd)));
-        let done = replayed.iter().find_map(|e| match e { Event::Done { message, .. } => Some(message), _ => None }).expect("done");
-        assert!(done.content.iter().any(|b| matches!(b, ContentBlock::Text { text, .. } if text == "I can't help with that")));
+        let done = replayed
+            .iter()
+            .find_map(|e| match e {
+                Event::Done { message, .. } => Some(message),
+                _ => None,
+            })
+            .expect("done");
+        assert!(done.content.iter().any(
+            |b| matches!(b, ContentBlock::Text { text, .. } if text == "I can't help with that")
+        ));
     }
 
     #[test]
@@ -2175,15 +3102,20 @@ mod tests {
         // Usage-limit error -> friendly message with plan; no "HTTP" prefix.
         let body = serde_json::json!({
             "error": {"code": "usage_limit_reached", "plan_type": "Pro", "message": "limit"}
-        }).to_string();
+        })
+        .to_string();
         let msg = parse_codex_error_response(&body, 429);
-        assert!(msg.starts_with("You have hit your ChatGPT usage limit (pro plan)."), "{msg}");
+        assert!(
+            msg.starts_with("You have hit your ChatGPT usage limit (pro plan)."),
+            "{msg}"
+        );
         assert!(!msg.contains("HTTP"));
         // 429 with no error object still triggers the friendly message.
         let msg2 = parse_codex_error_response("{}", 429);
         assert_eq!(msg2, "{}"); // no error object -> raw body returned
         // Non-usage error surfaces err.message.
-        let body3 = serde_json::json!({"error": {"code": "bad_request", "message": "nope"}}).to_string();
+        let body3 =
+            serde_json::json!({"error": {"code": "bad_request", "message": "nope"}}).to_string();
         assert_eq!(parse_codex_error_response(&body3, 400), "nope");
         // Empty body -> HTTP status reason phrase (upstream: raw || statusText || ...).
         assert_eq!(parse_codex_error_response("", 500), "Internal Server Error");
@@ -2201,7 +3133,13 @@ mod tests {
             serde_json::json!({"type":"response.completed","response":{"id":"r","status":"incomplete","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}),
         ];
         let replayed = replay_codex_ws_events(&model, &events);
-        let reason = replayed.iter().find_map(|e| match e { Event::Done { reason, .. } => Some(reason.clone()), _ => None }).expect("done");
+        let reason = replayed
+            .iter()
+            .find_map(|e| match e {
+                Event::Done { reason, .. } => Some(reason.clone()),
+                _ => None,
+            })
+            .expect("done");
         assert_eq!(reason, StopReason::Length);
     }
 
@@ -2209,7 +3147,13 @@ mod tests {
     fn test_codex_service_tier_default_keeps_requested_priority() {
         use crate::provider::codex::replay_codex_ws_events_with_tier;
         let mut model = test_model("openai-codex-responses", "openai", "https://example.com");
-        model.cost = ModelCost { input: 10.0, output: 20.0, cache_read: 0.0, cache_write: 0.0 };
+        model.cost = ModelCost {
+            input: 10.0,
+            output: 20.0,
+            cache_read: 0.0,
+            cache_write: 0.0,
+            tiers: vec![],
+        };
         let events = vec![
             serde_json::json!({"type":"response.created","response":{"id":"r","model":"codex-mini"}}),
             serde_json::json!({"type":"response.completed","response":{"id":"r","model":"codex-mini","service_tier":"default","usage":{"input_tokens":1000,"output_tokens":0,"total_tokens":1000}}}),
@@ -2217,10 +3161,20 @@ mod tests {
         // Requested priority but the response reports "default": bill at priority (2x),
         // not default (1x), matching resolveCodexServiceTier.
         let replayed = replay_codex_ws_events_with_tier(&model, &events, Some("priority"));
-        let done = replayed.iter().find_map(|e| match e { Event::Done { message, .. } => Some(message), _ => None }).expect("done");
+        let done = replayed
+            .iter()
+            .find_map(|e| match e {
+                Event::Done { message, .. } => Some(message),
+                _ => None,
+            })
+            .expect("done");
         let usage = done.usage.as_ref().expect("usage");
         // base input cost = 1000 * 10 / 1e6 = 0.01; priority 2x -> 0.02.
-        assert!((usage.cost.input - 0.02).abs() < 1e-9, "got {}", usage.cost.input);
+        assert!(
+            (usage.cost.input - 0.02).abs() < 1e-9,
+            "got {}",
+            usage.cost.input
+        );
     }
 
     #[test]
@@ -2234,11 +3188,21 @@ mod tests {
             serde_json::json!({"type":"response.completed","response":{"id":"r","model":"codex-mini","usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}),
         ];
         let replayed = replay_codex_ws_events(&model, &events);
-        let done = replayed.iter().find_map(|e| match e { Event::Done { message, .. } => Some(message), _ => None }).expect("done");
-        let sig = done.content.iter().find_map(|b| match b {
-            ContentBlock::Text { text_signature, .. } => text_signature.clone(),
-            _ => None,
-        }).expect("text signature");
+        let done = replayed
+            .iter()
+            .find_map(|e| match e {
+                Event::Done { message, .. } => Some(message),
+                _ => None,
+            })
+            .expect("done");
+        let sig = done
+            .content
+            .iter()
+            .find_map(|b| match b {
+                ContentBlock::Text { text_signature, .. } => text_signature.clone(),
+                _ => None,
+            })
+            .expect("text signature");
         assert!(sig.contains("msg_q"));
         assert!(sig.contains("commentary"));
     }
@@ -2248,11 +3212,17 @@ mod tests {
         use std::collections::HashMap;
         let model = Model {
             reasoning: true,
-            thinking_level_map: Some(HashMap::from([("high".to_string(), Some("xhigh".to_string()))])),
+            thinking_level_map: Some(HashMap::from([(
+                "high".to_string(),
+                Some("xhigh".to_string()),
+            )])),
             ..test_model("openai-responses", "openai", "https://api.openai.com/v1")
         };
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &opts);
         // The thinkingLevelMap remaps high -> xhigh.
         assert_eq!(payload["reasoning"]["effort"], "xhigh");
@@ -2260,13 +3230,31 @@ mod tests {
 
     #[test]
     fn test_responses_reasoning_model_uses_developer_role() {
-        let model = Model { reasoning: true, ..test_model("openai-responses", "openai", "https://api.openai.com/v1") };
-        let ctx = Context { system_prompt: Some("sys".into()), messages: vec![user_message("hi")], tools: vec![] };
-        let payload = crate::provider::responses::build_responses_payload(&model, &ctx, &StreamOptions::default());
+        let model = Model {
+            reasoning: true,
+            ..test_model("openai-responses", "openai", "https://api.openai.com/v1")
+        };
+        let ctx = Context {
+            system_prompt: Some("sys".into()),
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
+        let payload = crate::provider::responses::build_responses_payload(
+            &model,
+            &ctx,
+            &StreamOptions::default(),
+        );
         assert_eq!(payload["input"][0]["role"], "developer");
         // Non-reasoning model uses system.
-        let model2 = Model { reasoning: false, ..test_model("openai-responses", "openai", "https://api.openai.com/v1") };
-        let payload2 = crate::provider::responses::build_responses_payload(&model2, &ctx, &StreamOptions::default());
+        let model2 = Model {
+            reasoning: false,
+            ..test_model("openai-responses", "openai", "https://api.openai.com/v1")
+        };
+        let payload2 = crate::provider::responses::build_responses_payload(
+            &model2,
+            &ctx,
+            &StreamOptions::default(),
+        );
         assert_eq!(payload2["input"][0]["role"], "system");
     }
 
@@ -2305,11 +3293,16 @@ mod tests {
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut err = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+            if let Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+            }
         }
         let e = err.unwrap();
         // Upstream throws the raw error-event data verbatim (no "SSE error:" prefix).
-        assert!(!e.starts_with("SSE error:"), "must not prefix the raw data: {e}");
+        assert!(
+            !e.starts_with("SSE error:"),
+            "must not prefix the raw data: {e}"
+        );
         assert!(e.contains("overloaded_error"));
         assert!(e.contains("server overloaded"));
     }
@@ -2333,7 +3326,9 @@ mod tests {
         let mut stream = stream_responses(&model, &ctx, &opts);
         let mut reason = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { reason: r, .. } = evt { reason = Some(r); }
+            if let Event::Done { reason: r, .. } = evt {
+                reason = Some(r);
+            }
         }
         assert_eq!(reason, Some(StopReason::Length));
     }
@@ -2357,7 +3352,11 @@ mod tests {
         let mut saw_error = false;
         let mut saw_done = false;
         while let Some(evt) = stream.next().await {
-            match evt { Event::Error { .. } => saw_error = true, Event::Done { .. } => saw_done = true, _ => {} }
+            match evt {
+                Event::Error { .. } => saw_error = true,
+                Event::Done { .. } => saw_done = true,
+                _ => {}
+            }
         }
         assert!(saw_error && !saw_done);
     }
@@ -2380,7 +3379,9 @@ mod tests {
         let mut stream = stream_responses(&model, &ctx, &opts);
         let mut err = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+            if let Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+            }
         }
         let m = err.unwrap();
         assert!(m.contains("boom") && m.contains("server_error"));
@@ -2391,11 +3392,13 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(ResponseTemplate::new(200)
-                .set_body_string(sse_response(&[
-                    r#"{"error":{"message":"rate limited by provider","code":429}}"#,
-                ]))
-                .insert_header("content-type", "text/event-stream"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(sse_response(&[
+                        r#"{"error":{"message":"rate limited by provider","code":429}}"#,
+                    ]))
+                    .insert_header("content-type", "text/event-stream"),
+            )
             .mount(&server)
             .await;
         let model = test_model("openai-completions", "openai", &server.uri());
@@ -2404,7 +3407,9 @@ mod tests {
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut err_msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err_msg = Some(error.to_string()); }
+            if let Event::Error { error, .. } = evt {
+                err_msg = Some(error.to_string());
+            }
         }
         assert!(err_msg.unwrap().contains("rate limited"));
     }
@@ -2427,14 +3432,20 @@ mod tests {
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut err_msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err_msg = Some(error.to_string()); }
+            if let Event::Error { error, .. } = evt {
+                err_msg = Some(error.to_string());
+            }
         }
         let m = err_msg.unwrap();
         assert!(m.contains("upstream error"));
         assert!(m.contains("quota exceeded"));
         // Regression (provider-error-body-regression.test.ts): the OpenRouter
         // metadata.raw extra must be appended exactly once, not double-printed.
-        assert_eq!(m.matches("quota exceeded").count(), 1, "raw metadata printed once: {m}");
+        assert_eq!(
+            m.matches("quota exceeded").count(),
+            1,
+            "raw metadata printed once: {m}"
+        );
     }
 
     #[tokio::test]
@@ -2442,12 +3453,14 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(ResponseTemplate::new(200)
-                // content but no finish_reason, then [DONE]
-                .set_body_string(sse_response(&[
-                    r#"{"id":"r1","choices":[{"delta":{"content":"partial"},"index":0}]}"#,
-                ]))
-                .insert_header("content-type", "text/event-stream"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    // content but no finish_reason, then [DONE]
+                    .set_body_string(sse_response(&[
+                        r#"{"id":"r1","choices":[{"delta":{"content":"partial"},"index":0}]}"#,
+                    ]))
+                    .insert_header("content-type", "text/event-stream"),
+            )
             .mount(&server)
             .await;
         let model = test_model("openai-completions", "openai", &server.uri());
@@ -2479,22 +3492,30 @@ mod tests {
             .await;
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
-            .respond_with(ResponseTemplate::new(200)
-                .set_body_string(sse_response(&[
-                    r#"{"id":"r1","choices":[{"delta":{"content":"ok"},"index":0}]}"#,
-                    r#"{"id":"r1","choices":[{"delta":{},"finish_reason":"stop","index":0}]}"#,
-                ]))
-                .insert_header("content-type", "text/event-stream"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(sse_response(&[
+                        r#"{"id":"r1","choices":[{"delta":{"content":"ok"},"index":0}]}"#,
+                        r#"{"id":"r1","choices":[{"delta":{},"finish_reason":"stop","index":0}]}"#,
+                    ]))
+                    .insert_header("content-type", "text/event-stream"),
+            )
             .mount(&server)
             .await;
 
         let model = test_model("openai-completions", "openai", &server.uri());
-        let opts = StreamOptions { max_retries: Some(2), max_retry_delay_ms: Some(5), ..Default::default() };
+        let opts = StreamOptions {
+            max_retries: Some(2),
+            max_retry_delay_ms: Some(5),
+            ..Default::default()
+        };
         let ctx = test_context();
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut text = String::new();
         while let Some(evt) = stream.next().await {
-            if let Event::TextDelta { delta } = evt { text.push_str(&delta); }
+            if let Event::TextDelta { delta } = evt {
+                text.push_str(&delta);
+            }
         }
         assert_eq!(text, "ok");
     }
@@ -2547,12 +3568,14 @@ mod tests {
             .and(path("/chat/completions"))
             .and(header("X-Initiator", "user"))
             .and(header("Openai-Intent", "conversation-edits"))
-            .respond_with(ResponseTemplate::new(200)
-                .set_body_string(sse_response(&[
-                    r#"{"id":"c1","choices":[{"delta":{"content":"hi"},"index":0}]}"#,
-                    r#"{"id":"c1","choices":[{"delta":{},"finish_reason":"stop","index":0}]}"#,
-                ]))
-                .insert_header("content-type", "text/event-stream"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(sse_response(&[
+                        r#"{"id":"c1","choices":[{"delta":{"content":"hi"},"index":0}]}"#,
+                        r#"{"id":"c1","choices":[{"delta":{},"finish_reason":"stop","index":0}]}"#,
+                    ]))
+                    .insert_header("content-type", "text/event-stream"),
+            )
             .mount(&server)
             .await;
 
@@ -2562,7 +3585,9 @@ mod tests {
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut text = String::new();
         while let Some(evt) = stream.next().await {
-            if let Event::TextDelta { delta } = evt { text.push_str(&delta); }
+            if let Event::TextDelta { delta } = evt {
+                text.push_str(&delta);
+            }
         }
         // If headers were missing, the mock wouldn't match and we'd get no text.
         assert_eq!(text, "hi");
@@ -2643,7 +3668,9 @@ mod tests {
         while let Some(evt) = stream.next().await {
             if let Event::Done { message, .. } = evt {
                 sig = message.content.iter().find_map(|b| match b {
-                    ContentBlock::Thinking { thinking_signature, .. } => thinking_signature.clone(),
+                    ContentBlock::Thinking {
+                        thinking_signature, ..
+                    } => thinking_signature.clone(),
                     _ => None,
                 });
             }
@@ -2679,7 +3706,9 @@ mod tests {
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut done = false;
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Done { .. }) { done = true; }
+            if matches!(evt, Event::Done { .. }) {
+                done = true;
+            }
         }
         // The injected field must be present or the wiremock body match fails (no 200 -> no Done).
         assert!(done);
@@ -2706,7 +3735,9 @@ mod tests {
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut done = false;
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Done { .. }) { done = true; }
+            if matches!(evt, Event::Done { .. }) {
+                done = true;
+            }
         }
         // Missing cf-aig-authorization would fail the wiremock match -> no Done.
         assert!(done);
@@ -2718,19 +3749,26 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/messages"))
-            .respond_with(ResponseTemplate::new(200)
-                .set_delay(Duration::from_millis(800))
-                .set_body_string("event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
-                .insert_header("content-type", "text/event-stream"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_delay(Duration::from_millis(800))
+                    .set_body_string("event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
+                    .insert_header("content-type", "text/event-stream"),
+            )
             .mount(&server)
             .await;
         let model = test_model("anthropic-messages", "anthropic", &server.uri());
-        let opts = StreamOptions { timeout_ms: Some(50), ..Default::default() };
+        let opts = StreamOptions {
+            timeout_ms: Some(50),
+            ..Default::default()
+        };
         let ctx = test_context();
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut saw_error = false;
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Error { .. }) { saw_error = true; }
+            if matches!(evt, Event::Error { .. }) {
+                saw_error = true;
+            }
         }
         // A 50ms timeout against an 800ms-delayed response must error.
         assert!(saw_error);
@@ -2755,9 +3793,12 @@ mod tests {
         let seen: Arc<Mutex<Option<(u16, String)>>> = Arc::new(Mutex::new(None));
         let seen2 = seen.clone();
         let opts = StreamOptions {
-            on_response: Some(Arc::new(move |status: u16, hdrs: &std::collections::HashMap<String, String>, _m: &Model| {
-                *seen2.lock().unwrap() = Some((status, hdrs.get("x-test").cloned().unwrap_or_default()));
-            })),
+            on_response: Some(Arc::new(
+                move |status: u16, hdrs: &std::collections::HashMap<String, String>, _m: &Model| {
+                    *seen2.lock().unwrap() =
+                        Some((status, hdrs.get("x-test").cloned().unwrap_or_default()));
+                },
+            )),
             ..Default::default()
         };
         let ctx = test_context();
@@ -2782,19 +3823,26 @@ mod tests {
         let called = Arc::new(Mutex::new(false));
         let c2 = called.clone();
         let opts = StreamOptions {
-            on_response: Some(Arc::new(move |_s: u16, _h: &std::collections::HashMap<String, String>, _m: &Model| {
-                *c2.lock().unwrap() = true;
-            })),
+            on_response: Some(Arc::new(
+                move |_s: u16, _h: &std::collections::HashMap<String, String>, _m: &Model| {
+                    *c2.lock().unwrap() = true;
+                },
+            )),
             ..Default::default()
         };
         let ctx = test_context();
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut saw_error = false;
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Error { .. }) { saw_error = true; }
+            if matches!(evt, Event::Error { .. }) {
+                saw_error = true;
+            }
         }
         assert!(saw_error, "400 should produce an Error");
-        assert!(!*called.lock().unwrap(), "on_response must not fire on an error status");
+        assert!(
+            !*called.lock().unwrap(),
+            "on_response must not fire on an error status"
+        );
     }
 
     #[tokio::test]
@@ -2824,7 +3872,10 @@ mod tests {
                 _ => {}
             }
         }
-        assert_eq!(err.as_deref(), Some("Anthropic stream ended before message_stop"));
+        assert_eq!(
+            err.as_deref(),
+            Some("Anthropic stream ended before message_stop")
+        );
         assert!(!saw_done);
     }
 
@@ -2852,7 +3903,9 @@ mod tests {
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut usage = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { usage = message.usage; }
+            if let Event::Done { message, .. } = evt {
+                usage = message.usage;
+            }
         }
         let u = usage.expect("usage");
         // input preserved from message_start; output + cache_creation from message_delta;
@@ -2886,7 +3939,9 @@ mod tests {
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut usage = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { usage = message.usage; }
+            if let Event::Done { message, .. } = evt {
+                usage = message.usage;
+            }
         }
         let u = usage.expect("usage");
         assert_eq!(u.cache_write, 100);
@@ -2931,7 +3986,10 @@ mod tests {
                     saw_tool_start = true;
                 }
                 Event::ToolCallDelta { delta } => tool_json.push_str(&delta),
-                Event::Done { reason, message } => { stop_reason = Some(reason); done_msg = Some(message); }
+                Event::Done { reason, message } => {
+                    stop_reason = Some(reason);
+                    done_msg = Some(message);
+                }
                 _ => {}
             }
         }
@@ -2969,12 +4027,19 @@ mod tests {
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut done_msg: Option<Message> = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { done_msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                done_msg = Some(message);
+            }
         }
         let msg = done_msg.expect("done message");
-        assert!(msg.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { id, arguments, .. }
+        assert!(
+            msg.content
+                .iter()
+                .any(|b| matches!(b, ContentBlock::ToolCall { id, arguments, .. }
             if id == "tc9" && arguments["city"] == "lisbon")),
-            "initial content_block.input must be preserved when no input_json_delta arrives: {:?}", msg.content);
+            "initial content_block.input must be preserved when no input_json_delta arrives: {:?}",
+            msg.content
+        );
     }
 
     #[tokio::test]
@@ -3002,23 +4067,45 @@ mod tests {
         let ctx = test_context();
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut events = Vec::new();
-        while let Some(evt) = stream.next().await { events.push(evt); }
-        assert!(!events.iter().any(|e| matches!(e, Event::Error { .. })),
-            "empty stop_reason must not error: {events:?}");
-        assert!(matches!(events.last().unwrap(), Event::Done { reason: StopReason::Stop, .. }));
+        while let Some(evt) = stream.next().await {
+            events.push(evt);
+        }
+        assert!(
+            !events.iter().any(|e| matches!(e, Event::Error { .. })),
+            "empty stop_reason must not error: {events:?}"
+        );
+        assert!(matches!(
+            events.last().unwrap(),
+            Event::Done {
+                reason: StopReason::Stop,
+                ..
+            }
+        ));
     }
 
     #[test]
     fn test_anthropic_needs_session_affinity() {
         use crate::provider::anthropic::anthropic_needs_session_affinity;
         // 0.80.2: static default false; fireworks/cloudflare values now come from the catalog.
-        let fw = test_model("anthropic-messages", "fireworks", "https://api.fireworks.ai/inference");
+        let fw = test_model(
+            "anthropic-messages",
+            "fireworks",
+            "https://api.fireworks.ai/inference",
+        );
         assert!(!anthropic_needs_session_affinity(&fw));
         // Plain Anthropic default false.
-        let an = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let an = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         assert!(!anthropic_needs_session_affinity(&an));
         // Cloudflare AI Gateway also defaults false now (no runtime detection).
-        let cf = test_model("anthropic-messages", "cloudflare-ai-gateway", "https://gateway.ai.cloudflare.com/v1/a/b/anthropic");
+        let cf = test_model(
+            "anthropic-messages",
+            "cloudflare-ai-gateway",
+            "https://gateway.ai.cloudflare.com/v1/a/b/anthropic",
+        );
         assert!(!anthropic_needs_session_affinity(&cf));
         // Explicit compat override wins (opt-in via baked catalog compat).
         let mut fw_on = fw.clone();
@@ -3046,10 +4133,19 @@ mod tests {
                     redacted: false,
                 }],
                 timestamp: 0,
-                api: Some("anthropic-messages".into()), provider: Some("anthropic".into()), model: Some("test-model".into()),
-                response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("anthropic-messages".into()),
+                provider: Some("anthropic".into()),
+                model: Some("test-model".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
@@ -3068,12 +4164,25 @@ mod tests {
             system_prompt: None,
             messages: vec![Message {
                 role: Role::Assistant,
-                content: vec![ContentBlock::Thinking { thinking: "[Reasoning redacted]".into(), thinking_signature: Some("opaque-blob".into()), redacted: true }],
+                content: vec![ContentBlock::Thinking {
+                    thinking: "[Reasoning redacted]".into(),
+                    thinking_signature: Some("opaque-blob".into()),
+                    redacted: true,
+                }],
                 timestamp: 0,
-                api: Some("anthropic-messages".into()), provider: Some("anthropic".into()), model: Some("test-model".into()), response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("anthropic-messages".into()),
+                provider: Some("anthropic".into()),
+                model: Some("test-model".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
@@ -3093,14 +4202,32 @@ mod tests {
             role: Role::ToolResult,
             content: vec![],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None, response_model: None,
-            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-            tool_call_id: Some("call_x".into()), tool_name: Some("t".into()), is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some("call_x".into()),
+            tool_name: Some("t".into()),
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![tool_result], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![tool_result],
+            tools: vec![],
+        };
         let payload = build_responses_payload(&model, &ctx, &StreamOptions::default());
-        let item = payload["input"].as_array().unwrap().iter()
-            .find(|i| i["type"] == "function_call_output").unwrap();
+        let item = payload["input"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|i| i["type"] == "function_call_output")
+            .unwrap();
         assert_eq!(item["output"], "(no tool output)");
     }
 
@@ -3113,32 +4240,66 @@ mod tests {
         let assistant = Message {
             role: Role::Assistant,
             content: vec![ContentBlock::ToolCall {
-                id: raw_id.into(), name: "search".into(),
-                arguments: std::collections::HashMap::new(), thought_signature: None,
+                id: raw_id.into(),
+                name: "search".into(),
+                arguments: std::collections::HashMap::new(),
+                thought_signature: None,
             }],
             timestamp: 0,
-            api: Some("openai-responses".into()), provider: Some("openai".into()), model: Some("gpt-5".into()),
-            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: Some(StopReason::ToolUse), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            api: Some("openai-responses".into()),
+            provider: Some("openai".into()),
+            model: Some("gpt-5".into()),
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(StopReason::ToolUse),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
         let tool_result = Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Text { text: "ok".into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: "ok".into(),
+                text_signature: None,
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None, response_model: None,
-            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-            tool_call_id: Some(raw_id.into()), tool_name: Some("search".into()), is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some(raw_id.into()),
+            tool_name: Some("search".into()),
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![assistant, tool_result], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![assistant, tool_result],
+            tools: vec![],
+        };
         let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
         let use_id = payload["messages"][0]["content"][0]["id"].as_str().unwrap();
         // tool_result is folded into a following user message.
-        let result_id = payload["messages"][1]["content"][0]["tool_use_id"].as_str().unwrap();
+        let result_id = payload["messages"][1]["content"][0]["tool_use_id"]
+            .as_str()
+            .unwrap();
         // Normalized: no `|`, max 64 chars, only [a-zA-Z0-9_-].
         assert!(!use_id.contains('|'));
         assert!(use_id.len() <= 64);
-        assert!(use_id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-'));
+        assert!(
+            use_id
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        );
         // Both sides must match so Anthropic can correlate the result to the call.
         assert_eq!(use_id, result_id);
     }
@@ -3146,18 +4307,31 @@ mod tests {
     #[test]
     fn test_responses_reasoning_summary_empty_handling() {
         use crate::provider::responses::build_responses_payload;
-        let model = Model { reasoning: true, ..test_model("openai-responses", "openai", "https://example.com") };
+        let model = Model {
+            reasoning: true,
+            ..test_model("openai-responses", "openai", "https://example.com")
+        };
         let ctx = test_context();
         // Empty summary with an effort -> falls back to "auto" (reasoningSummary || "auto").
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::Medium), reasoning_summary: Some("".into()), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::Medium),
+            reasoning_summary: Some("".into()),
+            ..Default::default()
+        };
         let p = build_responses_payload(&model, &ctx, &opts);
         assert_eq!(p["reasoning"]["summary"], "auto");
         // Empty summary alone (no effort) -> does NOT trigger the reasoning block.
-        let opts2 = StreamOptions { reasoning_summary: Some("".into()), ..Default::default() };
+        let opts2 = StreamOptions {
+            reasoning_summary: Some("".into()),
+            ..Default::default()
+        };
         let p2 = build_responses_payload(&model, &ctx, &opts2);
         assert_ne!(p2["reasoning"]["effort"], "medium");
         // Non-empty summary alone -> medium effort + that summary.
-        let opts3 = StreamOptions { reasoning_summary: Some("detailed".into()), ..Default::default() };
+        let opts3 = StreamOptions {
+            reasoning_summary: Some("detailed".into()),
+            ..Default::default()
+        };
         let p3 = build_responses_payload(&model, &ctx, &opts3);
         assert_eq!(p3["reasoning"]["effort"], "medium");
         assert_eq!(p3["reasoning"]["summary"], "detailed");
@@ -3167,16 +4341,33 @@ mod tests {
     fn test_max_tokens_zero_handling() {
         // completions/responses use a truthy gate (skip 0); google uses !== undefined (include 0).
         let ctx = test_context();
-        let opts0 = StreamOptions { max_tokens: Some(0), ..Default::default() };
-        let opts5 = StreamOptions { max_tokens: Some(5), ..Default::default() };
+        let opts0 = StreamOptions {
+            max_tokens: Some(0),
+            ..Default::default()
+        };
+        let opts5 = StreamOptions {
+            max_tokens: Some(5),
+            ..Default::default()
+        };
 
         let omodel = test_model("openai-completions", "openai", "https://example.com");
         let oc = crate::compat::detect_compat(&omodel);
-        assert!(crate::provider::openai::build_payload(&omodel, &ctx, &opts0, &oc).get("max_completion_tokens").is_none());
-        assert_eq!(crate::provider::openai::build_payload(&omodel, &ctx, &opts5, &oc)["max_completion_tokens"], 5);
+        assert!(
+            crate::provider::openai::build_payload(&omodel, &ctx, &opts0, &oc)
+                .get("max_completion_tokens")
+                .is_none()
+        );
+        assert_eq!(
+            crate::provider::openai::build_payload(&omodel, &ctx, &opts5, &oc)["max_completion_tokens"],
+            5
+        );
 
         let rmodel = test_model("openai-responses", "openai", "https://example.com");
-        assert!(crate::provider::responses::build_responses_payload(&rmodel, &ctx, &opts0).get("max_output_tokens").is_none());
+        assert!(
+            crate::provider::responses::build_responses_payload(&rmodel, &ctx, &opts0)
+                .get("max_output_tokens")
+                .is_none()
+        );
 
         // google includes 0 (maxOutputTokens via !== undefined).
         let gmodel = test_model("google-generative-ai", "google", "https://example.com");
@@ -3187,26 +4378,48 @@ mod tests {
     #[test]
     fn test_empty_system_prompt_omitted() {
         use crate::provider::anthropic::build_anthropic_payload;
-        use crate::provider::responses::build_responses_payload;
         use crate::provider::codex::build_codex_payload;
+        use crate::provider::responses::build_responses_payload;
         // Empty-string system prompt is treated as absent (upstream `if (systemPrompt)`).
-        let ctx_empty = Context { system_prompt: Some("".into()), messages: vec![user_message("hi")], tools: vec![] };
-        let ctx_some = Context { system_prompt: Some("sys".into()), messages: vec![user_message("hi")], tools: vec![] };
+        let ctx_empty = Context {
+            system_prompt: Some("".into()),
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
+        let ctx_some = Context {
+            system_prompt: Some("sys".into()),
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
         let opts = StreamOptions::default();
 
         // Anthropic: no `system` field for an empty prompt.
         let amodel = test_model("anthropic-messages", "anthropic", "https://example.com");
-        assert!(build_anthropic_payload(&amodel, &ctx_empty, &opts).get("system").is_none());
-        assert!(build_anthropic_payload(&amodel, &ctx_some, &opts).get("system").is_some());
+        assert!(
+            build_anthropic_payload(&amodel, &ctx_empty, &opts)
+                .get("system")
+                .is_none()
+        );
+        assert!(
+            build_anthropic_payload(&amodel, &ctx_some, &opts)
+                .get("system")
+                .is_some()
+        );
 
         // Responses: no developer/system input item for an empty prompt.
         let rmodel = test_model("openai-responses", "openai", "https://example.com");
         let rp = build_responses_payload(&rmodel, &ctx_empty, &opts);
-        assert!(!rp["input"].as_array().unwrap().iter().any(|m|
-            matches!(m.get("role").and_then(|r| r.as_str()), Some("system") | Some("developer"))));
+        assert!(!rp["input"].as_array().unwrap().iter().any(|m| matches!(
+            m.get("role").and_then(|r| r.as_str()),
+            Some("system") | Some("developer")
+        )));
 
         // Codex: empty prompt falls back to the default instructions.
-        let cmodel = test_model("openai-codex-responses", "openai", "https://chatgpt.com/backend-api");
+        let cmodel = test_model(
+            "openai-codex-responses",
+            "openai",
+            "https://chatgpt.com/backend-api",
+        );
         let cp = build_codex_payload(&cmodel, &ctx_empty, &opts);
         assert_eq!(cp["instructions"], "You are a helpful assistant.");
     }
@@ -3214,13 +4427,29 @@ mod tests {
     #[test]
     fn test_anthropic_beta_features() {
         use crate::provider::anthropic::anthropic_beta_features;
-        let tool = Tool { name: "t".into(), description: "d".into(), parameters: serde_json::json!({"type":"object"}) };
-        let ctx_tools = Context { system_prompt: None, messages: vec![], tools: vec![tool] };
-        let ctx_none = Context { system_prompt: None, messages: vec![], tools: vec![] };
+        let tool = Tool {
+            name: "t".into(),
+            description: "d".into(),
+            parameters: serde_json::json!({"type":"object"}),
+        };
+        let ctx_tools = Context {
+            system_prompt: None,
+            messages: vec![],
+            tools: vec![tool],
+        };
+        let ctx_none = Context {
+            system_prompt: None,
+            messages: vec![],
+            tools: vec![],
+        };
 
         // Regular Anthropic model supports eager tool-input streaming by default, so
         // fine-grained is NOT applied; interleaved is.
-        let model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         let f = anthropic_beta_features(&model, &ctx_tools, false, true);
         assert!(!f.contains(&"fine-grained-tool-streaming-2025-05-14"));
         assert!(f.contains(&"interleaved-thinking-2025-05-14"));
@@ -3233,7 +4462,11 @@ mod tests {
         // 0.80.2: fireworks no longer special-cased at runtime; a bare fireworks model
         // defaults to eager streaming -> fine-grained NOT applied. (Catalog fireworks
         // models bake supports_eager_tool_input_streaming=false; see explicit override below.)
-        let fw = test_model("anthropic-messages", "fireworks", "https://api.fireworks.ai");
+        let fw = test_model(
+            "anthropic-messages",
+            "fireworks",
+            "https://api.fireworks.ai",
+        );
         let f = anthropic_beta_features(&fw, &ctx_tools, false, true);
         assert!(!f.contains(&"fine-grained-tool-streaming-2025-05-14"));
 
@@ -3258,30 +4491,59 @@ mod tests {
     #[test]
     fn test_anthropic_thinking_display_option() {
         use crate::provider::anthropic::build_anthropic_payload;
-        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let mut model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         model.reasoning = true;
         model.compat.force_adaptive_thinking = Some(true);
         let ctx = test_context();
-        let opts_default = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
-        assert_eq!(build_anthropic_payload(&model, &ctx, &opts_default)["thinking"]["display"], "summarized");
-        let opts_detail = StreamOptions { reasoning: Some(ThinkingLevel::High), thinking_display: Some("detailed".into()), ..Default::default() };
-        assert_eq!(build_anthropic_payload(&model, &ctx, &opts_detail)["thinking"]["display"], "detailed");
+        let opts_default = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
+        assert_eq!(
+            build_anthropic_payload(&model, &ctx, &opts_default)["thinking"]["display"],
+            "summarized"
+        );
+        let opts_detail = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            thinking_display: Some("detailed".into()),
+            ..Default::default()
+        };
+        assert_eq!(
+            build_anthropic_payload(&model, &ctx, &opts_detail)["thinking"]["display"],
+            "detailed"
+        );
     }
 
     #[test]
     fn test_anthropic_adaptive_thinking_uses_effort_not_budget() {
         use crate::provider::anthropic::build_anthropic_payload;
         // Adaptive-thinking models (forceAdaptiveThinking) send an effort, not a token budget.
-        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let mut model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         model.reasoning = true;
         model.compat.force_adaptive_thinking = Some(true);
         // xhigh maps to "max" on Opus 4.6 via thinkingLevelMap.
-        model.thinking_level_map = Some(std::collections::HashMap::from([
-            ("xhigh".to_string(), Some("max".to_string())),
-        ]));
-        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        model.thinking_level_map = Some(std::collections::HashMap::from([(
+            "xhigh".to_string(),
+            Some("max".to_string()),
+        )]));
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
 
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         let payload = build_anthropic_payload(&model, &ctx, &opts);
         // Adaptive models use {type:adaptive, display} + output_config.effort.
         assert_eq!(payload["thinking"]["type"], "adaptive");
@@ -3289,7 +4551,10 @@ mod tests {
         assert_eq!(payload["output_config"]["effort"], "high");
         assert!(payload["thinking"].get("budget_tokens").is_none());
 
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::XHigh), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::XHigh),
+            ..Default::default()
+        };
         let payload = build_anthropic_payload(&model, &ctx, &opts);
         assert_eq!(payload["output_config"]["effort"], "max");
     }
@@ -3297,10 +4562,21 @@ mod tests {
     #[test]
     fn test_anthropic_budget_thinking_for_non_adaptive() {
         use crate::provider::anthropic::build_anthropic_payload;
-        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let mut model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         model.reasoning = true;
-        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         let payload = build_anthropic_payload(&model, &ctx, &opts);
         assert_eq!(payload["thinking"]["type"], "enabled");
         assert!(payload["thinking"].get("budget_tokens").is_some());
@@ -3310,10 +4586,18 @@ mod tests {
     #[test]
     fn test_anthropic_budget_selects_level_and_adjusts_max_tokens() {
         use crate::provider::anthropic::build_anthropic_payload;
-        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let mut model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         model.reasoning = true;
         model.max_tokens = 64000;
-        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
         // Explicit max_tokens=4096, low reasoning -> budget 2048 (default low), max_tokens = 4096+2048.
         let opts = StreamOptions {
             reasoning: Some(ThinkingLevel::Low),
@@ -3341,24 +4625,38 @@ mod tests {
         // Tiny effective max_tokens cap: adjustMaxTokensForThinking yields a 0 budget
         // (max_tokens - 1024 <= 0). Upstream clamps via `thinkingBudgetTokens || 1024`,
         // so budget_tokens must be 1024, never 0 (Anthropic rejects 0).
-        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let mut model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         model.reasoning = true;
         model.max_tokens = 800; // model cap below the 1024 min-output floor
-        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
         let opts = StreamOptions {
             reasoning: Some(ThinkingLevel::Low),
             max_tokens: None, // no caller cap -> use the (tiny) model cap
             ..Default::default()
         };
         let payload = build_anthropic_payload(&model, &ctx, &opts);
-        assert_eq!(payload["thinking"]["budget_tokens"], 1024,
-            "0 budget must clamp to 1024: {payload}");
+        assert_eq!(
+            payload["thinking"]["budget_tokens"], 1024,
+            "0 budget must clamp to 1024: {payload}"
+        );
     }
 
     #[test]
     fn test_anthropic_oauth_identity_system_block() {
         use crate::provider::anthropic::build_anthropic_payload;
-        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let mut model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         model.api_key = Some("sk-ant-oat01-abc".into());
         let ctx = Context {
             system_prompt: Some("be helpful".into()),
@@ -3377,20 +4675,34 @@ mod tests {
         let model = test_model("anthropic-messages", "anthropic", "https://example.com");
         let tr = |id: &str, txt: &str| Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Text { text: txt.into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: txt.into(),
+                text_signature: None,
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: Some(id.into()), tool_name: Some("t".into()),
-            is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some(id.into()),
+            tool_name: Some("t".into()),
+            is_error: false,
+            details: None,
         };
         let ctx = Context {
             system_prompt: Some("sys".into()),
             messages: vec![tr("a", "1"), tr("b", "2")],
             tools: vec![],
         };
-        let opts = StreamOptions { cache_retention: Some(CacheRetention::Long), ..Default::default() };
+        let opts = StreamOptions {
+            cache_retention: Some(CacheRetention::Long),
+            ..Default::default()
+        };
         let payload = build_anthropic_payload(&model, &ctx, &opts);
         // Two consecutive tool results must collapse into ONE user message with two blocks.
         assert_eq!(payload["messages"].as_array().unwrap().len(), 1);
@@ -3407,7 +4719,11 @@ mod tests {
     #[test]
     fn test_anthropic_tool_shape_eager_and_input_schema() {
         use crate::provider::anthropic::build_anthropic_payload;
-        let model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         let ctx = Context {
             system_prompt: None,
             messages: vec![user_message("hi")],
@@ -3437,8 +4753,16 @@ mod tests {
     fn test_anthropic_caching_on_by_default() {
         use crate::provider::anthropic::build_anthropic_payload;
         // No cache_retention specified -> resolves to "short" -> ephemeral cache_control.
-        let model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
-        let ctx = Context { system_prompt: Some("sys".into()), messages: vec![user_message("hi")], tools: vec![] };
+        let model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
+        let ctx = Context {
+            system_prompt: Some("sys".into()),
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
         let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
         assert_eq!(payload["system"][0]["cache_control"]["type"], "ephemeral");
         // Short retention has no 1h ttl.
@@ -3448,7 +4772,11 @@ mod tests {
     #[test]
     fn test_anthropic_history_cache_breakpoint_only_on_user() {
         use crate::provider::anthropic::build_anthropic_payload;
-        let model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         // Last message is an assistant prefill -> no history cache breakpoint on it.
         let ctx = Context {
             system_prompt: None,
@@ -3456,12 +4784,24 @@ mod tests {
                 user_message("hi"),
                 Message {
                     role: Role::Assistant,
-                    content: vec![ContentBlock::Text { text: "partial".into(), text_signature: None }],
+                    content: vec![ContentBlock::Text {
+                        text: "partial".into(),
+                        text_signature: None,
+                    }],
                     timestamp: 0,
-                    api: None, provider: None, model: None, response_id: None,
-                    response_model: None, diagnostics: Vec::new(), usage: None,
-                    stop_reason: Some(StopReason::Stop), error_message: None,
-                    tool_call_id: None, tool_name: None, is_error: false, details: None,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
+                    response_model: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: Some(StopReason::Stop),
+                    error_message: None,
+                    tool_call_id: None,
+                    tool_name: None,
+                    is_error: false,
+                    details: None,
                 },
             ],
             tools: vec![],
@@ -3478,12 +4818,20 @@ mod tests {
     #[test]
     fn test_anthropic_oauth_tool_name_canonicalization() {
         use crate::provider::anthropic::build_anthropic_payload;
-        let mut model = test_model("anthropic-messages", "anthropic", "https://api.anthropic.com");
+        let mut model = test_model(
+            "anthropic-messages",
+            "anthropic",
+            "https://api.anthropic.com",
+        );
         model.api_key = Some("sk-ant-oat01-xyz".into());
         let ctx = Context {
             system_prompt: None,
             messages: vec![user_message("hi")],
-            tools: vec![Tool { name: "bash".into(), description: "d".into(), parameters: serde_json::json!({"type":"object"}) }],
+            tools: vec![Tool {
+                name: "bash".into(),
+                description: "d".into(),
+                parameters: serde_json::json!({"type":"object"}),
+            }],
         };
         let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
         // "bash" is canonicalized to the Claude Code "Bash" for OAuth requests.
@@ -3504,13 +4852,24 @@ mod tests {
             system_prompt: None,
             messages: vec![Message {
                 role: Role::ToolResult,
-                content: vec![ContentBlock::Text { text: "42".into(), text_signature: None }],
+                content: vec![ContentBlock::Text {
+                    text: "42".into(),
+                    text_signature: None,
+                }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: Some("tc1".into()), tool_name: Some("calc".into()),
-                is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: Some("tc1".into()),
+                tool_name: Some("calc".into()),
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
@@ -3527,18 +4886,32 @@ mod tests {
         // Image-only tool results gain a "(see attached image)" placeholder text block
         // and are returned as a block array (mirrors upstream convertContentBlocks).
         use crate::provider::anthropic::build_anthropic_payload;
-        let model = Model { input: vec!["text".into(), "image".into()], ..test_model("anthropic-messages", "anthropic", "https://example.com") };
+        let model = Model {
+            input: vec!["text".into(), "image".into()],
+            ..test_model("anthropic-messages", "anthropic", "https://example.com")
+        };
         let ctx = Context {
             system_prompt: None,
             messages: vec![Message {
                 role: Role::ToolResult,
-                content: vec![ContentBlock::Image { data: "AAAA".into(), mime_type: "image/png".into() }],
+                content: vec![ContentBlock::Image {
+                    data: "AAAA".into(),
+                    mime_type: "image/png".into(),
+                }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: Some("tc2".into()), tool_name: Some("shot".into()),
-                is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: Some("tc2".into()),
+                tool_name: Some("shot".into()),
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
@@ -3556,15 +4929,33 @@ mod tests {
         use crate::provider::anthropic::build_anthropic_payload;
         let model = test_model("anthropic-messages", "anthropic", "https://example.com");
         let mk = |role: Role, text: &str| Message {
-            role, content: vec![ContentBlock::Text { text: text.into(), text_signature: None }],
-            timestamp: 0, api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None, tool_call_id: None, tool_name: None,
-            is_error: false, details: None,
+            role,
+            content: vec![ContentBlock::Text {
+                text: text.into(),
+                text_signature: None,
+            }],
+            timestamp: 0,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
         let ctx = Context {
             system_prompt: None,
-            messages: vec![mk(Role::User, "   "), mk(Role::Assistant, "\n\t"), mk(Role::User, "real")],
+            messages: vec![
+                mk(Role::User, "   "),
+                mk(Role::Assistant, "\n\t"),
+                mk(Role::User, "real"),
+            ],
             tools: vec![],
         };
         let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
@@ -3597,7 +4988,9 @@ mod tests {
         let mut saw_done = false;
         while let Some(evt) = stream.next().await {
             match evt {
-                Event::Error { reason, message, .. } => {
+                Event::Error {
+                    reason, message, ..
+                } => {
                     err_reason = Some(reason);
                     err_msg = message.and_then(|m| m.error_message);
                 }
@@ -3619,11 +5012,18 @@ mod tests {
         let model = test_model("mistral-conversations", "mistral", "https://example.com");
         let ctx = test_context();
         // Session id + default retention -> prompt_cache_key present.
-        let opts = StreamOptions { session_id: Some("sess-7".into()), ..Default::default() };
+        let opts = StreamOptions {
+            session_id: Some("sess-7".into()),
+            ..Default::default()
+        };
         let p = build_mistral_payload(&model, &ctx, &opts);
         assert_eq!(p["prompt_cache_key"], "sess-7");
         // cacheRetention "none" -> omitted.
-        let opts_none = StreamOptions { session_id: Some("sess-7".into()), cache_retention: Some(crate::types::CacheRetention::None), ..Default::default() };
+        let opts_none = StreamOptions {
+            session_id: Some("sess-7".into()),
+            cache_retention: Some(crate::types::CacheRetention::None),
+            ..Default::default()
+        };
         let p2 = build_mistral_payload(&model, &ctx, &opts_none);
         assert!(p2.get("prompt_cache_key").is_none());
         // No session id -> omitted.
@@ -3650,7 +5050,9 @@ mod tests {
         let mut stream = stream_mistral(&model, &ctx, &opts);
         let mut usage = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { usage = message.usage; }
+            if let Event::Done { message, .. } = evt {
+                usage = message.usage;
+            }
         }
         let u = usage.expect("usage");
         assert_eq!(u.cache_read, 40);
@@ -3673,13 +5075,21 @@ mod tests {
             .mount(&server)
             .await;
         let mut model = test_model("mistral-conversations", "mistral", &server.uri());
-        model.headers = Some(std::collections::HashMap::from([("x-custom".to_string(), "cv".to_string())]));
-        let opts = StreamOptions { session_id: Some("sess-m".into()), ..Default::default() };
+        model.headers = Some(std::collections::HashMap::from([(
+            "x-custom".to_string(),
+            "cv".to_string(),
+        )]));
+        let opts = StreamOptions {
+            session_id: Some("sess-m".into()),
+            ..Default::default()
+        };
         let ctx = test_context();
         let mut stream = stream_mistral(&model, &ctx, &opts);
         let mut done = false;
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Done { .. }) { done = true; }
+            if matches!(evt, Event::Done { .. }) {
+                done = true;
+            }
         }
         // Missing x-affinity / x-custom would fail the wiremock header match.
         assert!(done);
@@ -3745,7 +5155,9 @@ mod tests {
         assert_eq!(thinking, "pondering");
         assert_eq!(text, "answer");
         let msg = done.unwrap();
-        assert!(msg.content.iter().any(|b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "pondering")));
+        assert!(msg.content.iter().any(
+            |b| matches!(b, ContentBlock::Thinking { thinking, .. } if thinking == "pondering")
+        ));
     }
 
     #[tokio::test]
@@ -3771,7 +5183,10 @@ mod tests {
         let mut done: Option<Message> = None;
         let mut reason = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { reason: r, message } = evt { reason = Some(r); done = Some(message); }
+            if let Event::Done { reason: r, message } = evt {
+                reason = Some(r);
+                done = Some(message);
+            }
         }
         let msg = done.expect("done");
         assert_eq!(reason, Some(StopReason::ToolUse));
@@ -3799,13 +5214,24 @@ mod tests {
         let mut stream = stream_mistral(&model, &ctx, &opts);
         let mut done: Option<Message> = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { done = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                done = Some(message);
+            }
         }
         let msg = done.expect("done");
-        let tc = msg.content.iter().find_map(|b| match b {
-            ContentBlock::ToolCall { id, name, arguments, .. } => Some((id.clone(), name.clone(), arguments.clone())),
-            _ => None,
-        }).expect("tool call");
+        let tc = msg
+            .content
+            .iter()
+            .find_map(|b| match b {
+                ContentBlock::ToolCall {
+                    id,
+                    name,
+                    arguments,
+                    ..
+                } => Some((id.clone(), name.clone(), arguments.clone())),
+                _ => None,
+            })
+            .expect("tool call");
         assert!(!tc.0.is_empty() && tc.0 != "null");
         assert_eq!(tc.1, "calc");
         assert_eq!(tc.2["x"], 1);
@@ -3819,20 +5245,42 @@ mod tests {
             let mut m = test_model("google-generative-ai", "google", "https://example.com");
             m.id = id.into();
             m.reasoning = true;
-            let opts = StreamOptions { reasoning: Some(level), ..Default::default() };
-            build_google_payload_public(&m, &ctx, &opts)["generationConfig"]["thinkingConfig"].clone()
+            let opts = StreamOptions {
+                reasoning: Some(level),
+                ..Default::default()
+            };
+            build_google_payload_public(&m, &ctx, &opts)["generationConfig"]["thinkingConfig"]
+                .clone()
         };
         // Gemini 3 Pro: medium -> HIGH thinkingLevel.
-        assert_eq!(mk("gemini-3-pro", ThinkingLevel::Medium)["thinkingLevel"], "HIGH");
-        assert_eq!(mk("gemini-3-pro", ThinkingLevel::Low)["thinkingLevel"], "LOW");
+        assert_eq!(
+            mk("gemini-3-pro", ThinkingLevel::Medium)["thinkingLevel"],
+            "HIGH"
+        );
+        assert_eq!(
+            mk("gemini-3-pro", ThinkingLevel::Low)["thinkingLevel"],
+            "LOW"
+        );
         // Gemma 4: low -> MINIMAL.
-        assert_eq!(mk("gemma-4-it", ThinkingLevel::Low)["thinkingLevel"], "MINIMAL");
+        assert_eq!(
+            mk("gemma-4-it", ThinkingLevel::Low)["thinkingLevel"],
+            "MINIMAL"
+        );
         // 2.5-flash budget: low -> 2048.
-        assert_eq!(mk("gemini-2.5-flash", ThinkingLevel::Low)["thinkingBudget"], 2048);
+        assert_eq!(
+            mk("gemini-2.5-flash", ThinkingLevel::Low)["thinkingBudget"],
+            2048
+        );
         // 2.5-pro budget: high -> 32768.
-        assert_eq!(mk("gemini-2.5-pro", ThinkingLevel::High)["thinkingBudget"], 32768);
+        assert_eq!(
+            mk("gemini-2.5-pro", ThinkingLevel::High)["thinkingBudget"],
+            32768
+        );
         // Non-2.x budget model: dynamic -1.
-        assert_eq!(mk("gemini-foo", ThinkingLevel::Medium)["thinkingBudget"], -1);
+        assert_eq!(
+            mk("gemini-foo", ThinkingLevel::Medium)["thinkingBudget"],
+            -1
+        );
     }
 
     #[test]
@@ -3848,7 +5296,11 @@ mod tests {
         let ctx = Context {
             system_prompt: None,
             messages: vec![],
-            tools: vec![Tool { name: "f".into(), description: "d".into(), parameters: schema.clone() }],
+            tools: vec![Tool {
+                name: "f".into(),
+                description: "d".into(),
+                parameters: schema.clone(),
+            }],
         };
         let payload = build_google_payload_public(&model, &ctx, &StreamOptions::default());
         let decl = &payload["tools"][0]["functionDeclarations"][0];
@@ -3867,15 +5319,35 @@ mod tests {
         let tr = Message {
             role: Role::ToolResult,
             content: vec![
-                ContentBlock::Text { text: "ok".into(), text_signature: None },
-                ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() },
+                ContentBlock::Text {
+                    text: "ok".into(),
+                    text_signature: None,
+                },
+                ContentBlock::Image {
+                    data: "abc".into(),
+                    mime_type: "image/png".into(),
+                },
             ],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None, response_model: None,
-            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-            tool_call_id: Some("c1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some("c1".into()),
+            tool_name: Some("t".into()),
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![tr], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![tr],
+            tools: vec![],
+        };
         let payload = build_google_payload_public(&model, &ctx, &StreamOptions::default());
         let contents = payload["contents"].as_array().unwrap();
         // functionResponse turn has no nested image parts.
@@ -3897,13 +5369,30 @@ mod tests {
         model.input = vec!["text".into(), "image".into()];
         let tr = Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() }],
+            content: vec![ContentBlock::Image {
+                data: "abc".into(),
+                mime_type: "image/png".into(),
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None, response_model: None,
-            diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-            tool_call_id: Some("c1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some("c1".into()),
+            tool_name: Some("t".into()),
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, messages: vec![tr], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![tr],
+            tools: vec![],
+        };
         let payload = build_google_payload_public(&model, &ctx, &StreamOptions::default());
         let contents = payload["contents"].as_array().unwrap();
         assert_eq!(contents.len(), 1);
@@ -3916,7 +5405,11 @@ mod tests {
     #[test]
     fn test_google_foreign_thinking_downgraded_and_signatures_dropped() {
         use crate::provider::google::build_google_payload_public;
-        let model = Model { id: "gemini-2.5-pro".into(), reasoning: true, ..test_model("google-generative-ai", "google", "https://example.com") };
+        let model = Model {
+            id: "gemini-2.5-pro".into(),
+            reasoning: true,
+            ..test_model("google-generative-ai", "google", "https://example.com")
+        };
         // Assistant message from a DIFFERENT model/provider -> thinking becomes plain
         // text and thought signatures are not replayed.
         let ctx = Context {
@@ -3924,14 +5417,30 @@ mod tests {
             messages: vec![Message {
                 role: Role::Assistant,
                 content: vec![
-                    ContentBlock::Thinking { thinking: "reasoning".into(), thinking_signature: Some("QUJD".into()), redacted: false },
-                    ContentBlock::Text { text: "answer".into(), text_signature: Some("QUJD".into()) },
+                    ContentBlock::Thinking {
+                        thinking: "reasoning".into(),
+                        thinking_signature: Some("QUJD".into()),
+                        redacted: false,
+                    },
+                    ContentBlock::Text {
+                        text: "answer".into(),
+                        text_signature: Some("QUJD".into()),
+                    },
                 ],
                 timestamp: 0,
-                api: Some("anthropic-messages".into()), provider: Some("anthropic".into()), model: Some("claude".into()),
-                response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("anthropic-messages".into()),
+                provider: Some("anthropic".into()),
+                model: Some("claude".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
@@ -3947,17 +5456,34 @@ mod tests {
     #[test]
     fn test_google_same_model_replays_signature_and_thought() {
         use crate::provider::google::build_google_payload_public;
-        let model = Model { id: "gemini-2.5-pro".into(), reasoning: true, ..test_model("google-generative-ai", "google", "https://example.com") };
+        let model = Model {
+            id: "gemini-2.5-pro".into(),
+            reasoning: true,
+            ..test_model("google-generative-ai", "google", "https://example.com")
+        };
         let ctx = Context {
             system_prompt: None,
             messages: vec![Message {
                 role: Role::Assistant,
-                content: vec![ContentBlock::Thinking { thinking: "r".into(), thinking_signature: Some("QUJD".into()), redacted: false }],
+                content: vec![ContentBlock::Thinking {
+                    thinking: "r".into(),
+                    thinking_signature: Some("QUJD".into()),
+                    redacted: false,
+                }],
                 timestamp: 0,
-                api: Some("google-generative-ai".into()), provider: Some("google".into()), model: Some("gemini-2.5-pro".into()),
-                response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::Stop), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: Some("google-generative-ai".into()),
+                provider: Some("google".into()),
+                model: Some("gemini-2.5-pro".into()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::Stop),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };
@@ -3971,22 +5497,43 @@ mod tests {
     fn test_google_disables_thinking_when_no_reasoning() {
         use crate::provider::google::build_google_payload_public;
         // Gemini 2.x -> thinkingBudget 0
-        let m1 = Model { id: "gemini-2.5-pro".into(), reasoning: true, ..test_model("google-generative-ai", "google", "https://example.com") };
+        let m1 = Model {
+            id: "gemini-2.5-pro".into(),
+            reasoning: true,
+            ..test_model("google-generative-ai", "google", "https://example.com")
+        };
         let ctx = test_context();
         let p1 = build_google_payload_public(&m1, &ctx, &StreamOptions::default());
-        assert_eq!(p1["generationConfig"]["thinkingConfig"]["thinkingBudget"], 0);
+        assert_eq!(
+            p1["generationConfig"]["thinkingConfig"]["thinkingBudget"],
+            0
+        );
         // Gemini 3 pro -> thinkingLevel LOW
-        let m2 = Model { id: "gemini-3-pro".into(), reasoning: true, ..test_model("google-generative-ai", "google", "https://example.com") };
+        let m2 = Model {
+            id: "gemini-3-pro".into(),
+            reasoning: true,
+            ..test_model("google-generative-ai", "google", "https://example.com")
+        };
         let p2 = build_google_payload_public(&m2, &ctx, &StreamOptions::default());
-        assert_eq!(p2["generationConfig"]["thinkingConfig"]["thinkingLevel"], "LOW");
+        assert_eq!(
+            p2["generationConfig"]["thinkingConfig"]["thinkingLevel"],
+            "LOW"
+        );
     }
 
     #[test]
     fn test_google_gemini3_uses_thinking_level() {
         use crate::provider::google::build_google_payload_public;
-        let model = Model { id: "gemini-3-pro".into(), reasoning: true, ..test_model("google-generative-ai", "google", "https://example.com") };
+        let model = Model {
+            id: "gemini-3-pro".into(),
+            reasoning: true,
+            ..test_model("google-generative-ai", "google", "https://example.com")
+        };
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::Low), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::Low),
+            ..Default::default()
+        };
         let payload = build_google_payload_public(&model, &ctx, &opts);
         let tc = &payload["generationConfig"]["thinkingConfig"];
         assert_eq!(tc["thinkingLevel"], "LOW");
@@ -3996,11 +5543,18 @@ mod tests {
     #[test]
     fn test_google_older_model_uses_thinking_budget() {
         use crate::provider::google::build_google_payload_public;
-        let model = Model { id: "gemini-2.5-pro".into(), reasoning: true, ..test_model("google-generative-ai", "google", "https://example.com") };
+        let model = Model {
+            id: "gemini-2.5-pro".into(),
+            reasoning: true,
+            ..test_model("google-generative-ai", "google", "https://example.com")
+        };
         let ctx = test_context();
         let opts = StreamOptions {
             reasoning: Some(ThinkingLevel::High),
-            thinking_budgets: Some(ThinkingBudgets { high: Some(4096), ..Default::default() }),
+            thinking_budgets: Some(ThinkingBudgets {
+                high: Some(4096),
+                ..Default::default()
+            }),
             ..Default::default()
         };
         let payload = build_google_payload_public(&model, &ctx, &opts);
@@ -4012,24 +5566,46 @@ mod tests {
     #[test]
     fn test_google_thinking_and_tool_config() {
         use crate::provider::google::build_google_payload_public;
-        let model = Model { reasoning: true, ..test_model("google-generative-ai", "google", "https://example.com") };
+        let model = Model {
+            reasoning: true,
+            ..test_model("google-generative-ai", "google", "https://example.com")
+        };
         let ctx = Context {
             system_prompt: None,
             messages: vec![user_message("hi")],
-            tools: vec![Tool { name: "t".into(), description: "d".into(), parameters: serde_json::json!({"type":"object"}) }],
+            tools: vec![Tool {
+                name: "t".into(),
+                description: "d".into(),
+                parameters: serde_json::json!({"type":"object"}),
+            }],
         };
         let opts = StreamOptions {
             reasoning: Some(ThinkingLevel::High),
-            thinking_budgets: Some(ThinkingBudgets { high: Some(2048), ..Default::default() }),
+            thinking_budgets: Some(ThinkingBudgets {
+                high: Some(2048),
+                ..Default::default()
+            }),
             tool_choice: Some(serde_json::json!("any")),
             ..Default::default()
         };
         let payload = build_google_payload_public(&model, &ctx, &opts);
-        assert_eq!(payload["generationConfig"]["thinkingConfig"]["includeThoughts"], true);
-        assert_eq!(payload["generationConfig"]["thinkingConfig"]["thinkingBudget"], 2048);
-        assert_eq!(payload["toolConfig"]["functionCallingConfig"]["mode"], "ANY");
+        assert_eq!(
+            payload["generationConfig"]["thinkingConfig"]["includeThoughts"],
+            true
+        );
+        assert_eq!(
+            payload["generationConfig"]["thinkingConfig"]["thinkingBudget"],
+            2048
+        );
+        assert_eq!(
+            payload["toolConfig"]["functionCallingConfig"]["mode"],
+            "ANY"
+        );
         // "required" is not a Gemini tool-choice term -> falls to AUTO (mirrors mapToolChoice default).
-        let opts_req = StreamOptions { tool_choice: Some(serde_json::json!("required")), ..Default::default() };
+        let opts_req = StreamOptions {
+            tool_choice: Some(serde_json::json!("required")),
+            ..Default::default()
+        };
         let p_req = build_google_payload_public(&model, &ctx, &opts_req);
         assert_eq!(p_req["toolConfig"]["functionCallingConfig"]["mode"], "AUTO");
     }
@@ -4040,13 +5616,24 @@ mod tests {
         let model = test_model("google-generative-ai", "google", "https://example.com");
         let tr = |name: &str, txt: &str, err: bool| Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Text { text: txt.into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: txt.into(),
+                text_signature: None,
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: Some("x".into()), tool_name: Some(name.into()),
-            is_error: err, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some("x".into()),
+            tool_name: Some(name.into()),
+            is_error: err,
+            details: None,
         };
         let ctx = Context {
             system_prompt: None,
@@ -4081,7 +5668,9 @@ mod tests {
         let mut stream = stream_google(&model, &ctx, &opts);
         let mut err = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+            if let Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+            }
         }
         assert!(err.unwrap().contains("quota exceeded"));
     }
@@ -4137,19 +5726,28 @@ mod tests {
         let mut reason = None;
         while let Some(evt) = stream.next().await {
             match evt {
-                Event::ToolCallEnd { name, arguments, .. } => {
+                Event::ToolCallEnd {
+                    name, arguments, ..
+                } => {
                     assert_eq!(name, "search");
                     assert_eq!(arguments["q"], "rust");
                     saw_tool_end = true;
                 }
-                Event::Done { reason: r, message } => { reason = Some(r); done = Some(message); }
+                Event::Done { reason: r, message } => {
+                    reason = Some(r);
+                    done = Some(message);
+                }
                 _ => {}
             }
         }
         let msg = done.expect("done");
         assert!(saw_tool_end);
         assert_eq!(reason, Some(StopReason::ToolUse));
-        assert!(msg.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search")));
+        assert!(
+            msg.content
+                .iter()
+                .any(|b| matches!(b, ContentBlock::ToolCall { name, .. } if name == "search"))
+        );
     }
 
     #[tokio::test]
@@ -4171,7 +5769,9 @@ mod tests {
         let mut stream = stream_google(&model, &ctx, &opts);
         let mut reason = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { reason: r, .. } = evt { reason = Some(r); }
+            if let Event::Done { reason: r, .. } = evt {
+                reason = Some(r);
+            }
         }
         assert_eq!(reason, Some(StopReason::ToolUse));
     }
@@ -4193,7 +5793,9 @@ mod tests {
         let mut stream = stream_google(&model, &ctx, &opts);
         let mut id = None;
         while let Some(evt) = stream.next().await {
-            if let Event::ToolCallEnd { id: i, .. } = evt { id = Some(i); }
+            if let Event::ToolCallEnd { id: i, .. } = evt {
+                id = Some(i);
+            }
         }
         // The provider-supplied id is preserved (needed for tool-result pairing).
         assert_eq!(id.as_deref(), Some("toolu_abc"));
@@ -4217,7 +5819,9 @@ mod tests {
         let mut stream = stream_google(&model, &ctx, &opts);
         let mut msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                msg = Some(message);
+            }
         }
         let c = msg.unwrap().content;
         assert_eq!(c.len(), 4);
@@ -4244,7 +5848,9 @@ mod tests {
         let mut stream = stream_google(&model, &ctx, &opts);
         let mut msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                msg = Some(message);
+            }
         }
         let sig = msg.unwrap().content.iter().find_map(|b| match b {
             ContentBlock::Text { text_signature, .. } => text_signature.clone(),
@@ -4274,10 +5880,16 @@ mod tests {
         let mut stream = stream_google(&model, &ctx, &opts);
         let mut msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                msg = Some(message);
+            }
         }
         let sig = msg.unwrap().content.iter().find_map(|b| match b {
-            ContentBlock::Thinking { thinking, thinking_signature, .. } if thinking == "reason " => thinking_signature.clone(),
+            ContentBlock::Thinking {
+                thinking,
+                thinking_signature,
+                ..
+            } if thinking == "reason " => thinking_signature.clone(),
             _ => None,
         });
         assert_eq!(sig.as_deref(), Some("THSIG"));
@@ -4300,7 +5912,9 @@ mod tests {
         let mut stream = stream_google(&model, &ctx, &opts);
         let mut usage = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { usage = message.usage; }
+            if let Event::Done { message, .. } = evt {
+                usage = message.usage;
+            }
         }
         let u = usage.expect("usage");
         assert_eq!(u.input, 60); // 100 - 40 cached
@@ -4313,15 +5927,26 @@ mod tests {
     fn test_mistral_reasoning_prompt_mode_and_effort() {
         use crate::provider::mistral::build_mistral_payload;
         // prompt_mode model
-        let m1 = Model { id: "magistral-medium".into(), reasoning: true, ..test_model("mistral-conversations", "mistral", "https://example.com") };
+        let m1 = Model {
+            id: "magistral-medium".into(),
+            reasoning: true,
+            ..test_model("mistral-conversations", "mistral", "https://example.com")
+        };
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         let p1 = build_mistral_payload(&m1, &ctx, &opts);
         assert_eq!(p1["prompt_mode"], "reasoning");
         assert!(p1.get("reasoning_effort").is_none());
 
         // reasoning_effort model
-        let m2 = Model { id: "mistral-medium-3.5".into(), reasoning: true, ..test_model("mistral-conversations", "mistral", "https://example.com") };
+        let m2 = Model {
+            id: "mistral-medium-3.5".into(),
+            reasoning: true,
+            ..test_model("mistral-conversations", "mistral", "https://example.com")
+        };
         let p2 = build_mistral_payload(&m2, &ctx, &opts);
         assert_eq!(p2["reasoning_effort"], "high");
         assert!(p2.get("prompt_mode").is_none());
@@ -4332,14 +5957,26 @@ mod tests {
         use crate::provider::mistral::build_mistral_payload;
         use std::collections::HashMap;
         let ctx = test_context();
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         // All levels disabled -> clamps to off -> reasoning omitted entirely.
         let mut off_map = HashMap::new();
-        for k in ["minimal", "low", "medium", "high"] { off_map.insert(k.to_string(), None); }
-        let m_off = Model { id: "magistral-medium".into(), reasoning: true, thinking_level_map: Some(off_map),
-            ..test_model("mistral-conversations", "mistral", "https://example.com") };
+        for k in ["minimal", "low", "medium", "high"] {
+            off_map.insert(k.to_string(), None);
+        }
+        let m_off = Model {
+            id: "magistral-medium".into(),
+            reasoning: true,
+            thinking_level_map: Some(off_map),
+            ..test_model("mistral-conversations", "mistral", "https://example.com")
+        };
         let p_off = build_mistral_payload(&m_off, &ctx, &opts);
-        assert!(p_off.get("prompt_mode").is_none(), "reasoning omitted when clamped off");
+        assert!(
+            p_off.get("prompt_mode").is_none(),
+            "reasoning omitted when clamped off"
+        );
         assert!(p_off.get("reasoning_effort").is_none());
 
         // reasoning_effort model restricted to low: High clamps down to low, and the
@@ -4348,10 +5985,17 @@ mod tests {
         low_map.insert("medium".to_string(), None);
         low_map.insert("high".to_string(), None);
         low_map.insert("low".to_string(), Some("lo".to_string()));
-        let m_low = Model { id: "mistral-medium-3.5".into(), reasoning: true, thinking_level_map: Some(low_map),
-            ..test_model("mistral-conversations", "mistral", "https://example.com") };
+        let m_low = Model {
+            id: "mistral-medium-3.5".into(),
+            reasoning: true,
+            thinking_level_map: Some(low_map),
+            ..test_model("mistral-conversations", "mistral", "https://example.com")
+        };
         let p_low = build_mistral_payload(&m_low, &ctx, &opts);
-        assert_eq!(p_low["reasoning_effort"], "lo", "effort mapped via clamped low level");
+        assert_eq!(
+            p_low["reasoning_effort"], "lo",
+            "effort mapped via clamped low level"
+        );
     }
 
     #[test]
@@ -4366,25 +6010,57 @@ mod tests {
                 Message {
                     role: Role::Assistant,
                     content: vec![
-                        ContentBlock::Thinking { thinking: "reasoning".into(), thinking_signature: None, redacted: false },
-                        ContentBlock::Text { text: "answer".into(), text_signature: None },
+                        ContentBlock::Thinking {
+                            thinking: "reasoning".into(),
+                            thinking_signature: None,
+                            redacted: false,
+                        },
+                        ContentBlock::Text {
+                            text: "answer".into(),
+                            text_signature: None,
+                        },
                     ],
                     timestamp: 0,
-                    api: Some("mistral-conversations".into()), provider: Some("mistral".into()), model: Some("test-model".into()),
-                    response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-                    stop_reason: Some(StopReason::Stop), error_message: None,
-                    tool_call_id: None, tool_name: None, is_error: false, details: None,
+                    api: Some("mistral-conversations".into()),
+                    provider: Some("mistral".into()),
+                    model: Some("test-model".into()),
+                    response_id: None,
+                    response_model: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: Some(StopReason::Stop),
+                    error_message: None,
+                    tool_call_id: None,
+                    tool_name: None,
+                    is_error: false,
+                    details: None,
                 },
                 Message {
                     role: Role::ToolResult,
                     content: vec![
-                        ContentBlock::Text { text: "ok".into(), text_signature: None },
-                        ContentBlock::Image { data: "abc".into(), mime_type: "image/png".into() },
+                        ContentBlock::Text {
+                            text: "ok".into(),
+                            text_signature: None,
+                        },
+                        ContentBlock::Image {
+                            data: "abc".into(),
+                            mime_type: "image/png".into(),
+                        },
                     ],
                     timestamp: 0,
-                    api: None, provider: None, model: None, response_id: None, response_model: None,
-                    diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-                    tool_call_id: Some("c1".into()), tool_name: Some("t".into()), is_error: false, details: None,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
+                    response_model: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: None,
+                    error_message: None,
+                    tool_call_id: Some("c1".into()),
+                    tool_name: Some("t".into()),
+                    is_error: false,
+                    details: None,
                 },
             ],
             tools: vec![],
@@ -4413,25 +6089,49 @@ mod tests {
                 Message {
                     role: Role::Assistant,
                     content: vec![ContentBlock::ToolCall {
-                        id: "tc1".into(), name: "search".into(),
-                        arguments: std::collections::HashMap::from([("q".into(), serde_json::json!("r"))]),
+                        id: "tc1".into(),
+                        name: "search".into(),
+                        arguments: std::collections::HashMap::from([(
+                            "q".into(),
+                            serde_json::json!("r"),
+                        )]),
                         thought_signature: None,
                     }],
                     timestamp: 0,
-                    api: None, provider: None, model: None, response_id: None,
-                    response_model: None, diagnostics: Vec::new(), usage: None,
-                    stop_reason: Some(StopReason::ToolUse), error_message: None,
-                    tool_call_id: None, tool_name: None, is_error: false, details: None,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
+                    response_model: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: Some(StopReason::ToolUse),
+                    error_message: None,
+                    tool_call_id: None,
+                    tool_name: None,
+                    is_error: false,
+                    details: None,
                 },
                 Message {
                     role: Role::ToolResult,
-                    content: vec![ContentBlock::Text { text: "found".into(), text_signature: None }],
+                    content: vec![ContentBlock::Text {
+                        text: "found".into(),
+                        text_signature: None,
+                    }],
                     timestamp: 0,
-                    api: None, provider: None, model: None, response_id: None,
-                    response_model: None, diagnostics: Vec::new(), usage: None,
-                    stop_reason: None, error_message: None,
-                    tool_call_id: Some("tc1".into()), tool_name: Some("search".into()),
-                    is_error: false, details: None,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
+                    response_model: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: None,
+                    error_message: None,
+                    tool_call_id: Some("tc1".into()),
+                    tool_name: Some("search".into()),
+                    is_error: false,
+                    details: None,
                 },
             ],
             tools: vec![],
@@ -4459,14 +6159,25 @@ mod tests {
             messages: vec![Message {
                 role: Role::Assistant,
                 content: vec![ContentBlock::ToolCall {
-                    id: "abc123XYZ".into(), name: "t".into(),
-                    arguments: std::collections::HashMap::new(), thought_signature: None,
+                    id: "abc123XYZ".into(),
+                    name: "t".into(),
+                    arguments: std::collections::HashMap::new(),
+                    thought_signature: None,
                 }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: Some(StopReason::ToolUse), error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: Some(StopReason::ToolUse),
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
             tools: vec![],
         };

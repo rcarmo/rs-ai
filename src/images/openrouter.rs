@@ -1,20 +1,25 @@
 //! OpenRouter image generation provider.
 
-use std::time::Duration;
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
-use serde_json::{json, Value};
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
+use serde_json::{Value, json};
 
 use super::types::*;
 use crate::env::get_env_api_key;
-use crate::types::{StopReason, Usage, CostBreakdown};
+use crate::types::{CostBreakdown, StopReason, Usage};
 
 /// Hook to inspect/modify the image request payload before sending (mirrors onPayload).
-pub type ImagesPayloadHook = Arc<dyn Fn(Value, &ImagesModel) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> + Send + Sync>;
+pub type ImagesPayloadHook = Arc<
+    dyn Fn(Value, &ImagesModel) -> Result<Value, Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync,
+>;
 /// Hook invoked with the HTTP status and headers of the image response (mirrors onResponse).
-pub type ImagesResponseHook = Arc<dyn Fn(u16, &HashMap<String, String>, &ImagesModel) + Send + Sync>;
+pub type ImagesResponseHook =
+    Arc<dyn Fn(u16, &HashMap<String, String>, &ImagesModel) + Send + Sync>;
 
 /// Options for image generation.
 #[derive(Clone, Default)]
@@ -60,7 +65,9 @@ pub async fn generate_openrouter(
         error_message: None,
     };
 
-    let api_key = opts.api_key.clone()
+    let api_key = opts
+        .api_key
+        .clone()
         .or_else(|| get_env_api_key(&model.provider));
     let api_key = match api_key {
         Some(k) => k,
@@ -101,7 +108,10 @@ pub async fn generate_openrouter(
     let url = format!("{}/chat/completions", model.base_url.trim_end_matches('/'));
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+    headers.insert(
+        AUTHORIZATION,
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+    );
 
     if let Some(ref extra) = opts.headers {
         for (k, v) in extra {
@@ -154,7 +164,9 @@ pub async fn generate_openrouter(
         if status >= 300 {
             let body_text = resp.text().await.unwrap_or_default();
             out.stop_reason = StopReason::Error;
-            out.error_message = Some(crate::error_body::format_provider_http_error(status, &body_text, None));
+            out.error_message = Some(crate::error_body::format_provider_http_error(
+                status, &body_text, None,
+            ));
             return out;
         }
 
@@ -162,8 +174,14 @@ pub async fn generate_openrouter(
         // withResponse() resolves only on success after its internal retries), so call
         // it here — not on retryable/error attempts.
         if let Some(ref hook) = opts.on_response {
-            let hdrs: HashMap<String, String> = resp.headers().iter()
-                .filter_map(|(k, v)| v.to_str().ok().map(|s| (k.as_str().to_string(), s.to_string())))
+            let hdrs: HashMap<String, String> = resp
+                .headers()
+                .iter()
+                .filter_map(|(k, v)| {
+                    v.to_str()
+                        .ok()
+                        .map(|s| (k.as_str().to_string(), s.to_string()))
+                })
                 .collect();
             hook(status, &hdrs, model);
         }
@@ -187,13 +205,17 @@ pub async fn generate_openrouter(
 }
 
 fn build_payload(model: &ImagesModel, context: &ImagesContext) -> Value {
-    let content: Vec<Value> = context.input.iter().map(|input| match input {
-        ImageInput::Text { text } => json!({"type": "text", "text": text}),
-        ImageInput::Image { data, mime_type } => json!({
-            "type": "image_url",
-            "image_url": {"url": format!("data:{};base64,{}", mime_type, data)}
-        }),
-    }).collect();
+    let content: Vec<Value> = context
+        .input
+        .iter()
+        .map(|input| match input {
+            ImageInput::Text { text } => json!({"type": "text", "text": text}),
+            ImageInput::Image { data, mime_type } => json!({
+                "type": "image_url",
+                "image_url": {"url": format!("data:{};base64,{}", mime_type, data)}
+            }),
+        })
+        .collect();
 
     let modalities: Vec<&str> = if model.output.iter().any(|o| o == "text") {
         vec!["image", "text"]
@@ -212,7 +234,9 @@ fn build_payload(model: &ImagesModel, context: &ImagesContext) -> Value {
 fn parse_response(raw: &Value, model: &ImagesModel, out: &mut AssistantImages) {
     // Surface in-band error objects (some providers return 200 with an error body).
     if let Some(err) = raw.get("error") {
-        let msg = err.get("message").and_then(|v| v.as_str())
+        let msg = err
+            .get("message")
+            .and_then(|v| v.as_str())
             .map(|s| s.to_string())
             .unwrap_or_else(|| err.to_string());
         out.stop_reason = StopReason::Error;
@@ -229,39 +253,59 @@ fn parse_response(raw: &Value, model: &ImagesModel, out: &mut AssistantImages) {
 
     if let Some(choices) = raw.get("choices").and_then(|v| v.as_array())
         && let Some(choice) = choices.first()
-            && let Some(msg) = choice.get("message") {
-                if let Some(text) = msg.get("content").and_then(|v| v.as_str())
-                    && !text.is_empty() {
-                        out.output.push(ImageOutput::Text { text: text.to_string() });
-                    }
-                if let Some(images) = msg.get("images").and_then(|v| v.as_array()) {
-                    for img in images {
-                        let url = img.get("image_url")
-                            .and_then(|v| v.as_object())
-                            .and_then(|o| o.get("url"))
-                            .and_then(|v| v.as_str())
-                            .or_else(|| img.get("image_url").and_then(|v| v.as_str()));
-                        if let Some(u) = url
-                            && let Some(rest) = u.strip_prefix("data:")
-                                && let Some((mime, data)) = rest.split_once(";base64,") {
-                                    out.output.push(ImageOutput::Image {
-                                        data: data.to_string(),
-                                        mime_type: mime.to_string(),
-                                    });
-                                }
-                    }
+        && let Some(msg) = choice.get("message")
+    {
+        if let Some(text) = msg.get("content").and_then(|v| v.as_str())
+            && !text.is_empty()
+        {
+            out.output.push(ImageOutput::Text {
+                text: text.to_string(),
+            });
+        }
+        if let Some(images) = msg.get("images").and_then(|v| v.as_array()) {
+            for img in images {
+                let url = img
+                    .get("image_url")
+                    .and_then(|v| v.as_object())
+                    .and_then(|o| o.get("url"))
+                    .and_then(|v| v.as_str())
+                    .or_else(|| img.get("image_url").and_then(|v| v.as_str()));
+                if let Some(u) = url
+                    && let Some(rest) = u.strip_prefix("data:")
+                    && let Some((mime, data)) = rest.split_once(";base64,")
+                {
+                    out.output.push(ImageOutput::Image {
+                        data: data.to_string(),
+                        mime_type: mime.to_string(),
+                    });
                 }
             }
+        }
+    }
 }
 
 fn parse_usage(raw: &Value, model: &ImagesModel) -> Usage {
-    let prompt = raw.get("prompt_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let completion = raw.get("completion_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let cached = raw.pointer("/prompt_tokens_details/cached_tokens")
-        .and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let cache_write = raw.pointer("/prompt_tokens_details/cache_write_tokens")
-        .and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-    let cache_read = if cache_write > 0 { cached.saturating_sub(cache_write) } else { cached };
+    let prompt = raw
+        .get("prompt_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let completion = raw
+        .get("completion_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let cached = raw
+        .pointer("/prompt_tokens_details/cached_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let cache_write = raw
+        .pointer("/prompt_tokens_details/cache_write_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let cache_read = if cache_write > 0 {
+        cached.saturating_sub(cache_write)
+    } else {
+        cached
+    };
     let input = prompt.saturating_sub(cache_read + cache_write);
 
     let m = 1_000_000.0;
@@ -279,7 +323,8 @@ fn parse_usage(raw: &Value, model: &ImagesModel) -> Usage {
         cache_read,
         cache_write,
         cache_write_1h: None,
-        reasoning: None, total_tokens: input + completion + cache_read + cache_write,
+        reasoning: None,
+        total_tokens: input + completion + cache_read + cache_write,
         cost: CostBreakdown { total, ..cost },
     }
 }
@@ -298,10 +343,20 @@ mod tests {
 
     fn img_model() -> ImagesModel {
         ImagesModel {
-            id: "m".into(), name: "M".into(), api: "openrouter-images".into(),
-            provider: "openrouter".into(), base_url: "https://example.com".into(),
-            input: vec!["text".into()], output: vec!["image".into()],
-            cost: ModelCost { input: 3.0, output: 15.0, cache_read: 0.3, cache_write: 0.0 },
+            id: "m".into(),
+            name: "M".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://example.com".into(),
+            input: vec!["text".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 3.0,
+                output: 15.0,
+                cache_read: 0.3,
+                cache_write: 0.0,
+                tiers: vec![],
+            },
         }
     }
 
@@ -315,7 +370,8 @@ mod tests {
         assert_eq!(usage.cache_read, 400);
         assert_eq!(usage.input, 600);
         // total must be non-zero and equal the sum of components
-        let expected = usage.cost.input + usage.cost.output + usage.cost.cache_read + usage.cost.cache_write;
+        let expected =
+            usage.cost.input + usage.cost.output + usage.cost.cache_read + usage.cost.cache_write;
         assert!(usage.cost.total > 0.0);
         assert!((usage.cost.total - expected).abs() < 1e-9);
     }
@@ -324,9 +380,15 @@ mod tests {
     fn test_parse_response_surfaces_error() {
         let raw = serde_json::json!({ "error": { "message": "content policy" } });
         let mut out = AssistantImages {
-            api: "openrouter-images".into(), provider: "openrouter".into(), model: "m".into(),
-            output: Vec::new(), stop_reason: StopReason::Stop, timestamp: 0,
-            response_id: None, usage: None, error_message: None,
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            model: "m".into(),
+            output: Vec::new(),
+            stop_reason: StopReason::Stop,
+            timestamp: 0,
+            response_id: None,
+            usage: None,
+            error_message: None,
         };
         parse_response(&raw, &img_model(), &mut out);
         assert_eq!(out.stop_reason, StopReason::Error);
@@ -335,8 +397,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_on_payload_hook_modifies_request() {
-        use wiremock::{MockServer, Mock, ResponseTemplate};
-        use wiremock::matchers::{method, path, body_string_contains};
+        use wiremock::matchers::{body_string_contains, method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
@@ -349,12 +411,20 @@ mod tests {
             .await;
         let mut model = img_model();
         model.base_url = server.uri();
-        let ctx = ImagesContext { input: vec![ImageInput::Text { text: "draw".into() }] };
+        let ctx = ImagesContext {
+            input: vec![ImageInput::Text {
+                text: "draw".into(),
+            }],
+        };
         let hook: ImagesPayloadHook = Arc::new(|mut p: Value, _m: &ImagesModel| {
             p["injected"] = serde_json::json!(true);
             Ok(p)
         });
-        let opts = ImagesOptions { api_key: Some("k".into()), on_payload: Some(hook), ..Default::default() };
+        let opts = ImagesOptions {
+            api_key: Some("k".into()),
+            on_payload: Some(hook),
+            ..Default::default()
+        };
         let out = generate_openrouter(&model, &ctx, &opts).await;
         // The mock only matches when the injected field is present, so a non-error
         // result confirms the hook's modified payload was actually sent.

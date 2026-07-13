@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use aws_config::BehaviorVersion;
+use aws_sdk_bedrockruntime::Client as BedrockClient;
 use aws_sdk_bedrockruntime::types::{
     AnyToolChoice, AutoToolChoice, CachePointBlock, CachePointType, CacheTtl,
     ContentBlock as BedrockContent, ConversationRole, ImageBlock, ImageFormat, ImageSource,
@@ -10,7 +11,6 @@ use aws_sdk_bedrockruntime::types::{
     SystemContentBlock, Tool, ToolChoice, ToolConfiguration, ToolInputSchema, ToolResultBlock,
     ToolResultContentBlock, ToolResultStatus, ToolSpecification, ToolUseBlock,
 };
-use aws_sdk_bedrockruntime::Client as BedrockClient;
 use aws_smithy_types::{Document, Number};
 
 use crate::events::Event;
@@ -55,9 +55,19 @@ fn is_anthropic_claude_model(model: &Model) -> bool {
 pub(crate) fn normalize_bedrock_tool_call_id(id: &str) -> String {
     let sanitized: String = id
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
-    if sanitized.len() > 64 { sanitized[..64].to_string() } else { sanitized }
+    if sanitized.len() > 64 {
+        sanitized[..64].to_string()
+    } else {
+        sanitized
+    }
 }
 
 /// Build the Bedrock Converse message list from the conversation (transform +
@@ -100,11 +110,20 @@ pub(crate) fn build_bedrock_messages(
                 if content.is_empty() {
                     content.push(BedrockContent::Text(EMPTY_TEXT_PLACEHOLDER.to_string()));
                 }
-                out.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
+                out.push(
+                    BedrockMessage::builder()
+                        .role(ConversationRole::User)
+                        .set_content(Some(content))
+                        .build()
+                        .unwrap(),
+                );
                 i += 1;
             }
             Role::Assistant => {
-                if msg.content.is_empty() { i += 1; continue; }
+                if msg.content.is_empty() {
+                    i += 1;
+                    continue;
+                }
                 let mut content: Vec<BedrockContent> = Vec::new();
                 for b in &msg.content {
                     match b {
@@ -113,8 +132,14 @@ pub(crate) fn build_bedrock_messages(
                                 content.push(tb);
                             }
                         }
-                        ContentBlock::ToolCall { id, name, arguments, .. } => {
-                            let args_value = serde_json::to_value(arguments).unwrap_or_else(|_| serde_json::json!({}));
+                        ContentBlock::ToolCall {
+                            id,
+                            name,
+                            arguments,
+                            ..
+                        } => {
+                            let args_value = serde_json::to_value(arguments)
+                                .unwrap_or_else(|_| serde_json::json!({}));
                             if let Ok(tub) = ToolUseBlock::builder()
                                 .tool_use_id(normalize_bedrock_tool_call_id(id))
                                 .name(name.clone())
@@ -124,28 +149,51 @@ pub(crate) fn build_bedrock_messages(
                                 content.push(BedrockContent::ToolUse(tub));
                             }
                         }
-                        ContentBlock::Thinking { thinking, thinking_signature, redacted } if !redacted && !thinking.trim().is_empty() => {
+                        ContentBlock::Thinking {
+                            thinking,
+                            thinking_signature,
+                            redacted,
+                        } if !redacted && !thinking.trim().is_empty() => {
                             // Only Anthropic Claude models accept the reasoning signature.
                             // For Claude with a missing signature, fall back to plain text
                             // (Bedrock rejects a replayed reasoning block without a signature).
                             if supports_signature {
                                 match thinking_signature.as_ref().filter(|s| !s.trim().is_empty()) {
                                     Some(sig) => {
-                                        if let Ok(rt) = ReasoningTextBlock::builder().text(thinking.clone()).signature(sig.clone()).build() {
-                                            content.push(BedrockContent::ReasoningContent(ReasoningContentBlock::ReasoningText(rt)));
+                                        if let Ok(rt) = ReasoningTextBlock::builder()
+                                            .text(thinking.clone())
+                                            .signature(sig.clone())
+                                            .build()
+                                        {
+                                            content.push(BedrockContent::ReasoningContent(
+                                                ReasoningContentBlock::ReasoningText(rt),
+                                            ));
                                         }
                                     }
                                     None => content.push(BedrockContent::Text(thinking.clone())),
                                 }
-                            } else if let Ok(rt) = ReasoningTextBlock::builder().text(thinking.clone()).build() {
-                                content.push(BedrockContent::ReasoningContent(ReasoningContentBlock::ReasoningText(rt)));
+                            } else if let Ok(rt) =
+                                ReasoningTextBlock::builder().text(thinking.clone()).build()
+                            {
+                                content.push(BedrockContent::ReasoningContent(
+                                    ReasoningContentBlock::ReasoningText(rt),
+                                ));
                             }
                         }
                         _ => {}
                     }
                 }
-                if content.is_empty() { i += 1; continue; }
-                out.push(BedrockMessage::builder().role(ConversationRole::Assistant).set_content(Some(content)).build().unwrap());
+                if content.is_empty() {
+                    i += 1;
+                    continue;
+                }
+                out.push(
+                    BedrockMessage::builder()
+                        .role(ConversationRole::Assistant)
+                        .set_content(Some(content))
+                        .build()
+                        .unwrap(),
+                );
                 i += 1;
             }
             Role::ToolResult => {
@@ -153,9 +201,15 @@ pub(crate) fn build_bedrock_messages(
                 let mut content: Vec<BedrockContent> = Vec::new();
                 while i < transformed.len() && transformed[i].role == Role::ToolResult {
                     let tr = &transformed[i];
-                    let status = if tr.is_error { ToolResultStatus::Error } else { ToolResultStatus::Success };
+                    let status = if tr.is_error {
+                        ToolResultStatus::Error
+                    } else {
+                        ToolResultStatus::Success
+                    };
                     if let Ok(trb) = ToolResultBlock::builder()
-                        .tool_use_id(normalize_bedrock_tool_call_id(tr.tool_call_id.as_deref().unwrap_or_default()))
+                        .tool_use_id(normalize_bedrock_tool_call_id(
+                            tr.tool_call_id.as_deref().unwrap_or_default(),
+                        ))
                         .set_content(Some(convert_tool_result_content(&tr.content)))
                         .status(status)
                         .build()
@@ -164,7 +218,13 @@ pub(crate) fn build_bedrock_messages(
                     }
                     i += 1;
                 }
-                out.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
+                out.push(
+                    BedrockMessage::builder()
+                        .role(ConversationRole::User)
+                        .set_content(Some(content))
+                        .build()
+                        .unwrap(),
+                );
             }
         }
     }
@@ -174,12 +234,17 @@ pub(crate) fn build_bedrock_messages(
     let retention = crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref());
     let cache_long = matches!(retention, CacheRetention::Long);
     let cache_enabled = retention != CacheRetention::None && supports_bedrock_prompt_caching(model);
-    if cache_enabled
-        && let Some(last) = out.pop() {
+    if cache_enabled && let Some(last) = out.pop() {
         if last.role() == &ConversationRole::User {
             let mut content = last.content().to_vec();
             content.push(BedrockContent::CachePoint(bedrock_cache_point(cache_long)));
-            out.push(BedrockMessage::builder().role(ConversationRole::User).set_content(Some(content)).build().unwrap());
+            out.push(
+                BedrockMessage::builder()
+                    .role(ConversationRole::User)
+                    .set_content(Some(content))
+                    .build()
+                    .unwrap(),
+            );
         } else {
             out.push(last);
         }
@@ -206,11 +271,20 @@ pub(crate) fn is_reserved_bedrock_header(key: &str) -> bool {
 
 /// First image with a mime type Bedrock doesn't support (jpeg/png/gif/webp), if any.
 pub(crate) fn bedrock_unsupported_image_mime(messages: &[crate::types::Message]) -> Option<String> {
-    messages.iter().flat_map(|m| m.content.iter()).find_map(|b| match b {
-        ContentBlock::Image { mime_type, .. } if !matches!(mime_type.as_str(),
-            "image/jpeg" | "image/jpg" | "image/png" | "image/gif" | "image/webp") => Some(mime_type.clone()),
-        _ => None,
-    })
+    messages
+        .iter()
+        .flat_map(|m| m.content.iter())
+        .find_map(|b| match b {
+            ContentBlock::Image { mime_type, .. }
+                if !matches!(
+                    mime_type.as_str(),
+                    "image/jpeg" | "image/jpg" | "image/png" | "image/gif" | "image/webp"
+                ) =>
+            {
+                Some(mime_type.clone())
+            }
+            _ => None,
+        })
 }
 
 /// Build a Bedrock image block from a base64 data string.
@@ -223,7 +297,9 @@ fn bedrock_image_block(mime_type: &str, data: &str) -> Option<ImageBlock> {
         "image/webp" => ImageFormat::Webp,
         _ => return None,
     };
-    let bytes = base64::engine::general_purpose::STANDARD.decode(data).ok()?;
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(data)
+        .ok()?;
     ImageBlock::builder()
         .format(format)
         .source(ImageSource::Bytes(aws_smithy_types::Blob::new(bytes)))
@@ -249,7 +325,9 @@ fn convert_tool_result_content(content: &[ContentBlock]) -> Vec<ToolResultConten
         }
     }
     if result.is_empty() {
-        result.push(ToolResultContentBlock::Text(EMPTY_TEXT_PLACEHOLDER.to_string()));
+        result.push(ToolResultContentBlock::Text(
+            EMPTY_TEXT_PLACEHOLDER.to_string(),
+        ));
     }
     result
 }
@@ -286,11 +364,16 @@ pub(crate) fn bedrock_standard_endpoint_region(base_url: &str) -> Option<String>
 }
 
 fn bedrock_configured_region() -> Option<String> {
-    std::env::var("AWS_REGION").or_else(|_| std::env::var("AWS_DEFAULT_REGION")).ok().filter(|s| !s.is_empty())
+    std::env::var("AWS_REGION")
+        .or_else(|_| std::env::var("AWS_DEFAULT_REGION"))
+        .ok()
+        .filter(|s| !s.is_empty())
 }
 
 fn bedrock_has_profile() -> bool {
-    std::env::var("AWS_PROFILE").map(|v| !v.is_empty()).unwrap_or(false)
+    std::env::var("AWS_PROFILE")
+        .map(|v| !v.is_empty())
+        .unwrap_or(false)
 }
 
 /// Whether to pin the model base URL as an explicit endpoint (mirrors
@@ -314,7 +397,8 @@ pub(crate) fn resolve_bedrock_region(model: &Model) -> Option<String> {
         return Some(r);
     }
     if bedrock_use_explicit_endpoint(model)
-        && let Some(r) = bedrock_standard_endpoint_region(&model.base_url) {
+        && let Some(r) = bedrock_standard_endpoint_region(&model.base_url)
+    {
         return Some(r);
     }
     if !bedrock_has_profile() {
@@ -327,7 +411,8 @@ pub(crate) fn resolve_bedrock_region(model: &Model) -> Option<String> {
 /// field must be omitted (mirrors isGovCloudBedrockTarget).
 pub(crate) fn is_govcloud_bedrock_target(model: &Model) -> bool {
     if let Ok(region) = std::env::var("AWS_REGION").or_else(|_| std::env::var("AWS_DEFAULT_REGION"))
-        && region.to_lowercase().starts_with("us-gov-") {
+        && region.to_lowercase().starts_with("us-gov-")
+    {
         return true;
     }
     let id = model.id.to_lowercase();
@@ -344,7 +429,10 @@ fn bedrock_model_match_candidates(model: &Model) -> Vec<String> {
         let mut prev_sep = false;
         for c in s.chars() {
             if c.is_whitespace() || c == '_' || c == '.' || c == ':' {
-                if !prev_sep { out.push('-'); prev_sep = true; }
+                if !prev_sep {
+                    out.push('-');
+                    prev_sep = true;
+                }
             } else {
                 out.push(c);
                 prev_sep = false;
@@ -363,8 +451,12 @@ fn bedrock_model_match_candidates(model: &Model) -> Vec<String> {
 
 pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
     bedrock_model_match_candidates(model).iter().any(|s| {
-        s.contains("opus-4-6") || s.contains("opus-4-7") || s.contains("opus-4-8")
-            || s.contains("sonnet-4-6") || s.contains("sonnet-5") || s.contains("fable-5")
+        s.contains("opus-4-6")
+            || s.contains("opus-4-7")
+            || s.contains("opus-4-8")
+            || s.contains("sonnet-4-6")
+            || s.contains("sonnet-5")
+            || s.contains("fable-5")
     })
 }
 
@@ -372,7 +464,10 @@ pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
 /// supportsNativeXhighEffort).
 fn bedrock_supports_native_xhigh_effort(model: &Model) -> bool {
     bedrock_model_match_candidates(model).iter().any(|s| {
-        s.contains("opus-4-7") || s.contains("opus-4-8") || s.contains("fable-5")
+        s.contains("opus-4-7")
+            || s.contains("opus-4-8")
+            || s.contains("sonnet-5")
+            || s.contains("fable-5")
     })
 }
 
@@ -389,14 +484,21 @@ pub(crate) fn bedrock_inference_max_tokens(
     thinking_max
         .or(opts.max_tokens)
         .or_else(|| {
-            if is_anthropic_claude_model(model) && model.max_tokens > 0 { Some(model.max_tokens) } else { None }
+            if is_anthropic_claude_model(model) && model.max_tokens > 0 {
+                Some(model.max_tokens)
+            } else {
+                None
+            }
         })
         .map(|mt| crate::simple_options::clamp_max_tokens_to_context(model, context, mt))
 }
 
 /// Build the Bedrock `additionalModelRequestFields` thinking config for Anthropic
 /// Claude models (mirrors buildAdditionalModelRequestFields).
-pub(crate) fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Option<(serde_json::Value, Option<u32>)> {
+pub(crate) fn bedrock_thinking_fields(
+    model: &Model,
+    opts: &StreamOptions,
+) -> Option<(serde_json::Value, Option<u32>)> {
     if !model.reasoning || !is_anthropic_claude_model(model) {
         return None;
     }
@@ -420,32 +522,53 @@ pub(crate) fn bedrock_thinking_fields(model: &Model, opts: &StreamOptions) -> Op
         let effort = if key == "xhigh" && bedrock_supports_native_xhigh_effort(model) {
             "xhigh".to_string()
         } else {
-            model.thinking_level_map.as_ref()
-                .and_then(|m| m.get(&key)).and_then(|v| v.clone())
+            model
+                .thinking_level_map
+                .as_ref()
+                .and_then(|m| m.get(&key))
+                .and_then(|v| v.clone())
                 .unwrap_or_else(|| default_effort.to_string())
         };
         let mut thinking = serde_json::json!({ "type": "adaptive" });
-        if let Some(d) = display { thinking["display"] = serde_json::json!(d); }
-        Some((serde_json::json!({
-            "thinking": thinking,
-            "output_config": { "effort": effort },
-        }), None))
+        if let Some(d) = display {
+            thinking["display"] = serde_json::json!(d);
+        }
+        Some((
+            serde_json::json!({
+                "thinking": thinking,
+                "output_config": { "effort": effort },
+            }),
+            None,
+        ))
     } else {
         // Budget-based: select budget by level and adjust max_tokens (adjustMaxTokensForThinking).
         let mut budgets_map = std::collections::HashMap::new();
         if let Some(b) = opts.thinking_budgets.as_ref() {
-            if let Some(v) = b.minimal { budgets_map.insert(ThinkingLevel::Minimal, v); }
-            if let Some(v) = b.low { budgets_map.insert(ThinkingLevel::Low, v); }
-            if let Some(v) = b.medium { budgets_map.insert(ThinkingLevel::Medium, v); }
-            if let Some(v) = b.high { budgets_map.insert(ThinkingLevel::High, v); }
+            if let Some(v) = b.minimal {
+                budgets_map.insert(ThinkingLevel::Minimal, v);
+            }
+            if let Some(v) = b.low {
+                budgets_map.insert(ThinkingLevel::Low, v);
+            }
+            if let Some(v) = b.medium {
+                budgets_map.insert(ThinkingLevel::Medium, v);
+            }
+            if let Some(v) = b.high {
+                budgets_map.insert(ThinkingLevel::High, v);
+            }
         }
         let (adj_max, budget) = crate::simple_options::adjust_max_tokens_for_thinking(
-            opts.max_tokens, model.max_tokens, level, &budgets_map,
+            opts.max_tokens,
+            model.max_tokens,
+            level,
+            &budgets_map,
         );
         let mut fields = serde_json::json!({
             "thinking": { "type": "enabled", "budget_tokens": budget },
         });
-        if let Some(d) = display { fields["thinking"]["display"] = serde_json::json!(d); }
+        if let Some(d) = display {
+            fields["thinking"]["display"] = serde_json::json!(d);
+        }
         // Interleaved-thinking beta (budget path), gated on the interleaved_thinking option.
         if opts.interleaved_thinking != Some(false) {
             fields["anthropic_beta"] = serde_json::json!(["interleaved-thinking-2025-05-14"]);
@@ -470,9 +593,11 @@ fn json_to_document(v: &serde_json::Value) -> Document {
         }
         serde_json::Value::String(s) => Document::String(s.clone()),
         serde_json::Value::Array(a) => Document::Array(a.iter().map(json_to_document).collect()),
-        serde_json::Value::Object(o) => {
-            Document::Object(o.iter().map(|(k, v)| (k.clone(), json_to_document(v))).collect())
-        }
+        serde_json::Value::Object(o) => Document::Object(
+            o.iter()
+                .map(|(k, v)| (k.clone(), json_to_document(v)))
+                .collect(),
+        ),
     }
 }
 
@@ -848,7 +973,10 @@ const BEDROCK_DATA_RETENTION_DOCS_URL: &str =
 /// (mirrors upstream pi-ai formatBedrockError).
 pub(crate) fn format_bedrock_error(message: &str) -> String {
     if message.to_lowercase().contains("data retention mode") {
-        format!("{} See {} for supported data retention modes.", message, BEDROCK_DATA_RETENTION_DOCS_URL)
+        format!(
+            "{} See {} for supported data retention modes.",
+            message, BEDROCK_DATA_RETENTION_DOCS_URL
+        )
     } else {
         message.to_string()
     }
@@ -917,7 +1045,10 @@ mod tests {
         let doc = json_to_document(&v);
         let obj = doc.as_object().expect("object");
         assert!(matches!(obj.get("q"), Some(Document::String(s)) if s == "rust"));
-        assert!(matches!(obj.get("n"), Some(Document::Number(Number::PosInt(3)))));
+        assert!(matches!(
+            obj.get("n"),
+            Some(Document::Number(Number::PosInt(3)))
+        ));
         assert!(matches!(obj.get("b"), Some(Document::Bool(true))));
         assert!(matches!(obj.get("nil"), Some(Document::Null)));
         assert!(matches!(obj.get("arr"), Some(Document::Array(a)) if a.len() == 2));
@@ -940,19 +1071,35 @@ mod tests {
         use super::is_anthropic_claude_model;
         use crate::types::{Model, ModelCost};
         let mk = |id: &str, name: &str| Model {
-            id: id.into(), name: name.into(), api: "bedrock-converse-stream".into(),
-            provider: "bedrock".into(), base_url: String::new(), reasoning: true,
-            thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-            context_window: 0, max_tokens: 0, headers: None, api_key: None, compat: Default::default(),
+            id: id.into(),
+            name: name.into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "bedrock".into(),
+            base_url: String::new(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 0,
+            max_tokens: 0,
+            headers: None,
+            api_key: None,
+            compat: Default::default(),
         };
-        assert!(is_anthropic_claude_model(&mk("anthropic.claude-sonnet-4", "")));
-        assert!(is_anthropic_claude_model(&mk("some-profile", "Anthropic Claude Sonnet")));
+        assert!(is_anthropic_claude_model(&mk(
+            "anthropic.claude-sonnet-4",
+            ""
+        )));
+        assert!(is_anthropic_claude_model(&mk(
+            "some-profile",
+            "Anthropic Claude Sonnet"
+        )));
         assert!(!is_anthropic_claude_model(&mk("meta.llama3", "Llama 3")));
     }
 
     #[test]
     fn test_convert_tool_result_content_empty_and_text() {
-        use super::{convert_tool_result_content, EMPTY_TEXT_PLACEHOLDER};
+        use super::{EMPTY_TEXT_PLACEHOLDER, convert_tool_result_content};
         use crate::types::ContentBlock;
         use aws_sdk_bedrockruntime::types::ToolResultContentBlock;
         // Empty content -> placeholder.
@@ -961,8 +1108,14 @@ mod tests {
         assert!(matches!(&out[0], ToolResultContentBlock::Text(t) if t == EMPTY_TEXT_PLACEHOLDER));
         // Blank text is skipped, real text kept.
         let out = convert_tool_result_content(&[
-            ContentBlock::Text { text: "   ".into(), text_signature: None },
-            ContentBlock::Text { text: "done".into(), text_signature: None },
+            ContentBlock::Text {
+                text: "   ".into(),
+                text_signature: None,
+            },
+            ContentBlock::Text {
+                text: "done".into(),
+                text_signature: None,
+            },
         ]);
         assert_eq!(out.len(), 1);
         assert!(matches!(&out[0], ToolResultContentBlock::Text(t) if t == "done"));
@@ -972,15 +1125,39 @@ mod tests {
     fn test_bedrock_region_parsers() {
         use super::{bedrock_arn_region, bedrock_standard_endpoint_region};
         // ARN-embedded region.
-        assert_eq!(bedrock_arn_region("arn:aws:bedrock:us-west-2:123:inference-profile/x").as_deref(), Some("us-west-2"));
-        assert_eq!(bedrock_arn_region("arn:aws-us-gov:bedrock:us-gov-west-1:123:foundation-model/y").as_deref(), Some("us-gov-west-1"));
+        assert_eq!(
+            bedrock_arn_region("arn:aws:bedrock:us-west-2:123:inference-profile/x").as_deref(),
+            Some("us-west-2")
+        );
+        assert_eq!(
+            bedrock_arn_region("arn:aws-us-gov:bedrock:us-gov-west-1:123:foundation-model/y")
+                .as_deref(),
+            Some("us-gov-west-1")
+        );
         assert_eq!(bedrock_arn_region("anthropic.claude-opus-4-6"), None);
         // Standard runtime endpoint region.
-        assert_eq!(bedrock_standard_endpoint_region("https://bedrock-runtime.us-east-1.amazonaws.com").as_deref(), Some("us-east-1"));
-        assert_eq!(bedrock_standard_endpoint_region("https://bedrock-runtime-fips.us-east-2.amazonaws.com").as_deref(), Some("us-east-2"));
-        assert_eq!(bedrock_standard_endpoint_region("https://bedrock-runtime.cn-north-1.amazonaws.com.cn").as_deref(), Some("cn-north-1"));
+        assert_eq!(
+            bedrock_standard_endpoint_region("https://bedrock-runtime.us-east-1.amazonaws.com")
+                .as_deref(),
+            Some("us-east-1")
+        );
+        assert_eq!(
+            bedrock_standard_endpoint_region(
+                "https://bedrock-runtime-fips.us-east-2.amazonaws.com"
+            )
+            .as_deref(),
+            Some("us-east-2")
+        );
+        assert_eq!(
+            bedrock_standard_endpoint_region("https://bedrock-runtime.cn-north-1.amazonaws.com.cn")
+                .as_deref(),
+            Some("cn-north-1")
+        );
         // Custom/VPC URL -> no standard region.
-        assert_eq!(bedrock_standard_endpoint_region("https://my-vpc-proxy.internal/bedrock"), None);
+        assert_eq!(
+            bedrock_standard_endpoint_region("https://my-vpc-proxy.internal/bedrock"),
+            None
+        );
     }
 
     #[test]
@@ -989,15 +1166,31 @@ mod tests {
         use crate::types::{Model, ModelCost};
         fn m(id: &str) -> Model {
             Model {
-                id: id.into(), name: "n".into(), api: "bedrock-converse-stream".into(),
-                provider: "amazon-bedrock".into(), base_url: "".into(), reasoning: true,
-                thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-                context_window: 200000, max_tokens: 8192, headers: None, api_key: None, compat: Default::default(),
+                id: id.into(),
+                name: "n".into(),
+                api: "bedrock-converse-stream".into(),
+                provider: "amazon-bedrock".into(),
+                base_url: "".into(),
+                reasoning: true,
+                thinking_level_map: None,
+                input: vec!["text".into()],
+                cost: ModelCost::default(),
+                context_window: 200000,
+                max_tokens: 8192,
+                headers: None,
+                api_key: None,
+                compat: Default::default(),
             }
         }
-        assert!(is_govcloud_bedrock_target(&m("us-gov.anthropic.claude-opus-4-6")));
-        assert!(is_govcloud_bedrock_target(&m("arn:aws-us-gov:bedrock:us-gov-west-1::foundation-model/x")));
-        assert!(!is_govcloud_bedrock_target(&m("anthropic.claude-opus-4-6-v1")));
+        assert!(is_govcloud_bedrock_target(&m(
+            "us-gov.anthropic.claude-opus-4-6"
+        )));
+        assert!(is_govcloud_bedrock_target(&m(
+            "arn:aws-us-gov:bedrock:us-gov-west-1::foundation-model/x"
+        )));
+        assert!(!is_govcloud_bedrock_target(&m(
+            "anthropic.claude-opus-4-6-v1"
+        )));
     }
 
     #[test]
@@ -1006,20 +1199,48 @@ mod tests {
         use crate::types::{Model, ModelCost};
         fn m(id: &str, name: &str) -> Model {
             Model {
-                id: id.into(), name: name.into(), api: "bedrock-converse-stream".into(),
-                provider: "amazon-bedrock".into(), base_url: "".into(), reasoning: true,
-                thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-                context_window: 200000, max_tokens: 8192, headers: None, api_key: None, compat: Default::default(),
+                id: id.into(),
+                name: name.into(),
+                api: "bedrock-converse-stream".into(),
+                provider: "amazon-bedrock".into(),
+                base_url: "".into(),
+                reasoning: true,
+                thinking_level_map: None,
+                input: vec!["text".into()],
+                cost: ModelCost::default(),
+                context_window: 200000,
+                max_tokens: 8192,
+                headers: None,
+                api_key: None,
+                compat: Default::default(),
             }
         }
         // Detected by id pattern (incl. region prefixes and separator normalization).
-        assert!(bedrock_supports_adaptive_thinking(&m("anthropic.claude-opus-4-6-v1", "Claude Opus 4.6")));
-        assert!(bedrock_supports_adaptive_thinking(&m("au.anthropic.claude-sonnet-4-6", "")));
-        assert!(bedrock_supports_adaptive_thinking(&m("x", "Claude Opus 4.8")));
-        assert!(bedrock_supports_adaptive_thinking(&m("eu.anthropic.claude-fable-5", "")));
+        assert!(bedrock_supports_adaptive_thinking(&m(
+            "anthropic.claude-opus-4-6-v1",
+            "Claude Opus 4.6"
+        )));
+        assert!(bedrock_supports_adaptive_thinking(&m(
+            "au.anthropic.claude-sonnet-4-6",
+            ""
+        )));
+        assert!(bedrock_supports_adaptive_thinking(&m(
+            "x",
+            "Claude Opus 4.8"
+        )));
+        assert!(bedrock_supports_adaptive_thinking(&m(
+            "eu.anthropic.claude-fable-5",
+            ""
+        )));
         // Older models -> budget path.
-        assert!(!bedrock_supports_adaptive_thinking(&m("anthropic.claude-opus-4-5-20251101-v1:0", "Claude Opus 4.5")));
-        assert!(!bedrock_supports_adaptive_thinking(&m("anthropic.claude-sonnet-4-20250514-v1:0", "Claude Sonnet 4")));
+        assert!(!bedrock_supports_adaptive_thinking(&m(
+            "anthropic.claude-opus-4-5-20251101-v1:0",
+            "Claude Opus 4.5"
+        )));
+        assert!(!bedrock_supports_adaptive_thinking(&m(
+            "anthropic.claude-sonnet-4-20250514-v1:0",
+            "Claude Sonnet 4"
+        )));
     }
 
     #[test]
@@ -1033,22 +1254,45 @@ mod tests {
     #[test]
     fn test_bedrock_unsupported_image_mime() {
         use super::bedrock_unsupported_image_mime;
-        use crate::types::{Message, Role, ContentBlock};
+        use crate::types::{ContentBlock, Message, Role};
         fn img_msg(mime: &str) -> Message {
             Message {
                 role: Role::User,
-                content: vec![ContentBlock::Image { data: "x".into(), mime_type: mime.into() }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None, stop_reason: None,
-                error_message: None, tool_call_id: None, tool_name: None, is_error: false, details: None,
+                content: vec![ContentBlock::Image {
+                    data: "x".into(),
+                    mime_type: mime.into(),
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }
         }
         // Supported formats -> None.
-        for ok in ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"] {
+        for ok in [
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+        ] {
             assert_eq!(bedrock_unsupported_image_mime(&[img_msg(ok)]), None, "{ok}");
         }
         // Unknown format -> Some(mime) (would become "Unknown image type" error).
-        assert_eq!(bedrock_unsupported_image_mime(&[img_msg("image/bmp")]), Some("image/bmp".to_string()));
+        assert_eq!(
+            bedrock_unsupported_image_mime(&[img_msg("image/bmp")]),
+            Some("image/bmp".to_string())
+        );
     }
 
     #[test]
@@ -1057,41 +1301,64 @@ mod tests {
         use crate::types::{Model, ModelCost, StreamOptions, ThinkingLevel};
         let mk = |id: &str, adaptive: bool| {
             let mut m = Model {
-                id: id.into(), name: String::new(), api: "bedrock-converse-stream".into(),
-                provider: "bedrock".into(), base_url: String::new(), reasoning: true,
-                thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-                context_window: 0, max_tokens: 64000, headers: None, api_key: None, compat: Default::default(),
+                id: id.into(),
+                name: String::new(),
+                api: "bedrock-converse-stream".into(),
+                provider: "bedrock".into(),
+                base_url: String::new(),
+                reasoning: true,
+                thinking_level_map: None,
+                input: vec!["text".into()],
+                cost: ModelCost::default(),
+                context_window: 0,
+                max_tokens: 64000,
+                headers: None,
+                api_key: None,
+                compat: Default::default(),
             };
-            if adaptive { m.compat.force_adaptive_thinking = Some(true); }
+            if adaptive {
+                m.compat.force_adaptive_thinking = Some(true);
+            }
             m
         };
         // Budget-based (non-adaptive) Claude: enabled + interleaved beta; budget by level.
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
-        let (f, adj_max) = bedrock_thinking_fields(&mk("anthropic.claude-3", false), &opts).unwrap();
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
+        let (f, adj_max) =
+            bedrock_thinking_fields(&mk("anthropic.claude-3", false), &opts).unwrap();
         assert_eq!(f["thinking"]["type"], "enabled");
         assert_eq!(f["thinking"]["budget_tokens"], 16384);
         assert!(f["anthropic_beta"].is_array());
         // No caller cap -> adjusted max is the model cap.
         assert_eq!(adj_max, Some(64000));
         // Adaptive Claude: adaptive + output_config, no interleaved beta, no max adjustment.
-        let (f, adj_max) = bedrock_thinking_fields(&mk("anthropic.claude-opus-4-6", true), &opts).unwrap();
+        let (f, adj_max) =
+            bedrock_thinking_fields(&mk("anthropic.claude-opus-4-6", true), &opts).unwrap();
         assert_eq!(f["thinking"]["type"], "adaptive");
         assert_eq!(f["output_config"]["effort"], "high");
         assert!(f.get("anthropic_beta").is_none());
         assert_eq!(adj_max, None);
         // Native-xhigh adaptive Claude (opus-4-7): xhigh effort is preserved.
-        let xopts = StreamOptions { reasoning: Some(ThinkingLevel::XHigh), ..Default::default() };
-        let (f, _) = bedrock_thinking_fields(&mk("anthropic.claude-opus-4-7", false), &xopts).unwrap();
+        let xopts = StreamOptions {
+            reasoning: Some(ThinkingLevel::XHigh),
+            ..Default::default()
+        };
+        let (f, _) =
+            bedrock_thinking_fields(&mk("anthropic.claude-opus-4-7", false), &xopts).unwrap();
         assert_eq!(f["thinking"]["type"], "adaptive");
         assert_eq!(f["output_config"]["effort"], "xhigh");
         // Non-native adaptive (opus-4-6) with xhigh -> clamps to high.
-        let (f2, _) = bedrock_thinking_fields(&mk("anthropic.claude-opus-4-6", false), &xopts).unwrap();
+        let (f2, _) =
+            bedrock_thinking_fields(&mk("anthropic.claude-opus-4-6", false), &xopts).unwrap();
         assert_eq!(f2["output_config"]["effort"], "high");
         // Non-Claude model: no thinking fields.
         let f = bedrock_thinking_fields(&mk("meta.llama3", false), &opts);
         assert!(f.is_none());
         // No reasoning requested: none.
-        let f = bedrock_thinking_fields(&mk("anthropic.claude-3", false), &StreamOptions::default());
+        let f =
+            bedrock_thinking_fields(&mk("anthropic.claude-3", false), &StreamOptions::default());
         assert!(f.is_none());
     }
 
@@ -1100,15 +1367,40 @@ mod tests {
         use super::supports_bedrock_prompt_caching;
         use crate::types::{Model, ModelCost};
         let mk = |id: &str, name: &str| Model {
-            id: id.into(), name: name.into(), api: "bedrock-converse-stream".into(),
-            provider: "bedrock".into(), base_url: String::new(), reasoning: false,
-            thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-            context_window: 0, max_tokens: 0, headers: None, api_key: None, compat: Default::default(),
+            id: id.into(),
+            name: name.into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "bedrock".into(),
+            base_url: String::new(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 0,
+            max_tokens: 0,
+            headers: None,
+            api_key: None,
+            compat: Default::default(),
         };
-        assert!(supports_bedrock_prompt_caching(&mk("anthropic.claude-sonnet-4-5", "")));
-        assert!(supports_bedrock_prompt_caching(&mk("anthropic.claude-3-7-sonnet", "")));
-        assert!(supports_bedrock_prompt_caching(&mk("anthropic.claude-3-5-haiku", "")));
-        assert!(!supports_bedrock_prompt_caching(&mk("anthropic.claude-3-sonnet", "")));
-        assert!(!supports_bedrock_prompt_caching(&mk("meta.llama3", "Llama")));
+        assert!(supports_bedrock_prompt_caching(&mk(
+            "anthropic.claude-sonnet-4-5",
+            ""
+        )));
+        assert!(supports_bedrock_prompt_caching(&mk(
+            "anthropic.claude-3-7-sonnet",
+            ""
+        )));
+        assert!(supports_bedrock_prompt_caching(&mk(
+            "anthropic.claude-3-5-haiku",
+            ""
+        )));
+        assert!(!supports_bedrock_prompt_caching(&mk(
+            "anthropic.claude-3-sonnet",
+            ""
+        )));
+        assert!(!supports_bedrock_prompt_caching(&mk(
+            "meta.llama3",
+            "Llama"
+        )));
     }
 }

@@ -17,7 +17,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "black-forest-labs/flux.2-klein-4b".into(),
@@ -27,7 +33,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "black-forest-labs/flux.2-max".into(),
@@ -37,7 +49,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "black-forest-labs/flux.2-pro".into(),
@@ -47,7 +65,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "bytedance-seed/seedream-4.5".into(),
@@ -57,7 +81,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "google/gemini-2.5-flash-image".into(),
@@ -67,7 +97,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 0.3_f64, output: 2.5_f64, cache_read: 0.03_f64, cache_write: 0.08333333333333334_f64 },
+            cost: ModelCost {
+                input: 0.3_f64,
+                output: 2.5_f64,
+                cache_read: 0.03_f64,
+                cache_write: 0.08333333333333334_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "google/gemini-3-pro-image".into(),
@@ -77,7 +113,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.19999999999999998_f64, cache_write: 0.375_f64 },
+            cost: ModelCost {
+                input: 2_f64,
+                output: 12_f64,
+                cache_read: 0.19999999999999998_f64,
+                cache_write: 0.375_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "google/gemini-3-pro-image-preview".into(),
@@ -87,7 +129,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.19999999999999998_f64, cache_write: 0.375_f64 },
+            cost: ModelCost {
+                input: 2_f64,
+                output: 12_f64,
+                cache_read: 0.19999999999999998_f64,
+                cache_write: 0.375_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "google/gemini-3.1-flash-image".into(),
@@ -97,7 +145,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 0.5_f64, output: 3_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0.5_f64,
+                output: 3_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "google/gemini-3.1-flash-image-preview".into(),
@@ -107,7 +161,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 0.5_f64, output: 3_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0.5_f64,
+                output: 3_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "google/gemini-3.1-flash-lite-image".into(),
@@ -117,7 +177,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 0.25_f64, output: 1.5_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0.25_f64,
+                output: 1.5_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "microsoft/mai-image-2.5".into(),
@@ -127,7 +193,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 5_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 5_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "openai/gpt-5-image".into(),
@@ -137,7 +209,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 10_f64, output: 10_f64, cache_read: 1.25_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 10_f64,
+                output: 10_f64,
+                cache_read: 1.25_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "openai/gpt-5-image-mini".into(),
@@ -147,7 +225,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 2.5_f64, output: 2_f64, cache_read: 0.25_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 2.5_f64,
+                output: 2_f64,
+                cache_read: 0.25_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "openai/gpt-5.4-image-2".into(),
@@ -157,7 +241,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
             output: vec!["image".into(), "text".into()],
-            cost: ModelCost { input: 8_f64, output: 15_f64, cache_read: 2_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 8_f64,
+                output: 15_f64,
+                cache_read: 2_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "openai/gpt-image-1".into(),
@@ -167,7 +257,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 10_f64, output: 10_f64, cache_read: 1.25_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 10_f64,
+                output: 10_f64,
+                cache_read: 1.25_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "openai/gpt-image-1-mini".into(),
@@ -177,7 +273,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 2.5_f64, output: 2.5_f64, cache_read: 0.25_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 2.5_f64,
+                output: 2.5_f64,
+                cache_read: 0.25_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "openai/gpt-image-2".into(),
@@ -187,7 +289,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 8_f64, output: 8_f64, cache_read: 2_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 8_f64,
+                output: 8_f64,
+                cache_read: 2_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "openrouter/auto".into(),
@@ -197,7 +305,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: -1000000_f64, output: -1000000_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: -1000000_f64,
+                output: -1000000_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v3".into(),
@@ -207,7 +321,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4".into(),
@@ -217,7 +337,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4-pro".into(),
@@ -227,7 +353,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4-pro-vector".into(),
@@ -237,7 +369,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4-vector".into(),
@@ -247,7 +385,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4.1".into(),
@@ -257,7 +401,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4.1-pro".into(),
@@ -267,7 +417,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4.1-pro-vector".into(),
@@ -277,7 +433,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4.1-utility".into(),
@@ -287,7 +449,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4.1-utility-pro".into(),
@@ -297,7 +465,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "recraft/recraft-v4.1-vector".into(),
@@ -307,7 +481,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "sourceful/riverflow-v2-fast".into(),
@@ -317,7 +497,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "sourceful/riverflow-v2-pro".into(),
@@ -327,7 +513,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "sourceful/riverflow-v2.5-fast".into(),
@@ -337,7 +529,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "sourceful/riverflow-v2.5-pro".into(),
@@ -347,7 +545,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
         ImagesModel {
             id: "x-ai/grok-imagine-image-quality".into(),
@@ -357,7 +561,13 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64 },
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
         },
     ]
 }
