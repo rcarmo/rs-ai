@@ -58,6 +58,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
         };
         let opts = StreamOptions {
@@ -223,6 +224,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
         };
         // Default (short) retention -> caching on for a supported Claude model.

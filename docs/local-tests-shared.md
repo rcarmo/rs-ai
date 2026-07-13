@@ -10,6 +10,14 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 (behaviourally guarded by an existing rs-ai test), **PENDING**, **N/A**
 (feature gated/architectural — see parity-gaps doc).
 
+## Current upstream test-for-test fixture: deferred/message-anchored tools
+
+Source: upstream main `packages/ai/test/deferred-tools.test.ts` at `0e6909f050eeb15e8f6c05185511f3788357ddb3` (`feat(ai): support message-anchored tool loading (#6474)`). rs-ai adaptation: `src/deferred_tools_test.rs` plus `src/deferred_tools.rs`.
+
+Status: **ADAPTED**. The Rust tests cover the upstream branches for `addedToolNames`/`added_tool_names`, Anthropic `defer_loading`, `tool_reference`, sibling `tool_result` output preservation, OAuth Claude Code name canonicalization/deduplication, unsupported/all-marked/prior-use fallback cases, OpenAI Responses `tool_search_call`/`tool_search_output`, Codex support gating, OpenAI-compatible fallback behavior, and context-estimator accounting for deferred definitions.
+
+This is an upstream parity fixture, not counted as a local-only conformance test.
+
 ## v0.80.3 conformance fixtures (for go-ai / swift-ai adoption)
 
 Upstream **0.80.3** feature release. Authoritative constants + truth-tables so

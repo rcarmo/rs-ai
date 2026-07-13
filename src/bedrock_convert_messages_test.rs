@@ -50,6 +50,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }
     }
 
@@ -120,6 +121,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let msgs = build(vec![assistant]);
         assert_eq!(msgs.len(), 0, "assistant with only blank text is dropped");
@@ -144,6 +146,7 @@ mod tests {
             tool_name: Some("tool".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let msgs = build(vec![tool_result]);
         assert_eq!(msgs.len(), 1);

@@ -56,6 +56,7 @@ mod tests {
             tool_name: Some("read".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }
     }
 
@@ -82,6 +83,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -107,6 +109,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 assistant,
                 tool_result("tool-1", 1),
@@ -161,6 +164,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let empty_tool_result = Message {
             role: Role::ToolResult,
@@ -182,6 +186,7 @@ mod tests {
             tool_name: Some("read".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -207,6 +212,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 assistant,
                 empty_tool_result,

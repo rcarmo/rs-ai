@@ -137,6 +137,7 @@ fn insert_synthetic_tool_results(messages: Vec<Message>) -> Vec<Message> {
                     tool_name: Some(name),
                     is_error: true,
                     details: None,
+                    added_tool_names: Vec::new(),
                 });
             }
         }
@@ -303,6 +304,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }];
         let result = transform_messages(&messages, &vision_model());
         assert_eq!(result[0].content.len(), 2);
@@ -337,6 +339,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }];
         let result = transform_messages(&messages, &text_only_model());
         assert_eq!(result[0].content.len(), 2);
@@ -368,6 +371,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }
     }
 

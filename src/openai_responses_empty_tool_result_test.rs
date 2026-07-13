@@ -55,6 +55,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let tool_result = Message {
             role: Role::ToolResult,
@@ -76,6 +77,7 @@ mod tests {
             tool_name: Some("bash".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -101,6 +103,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 assistant,
                 tool_result,

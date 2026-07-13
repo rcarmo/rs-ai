@@ -29,6 +29,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
             ],
             tools: vec![],
@@ -87,6 +88,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         assert_eq!(get_text_content(&msg), "Answer: 42");
     }
@@ -127,6 +129,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         assert!(is_tool_use(&msg));
         assert!(has_tool_calls(&msg));

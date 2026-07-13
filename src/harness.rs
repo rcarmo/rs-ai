@@ -78,6 +78,7 @@ pub fn tool_result_message(
         tool_name: Some(tool_name.to_string()),
         is_error,
         details: None,
+        added_tool_names: Vec::new(),
     }
 }
 
@@ -114,6 +115,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         assert_eq!(get_text_content(&msg), "Hello world");
     }
@@ -142,6 +144,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         assert!(is_tool_use(&msg));
     }

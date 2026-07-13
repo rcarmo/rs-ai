@@ -63,6 +63,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
         };
         let opts = StreamOptions {

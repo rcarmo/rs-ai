@@ -57,6 +57,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let tool_text = "A red circle with a diameter of 100 pixels.";
         let tool_result = Message {
@@ -85,6 +86,7 @@ mod tests {
             tool_name: Some("get_circle_with_description".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: Some("You are a helpful assistant.".into()),
@@ -110,6 +112,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 assistant,
                 tool_result,

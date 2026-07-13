@@ -502,6 +502,7 @@ impl CodexWsState {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let events = vec![Event::Start {
             partial: partial.clone(),

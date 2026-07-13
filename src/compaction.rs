@@ -35,6 +35,7 @@ pub fn compact_context(ctx: &Context, keep_recent: usize, summary: Option<&str>)
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         });
     }
 

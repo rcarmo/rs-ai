@@ -204,6 +204,7 @@ pub fn stream_anthropic<'a>(
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
 
         yield Event::Start { partial: partial.clone() };
@@ -714,6 +715,7 @@ pub(crate) fn build_anthropic_payload(
         .unwrap_or(false);
 
     let transformed_messages = crate::transform::transform_messages(&context.messages, model);
+    let supports_tool_refs = crate::deferred_tools::anthropic_supports_tool_references(model);
 
     let mut i = 0usize;
     while i < transformed_messages.len() {
@@ -725,15 +727,41 @@ pub(crate) fn build_anthropic_payload(
             while i < transformed_messages.len() && transformed_messages[i].role == Role::ToolResult
             {
                 let tr = &transformed_messages[i];
+                let refs = if supports_tool_refs {
+                    crate::deferred_tools::deferred_tool_names_at(context, i, is_oauth)
+                } else {
+                    Vec::new()
+                };
+                let content_value = if refs.is_empty() {
+                    convert_tool_result_content(&tr.content)
+                } else {
+                    json!(
+                        refs.iter()
+                            .map(|name| json!({"type": "tool_reference", "tool_name": name}))
+                            .collect::<Vec<_>>()
+                    )
+                };
                 let mut tool_result = json!({
                     "type": "tool_result",
                     "tool_use_id": normalize_anthropic_tool_call_id(&tr.tool_call_id.clone().unwrap_or_default()),
-                    "content": convert_tool_result_content(&tr.content),
+                    "content": content_value,
                 });
                 if tr.is_error {
                     tool_result["is_error"] = json!(true);
                 }
                 tool_results.push(tool_result);
+                if !refs.is_empty() {
+                    let sibling = convert_tool_result_content(&tr.content);
+                    match sibling {
+                        Value::String(s) => {
+                            if !s.is_empty() {
+                                tool_results.push(json!({"type": "text", "text": s}));
+                            }
+                        }
+                        Value::Array(items) => tool_results.extend(items),
+                        _ => {}
+                    }
+                }
                 i += 1;
             }
             messages.push(json!({"role": "user", "content": tool_results}));
@@ -928,22 +956,49 @@ pub(crate) fn build_anthropic_payload(
 
     if !context.tools.is_empty() {
         let compat = anthropic_compat(model);
-        let mut tools: Vec<Value> = context.tools.iter().map(|t| {
-            let schema = &t.parameters;
-            let mut tool = json!({
-                "name": if is_oauth { to_claude_code_name(&t.name) } else { t.name.clone() },
-                "description": t.description,
-                "input_schema": {
-                    "type": "object",
-                    "properties": schema.get("properties").cloned().unwrap_or_else(|| json!({})),
-                    "required": schema.get("required").cloned().unwrap_or_else(|| json!([])),
-                },
-            });
-            if compat.supports_eager_tool_input_streaming {
-                tool["eager_input_streaming"] = json!(true);
+        let (active_tools, deferred_names) = crate::deferred_tools::immediate_and_deferred_tools(
+            context,
+            is_oauth,
+            supports_tool_refs,
+        );
+        let mut tools: Vec<Value> = active_tools
+            .iter()
+            .map(|t| {
+                let schema = &t.parameters;
+                let mut tool = json!({
+                    "name": t.name,
+                    "description": t.description,
+                    "input_schema": {
+                        "type": "object",
+                        "properties": schema.get("properties").cloned().unwrap_or_else(|| json!({})),
+                        "required": schema.get("required").cloned().unwrap_or_else(|| json!([])),
+                    },
+                });
+                if compat.supports_eager_tool_input_streaming {
+                    tool["eager_input_streaming"] = json!(true);
+                }
+                tool
+            })
+            .collect();
+        for name in deferred_names.iter() {
+            if let Some(t) = crate::deferred_tools::tool_by_name(context, name, is_oauth) {
+                let schema = &t.parameters;
+                let mut tool = json!({
+                    "name": t.name,
+                    "description": t.description,
+                    "defer_loading": true,
+                    "input_schema": {
+                        "type": "object",
+                        "properties": schema.get("properties").cloned().unwrap_or_else(|| json!({})),
+                        "required": schema.get("required").cloned().unwrap_or_else(|| json!([])),
+                    },
+                });
+                if compat.supports_eager_tool_input_streaming {
+                    tool["eager_input_streaming"] = json!(true);
+                }
+                tools.push(tool);
             }
-            tool
-        }).collect();
+        }
         // Cache control on the last tool definition (only when supported).
         if compat.supports_cache_control_on_tools
             && let Some(ref cc) = cache_control

@@ -23,6 +23,7 @@ pub mod auth_providers;
 pub mod compaction;
 pub mod compat;
 pub mod context;
+pub mod deferred_tools;
 pub mod diagnostics;
 pub mod env;
 pub mod error_body;
@@ -95,6 +96,8 @@ mod compat_env_test;
 mod compat_test;
 #[cfg(test)]
 mod coverage_test;
+#[cfg(test)]
+mod deferred_tools_test;
 #[cfg(test)]
 mod edge_case_test;
 #[cfg(test)]

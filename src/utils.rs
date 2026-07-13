@@ -124,6 +124,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }
         }
         // Last message from user -> initiator user, no vision.
@@ -179,6 +180,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }
         }
         // empty -> user

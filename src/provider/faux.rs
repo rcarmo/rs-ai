@@ -230,6 +230,7 @@ impl crate::registry::ApiProvider for FauxProvider {
                 stop_reason: None,
                 error_message: resolved.error_message.clone(),
                 tool_call_id: None, tool_name: None, is_error: false, details: None,
+            added_tool_names: Vec::new(),
             };
             yield Event::Start { partial: partial.clone() };
 
@@ -333,6 +334,7 @@ pub fn stream_faux_text<'a>(
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         yield Event::Start { partial: partial.clone() };
         yield Event::TextStart;
@@ -395,6 +397,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }
     }
 
@@ -479,6 +482,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }]);
         assert_eq!(faux.pending_response_count(), 1);
         let model = faux_model();
@@ -541,6 +545,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         faux.set_responses(vec![resp(), resp()]);
         let model = faux_model();

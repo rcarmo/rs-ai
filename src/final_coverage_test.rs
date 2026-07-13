@@ -129,6 +129,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
             ],
             tools: vec![],
@@ -196,6 +197,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         assert!(!is_context_overflow(&msg, &model));
     }
@@ -227,6 +229,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         assert!(is_context_overflow(&msg, &model));
     }
@@ -251,6 +254,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         assert!(is_context_overflow(&msg, &model));
     }

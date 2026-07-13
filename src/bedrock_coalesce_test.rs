@@ -52,6 +52,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }
     }
 
@@ -76,6 +77,7 @@ mod tests {
             tool_name: Some(name.into()),
             is_error,
             details: None,
+            added_tool_names: Vec::new(),
         }
     }
 

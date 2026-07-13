@@ -60,6 +60,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }
     }
 
@@ -84,6 +85,7 @@ mod tests {
             tool_name: Some("edit".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         }
     }
 
@@ -114,6 +116,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 assistant_with_foreign_toolcall(),
                 tool_result(),

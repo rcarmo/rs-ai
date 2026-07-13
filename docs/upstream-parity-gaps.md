@@ -68,6 +68,23 @@ Port: `rs-ai` (crate `rs-ai`), branch `main`, tag `v0.80.3`.
 > Result: **735 tests, 0 failures, 0 clippy warnings** (each run verified 3× for
 > determinism).
 
+## Current auditor-required mainline follow-up: deferred/message-anchored tools
+
+Upstream main commit `0e6909f050eeb15e8f6c05185511f3788357ddb3` (`feat(ai): support message-anchored tool loading (#6474)`) adds `packages/ai/test/deferred-tools.test.ts` (16 Vitest cases). Although this file was not in the locally packaged v0.80.6 tarball, rs-ai now treats it as required parity.
+
+Status: **DONE** in Rust with deterministic payload tests in `src/deferred_tools_test.rs` and helpers in `src/deferred_tools.rs`.
+
+Mapped behavior:
+- `Message.added_tool_names` is the idiomatic Rust equivalent of upstream `addedToolNames`; it is serialized as `added_tool_names` but intentionally skipped when empty.
+- Anthropic `defer_loading` tool definitions are emitted only when `supports_tool_references` is true (default true for eligible Anthropic Messages models; false for Haiku and `claude-sonnet-4-20250514`, with explicit compat override support).
+- Anthropic tool-result markers emit `tool_reference` content for newly anchored tools and preserve the original sibling tool output content immediately after the reference block, including image blocks.
+- Anthropic OAuth canonicalizes Claude Code tool names for active definitions, marker lookup, prior-use detection, and duplicate `read`/`Read` definitions.
+- OpenAI Responses/Codex support client-side `tool_search_call` + `tool_search_output` payloads only for supported models (`openai/gpt-5.4`, `openai/gpt-5.4-codex`, `openai-codex/gpt-5.4` by current registry); unsupported Responses, Codex, and OpenAI-compatible providers fall back to sending all tools immediately.
+- `estimate_context_tokens` accounts for added tool definitions after a latest-usage checkpoint so deferred definitions are not hidden by usage anchoring.
+- Edge cases covered: missing marked tools are ignored, all-tools-marked falls back to immediate tools, previously-used tools remain immediate, OpenAI-origin history can introduce Anthropic deferred tools, provider override flags are honored, and sibling output ordering is locked.
+
+Registry parity follow-up for v0.80.6/current audit: model counts are not used alone; text and image registry ID sets are mechanically compared against generated upstream IDs before final reporting.
+
 Status legend:
 - **DONE** — functional parity verified; behaviour + semantics match.
 - **PARTIAL** — core behaviour present; documented divergence or incomplete edges.

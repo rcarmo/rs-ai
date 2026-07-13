@@ -1,6 +1,6 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: models.generated.js (1057 models, 35 providers)
+//! Source: models.generated.js (1059 models, 35 providers)
 //! Generated: 2026-07-13T18:12:22.141459Z
 
 #![allow(clippy::approx_constant)]
@@ -2741,6 +2741,25 @@ pub fn builtin_models() -> Vec<Model> {
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 30_f64, output: 180_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "gpt-5.6".into(),
+            name: "GPT-5.6".into(),
+            api: "azure-openai-responses".into(),
+            provider: "azure-openai-responses".into(),
+            base_url: "".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 30_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
             context_window: 1050000,
             max_tokens: 128000,
             headers: None,
@@ -8627,6 +8646,26 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 30_f64, output: 180_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 60_f64, output: 270_f64, cache_read: 0_f64, cache_write: 0_f64 }] },
             context_window: 1050000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "gpt-5.6".into(),
+            name: "GPT-5.6".into(),
+            api: "openai-responses".into(),
+            provider: "openai".into(),
+            base_url: "https://api.openai.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 30_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 10_f64, output: 45_f64, cache_read: 1_f64, cache_write: 12.5_f64 }] },
+            context_window: 272000,
             max_tokens: 128000,
             headers: None,
             api_key: None,

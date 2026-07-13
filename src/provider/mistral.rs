@@ -127,6 +127,7 @@ pub fn stream_mistral<'a>(
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
 
         yield Event::Start { partial: partial.clone() };

@@ -67,6 +67,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
 
         assert!(is_tool_use(&msg1));

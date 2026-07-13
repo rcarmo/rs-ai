@@ -343,6 +343,7 @@ fn stream_responses_inner<'a>(
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
 
         yield Event::Start { partial: partial.clone() };
@@ -815,6 +816,7 @@ pub(crate) fn build_responses_payload(
     opts: &StreamOptions,
 ) -> Value {
     let compat = detect_compat(model);
+    let supports_tool_search = crate::deferred_tools::openai_supports_tool_search(model);
     let mut input = Vec::new();
 
     if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
@@ -919,6 +921,36 @@ pub(crate) fn build_responses_payload(
                 }
             }
             Role::ToolResult => {
+                let deferred_names = if supports_tool_search {
+                    crate::deferred_tools::deferred_tool_names_at(context, msg_index, false)
+                } else {
+                    Vec::new()
+                };
+                if !deferred_names.is_empty() {
+                    let call_id = format!("tool_search_{}", msg_index);
+                    input.push(json!({
+                        "type": "tool_search_call",
+                        "call_id": call_id,
+                        "execution": "client",
+                        "status": "completed",
+                    }));
+                    input.push(json!({
+                        "type": "tool_search_output",
+                        "call_id": call_id,
+                        "execution": "client",
+                        "status": "completed",
+                        "tools": deferred_names.iter().filter_map(|name| {
+                            crate::deferred_tools::tool_by_name(context, name, false).map(|t| json!({
+                                "type": "function",
+                                "name": t.name,
+                                "description": t.description,
+                                "parameters": t.parameters,
+                                "strict": false,
+                                "defer_loading": true,
+                            }))
+                        }).collect::<Vec<_>>(),
+                    }));
+                }
                 let text_result = msg
                     .content
                     .iter()
@@ -1074,8 +1106,12 @@ pub(crate) fn build_responses_payload(
     }
 
     if !context.tools.is_empty() {
-        let tools: Vec<Value> = context
-            .tools
+        let (active_tools, deferred_names) = crate::deferred_tools::immediate_and_deferred_tools(
+            context,
+            false,
+            supports_tool_search,
+        );
+        let mut tools: Vec<Value> = active_tools
             .iter()
             .map(|t| {
                 json!({
@@ -1087,6 +1123,21 @@ pub(crate) fn build_responses_payload(
                 })
             })
             .collect();
+        if !supports_tool_search || deferred_names.is_empty() {
+            tools = context
+                .tools
+                .iter()
+                .map(|t| {
+                    json!({
+                        "type": "function",
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.parameters,
+                        "strict": false,
+                    })
+                })
+                .collect();
+        }
         payload["tools"] = json!(tools);
     }
 

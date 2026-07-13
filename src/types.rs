@@ -281,6 +281,8 @@ pub struct Message {
     pub is_error: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub added_tool_names: Vec<String>,
 }
 
 /// Tool definition with JSON Schema parameters.
@@ -377,6 +379,10 @@ pub struct ModelCompat {
     pub supports_strict_mode: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_temperature: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_tool_references: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_tool_search: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub thinking_format: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -501,5 +507,6 @@ pub fn user_message(text: &str) -> Message {
         tool_name: None,
         is_error: false,
         details: None,
+        added_tool_names: Vec::new(),
     }
 }

@@ -73,6 +73,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -115,6 +116,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -1278,6 +1280,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -1322,6 +1325,7 @@ mod tests {
             tool_name: Some("t".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -1369,6 +1373,7 @@ mod tests {
             tool_name: Some("t".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -1601,6 +1606,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -1653,6 +1659,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -1707,6 +1714,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -1749,6 +1757,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -1796,6 +1805,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -2104,6 +2114,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -2151,6 +2162,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -2205,6 +2217,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -2275,6 +2288,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -2348,6 +2362,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -2389,6 +2404,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -2467,6 +2483,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -2520,6 +2537,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 Message {
                     role: Role::ToolResult,
@@ -2541,6 +2559,7 @@ mod tests {
                     tool_name: Some("search".into()),
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
             ],
             tools: vec![],
@@ -2591,6 +2610,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 Message {
                     role: Role::ToolResult,
@@ -2612,6 +2632,7 @@ mod tests {
                     tool_name: Some("search".into()),
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
             ],
             tools: vec![],
@@ -4146,6 +4167,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -4183,6 +4205,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -4215,6 +4238,7 @@ mod tests {
             tool_name: Some("t".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -4259,6 +4283,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let tool_result = Message {
             role: Role::ToolResult,
@@ -4280,6 +4305,7 @@ mod tests {
             tool_name: Some("search".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -4693,6 +4719,7 @@ mod tests {
             tool_name: Some("t".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: Some("sys".into()),
@@ -4802,6 +4829,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
             ],
             tools: vec![],
@@ -4870,6 +4898,7 @@ mod tests {
                 tool_name: Some("calc".into()),
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -4912,6 +4941,7 @@ mod tests {
                 tool_name: Some("shot".into()),
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -4948,6 +4978,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -5342,6 +5373,7 @@ mod tests {
             tool_name: Some("t".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -5387,6 +5419,7 @@ mod tests {
             tool_name: Some("t".into()),
             is_error: false,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -5441,6 +5474,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -5484,6 +5518,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
@@ -5634,6 +5669,7 @@ mod tests {
             tool_name: Some(name.into()),
             is_error: err,
             details: None,
+            added_tool_names: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -6034,6 +6070,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 Message {
                     role: Role::ToolResult,
@@ -6061,6 +6098,7 @@ mod tests {
                     tool_name: Some("t".into()),
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
             ],
             tools: vec![],
@@ -6111,6 +6149,7 @@ mod tests {
                     tool_name: None,
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
                 Message {
                     role: Role::ToolResult,
@@ -6132,6 +6171,7 @@ mod tests {
                     tool_name: Some("search".into()),
                     is_error: false,
                     details: None,
+                    added_tool_names: Vec::new(),
                 },
             ],
             tools: vec![],
@@ -6178,6 +6218,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                added_tool_names: Vec::new(),
             }],
             tools: vec![],
         };
