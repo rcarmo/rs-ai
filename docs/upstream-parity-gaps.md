@@ -88,7 +88,7 @@ Additional current-main consistency gate from the same `0e6909f...` tree:
 - `response.output_item.done` reasoning `encrypted_content` wins when present.
 - Terminal `response.completed.output` backfills encrypted reasoning content only when the persisted `output_item.done` reasoning item omitted `encrypted_content`, preserving deterministic same-model replay for Azure OpenAI Responses.
 
-Registry parity follow-up for v0.80.6/current audit: model counts are not used alone; text and image registry ID sets are mechanically compared against generated upstream IDs before final reporting.
+Registry parity follow-up for v0.80.6/current audit: model counts are not used alone. `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3` imports upstream `MODELS`/`IMAGE_MODELS` with Bun, recursively flattens provider maps, and compares provider/id pairs against Rust generated registries. Pinned `0e6909f...` parity is **1057 text provider/id pairs** and **35 image provider/id pairs** with missing=0/extra=0; unpinned-current `azure-openai-responses/gpt-5.6` and `openai/gpt-5.6` are intentionally absent for this agreed source.
 
 Status legend:
 - **DONE** — functional parity verified; behaviour + semantics match.

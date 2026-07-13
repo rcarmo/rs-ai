@@ -24,6 +24,10 @@ Source: upstream main `packages/ai/test/azure-openai-responses-reasoning-replay.
 
 Status: **ADAPTED**. The two deterministic cases verify that completed-output `encrypted_content` backfill preserves `response.output_item.done` when it already included encrypted content, and uses terminal `response.completed.output` only when the done item omitted it.
 
+## Current upstream registry provider/id comparison fixture
+
+Status: **ADAPTED**. Run `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3` to import upstream `MODELS`/`IMAGE_MODELS` with Bun, recursively flatten provider maps, and compare provider/id pairs against rs-ai. Expected for the agreed source: text `1057/1057`, image `35/35`, missing `0`, extra `0`.
+
 ## v0.80.3 conformance fixtures (for go-ai / swift-ai adoption)
 
 Upstream **0.80.3** feature release. Authoritative constants + truth-tables so
