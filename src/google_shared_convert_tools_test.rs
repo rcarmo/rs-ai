@@ -5,16 +5,24 @@
 mod tests {
     use crate::provider::google::convert_google_tools;
     use crate::types::Tool;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     fn make_tool(parameters: Value) -> Tool {
-        Tool { name: "test_tool".into(), description: "A test tool".into(), parameters }
+        Tool {
+            name: "test_tool".into(),
+            description: "A test tool".into(),
+            parameters,
+        }
     }
 
     fn decl_params(tools: &[Tool], use_parameters: bool) -> Value {
         let result = convert_google_tools(tools, use_parameters).expect("tools");
         let decl = &result[0]["functionDeclarations"][0];
-        if use_parameters { decl["parameters"].clone() } else { decl["parametersJsonSchema"].clone() }
+        if use_parameters {
+            decl["parameters"].clone()
+        } else {
+            decl["parametersJsonSchema"].clone()
+        }
     }
 
     #[test]
@@ -30,11 +38,14 @@ mod tests {
             "required": ["command"],
         }))];
         let p = decl_params(&tools, true);
-        assert_eq!(p, json!({
-            "type": "object",
-            "properties": {"command": {"type": "string"}},
-            "required": ["command"],
-        }));
+        assert_eq!(
+            p,
+            json!({
+                "type": "object",
+                "properties": {"command": {"type": "string"}},
+                "required": ["command"],
+            })
+        );
     }
 
     #[test]
@@ -45,7 +56,10 @@ mod tests {
             "properties": {"deep": {"$schema": "x", "$id": "urn:nested", "type": "string"}},
         }))];
         let p = decl_params(&tools, true);
-        assert_eq!(p, json!({"type": "object", "properties": {"deep": {"type": "string"}}}));
+        assert_eq!(
+            p,
+            json!({"type": "object", "properties": {"deep": {"type": "string"}}})
+        );
     }
 
     #[test]
@@ -56,10 +70,13 @@ mod tests {
             "properties": {"refProp": {"$ref": "#/$defs/someDef", "type": "string"}},
         }))];
         let p = decl_params(&tools, true);
-        assert_eq!(p, json!({
-            "type": "object",
-            "properties": {"refProp": {"$ref": "#/$defs/someDef", "type": "string"}},
-        }));
+        assert_eq!(
+            p,
+            json!({
+                "type": "object",
+                "properties": {"refProp": {"$ref": "#/$defs/someDef", "type": "string"}},
+            })
+        );
     }
 
     #[test]
@@ -72,7 +89,10 @@ mod tests {
         });
         let tools = vec![make_tool(original.clone())];
         let _ = convert_google_tools(&tools, true);
-        assert_eq!(tools[0].parameters, original, "original parameters must be unchanged");
+        assert_eq!(
+            tools[0].parameters, original,
+            "original parameters must be unchanged"
+        );
     }
 
     #[test]
@@ -84,12 +104,15 @@ mod tests {
             "required": ["command"],
         }))];
         let p = decl_params(&tools, false);
-        assert_eq!(p, json!({
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "type": "object",
-            "properties": {"command": {"type": "string"}},
-            "required": ["command"],
-        }));
+        assert_eq!(
+            p,
+            json!({
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {"command": {"type": "string"}},
+                "required": ["command"],
+            })
+        );
     }
 
     #[test]
@@ -100,7 +123,10 @@ mod tests {
             "required": ["path"],
         }))];
         let p = decl_params(&tools, true);
-        assert_eq!(p, json!({"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}));
+        assert_eq!(
+            p,
+            json!({"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]})
+        );
     }
 
     #[test]

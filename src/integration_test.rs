@@ -2,12 +2,12 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::faux::*;
-    use crate::harness::*;
-    use crate::types::*;
     use crate::events::Event;
-    use tokio_stream::StreamExt;
+    use crate::harness::*;
+    use crate::provider::faux::*;
+    use crate::types::*;
     use std::collections::HashMap;
+    use tokio_stream::StreamExt;
 
     fn faux_model() -> Model {
         Model {
@@ -19,7 +19,11 @@ mod tests {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 3.0, output: 15.0, ..Default::default() },
+            cost: ModelCost {
+                input: 3.0,
+                output: 15.0,
+                ..Default::default()
+            },
             context_window: 128000,
             max_tokens: 4096,
             headers: None,
@@ -51,7 +55,12 @@ mod tests {
             response_id: Some("resp-1".into()),
             response_model: None,
             diagnostics: Vec::new(),
-            usage: Some(Usage { input: 10, output: 5, total_tokens: 15, ..Default::default() }),
+            usage: Some(Usage {
+                input: 10,
+                output: 5,
+                total_tokens: 15,
+                ..Default::default()
+            }),
             stop_reason: Some(StopReason::ToolUse),
             error_message: None,
             tool_call_id: None,
@@ -94,9 +103,16 @@ mod tests {
         // Verify stream structure
         assert!(matches!(&events[0], Event::Start { .. }));
         assert!(matches!(&events[1], Event::TextStart));
-        let text_deltas: String = events.iter().filter_map(|e| {
-            if let Event::TextDelta { delta } = e { Some(delta.as_str()) } else { None }
-        }).collect();
+        let text_deltas: String = events
+            .iter()
+            .filter_map(|e| {
+                if let Event::TextDelta { delta } = e {
+                    Some(delta.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect();
         assert!(text_deltas.contains("hello world"));
         assert!(matches!(events.last().unwrap(), Event::Done { .. }));
 
@@ -142,7 +158,11 @@ mod tests {
         let mut stream = stream_faux_error("simulated failure");
         let evt = stream.next().await.unwrap();
         match evt {
-            Event::Error { reason, error, message } => {
+            Event::Error {
+                reason,
+                error,
+                message,
+            } => {
                 assert_eq!(reason, StopReason::Error);
                 assert!(error.to_string().contains("simulated failure"));
                 assert!(message.is_none());
@@ -155,7 +175,9 @@ mod tests {
     async fn test_context_compaction_harness() {
         let mut ctx = Context {
             system_prompt: Some("System".into()),
-            messages: (0..50).map(|i| user_message(&format!("msg {}", i))).collect(),
+            messages: (0..50)
+                .map(|i| user_message(&format!("msg {}", i)))
+                .collect(),
             tools: vec![],
         };
         assert!(ctx.messages.len() == 50);
@@ -175,18 +197,25 @@ mod tests {
         let payload = serde_json::json!({"model": "test", "temperature": 0.7});
 
         // OnPayload hook modifies payload
-        let modified = invoke_on_payload(payload.clone(), Some(&|mut p| {
-            p["temperature"] = serde_json::json!(0.0);
-            p["custom_field"] = serde_json::json!("added");
-            p
-        }));
+        let modified = invoke_on_payload(
+            payload.clone(),
+            Some(&|mut p| {
+                p["temperature"] = serde_json::json!(0.0);
+                p["custom_field"] = serde_json::json!("added");
+                p
+            }),
+        );
         assert_eq!(modified["temperature"], 0.0);
         assert_eq!(modified["custom_field"], "added");
 
         // OnResponse hook receives status (verified by not panicking)
         let headers = HashMap::new();
-        invoke_on_response(200, &headers, Some(&|_status, _| {
-            // Hook invoked successfully
-        }));
+        invoke_on_response(
+            200,
+            &headers,
+            Some(&|_status, _| {
+                // Hook invoked successfully
+            }),
+        );
     }
 }

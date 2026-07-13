@@ -38,8 +38,7 @@ impl RetryConfig {
 
 /// Compute exponential backoff delay for an attempt.
 pub fn compute_backoff(attempt: u32, config: &RetryConfig) -> Duration {
-    let base = config.initial_delay.as_secs_f64()
-        * config.backoff_multiplier.powi(attempt as i32);
+    let base = config.initial_delay.as_secs_f64() * config.backoff_multiplier.powi(attempt as i32);
     let capped = base.min(config.max_delay.as_secs_f64());
     // Simple jitter: multiply by (1 - jitter/2) for deterministic tests
     let jittered = capped * (1.0 - config.jitter_fraction * 0.5);
@@ -63,7 +62,10 @@ pub fn parse_retry_after(value: &str) -> Option<Duration> {
     }
     // HTTP-date form: delay until that instant.
     if let Ok(when) = httpdate::parse_http_date(trimmed) {
-        return Some(when.duration_since(std::time::SystemTime::now()).unwrap_or(Duration::ZERO));
+        return Some(
+            when.duration_since(std::time::SystemTime::now())
+                .unwrap_or(Duration::ZERO),
+        );
     }
     None
 }
@@ -73,7 +75,8 @@ pub fn parse_retry_after(value: &str) -> Option<Duration> {
 pub fn retry_after_delay(headers: &reqwest::header::HeaderMap) -> Option<Duration> {
     if let Some(ms) = headers.get("retry-after-ms").and_then(|v| v.to_str().ok())
         && let Ok(millis) = ms.trim().parse::<f64>()
-        && millis.is_finite() {
+        && millis.is_finite()
+    {
         return Some(Duration::from_millis(millis.max(0.0) as u64));
     }
     headers
@@ -85,8 +88,8 @@ pub fn retry_after_delay(headers: &reqwest::header::HeaderMap) -> Option<Duratio
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn test_compute_backoff() {
@@ -116,7 +119,10 @@ mod tests {
         assert_eq!(parse_retry_after("1.5"), Some(Duration::from_secs_f64(1.5)));
         assert_eq!(parse_retry_after("not-a-number"), None);
         // HTTP-date in the past clamps to zero.
-        assert_eq!(parse_retry_after("Wed, 21 Oct 2015 07:28:00 GMT"), Some(Duration::ZERO));
+        assert_eq!(
+            parse_retry_after("Wed, 21 Oct 2015 07:28:00 GMT"),
+            Some(Duration::ZERO)
+        );
     }
 
     #[test]
@@ -187,7 +193,10 @@ pub fn default_retry_config() -> RetryConfig {
 
 /// Build retry config from stream options (mirrors Go's RetryConfigFromOptions).
 pub fn retry_config_from_options(opts: &crate::types::StreamOptions) -> RetryConfig {
-    if opts.retry_config.is_none() && opts.max_retries.is_none() && opts.max_retry_delay_ms.is_none() {
+    if opts.retry_config.is_none()
+        && opts.max_retries.is_none()
+        && opts.max_retry_delay_ms.is_none()
+    {
         return RetryConfig::none();
     }
 
@@ -234,7 +243,8 @@ pub async fn do_with_retry(
                 if attempt >= config.max_retries {
                     return Err(err);
                 }
-                let delay = compute_backoff(attempt, config).min(Duration::from_millis(config.max_retry_delay_ms));
+                let delay = compute_backoff(attempt, config)
+                    .min(Duration::from_millis(config.max_retry_delay_ms));
                 tokio::time::sleep(delay).await;
                 attempt += 1;
                 builder = match retry_builder {
@@ -366,8 +376,13 @@ pub fn is_retryable_assistant_error(message: &crate::types::Message) -> bool {
         return false;
     };
     let haystack = err.to_lowercase();
-    if NON_RETRYABLE_PROVIDER_LIMIT.iter().any(|p| p.matches(&haystack)) {
+    if NON_RETRYABLE_PROVIDER_LIMIT
+        .iter()
+        .any(|p| p.matches(&haystack))
+    {
         return false;
     }
-    RETRYABLE_PROVIDER_ERROR.iter().any(|p| p.matches(&haystack))
+    RETRYABLE_PROVIDER_ERROR
+        .iter()
+        .any(|p| p.matches(&haystack))
 }

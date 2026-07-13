@@ -14,7 +14,11 @@ mod tests {
     use serde_json::json;
 
     fn tool(name: &str) -> Tool {
-        Tool { name: name.into(), description: "t".into(), parameters: json!({"type": "object"}) }
+        Tool {
+            name: name.into(),
+            description: "t".into(),
+            parameters: json!({"type": "object"}),
+        }
     }
 
     #[test]
@@ -42,7 +46,10 @@ mod tests {
     fn handles_custom_tools_that_dont_match_any_cc_tool_names() {
         assert_eq!(to_claude_code_name("my_custom_tool"), "my_custom_tool");
         let tools = vec![tool("my_custom_tool")];
-        assert_eq!(from_claude_code_name("my_custom_tool", &tools), "my_custom_tool");
+        assert_eq!(
+            from_claude_code_name("my_custom_tool", &tools),
+            "my_custom_tool"
+        );
         // An unknown incoming name with no matching context tool passes through.
         assert_eq!(from_claude_code_name("Unknown", &tools), "Unknown");
     }

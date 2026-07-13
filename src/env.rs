@@ -9,7 +9,10 @@ static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyL
     HashMap::from([
         ("github-copilot", &["COPILOT_GITHUB_TOKEN"][..]),
         // ANTHROPIC_OAUTH_TOKEN takes precedence over ANTHROPIC_API_KEY
-        ("anthropic", &["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"][..]),
+        (
+            "anthropic",
+            &["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"][..],
+        ),
         ("ant-ling", &["ANT_LING_API_KEY"][..]),
         ("openai", &["OPENAI_API_KEY"][..]),
         ("azure-openai-responses", &["AZURE_OPENAI_API_KEY"][..]),
@@ -38,9 +41,18 @@ static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyL
         ("cloudflare-workers-ai", &["CLOUDFLARE_API_KEY"][..]),
         ("cloudflare-ai-gateway", &["CLOUDFLARE_API_KEY"][..]),
         ("xiaomi", &["XIAOMI_API_KEY"][..]),
-        ("xiaomi-token-plan-cn", &["XIAOMI_TOKEN_PLAN_CN_API_KEY"][..]),
-        ("xiaomi-token-plan-ams", &["XIAOMI_TOKEN_PLAN_AMS_API_KEY"][..]),
-        ("xiaomi-token-plan-sgp", &["XIAOMI_TOKEN_PLAN_SGP_API_KEY"][..]),
+        (
+            "xiaomi-token-plan-cn",
+            &["XIAOMI_TOKEN_PLAN_CN_API_KEY"][..],
+        ),
+        (
+            "xiaomi-token-plan-ams",
+            &["XIAOMI_TOKEN_PLAN_AMS_API_KEY"][..],
+        ),
+        (
+            "xiaomi-token-plan-sgp",
+            &["XIAOMI_TOKEN_PLAN_SGP_API_KEY"][..],
+        ),
     ])
 });
 
@@ -49,9 +61,10 @@ pub fn get_env_api_key(provider: &str) -> Option<String> {
     if let Some(vars) = ENV_MAP.get(provider) {
         for var in *vars {
             if let Ok(val) = std::env::var(var)
-                && !val.is_empty() {
-                    return Some(val);
-                }
+                && !val.is_empty()
+            {
+                return Some(val);
+            }
         }
         return None;
     }
@@ -74,9 +87,17 @@ pub fn get_env_api_key(provider: &str) -> Option<String> {
     // Generic fallback: PROVIDER_API_KEY
     let upper: String = provider
         .chars()
-        .map(|c| if c == '-' || c == '.' { '_' } else { c.to_ascii_uppercase() })
+        .map(|c| {
+            if c == '-' || c == '.' {
+                '_'
+            } else {
+                c.to_ascii_uppercase()
+            }
+        })
         .collect();
-    std::env::var(format!("{}_API_KEY", upper)).ok().filter(|v| !v.is_empty())
+    std::env::var(format!("{}_API_KEY", upper))
+        .ok()
+        .filter(|v| !v.is_empty())
 }
 
 /// Resolve API key: explicit option > model-level > environment.

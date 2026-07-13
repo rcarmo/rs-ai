@@ -10,32 +10,56 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::responses::stream_responses;
-    use crate::types::{Context, ContentBlock, Message, Model, ModelCost, Role, StreamOptions};
     use crate::events::Event;
+    use crate::provider::responses::stream_responses;
+    use crate::types::{ContentBlock, Context, Message, Model, ModelCost, Role, StreamOptions};
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn model(base_url: &str) -> Model {
         Model {
-            id: "gpt-5-mini".into(), name: "GPT-5 Mini".into(), api: "openai-responses".into(),
-            provider: "openai".into(), base_url: base_url.into(), reasoning: true,
-            thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-            context_window: 400000, max_tokens: 128000, headers: None, api_key: Some("test".into()),
+            id: "gpt-5-mini".into(),
+            name: "GPT-5 Mini".into(),
+            api: "openai-responses".into(),
+            provider: "openai".into(),
+            base_url: base_url.into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 400000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: Some("test".into()),
             compat: Default::default(),
         }
     }
 
     fn ctx() -> Context {
         Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![Message {
-                role: Role::User, content: vec![ContentBlock::Text { text: "hi".into(), text_signature: None }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role: Role::User,
+                content: vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -53,8 +77,13 @@ mod tests {
         ).to_string();
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
         let m = model(&server.uri());
         let c = ctx();
         let opts = StreamOptions::default();
@@ -71,10 +100,18 @@ mod tests {
         let m = message.expect("Done");
         assert_eq!(m.content.len(), 1);
         match &m.content[0] {
-            ContentBlock::ToolCall { name, arguments, .. } => {
+            ContentBlock::ToolCall {
+                name, arguments, ..
+            } => {
                 assert_eq!(name, "edit");
-                assert_eq!(arguments.get("path").and_then(|v| v.as_str()), Some("README.md"));
-                assert_eq!(arguments.get("content").and_then(|v| v.as_str()), Some("updated"));
+                assert_eq!(
+                    arguments.get("path").and_then(|v| v.as_str()),
+                    Some("README.md")
+                );
+                assert_eq!(
+                    arguments.get("content").and_then(|v| v.as_str()),
+                    Some("updated")
+                );
             }
             other => panic!("expected toolCall, got {other:?}"),
         }

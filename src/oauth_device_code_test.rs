@@ -8,9 +8,9 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::oauth::{poll_oauth_device_code_flow, DevicePollOutcome};
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use crate::oauth::{DevicePollOutcome, poll_oauth_device_code_flow};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::Duration;
 
     #[tokio::test(start_paused = true)]
@@ -21,10 +21,20 @@ mod tests {
             let p = p.clone();
             async move {
                 let n = p.fetch_add(1, Ordering::SeqCst) + 1;
-                if n == 1 { DevicePollOutcome::Pending } else { DevicePollOutcome::Complete("token") }
+                if n == 1 {
+                    DevicePollOutcome::Pending
+                } else {
+                    DevicePollOutcome::Complete("token")
+                }
             }
         };
-        let handle = tokio::spawn(poll_oauth_device_code_flow(2, 30, false, poll, std::future::pending::<()>()));
+        let handle = tokio::spawn(poll_oauth_device_code_flow(
+            2,
+            30,
+            false,
+            poll,
+            std::future::pending::<()>(),
+        ));
 
         // Immediate poll runs at t=0.
         tokio::task::yield_now().await;
@@ -33,7 +43,11 @@ mod tests {
         // Nothing before the interval elapses.
         tokio::time::advance(Duration::from_millis(1999)).await;
         tokio::task::yield_now().await;
-        assert_eq!(polls.load(Ordering::SeqCst), 1, "no poll before the 2s interval");
+        assert_eq!(
+            polls.load(Ordering::SeqCst),
+            1,
+            "no poll before the 2s interval"
+        );
 
         // At the interval boundary the second poll runs and completes.
         tokio::time::advance(Duration::from_millis(1)).await;
@@ -45,7 +59,9 @@ mod tests {
     #[tokio::test(start_paused = true)]
     async fn cancels_an_in_flight_wait() {
         let (tx, rx) = tokio::sync::oneshot::channel::<()>();
-        let cancel = async move { let _ = rx.await; };
+        let cancel = async move {
+            let _ = rx.await;
+        };
         let poll = || async { DevicePollOutcome::<&str>::Pending };
         let handle = tokio::spawn(poll_oauth_device_code_flow(5, 30, false, poll, cancel));
 
@@ -68,7 +84,13 @@ mod tests {
     #[tokio::test(start_paused = true)]
     async fn times_out_with_the_default_message() {
         let poll = || async { DevicePollOutcome::<&str>::Pending };
-        let handle = tokio::spawn(poll_oauth_device_code_flow(2, 6, false, poll, std::future::pending::<()>()));
+        let handle = tokio::spawn(poll_oauth_device_code_flow(
+            2,
+            6,
+            false,
+            poll,
+            std::future::pending::<()>(),
+        ));
         tokio::task::yield_now().await;
         tokio::time::advance(Duration::from_secs(7)).await;
         let err = handle.await.unwrap().unwrap_err();
@@ -85,20 +107,38 @@ mod tests {
             let p = p.clone();
             async move {
                 let n = p.fetch_add(1, Ordering::SeqCst) + 1;
-                if n == 1 { DevicePollOutcome::<&str>::SlowDown(None) } else { DevicePollOutcome::<&str>::Pending }
+                if n == 1 {
+                    DevicePollOutcome::<&str>::SlowDown(None)
+                } else {
+                    DevicePollOutcome::<&str>::Pending
+                }
             }
         };
-        let handle = tokio::spawn(poll_oauth_device_code_flow(2, 20, false, poll, std::future::pending::<()>()));
+        let handle = tokio::spawn(poll_oauth_device_code_flow(
+            2,
+            20,
+            false,
+            poll,
+            std::future::pending::<()>(),
+        ));
         tokio::task::yield_now().await;
         assert_eq!(polls.load(Ordering::SeqCst), 1, "polls immediately");
 
         // Interval should now be 7s, not the original 2s.
         tokio::time::advance(Duration::from_millis(6999)).await;
         tokio::task::yield_now().await;
-        assert_eq!(polls.load(Ordering::SeqCst), 1, "no second poll before the 7s slow-down interval");
+        assert_eq!(
+            polls.load(Ordering::SeqCst),
+            1,
+            "no second poll before the 7s slow-down interval"
+        );
         tokio::time::advance(Duration::from_millis(1)).await;
         tokio::task::yield_now().await;
-        assert_eq!(polls.load(Ordering::SeqCst), 2, "second poll after the increased interval");
+        assert_eq!(
+            polls.load(Ordering::SeqCst),
+            2,
+            "second poll after the increased interval"
+        );
 
         // Run out the clock and confirm the slow-down timeout message.
         tokio::time::advance(Duration::from_secs(20)).await;
@@ -123,12 +163,22 @@ mod tests {
                 DevicePollOutcome::Complete("token")
             }
         };
-        let handle = tokio::spawn(poll_oauth_device_code_flow(2, 30, true, poll, std::future::pending::<()>()));
+        let handle = tokio::spawn(poll_oauth_device_code_flow(
+            2,
+            30,
+            true,
+            poll,
+            std::future::pending::<()>(),
+        ));
 
         tokio::task::yield_now().await;
         tokio::time::advance(Duration::from_millis(1999)).await;
         tokio::task::yield_now().await;
-        assert_eq!(polls.load(Ordering::SeqCst), 0, "no poll before the first-interval wait elapses");
+        assert_eq!(
+            polls.load(Ordering::SeqCst),
+            0,
+            "no poll before the first-interval wait elapses"
+        );
 
         tokio::time::advance(Duration::from_millis(1)).await;
         let result = handle.await.unwrap();
@@ -144,10 +194,20 @@ mod tests {
             let p = p.clone();
             async move {
                 let n = p.fetch_add(1, Ordering::SeqCst) + 1;
-                if n == 1 { DevicePollOutcome::<&str>::SlowDown(None) } else { DevicePollOutcome::Complete("token") }
+                if n == 1 {
+                    DevicePollOutcome::<&str>::SlowDown(None)
+                } else {
+                    DevicePollOutcome::Complete("token")
+                }
             }
         };
-        let handle = tokio::spawn(poll_oauth_device_code_flow(2, 900, false, poll, std::future::pending::<()>()));
+        let handle = tokio::spawn(poll_oauth_device_code_flow(
+            2,
+            900,
+            false,
+            poll,
+            std::future::pending::<()>(),
+        ));
         tokio::task::yield_now().await;
         assert_eq!(polls.load(Ordering::SeqCst), 1, "polls immediately");
 
@@ -158,7 +218,11 @@ mod tests {
         tokio::time::advance(Duration::from_millis(1)).await;
         let result = handle.await.unwrap();
         assert_eq!(result.unwrap(), "token");
-        assert_eq!(polls.load(Ordering::SeqCst), 2, "second poll after the +5s interval");
+        assert_eq!(
+            polls.load(Ordering::SeqCst),
+            2,
+            "second poll after the +5s interval"
+        );
     }
 
     #[tokio::test(start_paused = true)]
@@ -169,10 +233,20 @@ mod tests {
             let p = p.clone();
             async move {
                 let n = p.fetch_add(1, Ordering::SeqCst) + 1;
-                if n == 1 { DevicePollOutcome::<&str>::SlowDown(Some(30)) } else { DevicePollOutcome::Complete("token") }
+                if n == 1 {
+                    DevicePollOutcome::<&str>::SlowDown(Some(30))
+                } else {
+                    DevicePollOutcome::Complete("token")
+                }
             }
         };
-        let handle = tokio::spawn(poll_oauth_device_code_flow(2, 900, false, poll, std::future::pending::<()>()));
+        let handle = tokio::spawn(poll_oauth_device_code_flow(
+            2,
+            900,
+            false,
+            poll,
+            std::future::pending::<()>(),
+        ));
         tokio::task::yield_now().await;
         assert_eq!(polls.load(Ordering::SeqCst), 1, "polls immediately");
 
@@ -183,6 +257,10 @@ mod tests {
         tokio::time::advance(Duration::from_millis(1)).await;
         let result = handle.await.unwrap();
         assert_eq!(result.unwrap(), "token");
-        assert_eq!(polls.load(Ordering::SeqCst), 2, "second poll after the server-provided 30s interval");
+        assert_eq!(
+            polls.load(Ordering::SeqCst),
+            2,
+            "second poll after the server-provided 30s interval"
+        );
     }
 }

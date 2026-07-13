@@ -7,14 +7,14 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::events::Event;
     use crate::provider::anthropic::stream_anthropic;
     use crate::registry::get_model;
-    use crate::types::{Context, ContentBlock, Message, Model, StreamOptions, Tool};
-    use crate::events::Event;
+    use crate::types::{ContentBlock, Context, Message, Model, StreamOptions, Tool};
     use serde_json::json;
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn anthropic(id: &str, base_url: &str) -> Model {
         let mut m = get_model("anthropic", id).unwrap_or_else(|| panic!("catalog anthropic/{id}"));
@@ -25,13 +25,28 @@ mod tests {
 
     fn user_ctx(text: &str, tools: Vec<Tool>) -> Context {
         Context {
-            system_prompt: None, tools,
+            system_prompt: None,
+            tools,
             messages: vec![Message {
-                role: Role::User, content: vec![ContentBlock::Text { text: text.into(), text_signature: None }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role: Role::User,
+                content: vec![ContentBlock::Text {
+                    text: text.into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -40,16 +55,31 @@ mod tests {
     async fn run(model: Model, ctx: Context, body: String) -> crate::types::Message {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
         let model = anthropic(&model.id, &server.uri());
         let opts = StreamOptions::default();
         let mut stream = stream_anthropic(&model, &ctx, &opts);
         let mut out = None;
         while let Some(evt) = stream.next().await {
             match evt {
-                Event::Done { reason, mut message } => { message.stop_reason = Some(reason); out = Some(message); }
-                Event::Error { reason, message: Some(mut m), .. } => {
+                Event::Done {
+                    reason,
+                    mut message,
+                } => {
+                    message.stop_reason = Some(reason);
+                    out = Some(message);
+                }
+                Event::Error {
+                    reason,
+                    message: Some(mut m),
+                    ..
+                } => {
                     m.stop_reason = Some(reason);
                     out = Some(m);
                 }
@@ -76,16 +106,29 @@ mod tests {
             delta = malformed_delta,
         );
         let tools = vec![Tool {
-            name: "edit".into(), description: "Edit a file.".into(),
+            name: "edit".into(),
+            description: "Edit a file.".into(),
             parameters: json!({"type": "object", "properties": {"path": {"type": "string"}, "text": {"type": "string"}}, "required": ["path", "text"]}),
         }];
-        let m = run(anthropic("claude-haiku-4-5", "http://x"), user_ctx("Use the edit tool.", tools), body).await;
-        assert!(matches!(m.stop_reason, Some(crate::types::StopReason::ToolUse)));
+        let m = run(
+            anthropic("claude-haiku-4-5", "http://x"),
+            user_ctx("Use the edit tool.", tools),
+            body,
+        )
+        .await;
+        assert!(matches!(
+            m.stop_reason,
+            Some(crate::types::StopReason::ToolUse)
+        ));
         assert!(m.error_message.is_none());
-        let tc = m.content.iter().find_map(|b| match b {
-            ContentBlock::ToolCall { arguments, .. } => Some(arguments),
-            _ => None,
-        }).expect("toolCall");
+        let tc = m
+            .content
+            .iter()
+            .find_map(|b| match b {
+                ContentBlock::ToolCall { arguments, .. } => Some(arguments),
+                _ => None,
+            })
+            .expect("toolCall");
         assert_eq!(tc.get("path").and_then(|v| v.as_str()), Some("A\\H"));
         assert_eq!(tc.get("text").and_then(|v| v.as_str()), Some("col1\tcol2"));
     }
@@ -101,8 +144,16 @@ mod tests {
             ),
             e = explanation,
         );
-        let m = run(anthropic("claude-fable-5", "http://x"), user_ctx("blocked request", Vec::new()), body).await;
-        assert!(matches!(m.stop_reason, Some(crate::types::StopReason::Error)));
+        let m = run(
+            anthropic("claude-fable-5", "http://x"),
+            user_ctx("blocked request", Vec::new()),
+            body,
+        )
+        .await;
+        assert!(matches!(
+            m.stop_reason,
+            Some(crate::types::StopReason::Error)
+        ));
         assert_eq!(m.error_message.as_deref(), Some(explanation));
     }
 
@@ -118,8 +169,16 @@ mod tests {
             "event: done\ndata: [DONE]\n\n",
             "event: proxy.stats\ndata: not json\n\n",
         ).to_string();
-        let m = run(anthropic("claude-haiku-4-5", "http://x"), user_ctx("Say hello.", Vec::new()), body).await;
-        assert!(matches!(m.stop_reason, Some(crate::types::StopReason::Stop)));
+        let m = run(
+            anthropic("claude-haiku-4-5", "http://x"),
+            user_ctx("Say hello.", Vec::new()),
+            body,
+        )
+        .await;
+        assert!(matches!(
+            m.stop_reason,
+            Some(crate::types::StopReason::Stop)
+        ));
         assert!(m.error_message.is_none());
         assert_eq!(m.content.len(), 1);
         assert!(matches!(&m.content[0], ContentBlock::Text { text, .. } if text == "Hello"));
@@ -132,7 +191,12 @@ mod tests {
             "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"input_tokens\":12,\"output_tokens\":40,\"output_tokens_details\":{\"thinking_tokens\":25}}}\n\n",
             "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
         ).to_string();
-        let m = run(anthropic("claude-haiku-4-5", "http://x"), user_ctx("Think.", Vec::new()), body).await;
+        let m = run(
+            anthropic("claude-haiku-4-5", "http://x"),
+            user_ctx("Think.", Vec::new()),
+            body,
+        )
+        .await;
         assert_eq!(m.usage.as_ref().and_then(|u| u.reasoning), Some(25));
     }
 }

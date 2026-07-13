@@ -2,92 +2,155 @@
 
 use std::sync::Arc;
 
+use crate::events::Event;
 use crate::registry::{self, ApiProvider};
 use crate::types::{Context, Model, StreamOptions};
-use crate::events::Event;
 use tokio_stream::Stream;
 
-pub mod openai;
 pub mod anthropic;
-pub mod google;
-pub mod mistral;
-pub mod responses;
-pub mod faux;
 pub mod bedrock;
 pub mod codex;
+pub mod faux;
+pub mod google;
+pub mod mistral;
+pub mod openai;
+pub mod responses;
 
 struct OpenAIProvider;
 impl ApiProvider for OpenAIProvider {
-    fn api(&self) -> &str { "openai-completions" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn api(&self) -> &str {
+        "openai-completions"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         openai::stream_openai(model, context, opts)
     }
 }
 
 struct OpenAIResponsesProvider;
 impl ApiProvider for OpenAIResponsesProvider {
-    fn api(&self) -> &str { "openai-responses" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn api(&self) -> &str {
+        "openai-responses"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         responses::stream_responses(model, context, opts)
     }
 }
 
 struct AzureOpenAIResponsesProvider;
 impl ApiProvider for AzureOpenAIResponsesProvider {
-    fn api(&self) -> &str { "azure-openai-responses" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn api(&self) -> &str {
+        "azure-openai-responses"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         responses::stream_azure_responses(model, context, opts)
     }
 }
 
 struct AnthropicProvider;
 impl ApiProvider for AnthropicProvider {
-    fn api(&self) -> &str { "anthropic-messages" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn api(&self) -> &str {
+        "anthropic-messages"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         anthropic::stream_anthropic(model, context, opts)
     }
 }
 
 struct GoogleProvider;
 impl ApiProvider for GoogleProvider {
-    fn api(&self) -> &str { "google-generative-ai" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn api(&self) -> &str {
+        "google-generative-ai"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         google::stream_google(model, context, opts)
     }
 }
 
 struct GoogleVertexProvider;
 impl ApiProvider for GoogleVertexProvider {
-    fn api(&self) -> &str { "google-vertex" }
+    fn api(&self) -> &str {
+        "google-vertex"
+    }
     // Vertex AI uses the same @google/genai wire format as Gemini, so the shared
     // `stream_google` decoder applies. The request path differs (project/location-scoped
     // endpoint, `{location}` host substitution); `build_stream_url` handles that and
     // resolves project/location from StreamOptions or GOOGLE_CLOUD_* env vars.
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         google::stream_google(model, context, opts)
     }
 }
 
 struct MistralProvider;
 impl ApiProvider for MistralProvider {
-    fn api(&self) -> &str { "mistral-conversations" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn api(&self) -> &str {
+        "mistral-conversations"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         mistral::stream_mistral(model, context, opts)
     }
 }
 
 struct BedrockProvider;
 impl ApiProvider for BedrockProvider {
-    fn api(&self) -> &str { "bedrock-converse-stream" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn api(&self) -> &str {
+        "bedrock-converse-stream"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         bedrock::stream_bedrock(model, context, opts)
     }
 }
 
 struct CodexProvider;
 impl ApiProvider for CodexProvider {
-    fn api(&self) -> &str { "openai-codex-responses" }
-    fn stream<'a>(&self, model: &'a Model, context: &'a Context, opts: &'a StreamOptions) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+    fn api(&self) -> &str {
+        "openai-codex-responses"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
         codex::stream_codex(model, context, opts)
     }
 }

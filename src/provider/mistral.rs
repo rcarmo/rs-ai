@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use futures::{stream, StreamExt};
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
-use serde_json::{json, Value};
+use futures::{StreamExt, stream};
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
+use serde_json::{Value, json};
 
 use crate::env::resolve_api_key;
 use crate::events::Event;
@@ -21,9 +21,10 @@ pub fn stream_mistral<'a>(
     if api_key.is_none() {
         let err = Event::Error {
             reason: StopReason::Error,
-            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                format!("No API key for provider: {}", model.provider),
-            )),
+            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                "No API key for provider: {}",
+                model.provider
+            ))),
             message: None,
         };
         return Box::pin(stream::once(async { err }));
@@ -35,7 +36,11 @@ pub fn stream_mistral<'a>(
         match hook(payload.clone(), model) {
             Ok(next) => payload = next,
             Err(err) => {
-                let err = Event::Error { reason: StopReason::Error, error: Arc::from(err), message: None };
+                let err = Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(err),
+                    message: None,
+                };
                 return Box::pin(stream::once(async { err }));
             }
         }
@@ -44,10 +49,16 @@ pub fn stream_mistral<'a>(
 
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+    headers.insert(
+        AUTHORIZATION,
+        HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+    );
     headers.insert("Accept", HeaderValue::from_static("text/event-stream"));
     // Merge model-level and option headers, then add session affinity (mirrors upstream).
-    for source in [model.headers.as_ref(), opts.headers.as_ref()].into_iter().flatten() {
+    for source in [model.headers.as_ref(), opts.headers.as_ref()]
+        .into_iter()
+        .flatten()
+    {
         for (k, v) in source {
             if let (Ok(name), Ok(val)) = (
                 reqwest::header::HeaderName::from_bytes(k.as_bytes()),
@@ -60,7 +71,8 @@ pub fn stream_mistral<'a>(
     if mistral_should_use_prompt_caching(opts)
         && !headers.contains_key("x-affinity")
         && let Some(session_id) = opts.session_id.as_deref()
-        && let Ok(val) = HeaderValue::from_str(session_id) {
+        && let Ok(val) = HeaderValue::from_str(session_id)
+    {
         headers.insert("x-affinity", val);
     }
 
@@ -346,8 +358,16 @@ fn derive_mistral_tool_call_id(id: &str, attempt: u32) -> String {
     if attempt == 0 && normalized.len() == MISTRAL_TOOL_CALL_ID_LENGTH {
         return normalized;
     }
-    let seed_base = if normalized.is_empty() { id.to_string() } else { normalized };
-    let seed = if attempt == 0 { seed_base } else { format!("{seed_base}:{attempt}") };
+    let seed_base = if normalized.is_empty() {
+        id.to_string()
+    } else {
+        normalized
+    };
+    let seed = if attempt == 0 {
+        seed_base
+    } else {
+        format!("{seed_base}:{attempt}")
+    };
     crate::utils::short_hash(&seed)
         .chars()
         .filter(|c| c.is_ascii_alphanumeric())
@@ -383,7 +403,11 @@ impl MistralIdNormalizer {
     }
 }
 
-pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &StreamOptions) -> Value {
+pub(crate) fn build_mistral_payload(
+    model: &Model,
+    context: &Context,
+    opts: &StreamOptions,
+) -> Value {
     let mut messages = Vec::new();
     let mut id_normalizer = MistralIdNormalizer::default();
 
@@ -397,10 +421,14 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
     for msg in &transformed_messages {
         match msg.role {
             Role::User => {
-                let text_only: Vec<&str> = msg.content.iter().filter_map(|b| match b {
-                    ContentBlock::Text { text, .. } => Some(text.as_str()),
-                    _ => None,
-                }).collect();
+                let text_only: Vec<&str> = msg
+                    .content
+                    .iter()
+                    .filter_map(|b| match b {
+                        ContentBlock::Text { text, .. } => Some(text.as_str()),
+                        _ => None,
+                    })
+                    .collect();
                 if msg.content.len() == 1 && text_only.len() == 1 {
                     messages.push(json!({"role": "user", "content": text_only[0]}));
                 } else {
@@ -442,7 +470,9 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
                     })),
                     _ => None,
                 }).collect();
-                if content_parts.is_empty() && tool_calls.is_empty() { continue; }
+                if content_parts.is_empty() && tool_calls.is_empty() {
+                    continue;
+                }
                 let mut m = json!({"role": "assistant"});
                 if !content_parts.is_empty() {
                     m["content"] = json!(content_parts);
@@ -453,12 +483,21 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
                 messages.push(m);
             }
             Role::ToolResult => {
-                let text_result = msg.content.iter().filter_map(|b| match b {
-                    ContentBlock::Text { text, .. } => Some(text.clone()),
-                    _ => None,
-                }).collect::<Vec<_>>().join("\n");
-                let has_images = msg.content.iter().any(|b| matches!(b, ContentBlock::Image { .. }));
-                let tool_text = build_tool_result_text(&text_result, has_images, supports_images, msg.is_error);
+                let text_result = msg
+                    .content
+                    .iter()
+                    .filter_map(|b| match b {
+                        ContentBlock::Text { text, .. } => Some(text.clone()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let has_images = msg
+                    .content
+                    .iter()
+                    .any(|b| matches!(b, ContentBlock::Image { .. }));
+                let tool_text =
+                    build_tool_result_text(&text_result, has_images, supports_images, msg.is_error);
                 // Content is an array: the text part plus any image parts (vision models).
                 let mut content_parts = vec![json!({"type": "text", "text": tool_text})];
                 if supports_images {
@@ -496,7 +535,9 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
     // is `maxTokens !== undefined`, and base.maxTokens is always defined, so the field
     // is always emitted (including a clamped 0).
     let max_tokens_value = crate::simple_options::clamp_max_tokens_to_context(
-        model, context, opts.max_tokens.unwrap_or(model.max_tokens),
+        model,
+        context,
+        opts.max_tokens.unwrap_or(model.max_tokens),
     );
     payload["max_tokens"] = json!(max_tokens_value);
     if let Some(temp) = opts.temperature {
@@ -523,13 +564,20 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
     // The level is clamped first; if it clamps to off, reasoning is omitted entirely
     // (mirrors clampedReasoning === "off" ? undefined).
     if model.reasoning
-        && let Some(clamped) = opts.reasoning.as_ref()
-            .and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l)) {
-        let uses_reasoning_effort = matches!(model.id.as_str(),
-            "mistral-small-2603" | "mistral-small-latest" | "mistral-medium-3.5");
+        && let Some(clamped) = opts
+            .reasoning
+            .as_ref()
+            .and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l))
+    {
+        let uses_reasoning_effort = matches!(
+            model.id.as_str(),
+            "mistral-small-2603" | "mistral-small-latest" | "mistral-medium-3.5"
+        );
         if uses_reasoning_effort {
             let key = format!("{:?}", clamped).to_lowercase();
-            let effort = model.thinking_level_map.as_ref()
+            let effort = model
+                .thinking_level_map
+                .as_ref()
                 .and_then(|m| m.get(&key))
                 .and_then(|v| v.clone())
                 .unwrap_or_else(|| "high".to_string());
@@ -542,7 +590,8 @@ pub(crate) fn build_mistral_payload(model: &Model, context: &Context, opts: &Str
     // Mistral prompt caching: send a prompt_cache_key when caching is enabled
     // (mirrors upstream `if (shouldUsePromptCaching) payload.promptCacheKey = sessionId`).
     if mistral_should_use_prompt_caching(opts)
-        && let Some(sid) = opts.session_id.as_deref() {
+        && let Some(sid) = opts.session_id.as_deref()
+    {
         payload["prompt_cache_key"] = json!(sid);
     }
 
@@ -560,10 +609,24 @@ fn mistral_should_use_prompt_caching(opts: &StreamOptions) -> bool {
 /// field-name variants upstream getMistralCachedPromptTokens accepts, clamped to
 /// [0, prompt_tokens].
 fn mistral_cached_prompt_tokens(usage: &Value, prompt_tokens: u32) -> u32 {
-    let raw = usage.pointer("/promptTokensDetails/cachedTokens").and_then(|v| v.as_u64())
-        .or_else(|| usage.pointer("/prompt_tokens_details/cached_tokens").and_then(|v| v.as_u64()))
-        .or_else(|| usage.pointer("/promptTokenDetails/cachedTokens").and_then(|v| v.as_u64()))
-        .or_else(|| usage.pointer("/prompt_token_details/cached_tokens").and_then(|v| v.as_u64()))
+    let raw = usage
+        .pointer("/promptTokensDetails/cachedTokens")
+        .and_then(|v| v.as_u64())
+        .or_else(|| {
+            usage
+                .pointer("/prompt_tokens_details/cached_tokens")
+                .and_then(|v| v.as_u64())
+        })
+        .or_else(|| {
+            usage
+                .pointer("/promptTokenDetails/cachedTokens")
+                .and_then(|v| v.as_u64())
+        })
+        .or_else(|| {
+            usage
+                .pointer("/prompt_token_details/cached_tokens")
+                .and_then(|v| v.as_u64())
+        })
         .or_else(|| usage.get("numCachedTokens").and_then(|v| v.as_u64()))
         .or_else(|| usage.get("num_cached_tokens").and_then(|v| v.as_u64()))
         .unwrap_or(0) as u32;
@@ -573,22 +636,34 @@ fn mistral_cached_prompt_tokens(usage: &Value, prompt_tokens: u32) -> u32 {
 /// Parse Mistral streaming usage, accounting for cached prompt tokens (mirrors the
 /// 0.79.8 consumeChatStream usage handling).
 fn mistral_parse_usage(usage: &Value, model: &Model) -> crate::types::Usage {
-    let prompt = usage.get("prompt_tokens").and_then(|v| v.as_u64())
+    let prompt = usage
+        .get("prompt_tokens")
+        .and_then(|v| v.as_u64())
         .or_else(|| usage.get("promptTokens").and_then(|v| v.as_u64()))
         .unwrap_or(0) as u32;
-    let completion = usage.get("completion_tokens").and_then(|v| v.as_u64())
+    let completion = usage
+        .get("completion_tokens")
+        .and_then(|v| v.as_u64())
         .or_else(|| usage.get("completionTokens").and_then(|v| v.as_u64()))
         .unwrap_or(0) as u32;
     let cached = mistral_cached_prompt_tokens(usage, prompt);
     let input = prompt.saturating_sub(cached);
-    let total = usage.get("total_tokens").and_then(|v| v.as_u64())
+    let total = usage
+        .get("total_tokens")
+        .and_then(|v| v.as_u64())
         .or_else(|| usage.get("totalTokens").and_then(|v| v.as_u64()))
         .map(|v| v as u32)
         .filter(|t| *t != 0)
         .unwrap_or(input + completion + cached);
     let mut u = crate::types::Usage {
-        input, output: completion, cache_read: cached, cache_write: 0,
-        cache_write_1h: None, reasoning: None, total_tokens: total, cost: Default::default(),
+        input,
+        output: completion,
+        cache_read: cached,
+        cache_write: 0,
+        cache_write_1h: None,
+        reasoning: None,
+        total_tokens: total,
+        cost: Default::default(),
     };
     u.cost = crate::simple_options::calculate_cost(model, &u);
     u
@@ -606,7 +681,12 @@ fn map_mistral_finish_reason(reason: &str) -> (StopReason, Option<String>) {
 }
 
 /// Build the text body for a Mistral tool-result message (mirrors upstream buildToolResultText).
-fn build_tool_result_text(text: &str, has_images: bool, supports_images: bool, is_error: bool) -> String {
+fn build_tool_result_text(
+    text: &str,
+    has_images: bool,
+    supports_images: bool,
+    is_error: bool,
+) -> String {
     let trimmed = text.trim();
     let error_prefix = if is_error { "[tool error] " } else { "" };
     if !trimmed.is_empty() {
@@ -619,7 +699,11 @@ fn build_tool_result_text(text: &str, has_images: bool, supports_images: bool, i
     }
     if has_images {
         if supports_images {
-            return if is_error { "[tool error] (see attached image)".to_string() } else { "(see attached image)".to_string() };
+            return if is_error {
+                "[tool error] (see attached image)".to_string()
+            } else {
+                "(see attached image)".to_string()
+            };
         }
         return if is_error {
             "[tool error] (image omitted: model does not support images)".to_string()
@@ -627,13 +711,17 @@ fn build_tool_result_text(text: &str, has_images: bool, supports_images: bool, i
             "(image omitted: model does not support images)".to_string()
         };
     }
-    if is_error { "[tool error] (no tool output)".to_string() } else { "(no tool output)".to_string() }
+    if is_error {
+        "[tool error] (no tool output)".to_string()
+    } else {
+        "(no tool output)".to_string()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::map_mistral_finish_reason;
-    use super::{derive_mistral_tool_call_id, MistralIdNormalizer, MISTRAL_TOOL_CALL_ID_LENGTH};
+    use super::{MISTRAL_TOOL_CALL_ID_LENGTH, MistralIdNormalizer, derive_mistral_tool_call_id};
     use crate::types::StopReason;
 
     #[test]
@@ -641,10 +729,17 @@ mod tests {
         // A non-conforming id must be hashed to exactly 9 alphanumeric chars
         // (upstream shortHash yields >=12 base-36 chars, sliced to 9).
         let id = derive_mistral_tool_call_id("call_some-long+weird/id==", 0);
-        assert_eq!(id.len(), MISTRAL_TOOL_CALL_ID_LENGTH, "derived id must be 9 chars: {id}");
+        assert_eq!(
+            id.len(),
+            MISTRAL_TOOL_CALL_ID_LENGTH,
+            "derived id must be 9 chars: {id}"
+        );
         assert!(id.chars().all(|c| c.is_ascii_alphanumeric()));
         // Deterministic.
-        assert_eq!(id, derive_mistral_tool_call_id("call_some-long+weird/id==", 0));
+        assert_eq!(
+            id,
+            derive_mistral_tool_call_id("call_some-long+weird/id==", 0)
+        );
     }
 
     #[test]
@@ -660,12 +755,30 @@ mod tests {
 
     #[test]
     fn test_map_mistral_finish_reason() {
-        assert!(matches!(map_mistral_finish_reason("stop").0, StopReason::Stop));
-        assert!(matches!(map_mistral_finish_reason("length").0, StopReason::Length));
-        assert!(matches!(map_mistral_finish_reason("model_length").0, StopReason::Length));
-        assert!(matches!(map_mistral_finish_reason("tool_calls").0, StopReason::ToolUse));
-        assert!(matches!(map_mistral_finish_reason("error").0, StopReason::Error));
+        assert!(matches!(
+            map_mistral_finish_reason("stop").0,
+            StopReason::Stop
+        ));
+        assert!(matches!(
+            map_mistral_finish_reason("length").0,
+            StopReason::Length
+        ));
+        assert!(matches!(
+            map_mistral_finish_reason("model_length").0,
+            StopReason::Length
+        ));
+        assert!(matches!(
+            map_mistral_finish_reason("tool_calls").0,
+            StopReason::ToolUse
+        ));
+        assert!(matches!(
+            map_mistral_finish_reason("error").0,
+            StopReason::Error
+        ));
         // Unknown reasons fall back to Stop (not Error), unlike the OpenAI mapper.
-        assert!(matches!(map_mistral_finish_reason("weird").0, StopReason::Stop));
+        assert!(matches!(
+            map_mistral_finish_reason("weird").0,
+            StopReason::Stop
+        ));
     }
 }

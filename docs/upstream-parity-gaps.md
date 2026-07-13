@@ -278,6 +278,13 @@ the credential-available providers above).
 >
 > Running totals after 0.80.6: **PORTED 48, SIMULATED-FIXTURE 9**. Denominator **94**.
 > **756 tests ×3, 0 failures, 0 clippy warnings.**
+>
+> **2026-07-13 redirect re-audit (rs-ai only)** — Verified `/workspace/projects/rs-ai`
+> against upstream package commit `2b3fda9` after the auditor hard redirect. The
+> v0.80.6 ledger above is in rs-ai, the Rust catalog/test dispositions remain
+> unchanged, and the required Rust gate was rerun after `cargo fmt`: `cargo build`,
+> `cargo test` (756 + doctest), and `cargo clippy --all-targets -- -D warnings`
+> all pass. No go-ai files were touched in this audit.
 
 _Total **87** upstream test files (0.80.2 snapshot; see 0.80.3 update above → 90). **Final classification (Rui's ruling: "we test with what we have. No keys, no tests" — no record-replay/mock harness, no skip-only wrappers, no fabrication):**_
 

@@ -3,8 +3,8 @@
 use std::sync::Arc;
 
 use futures::stream::{self, StreamExt};
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
-use serde_json::{json, Value};
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
+use serde_json::{Value, json};
 
 use crate::compat::detect_compat;
 use crate::env::client_api_key;
@@ -22,9 +22,10 @@ pub fn stream_openai<'a>(
     if api_key.is_none() {
         let err = Event::Error {
             reason: StopReason::Error,
-            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                format!("No API key for provider: {}", model.provider),
-            )),
+            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                "No API key for provider: {}",
+                model.provider
+            ))),
             message: None,
         };
         return Box::pin(stream::once(async { err }));
@@ -436,21 +437,36 @@ fn assemble_text_thinking(
     thinking_first: bool,
 ) {
     let needs_thinking = !thinking.is_empty()
-        && !content.iter().any(|b| matches!(b, ContentBlock::Thinking { .. }));
+        && !content
+            .iter()
+            .any(|b| matches!(b, ContentBlock::Thinking { .. }));
     let needs_text = !text.is_empty()
-        && !content.iter().any(|b| matches!(b, ContentBlock::Text { .. }));
+        && !content
+            .iter()
+            .any(|b| matches!(b, ContentBlock::Text { .. }));
     let thinking_block = || ContentBlock::Thinking {
         thinking: thinking.to_string(),
         thinking_signature: sig.clone(),
         redacted: false,
     };
-    let text_block = || ContentBlock::Text { text: text.to_string(), text_signature: None };
+    let text_block = || ContentBlock::Text {
+        text: text.to_string(),
+        text_signature: None,
+    };
     if thinking_first {
-        if needs_thinking { content.push(thinking_block()); }
-        if needs_text { content.push(text_block()); }
+        if needs_thinking {
+            content.push(thinking_block());
+        }
+        if needs_text {
+            content.push(text_block());
+        }
     } else {
-        if needs_text { content.push(text_block()); }
-        if needs_thinking { content.push(thinking_block()); }
+        if needs_text {
+            content.push(text_block());
+        }
+        if needs_thinking {
+            content.push(thinking_block());
+        }
     }
 }
 
@@ -475,9 +491,15 @@ pub(crate) fn build_openai_request_parts(
     headers.insert("Accept", HeaderValue::from_static("text/event-stream"));
 
     if model.provider == "cloudflare-ai-gateway" {
-        headers.insert("cf-aig-authorization", HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+        headers.insert(
+            "cf-aig-authorization",
+            HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+        );
     } else {
-        headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+        );
     }
 
     // GitHub Copilot dynamic headers (mirrors upstream buildCopilotDynamicHeaders)
@@ -491,15 +513,17 @@ pub(crate) fn build_openai_request_parts(
     // cleared when caching is off (upstream cacheSessionId = retention==="none" ?
     // undefined : sessionId), so these headers are omitted; skip empty session ids.
     let affinity_caching_on =
-        crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref()) != crate::types::CacheRetention::None;
+        crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref())
+            != crate::types::CacheRetention::None;
     if affinity_caching_on
         && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
         && compat.supports_session_affinity_headers == Some(true)
-            && let Ok(val) = HeaderValue::from_str(session_id) {
-                headers.insert("session_id", val.clone());
-                headers.insert("x-client-request-id", val.clone());
-                headers.insert("x-session-affinity", val);
-            }
+        && let Ok(val) = HeaderValue::from_str(session_id)
+    {
+        headers.insert("session_id", val.clone());
+        headers.insert("x-client-request-id", val.clone());
+        headers.insert("x-session-affinity", val);
+    }
 
     // Add model-level headers
     if let Some(ref model_headers) = model.headers {
@@ -558,8 +582,11 @@ pub(crate) fn build_payload(
         // insert a synthetic assistant message to bridge (mirrors upstream).
         if compat.requires_assistant_after_tool_result == Some(true)
             && last_role == Some(Role::ToolResult)
-            && msg.role == Role::User {
-            messages.push(json!({"role": "assistant", "content": "I have processed the tool results."}));
+            && msg.role == Role::User
+        {
+            messages.push(
+                json!({"role": "assistant", "content": "I have processed the tool results."}),
+            );
         }
 
         // Tool results: emit a `tool` message for each consecutive result, then a
@@ -568,13 +595,22 @@ pub(crate) fn build_payload(
         if msg.role == Role::ToolResult {
             let mut image_blocks: Vec<Value> = Vec::new();
             let mut j = idx;
-            while j < transformed_messages.len() && transformed_messages[j].role == Role::ToolResult {
+            while j < transformed_messages.len() && transformed_messages[j].role == Role::ToolResult
+            {
                 let tr = &transformed_messages[j];
-                let text_result = tr.content.iter().filter_map(|b| match b {
-                    ContentBlock::Text { text, .. } => Some(text.as_str()),
-                    _ => None,
-                }).collect::<Vec<_>>().join("\n");
-                let has_images = tr.content.iter().any(|b| matches!(b, ContentBlock::Image { .. }));
+                let text_result = tr
+                    .content
+                    .iter()
+                    .filter_map(|b| match b {
+                        ContentBlock::Text { text, .. } => Some(text.as_str()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let has_images = tr
+                    .content
+                    .iter()
+                    .any(|b| matches!(b, ContentBlock::Image { .. }));
                 let content = if !text_result.is_empty() {
                     text_result
                 } else if has_images {
@@ -590,9 +626,10 @@ pub(crate) fn build_payload(
                         .map(|id| normalize_tool_call_id(id, &model.provider)).unwrap_or_default(),
                 });
                 if compat.requires_tool_result_name == Some(true)
-                    && let Some(ref name) = tr.tool_name {
-                        tm["name"] = json!(name);
-                    }
+                    && let Some(ref name) = tr.tool_name
+                {
+                    tm["name"] = json!(name);
+                }
                 messages.push(tm);
                 if has_images && model.input.iter().any(|i| i == "image") {
                     for b in &tr.content {
@@ -611,7 +648,8 @@ pub(crate) fn build_payload(
                 if compat.requires_assistant_after_tool_result == Some(true) {
                     messages.push(json!({"role": "assistant", "content": "I have processed the tool results."}));
                 }
-                let mut content = vec![json!({"type": "text", "text": "Attached image(s) from tool result:"})];
+                let mut content =
+                    vec![json!({"type": "text", "text": "Attached image(s) from tool result:"})];
                 content.extend(image_blocks);
                 messages.push(json!({"role": "user", "content": content}));
                 last_role = Some(Role::User);
@@ -630,10 +668,14 @@ pub(crate) fn build_payload(
         // Assistant text parts mirror upstream `assistantTextParts`: whitespace-only
         // text blocks are filtered out (block.text.trim().length > 0) before joining
         // or spreading. Used only by the assistant branch below.
-        let text_blocks: Vec<String> = msg.content.iter().filter_map(|b| match b {
-            ContentBlock::Text { text, .. } if !text.trim().is_empty() => Some(text.clone()),
-            _ => None,
-        }).collect();
+        let text_blocks: Vec<String> = msg
+            .content
+            .iter()
+            .filter_map(|b| match b {
+                ContentBlock::Text { text, .. } if !text.trim().is_empty() => Some(text.clone()),
+                _ => None,
+            })
+            .collect();
         let tool_call_blocks: Vec<Value> = msg.content.iter().filter_map(|b| match b {
             ContentBlock::ToolCall { id, name, arguments, .. } => Some(json!({
                 "id": normalize_tool_call_id(id, &model.provider),
@@ -648,17 +690,33 @@ pub(crate) fn build_payload(
 
         let content: Value = if msg.role == Role::Assistant {
             // Collect non-empty thinking blocks for replay handling.
-            let thinking_blocks: Vec<(&String, &Option<String>)> = msg.content.iter().filter_map(|b| match b {
-                ContentBlock::Thinking { thinking, thinking_signature, .. } if !thinking.trim().is_empty() => Some((thinking, thinking_signature)),
-                _ => None,
-            }).collect();
-            let assistant_text = if text_blocks.is_empty() { String::new() } else { text_blocks.join("") };
+            let thinking_blocks: Vec<(&String, &Option<String>)> = msg
+                .content
+                .iter()
+                .filter_map(|b| match b {
+                    ContentBlock::Thinking {
+                        thinking,
+                        thinking_signature,
+                        ..
+                    } if !thinking.trim().is_empty() => Some((thinking, thinking_signature)),
+                    _ => None,
+                })
+                .collect();
+            let assistant_text = if text_blocks.is_empty() {
+                String::new()
+            } else {
+                text_blocks.join("")
+            };
 
             if !thinking_blocks.is_empty() && compat.requires_thinking_as_text == Some(true) {
                 // Convert thinking blocks into a leading text block (no tags), then
                 // spread the assistant text parts as separate items (matches upstream
                 // `[{thinkingText}, ...assistantTextParts]`).
-                let thinking_text = thinking_blocks.iter().map(|(t, _)| t.as_str()).collect::<Vec<_>>().join("\n\n");
+                let thinking_text = thinking_blocks
+                    .iter()
+                    .map(|(t, _)| t.as_str())
+                    .collect::<Vec<_>>()
+                    .join("\n\n");
                 let mut parts = vec![json!({"type": "text", "text": thinking_text})];
                 for t in &text_blocks {
                     parts.push(json!({"type": "text", "text": t}));
@@ -666,7 +724,11 @@ pub(crate) fn build_payload(
                 json!(parts)
             } else if assistant_text.is_empty() {
                 // Empty assistant content: some providers reject null, use "" when bridging.
-                if compat.requires_assistant_after_tool_result == Some(true) { json!("") } else { Value::Null }
+                if compat.requires_assistant_after_tool_result == Some(true) {
+                    json!("")
+                } else {
+                    Value::Null
+                }
             } else {
                 json!(assistant_text)
             }
@@ -682,8 +744,7 @@ pub(crate) fn build_payload(
         // Mirror upstream convertMessages: skip a user message whose converted content
         // is an empty array (`if (content.length === 0) continue`). Like upstream, this
         // does not update last_role.
-        if msg.role == Role::User
-            && content.as_array().map(|a| a.is_empty()).unwrap_or(false) {
+        if msg.role == Role::User && content.as_array().map(|a| a.is_empty()).unwrap_or(false) {
             idx += 1;
             continue;
         }
@@ -695,12 +756,17 @@ pub(crate) fn build_payload(
                 m["tool_calls"] = json!(tool_call_blocks);
                 // Replay per-tool-call reasoning: each thoughtSignature is JSON that
                 // upstream collects into `reasoning_details` (e.g. OpenRouter).
-                let reasoning_details: Vec<Value> = msg.content.iter().filter_map(|b| match b {
-                    ContentBlock::ToolCall { thought_signature: Some(sig), .. } if !sig.is_empty() => {
-                        serde_json::from_str::<Value>(sig).ok()
-                    }
-                    _ => None,
-                }).collect();
+                let reasoning_details: Vec<Value> = msg
+                    .content
+                    .iter()
+                    .filter_map(|b| match b {
+                        ContentBlock::ToolCall {
+                            thought_signature: Some(sig),
+                            ..
+                        } if !sig.is_empty() => serde_json::from_str::<Value>(sig).ok(),
+                        _ => None,
+                    })
+                    .collect();
                 if !reasoning_details.is_empty() {
                     m["reasoning_details"] = json!(reasoning_details);
                 }
@@ -708,26 +774,40 @@ pub(crate) fn build_payload(
             // When not sending thinking-as-text, replay thinking via its signature field
             // (e.g. reasoning_content for llama.cpp / gpt-oss).
             if compat.requires_thinking_as_text != Some(true) {
-                let thinking_blocks: Vec<(&String, &Option<String>)> = msg.content.iter().filter_map(|b| match b {
-                    ContentBlock::Thinking { thinking, thinking_signature, .. } if !thinking.trim().is_empty() => Some((thinking, thinking_signature)),
-                    _ => None,
-                }).collect();
+                let thinking_blocks: Vec<(&String, &Option<String>)> = msg
+                    .content
+                    .iter()
+                    .filter_map(|b| match b {
+                        ContentBlock::Thinking {
+                            thinking,
+                            thinking_signature,
+                            ..
+                        } if !thinking.trim().is_empty() => Some((thinking, thinking_signature)),
+                        _ => None,
+                    })
+                    .collect();
                 if let Some((_, Some(sig))) = thinking_blocks.first()
-                    && !sig.is_empty() {
-                        // opencode-go uses `reasoning_content` as the replay key.
-                        let key = if model.provider == "opencode-go" && sig.as_str() == "reasoning" {
-                            "reasoning_content"
-                        } else {
-                            sig.as_str()
-                        };
-                        let joined = thinking_blocks.iter().map(|(t, _)| t.as_str()).collect::<Vec<_>>().join("\n");
-                        m[key] = json!(joined);
-                    }
+                    && !sig.is_empty()
+                {
+                    // opencode-go uses `reasoning_content` as the replay key.
+                    let key = if model.provider == "opencode-go" && sig.as_str() == "reasoning" {
+                        "reasoning_content"
+                    } else {
+                        sig.as_str()
+                    };
+                    let joined = thinking_blocks
+                        .iter()
+                        .map(|(t, _)| t.as_str())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    m[key] = json!(joined);
+                }
             }
             // DeepSeek-style providers require reasoning_content on assistant messages.
             if compat.requires_reasoning_content_on_assistant_messages == Some(true)
                 && model.reasoning
-                && m.get("reasoning_content").is_none() {
+                && m.get("reasoning_content").is_none()
+            {
                 m["reasoning_content"] = json!("");
             }
             // Skip empty assistant messages (no content and no tool calls).
@@ -744,7 +824,10 @@ pub(crate) fn build_payload(
         idx += 1;
     }
 
-    let max_tokens_field = compat.max_tokens_field.as_deref().unwrap_or("max_completion_tokens");
+    let max_tokens_field = compat
+        .max_tokens_field
+        .as_deref()
+        .unwrap_or("max_completion_tokens");
 
     let mut payload = json!({
         "model": model.id,
@@ -766,8 +849,12 @@ pub(crate) fn build_payload(
     let cache_long = retention == CacheRetention::Long;
     if let Some(ref session_id) = opts.session_id {
         let on_openai = model.base_url.contains("api.openai.com");
-        if (on_openai && !cache_none) || (cache_long && compat.supports_long_cache_retention != Some(false)) {
-            payload["prompt_cache_key"] = json!(crate::prompt_cache::clamp_openai_prompt_cache_key(session_id));
+        if (on_openai && !cache_none)
+            || (cache_long && compat.supports_long_cache_retention != Some(false))
+        {
+            payload["prompt_cache_key"] = json!(
+                crate::prompt_cache::clamp_openai_prompt_cache_key(session_id)
+            );
         }
     }
     if cache_long && compat.supports_long_cache_retention != Some(false) {
@@ -779,7 +866,9 @@ pub(crate) fn build_payload(
     // The inner stream then gates on a truthy check (0 treated as unset). rs-ai has
     // no separate streamSimple layer, so it folds that here for wire parity.
     let max_tokens_value = crate::simple_options::clamp_max_tokens_to_context(
-        model, context, opts.max_tokens.unwrap_or(model.max_tokens),
+        model,
+        context,
+        opts.max_tokens.unwrap_or(model.max_tokens),
     );
     if max_tokens_value != 0 {
         payload[max_tokens_field] = json!(max_tokens_value);
@@ -791,11 +880,16 @@ pub(crate) fn build_payload(
 
     // Reasoning/thinking (clamped to the model's supported levels).
     // Mirrors upstream buildParams thinking-format handling, gated on model.reasoning.
-    let clamped_effort = opts.reasoning.as_ref().and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l));
+    let clamped_effort = opts
+        .reasoning
+        .as_ref()
+        .and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l));
     if model.reasoning {
         let map_effort = |level: &ThinkingLevel| -> String {
             let key = format!("{:?}", level).to_lowercase();
-            model.thinking_level_map.as_ref()
+            model
+                .thinking_level_map
+                .as_ref()
                 .and_then(|m| m.get(&key))
                 .and_then(|v| v.clone())
                 .unwrap_or(key)
@@ -803,7 +897,7 @@ pub(crate) fn build_payload(
         let off_value = || -> Option<String> {
             match model.thinking_level_map.as_ref().and_then(|m| m.get("off")) {
                 Some(Some(s)) => Some(s.clone()),
-                Some(None) => None,           // explicitly disabled
+                Some(None) => None, // explicitly disabled
                 None => Some("none".to_string()),
             }
         };
@@ -815,15 +909,20 @@ pub(crate) fn build_payload(
                     json!({"type": "disabled"})
                 };
                 if let Some(ref level) = clamped_effort
-                    && compat.supports_reasoning_effort == Some(true) {
-                        // effort = thinkingLevelMap[level] (string) else the level; null -> omit.
-                        let key = format!("{:?}", level).to_lowercase();
-                        match model.thinking_level_map.as_ref().and_then(|m| m.get(&key)) {
-                            None => { payload["reasoning_effort"] = json!(key); }
-                            Some(Some(s)) => { payload["reasoning_effort"] = json!(s); }
-                            Some(None) => {}
+                    && compat.supports_reasoning_effort == Some(true)
+                {
+                    // effort = thinkingLevelMap[level] (string) else the level; null -> omit.
+                    let key = format!("{:?}", level).to_lowercase();
+                    match model.thinking_level_map.as_ref().and_then(|m| m.get(&key)) {
+                        None => {
+                            payload["reasoning_effort"] = json!(key);
                         }
+                        Some(Some(s)) => {
+                            payload["reasoning_effort"] = json!(s);
+                        }
+                        Some(None) => {}
                     }
+                }
             }
             Some("qwen") => {
                 payload["enable_thinking"] = json!(clamped_effort.is_some());
@@ -844,22 +943,27 @@ pub(crate) fn build_payload(
             Some("together") => {
                 payload["reasoning"] = json!({"enabled": clamped_effort.is_some()});
                 if let Some(ref level) = clamped_effort
-                    && compat.supports_reasoning_effort == Some(true) {
-                        payload["reasoning_effort"] = json!(map_effort(level));
-                    }
+                    && compat.supports_reasoning_effort == Some(true)
+                {
+                    payload["reasoning_effort"] = json!(map_effort(level));
+                }
             }
             Some("deepseek") => {
                 // thinking enabled when effort requested; else disabled UNLESS
                 // thinkingLevelMap.off is explicitly null (then omitted).
                 if clamped_effort.is_some() {
                     payload["thinking"] = json!({"type": "enabled"});
-                } else if !matches!(model.thinking_level_map.as_ref().and_then(|m| m.get("off")), Some(None)) {
+                } else if !matches!(
+                    model.thinking_level_map.as_ref().and_then(|m| m.get("off")),
+                    Some(None)
+                ) {
                     payload["thinking"] = json!({"type": "disabled"});
                 }
                 if let Some(ref level) = clamped_effort
-                    && compat.supports_reasoning_effort == Some(true) {
-                        payload["reasoning_effort"] = json!(map_effort(level));
-                    }
+                    && compat.supports_reasoning_effort == Some(true)
+                {
+                    payload["reasoning_effort"] = json!(map_effort(level));
+                }
             }
             Some("openrouter") => {
                 if let Some(ref level) = clamped_effort {
@@ -871,7 +975,11 @@ pub(crate) fn build_payload(
             Some("ant-ling") => {
                 if let Some(ref level) = clamped_effort {
                     let key = format!("{:?}", level).to_lowercase();
-                    if let Some(Some(mapped)) = model.thinking_level_map.as_ref().map(|m| m.get(&key).cloned().flatten()) {
+                    if let Some(Some(mapped)) = model
+                        .thinking_level_map
+                        .as_ref()
+                        .map(|m| m.get(&key).cloned().flatten())
+                    {
                         payload["reasoning"] = json!({"effort": mapped});
                     }
                 }
@@ -885,7 +993,11 @@ pub(crate) fn build_payload(
                 if compat.supports_reasoning_effort == Some(true) {
                     if let Some(ref level) = clamped_effort {
                         payload["reasoning_effort"] = json!(map_effort(level));
-                    } else if let Some(Some(off)) = model.thinking_level_map.as_ref().map(|m| m.get("off").cloned().flatten()) {
+                    } else if let Some(Some(off)) = model
+                        .thinking_level_map
+                        .as_ref()
+                        .map(|m| m.get("off").cloned().flatten())
+                    {
                         payload["reasoning_effort"] = json!(off);
                     }
                 }
@@ -896,17 +1008,21 @@ pub(crate) fn build_payload(
     // Tools
     if !context.tools.is_empty() {
         let include_strict = compat.supports_strict_mode != Some(false);
-        let tools: Vec<Value> = context.tools.iter().map(|t| {
-            let mut function = json!({
-                "name": t.name,
-                "description": t.description,
-                "parameters": t.parameters,
-            });
-            if include_strict {
-                function["strict"] = json!(false);
-            }
-            json!({ "type": "function", "function": function })
-        }).collect();
+        let tools: Vec<Value> = context
+            .tools
+            .iter()
+            .map(|t| {
+                let mut function = json!({
+                    "name": t.name,
+                    "description": t.description,
+                    "parameters": t.parameters,
+                });
+                if include_strict {
+                    function["strict"] = json!(false);
+                }
+                json!({ "type": "function", "function": function })
+            })
+            .collect();
         payload["tools"] = json!(tools);
         if compat.zai_tool_stream == Some(true) {
             payload["tool_stream"] = json!(true);
@@ -932,15 +1048,22 @@ pub(crate) fn build_payload(
         let order = routing.get("order");
         if only.is_some() || order.is_some() {
             let mut gateway = json!({});
-            if let Some(o) = only { gateway["only"] = o.clone(); }
-            if let Some(o) = order { gateway["order"] = o.clone(); }
+            if let Some(o) = only {
+                gateway["only"] = o.clone();
+            }
+            if let Some(o) = order {
+                gateway["order"] = o.clone();
+            }
             payload["providerOptions"] = json!({ "gateway": gateway });
         }
     }
 
     // OpenRouter Anthropic models use Anthropic-style cache_control on system/last-message/last-tool.
-    if compat.cache_control_format.as_deref() == Some("anthropic") && retention != CacheRetention::None {
-        let ttl_long = retention == CacheRetention::Long && compat.supports_long_cache_retention != Some(false);
+    if compat.cache_control_format.as_deref() == Some("anthropic")
+        && retention != CacheRetention::None
+    {
+        let ttl_long = retention == CacheRetention::Long
+            && compat.supports_long_cache_retention != Some(false);
         let cc = if ttl_long {
             json!({"type": "ephemeral", "ttl": "1h"})
         } else {
@@ -958,21 +1081,28 @@ fn apply_anthropic_cache_control(payload: &mut Value, cc: &Value) {
     if let Some(messages) = payload.get_mut("messages").and_then(|m| m.as_array_mut()) {
         // System/developer prompt: first such message.
         if let Some(msg) = messages.iter_mut().find(|m| {
-            matches!(m.get("role").and_then(|r| r.as_str()), Some("system") | Some("developer"))
+            matches!(
+                m.get("role").and_then(|r| r.as_str()),
+                Some("system") | Some("developer")
+            )
         }) {
             add_cache_control_to_text(msg, cc);
         }
         // Last user/assistant message (from the end) whose text content accepts it.
         for msg in messages.iter_mut().rev() {
-            if matches!(msg.get("role").and_then(|r| r.as_str()), Some("user") | Some("assistant"))
-                && add_cache_control_to_text(msg, cc) {
+            if matches!(
+                msg.get("role").and_then(|r| r.as_str()),
+                Some("user") | Some("assistant")
+            ) && add_cache_control_to_text(msg, cc)
+            {
                 break;
             }
         }
     }
     // Last tool definition.
     if let Some(tools) = payload.get_mut("tools").and_then(|t| t.as_array_mut())
-        && let Some(last) = tools.last_mut() {
+        && let Some(last) = tools.last_mut()
+    {
         last["cache_control"] = cc.clone();
     }
 }
@@ -1009,7 +1139,9 @@ fn has_tool_history(messages: &[Message]) -> bool {
     messages.iter().any(|m| {
         m.role == Role::ToolResult
             || (m.role == Role::Assistant
-                && m.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. })))
+                && m.content
+                    .iter()
+                    .any(|b| matches!(b, ContentBlock::ToolCall { .. })))
     })
 }
 
@@ -1031,7 +1163,11 @@ fn build_chat_template_kwargs(
             out.insert(key.clone(), resolved);
         }
     }
-    if out.is_empty() { None } else { Some(Value::Object(out)) }
+    if out.is_empty() {
+        None
+    } else {
+        Some(Value::Object(out))
+    }
 }
 
 /// Resolve a single chat-template kwarg value (mirrors resolveChatTemplateKwargValue).
@@ -1061,7 +1197,11 @@ fn resolve_chat_template_kwarg_value(
         }
         None => ("off".to_string(), None),
     };
-    match model.thinking_level_map.as_ref().and_then(|m| m.get(&lookup_key)) {
+    match model
+        .thinking_level_map
+        .as_ref()
+        .and_then(|m| m.get(&lookup_key))
+    {
         None => effort_string.map(Value::String),
         Some(Some(s)) => Some(Value::String(s.clone())),
         Some(None) => None,
@@ -1072,7 +1212,13 @@ pub(crate) fn normalize_tool_call_id(id: &str, provider: &str) -> String {
     if let Some((call_id, _)) = id.split_once('|') {
         return call_id
             .chars()
-            .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                    c
+                } else {
+                    '_'
+                }
+            })
             .take(40)
             .collect();
     }

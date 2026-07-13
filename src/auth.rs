@@ -86,7 +86,10 @@ pub struct ModelsError {
 
 impl ModelsError {
     pub fn new(code: ModelsErrorCode, message: impl Into<String>) -> Self {
-        Self { code, message: message.into() }
+        Self {
+            code,
+            message: message.into(),
+        }
     }
 }
 
@@ -139,7 +142,10 @@ impl InMemoryCredentialStore {
         let next = f(current.clone()).await?;
         match next {
             Some(cred) => {
-                self.credentials.lock().unwrap().insert(provider_id.to_string(), cred.clone());
+                self.credentials
+                    .lock()
+                    .unwrap()
+                    .insert(provider_id.to_string(), cred.clone());
                 Ok(Some(cred))
             }
             None => Ok(current),
@@ -170,7 +176,9 @@ pub struct EnvAuthContext {
 
 impl EnvAuthContext {
     pub fn new() -> Self {
-        Self { overlay: ProviderEnv::new() }
+        Self {
+            overlay: ProviderEnv::new(),
+        }
     }
     pub fn with_overlay(overlay: ProviderEnv) -> Self {
         Self { overlay }
@@ -256,7 +264,10 @@ pub async fn resolve_provider_auth(
         && let Some(key) = ov.api_key.clone()
         && let Some(api_key) = auth.api_key.as_ref()
     {
-        let cred = ApiKeyCredential { key: Some(key), env: ov.env.clone() };
+        let cred = ApiKeyCredential {
+            key: Some(key),
+            env: ov.env.clone(),
+        };
         return resolve_api_key(request_ctx, api_key.as_ref(), model, Some(&cred)).await;
     }
 
@@ -298,7 +309,13 @@ async fn resolve_api_key(
     credential: Option<&ApiKeyCredential>,
 ) -> Result<Option<AuthResult>, ModelsError> {
     api_key.resolve(model, ctx, credential).await.map_err(|e| {
-        ModelsError::new(ModelsErrorCode::Auth, format!("API key auth failed for provider {}: {}", model.provider, e.message))
+        ModelsError::new(
+            ModelsErrorCode::Auth,
+            format!(
+                "API key auth failed for provider {}: {}",
+                model.provider, e.message
+            ),
+        )
     })
 }
 
@@ -323,7 +340,10 @@ async fn resolve_stored_oauth(
                             return Ok(None);
                         }
                         let refreshed = oauth.refresh(&cur).await.map_err(|e| {
-                            ModelsError::new(ModelsErrorCode::OAuth, format!("OAuth refresh failed for {provider_id}: {}", e.message))
+                            ModelsError::new(
+                                ModelsErrorCode::OAuth,
+                                format!("OAuth refresh failed for {provider_id}: {}", e.message),
+                            )
                         })?;
                         Ok(Some(Credential::OAuth(refreshed)))
                     }
@@ -341,9 +361,19 @@ async fn resolve_stored_oauth(
         }
     }
     let auth = oauth.to_auth(&credential).await.map_err(|e| {
-        ModelsError::new(ModelsErrorCode::OAuth, format!("OAuth auth derivation failed for {provider_id}: {}", e.message))
+        ModelsError::new(
+            ModelsErrorCode::OAuth,
+            format!(
+                "OAuth auth derivation failed for {provider_id}: {}",
+                e.message
+            ),
+        )
     })?;
-    Ok(Some(AuthResult { auth, env: None, source: Some("OAuth".to_string()) }))
+    Ok(Some(AuthResult {
+        auth,
+        env: None,
+        source: Some("OAuth".to_string()),
+    }))
 }
 
 fn now_millis() -> i64 {
@@ -386,7 +416,10 @@ mod tests {
 
     #[test]
     fn models_error_displays_message_and_keeps_code() {
-        let e = ModelsError::new(ModelsErrorCode::Auth, "API key auth failed for provider openai");
+        let e = ModelsError::new(
+            ModelsErrorCode::Auth,
+            "API key auth failed for provider openai",
+        );
         assert_eq!(e.to_string(), "API key auth failed for provider openai");
         assert_eq!(e.code, ModelsErrorCode::Auth);
     }
@@ -400,7 +433,10 @@ mod tests {
     #[tokio::test]
     async fn modify_writes_and_read_returns_stored() {
         let store = InMemoryCredentialStore::new();
-        let cred = Credential::ApiKey(ApiKeyCredential { key: Some("sk-1".into()), env: None });
+        let cred = Credential::ApiKey(ApiKeyCredential {
+            key: Some("sk-1".into()),
+            env: None,
+        });
         let written = store
             .modify::<_, _, std::convert::Infallible>("openai", |cur| {
                 assert!(cur.is_none());
@@ -416,7 +452,10 @@ mod tests {
     #[tokio::test]
     async fn modify_returning_none_leaves_entry_unchanged() {
         let store = InMemoryCredentialStore::new();
-        let cred = Credential::ApiKey(ApiKeyCredential { key: Some("sk-1".into()), env: None });
+        let cred = Credential::ApiKey(ApiKeyCredential {
+            key: Some("sk-1".into()),
+            env: None,
+        });
         store
             .modify::<_, _, std::convert::Infallible>("openai", |_| {
                 let c = cred.clone();
@@ -442,7 +481,10 @@ mod tests {
         let store = InMemoryCredentialStore::new();
         store
             .modify::<_, _, std::convert::Infallible>("openai", |_| async {
-                Ok(Some(Credential::ApiKey(ApiKeyCredential { key: Some("k".into()), env: None })))
+                Ok(Some(Credential::ApiKey(ApiKeyCredential {
+                    key: Some("k".into()),
+                    env: None,
+                })))
             })
             .await
             .unwrap();
@@ -458,7 +500,10 @@ mod tests {
         store
             .modify::<_, _, std::convert::Infallible>("p", |_| async {
                 Ok(Some(Credential::OAuth(OAuthCredential {
-                    access: "0".into(), refresh: None, expires: 0, account_id: None,
+                    access: "0".into(),
+                    refresh: None,
+                    expires: 0,
+                    account_id: None,
                 })))
             })
             .await
@@ -472,7 +517,10 @@ mod tests {
                         _ => 0,
                     };
                     Ok(Some(Credential::OAuth(OAuthCredential {
-                        access: (n + 1).to_string(), refresh: None, expires: 0, account_id: None,
+                        access: (n + 1).to_string(),
+                        refresh: None,
+                        expires: 0,
+                        account_id: None,
                     })))
                 })
                 .await
@@ -493,53 +541,105 @@ mod tests {
 
     fn test_model(provider: &str) -> Model {
         Model {
-            id: "m".into(), name: "M".into(), api: "openai-completions".into(),
-            provider: provider.into(), base_url: "http://x".into(), reasoning: false,
-            thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-            context_window: 1000, max_tokens: 100, headers: None, api_key: None, compat: Default::default(),
+            id: "m".into(),
+            name: "M".into(),
+            api: "openai-completions".into(),
+            provider: provider.into(),
+            base_url: "http://x".into(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 1000,
+            max_tokens: 100,
+            headers: None,
+            api_key: None,
+            compat: Default::default(),
         }
     }
 
     /// Resolves `credential.key ?? env(ENV_NAME)` like a typical provider.
-    struct KeyOrEnv { env_name: &'static str }
+    struct KeyOrEnv {
+        env_name: &'static str,
+    }
     #[async_trait::async_trait]
     impl ApiKeyAuth for KeyOrEnv {
-        async fn resolve(&self, _m: &Model, ctx: &dyn AuthContext, credential: Option<&ApiKeyCredential>)
-            -> Result<Option<AuthResult>, ModelsError> {
+        async fn resolve(
+            &self,
+            _m: &Model,
+            ctx: &dyn AuthContext,
+            credential: Option<&ApiKeyCredential>,
+        ) -> Result<Option<AuthResult>, ModelsError> {
             let key = match credential.and_then(|c| c.key.clone()) {
                 Some(k) => Some(k),
                 None => ctx.env(self.env_name).await,
             };
             Ok(key.map(|k| AuthResult {
-                auth: ModelAuth { api_key: Some(k), ..Default::default() },
-                env: None, source: Some(self.env_name.to_string()),
+                auth: ModelAuth {
+                    api_key: Some(k),
+                    ..Default::default()
+                },
+                env: None,
+                source: Some(self.env_name.to_string()),
             }))
         }
     }
 
     fn api_key_provider() -> ProviderAuth {
-        ProviderAuth { api_key: Some(Box::new(KeyOrEnv { env_name: "TEST_PROVIDER_KEY_XYZ" })), oauth: None }
+        ProviderAuth {
+            api_key: Some(Box::new(KeyOrEnv {
+                env_name: "TEST_PROVIDER_KEY_XYZ",
+            })),
+            oauth: None,
+        }
     }
 
     #[tokio::test]
     async fn resolve_uses_api_key_override_first() {
         let store = InMemoryCredentialStore::new();
         let ctx = EnvAuthContext::new();
-        let overrides = AuthResolutionOverrides { api_key: Some("ov-key".into()), env: None };
-        let r = resolve_provider_auth("openai", &api_key_provider(), &test_model("openai"), &store, &ctx, Some(&overrides))
-            .await.unwrap().unwrap();
+        let overrides = AuthResolutionOverrides {
+            api_key: Some("ov-key".into()),
+            env: None,
+        };
+        let r = resolve_provider_auth(
+            "openai",
+            &api_key_provider(),
+            &test_model("openai"),
+            &store,
+            &ctx,
+            Some(&overrides),
+        )
+        .await
+        .unwrap()
+        .unwrap();
         assert_eq!(r.auth.api_key.as_deref(), Some("ov-key"));
     }
 
     #[tokio::test]
     async fn resolve_uses_stored_api_key_credential() {
         let store = InMemoryCredentialStore::new();
-        store.modify::<_, _, std::convert::Infallible>("openai", |_| async {
-            Ok(Some(Credential::ApiKey(ApiKeyCredential { key: Some("stored-key".into()), env: None })))
-        }).await.unwrap();
+        store
+            .modify::<_, _, std::convert::Infallible>("openai", |_| async {
+                Ok(Some(Credential::ApiKey(ApiKeyCredential {
+                    key: Some("stored-key".into()),
+                    env: None,
+                })))
+            })
+            .await
+            .unwrap();
         let ctx = EnvAuthContext::new();
-        let r = resolve_provider_auth("openai", &api_key_provider(), &test_model("openai"), &store, &ctx, None)
-            .await.unwrap().unwrap();
+        let r = resolve_provider_auth(
+            "openai",
+            &api_key_provider(),
+            &test_model("openai"),
+            &store,
+            &ctx,
+            None,
+        )
+        .await
+        .unwrap()
+        .unwrap();
         assert_eq!(r.auth.api_key.as_deref(), Some("stored-key"));
     }
 
@@ -549,8 +649,17 @@ mod tests {
         let mut overlay = ProviderEnv::new();
         overlay.insert("TEST_PROVIDER_KEY_XYZ".into(), "ambient-key".into());
         let ctx = EnvAuthContext::with_overlay(overlay);
-        let r = resolve_provider_auth("openai", &api_key_provider(), &test_model("openai"), &store, &ctx, None)
-            .await.unwrap().unwrap();
+        let r = resolve_provider_auth(
+            "openai",
+            &api_key_provider(),
+            &test_model("openai"),
+            &store,
+            &ctx,
+            None,
+        )
+        .await
+        .unwrap()
+        .unwrap();
         assert_eq!(r.auth.api_key.as_deref(), Some("ambient-key"));
         assert_eq!(r.source.as_deref(), Some("TEST_PROVIDER_KEY_XYZ"));
     }
@@ -559,50 +668,116 @@ mod tests {
     async fn resolve_returns_none_when_unconfigured() {
         let store = InMemoryCredentialStore::new();
         let ctx = EnvAuthContext::new(); // empty overlay; env var unset
-        let r = resolve_provider_auth("openai", &api_key_provider(), &test_model("openai"), &store, &ctx, None)
-            .await.unwrap();
+        let r = resolve_provider_auth(
+            "openai",
+            &api_key_provider(),
+            &test_model("openai"),
+            &store,
+            &ctx,
+            None,
+        )
+        .await
+        .unwrap();
         assert!(r.is_none());
     }
 
-    struct CountingOAuth { refreshes: Arc<AtomicUsize> }
+    struct CountingOAuth {
+        refreshes: Arc<AtomicUsize>,
+    }
     #[async_trait::async_trait]
     impl OAuthAuth for CountingOAuth {
         async fn refresh(&self, _c: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
             self.refreshes.fetch_add(1, Ordering::SeqCst);
-            Ok(OAuthCredential { access: "fresh".into(), refresh: Some("r2".into()), expires: now_millis() + 60_000, account_id: None })
+            Ok(OAuthCredential {
+                access: "fresh".into(),
+                refresh: Some("r2".into()),
+                expires: now_millis() + 60_000,
+                account_id: None,
+            })
         }
         async fn to_auth(&self, c: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
-            Ok(ModelAuth { api_key: Some(c.access.clone()), ..Default::default() })
+            Ok(ModelAuth {
+                api_key: Some(c.access.clone()),
+                ..Default::default()
+            })
         }
     }
 
     #[tokio::test]
     async fn resolve_oauth_valid_token_skips_refresh() {
         let store = InMemoryCredentialStore::new();
-        store.modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
-            Ok(Some(Credential::OAuth(OAuthCredential { access: "valid".into(), refresh: Some("r".into()), expires: now_millis() + 60_000, account_id: None })))
-        }).await.unwrap();
+        store
+            .modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "valid".into(),
+                    refresh: Some("r".into()),
+                    expires: now_millis() + 60_000,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
         let refreshes = Arc::new(AtomicUsize::new(0));
-        let provider = ProviderAuth { api_key: None, oauth: Some(Box::new(CountingOAuth { refreshes: refreshes.clone() })) };
+        let provider = ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(CountingOAuth {
+                refreshes: refreshes.clone(),
+            })),
+        };
         let ctx = EnvAuthContext::new();
-        let r = resolve_provider_auth("anthropic", &provider, &test_model("anthropic"), &store, &ctx, None)
-            .await.unwrap().unwrap();
+        let r = resolve_provider_auth(
+            "anthropic",
+            &provider,
+            &test_model("anthropic"),
+            &store,
+            &ctx,
+            None,
+        )
+        .await
+        .unwrap()
+        .unwrap();
         assert_eq!(r.auth.api_key.as_deref(), Some("valid"));
         assert_eq!(r.source.as_deref(), Some("OAuth"));
-        assert_eq!(refreshes.load(Ordering::SeqCst), 0, "valid token must not refresh");
+        assert_eq!(
+            refreshes.load(Ordering::SeqCst),
+            0,
+            "valid token must not refresh"
+        );
     }
 
     #[tokio::test]
     async fn resolve_oauth_expired_token_refreshes_once_and_persists() {
         let store = InMemoryCredentialStore::new();
-        store.modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
-            Ok(Some(Credential::OAuth(OAuthCredential { access: "old".into(), refresh: Some("r".into()), expires: now_millis() - 1, account_id: None })))
-        }).await.unwrap();
+        store
+            .modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "old".into(),
+                    refresh: Some("r".into()),
+                    expires: now_millis() - 1,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
         let refreshes = Arc::new(AtomicUsize::new(0));
-        let provider = ProviderAuth { api_key: None, oauth: Some(Box::new(CountingOAuth { refreshes: refreshes.clone() })) };
+        let provider = ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(CountingOAuth {
+                refreshes: refreshes.clone(),
+            })),
+        };
         let ctx = EnvAuthContext::new();
-        let r = resolve_provider_auth("anthropic", &provider, &test_model("anthropic"), &store, &ctx, None)
-            .await.unwrap().unwrap();
+        let r = resolve_provider_auth(
+            "anthropic",
+            &provider,
+            &test_model("anthropic"),
+            &store,
+            &ctx,
+            None,
+        )
+        .await
+        .unwrap()
+        .unwrap();
         assert_eq!(r.auth.api_key.as_deref(), Some("fresh"));
         assert_eq!(refreshes.load(Ordering::SeqCst), 1);
         // Rotated credential persisted.

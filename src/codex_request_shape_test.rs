@@ -10,7 +10,9 @@
 #[cfg(test)]
 mod tests {
     use crate::provider::codex::build_codex_payload;
-    use crate::types::{Context, ContentBlock, Message, Model, ModelCost, Role, StreamOptions, ThinkingLevel, Tool};
+    use crate::types::{
+        ContentBlock, Context, Message, Model, ModelCost, Role, StreamOptions, ThinkingLevel, Tool,
+    };
 
     fn codex_model() -> Model {
         Model {
@@ -43,12 +45,24 @@ mod tests {
             }],
             messages: vec![Message {
                 role: Role::User,
-                content: vec![ContentBlock::Text { text: "hi".into(), text_signature: None }],
+                content: vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    text_signature: None,
+                }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         };
         let opts = StreamOptions {
@@ -63,11 +77,17 @@ mod tests {
 
         assert_eq!(req["stream"], serde_json::json!(true));
         assert_eq!(req["store"], serde_json::json!(false));
-        assert_eq!(req["instructions"], serde_json::json!("You are a helpful assistant."));
+        assert_eq!(
+            req["instructions"],
+            serde_json::json!("You are a helpful assistant.")
+        );
         assert_eq!(req["prompt_cache_key"], serde_json::json!("sess-123"));
         assert_eq!(req["tool_choice"], serde_json::json!("auto"));
         assert_eq!(req["parallel_tool_calls"], serde_json::json!(true));
-        assert_eq!(req["include"], serde_json::json!(["reasoning.encrypted_content"]));
+        assert_eq!(
+            req["include"],
+            serde_json::json!(["reasoning.encrypted_content"])
+        );
 
         // reasoning.effort is the clamped/mapped level ("minimal" with no map);
         // summary is the caller override.
@@ -84,7 +104,10 @@ mod tests {
         assert!(!input.is_empty());
         assert_eq!(input[0]["role"], serde_json::json!("user"));
         assert!(
-            input.iter().all(|m| !matches!(m.get("role").and_then(|r| r.as_str()), Some("system") | Some("developer"))),
+            input.iter().all(|m| !matches!(
+                m.get("role").and_then(|r| r.as_str()),
+                Some("system") | Some("developer")
+            )),
             "system/developer roles must be stripped from codex input"
         );
 

@@ -30,15 +30,21 @@ mod tests {
     #[test]
     fn requires_error_stop_reason_and_message() {
         // Not an error stop -> false even with retryable text.
-        assert!(!is_retryable_assistant_error(&err_msg(Some("overloaded"), Some(StopReason::Stop))));
+        assert!(!is_retryable_assistant_error(&err_msg(
+            Some("overloaded"),
+            Some(StopReason::Stop)
+        )));
         // Error stop but no message -> false.
-        assert!(!is_retryable_assistant_error(&err_msg(None, Some(StopReason::Error))));
+        assert!(!is_retryable_assistant_error(&err_msg(
+            None,
+            Some(StopReason::Error)
+        )));
     }
 
     #[test]
     fn retryable_transient_provider_errors() {
         for text in [
-            "Overloaded",                       // case-insensitive
+            "Overloaded", // case-insensitive
             "429 Too Many Requests",
             "rate limit exceeded",
             "rate-limit hit",
@@ -92,7 +98,10 @@ mod tests {
     fn non_retryable_pattern_overrides_retryable_text() {
         // Contains both "429" (retryable) and "insufficient_quota" (non-retryable) ->
         // non-retryable takes precedence (checked first).
-        let m = err_msg(Some("429 insufficient_quota: out of credits"), Some(StopReason::Error));
+        let m = err_msg(
+            Some("429 insufficient_quota: out of credits"),
+            Some(StopReason::Error),
+        );
         assert!(!is_retryable_assistant_error(&m));
     }
 
@@ -108,19 +117,31 @@ mod tests {
 
     #[test]
     fn matches_explicit_provider_retry_guidance() {
-        assert!(is_retryable_assistant_error(&err_msg(Some(OPENAI_EXPLICIT_RETRY), Some(StopReason::Error))));
-        assert!(is_retryable_assistant_error(&err_msg(Some(BEDROCK_EXPLICIT_RETRY), Some(StopReason::Error))));
+        assert!(is_retryable_assistant_error(&err_msg(
+            Some(OPENAI_EXPLICIT_RETRY),
+            Some(StopReason::Error)
+        )));
+        assert!(is_retryable_assistant_error(&err_msg(
+            Some(BEDROCK_EXPLICIT_RETRY),
+            Some(StopReason::Error)
+        )));
     }
 
     #[test]
     fn keeps_provider_limit_errors_non_retryable_upstream_fixture() {
         // "429 quota exceeded": 429 is retryable but "quota exceeded" wins.
-        assert!(!is_retryable_assistant_error(&err_msg(Some("429 quota exceeded"), Some(StopReason::Error))));
+        assert!(!is_retryable_assistant_error(&err_msg(
+            Some("429 quota exceeded"),
+            Some(StopReason::Error)
+        )));
     }
 
     #[test]
     fn classifies_overloaded_error_and_non_error_fixture() {
-        assert!(is_retryable_assistant_error(&err_msg(Some("overloaded_error"), Some(StopReason::Error))));
+        assert!(is_retryable_assistant_error(&err_msg(
+            Some("overloaded_error"),
+            Some(StopReason::Error)
+        )));
         // fauxAssistantMessage("not an error") has no error stop reason.
         assert!(!is_retryable_assistant_error(&err_msg(None, None)));
     }

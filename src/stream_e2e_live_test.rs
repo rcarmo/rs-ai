@@ -33,10 +33,20 @@ mod tests {
                     text: "Reply with exactly: 'Hello test successful'".into(),
                     text_signature: None,
                 }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None, tool_call_id: None,
-                tool_name: None, is_error: false, details: None,
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -52,13 +62,24 @@ mod tests {
             .expect("live completion should succeed");
 
         assert_eq!(response.role, Role::Assistant);
-        assert!(!response.content.is_empty(), "response content must be truthy");
+        assert!(
+            !response.content.is_empty(),
+            "response content must be truthy"
+        );
         let usage = response.usage.expect("usage present");
         assert!(usage.input + usage.cache_read > 0, "input+cacheRead > 0");
         assert!(usage.output > 0, "output > 0");
         assert!(response.error_message.is_none(), "no errorMessage");
-        let text: String = response.content.iter()
-            .map(|b| if let ContentBlock::Text { text, .. } = b { text.as_str() } else { "" })
+        let text: String = response
+            .content
+            .iter()
+            .map(|b| {
+                if let ContentBlock::Text { text, .. } = b {
+                    text.as_str()
+                } else {
+                    ""
+                }
+            })
             .collect();
         assert!(text.contains("Hello test successful"), "got: {text:?}");
     }
@@ -68,7 +89,9 @@ mod tests {
             #[tokio::test]
             async fn $test() {
                 match live_key($env) {
-                    None => { eprintln!("skipped: {} not set", $env); }
+                    None => {
+                        eprintln!("skipped: {} not set", $env);
+                    }
                     Some(key) => assert_basic_generation($provider, $id, key).await,
                 }
             }
@@ -76,11 +99,36 @@ mod tests {
     }
 
     // Mirror upstream's per-provider gated "should complete basic text generation".
-    live_basic_generation!(gemini_basic_text_generation, "GEMINI_API_KEY", "google", "gemini-2.5-flash");
-    live_basic_generation!(openai_completions_basic_text_generation, "OPENAI_API_KEY", "openai", "gpt-4o-mini");
-    live_basic_generation!(openai_responses_basic_text_generation, "OPENAI_API_KEY", "openai", "gpt-5.4");
-    live_basic_generation!(deepseek_basic_text_generation, "DEEPSEEK_API_KEY", "deepseek", "deepseek-v4-flash");
-    live_basic_generation!(anthropic_basic_text_generation, "ANTHROPIC_API_KEY", "anthropic", "claude-haiku-4-5");
+    live_basic_generation!(
+        gemini_basic_text_generation,
+        "GEMINI_API_KEY",
+        "google",
+        "gemini-2.5-flash"
+    );
+    live_basic_generation!(
+        openai_completions_basic_text_generation,
+        "OPENAI_API_KEY",
+        "openai",
+        "gpt-4o-mini"
+    );
+    live_basic_generation!(
+        openai_responses_basic_text_generation,
+        "OPENAI_API_KEY",
+        "openai",
+        "gpt-5.4"
+    );
+    live_basic_generation!(
+        deepseek_basic_text_generation,
+        "DEEPSEEK_API_KEY",
+        "deepseek",
+        "deepseek-v4-flash"
+    );
+    live_basic_generation!(
+        anthropic_basic_text_generation,
+        "ANTHROPIC_API_KEY",
+        "anthropic",
+        "claude-haiku-4-5"
+    );
 
     /// Deterministic guard: every live-gated model must resolve in the catalog,
     /// so a keyed run can never panic on a missing model id.
@@ -93,7 +141,10 @@ mod tests {
             ("deepseek", "deepseek-v4-flash"),
             ("anthropic", "claude-haiku-4-5"),
         ] {
-            assert!(get_model(provider, id).is_some(), "catalog missing {provider}/{id}");
+            assert!(
+                get_model(provider, id).is_some(),
+                "catalog missing {provider}/{id}"
+            );
         }
     }
 }

@@ -2,14 +2,14 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::openai::stream_openai;
+    use crate::events::Event;
     use crate::provider::google::stream_google;
+    use crate::provider::openai::stream_openai;
     use crate::provider::responses::stream_responses;
     use crate::types::*;
-    use crate::events::Event;
     use tokio_stream::StreamExt;
-    use wiremock::{MockServer, Mock, ResponseTemplate};
     use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn test_model(api: &str, provider: &str, base_url: &str) -> Model {
         Model {
@@ -167,7 +167,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_google_missing_key() {
-        let model = Model { api_key: None, ..test_model("google-generative-ai", "google", "http://x") };
+        let model = Model {
+            api_key: None,
+            ..test_model("google-generative-ai", "google", "http://x")
+        };
         let opts = StreamOptions::default();
         let ctx = test_context();
         let mut stream = stream_google(&model, &ctx, &opts);
@@ -177,7 +180,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_responses_missing_key() {
-        let model = Model { api_key: None, ..test_model("openai-responses", "openai", "http://x") };
+        let model = Model {
+            api_key: None,
+            ..test_model("openai-responses", "openai", "http://x")
+        };
         let opts = StreamOptions::default();
         let ctx = test_context();
         let mut stream = stream_responses(&model, &ctx, &opts);
@@ -198,13 +204,18 @@ mod tests {
             .await;
 
         let model = test_model("openai-completions", "openai", &server.uri());
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::Medium), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::Medium),
+            ..Default::default()
+        };
         let ctx = test_context();
         let mut stream = stream_openai(&model, &ctx, &opts);
 
         let mut saw_done = false;
         while let Some(evt) = stream.next().await {
-            if matches!(evt, Event::Done { .. }) { saw_done = true; }
+            if matches!(evt, Event::Done { .. }) {
+                saw_done = true;
+            }
         }
         assert!(saw_done);
     }
@@ -232,7 +243,9 @@ mod tests {
 
         let mut text = String::new();
         while let Some(evt) = stream.next().await {
-            if let Event::TextDelta { delta } = evt { text.push_str(&delta); }
+            if let Event::TextDelta { delta } = evt {
+                text.push_str(&delta);
+            }
         }
         assert_eq!(text, "cf");
     }

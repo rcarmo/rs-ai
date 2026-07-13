@@ -92,7 +92,11 @@ impl SseParser {
     pub fn finish(&mut self) -> Option<SseEvent> {
         if !self.line_buffer.is_empty() {
             let line = std::mem::take(&mut self.line_buffer);
-            if let Some(ev) = self.process_line(line.trim_end_matches('\r')).into_iter().next() {
+            if let Some(ev) = self
+                .process_line(line.trim_end_matches('\r'))
+                .into_iter()
+                .next()
+            {
                 return Some(ev);
             }
         }
@@ -111,7 +115,9 @@ impl SseParser {
         let (field, value) = match line.find(':') {
             Some(pos) => {
                 let f = &line[..pos];
-                let v = line[pos + 1..].strip_prefix(' ').unwrap_or(&line[pos + 1..]);
+                let v = line[pos + 1..]
+                    .strip_prefix(' ')
+                    .unwrap_or(&line[pos + 1..]);
                 (f, v.to_string())
             }
             None => (line, String::new()),
@@ -151,7 +157,10 @@ impl SseParser {
                 self.event_type.clone()
             },
             data: self.data_lines.join("\n"),
-            id: self.current_id.clone().unwrap_or_else(|| self.last_id.clone()),
+            id: self
+                .current_id
+                .clone()
+                .unwrap_or_else(|| self.last_id.clone()),
             retry: self.current_retry.or(self.last_retry),
         };
 

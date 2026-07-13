@@ -11,13 +11,11 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::events::Event;
     use crate::provider::responses::{
         normalize_azure_base_url, resolve_azure_base_url_from, stream_azure_responses,
     };
-    use crate::types::{
-        Context, ContentBlock, Message, Model, ModelCost, Role, StreamOptions,
-    };
-    use crate::events::Event;
+    use crate::types::{ContentBlock, Context, Message, Model, ModelCost, Role, StreamOptions};
     use serde_json::Value;
     use std::sync::{Arc, Mutex};
     use tokio_stream::StreamExt;
@@ -28,12 +26,24 @@ mod tests {
             tools: Vec::new(),
             messages: vec![Message {
                 role: Role::User,
-                content: vec![ContentBlock::Text { text: "hello".into(), text_signature: None }],
+                content: vec![ContentBlock::Text {
+                    text: "hello".into(),
+                    text_signature: None,
+                }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -73,7 +83,11 @@ mod tests {
                 break;
             }
         }
-        captured.lock().unwrap().clone().expect("payload captured before request failure")
+        captured
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("payload captured before request failure")
     }
 
     // --- base URL normalization (asserted directly) ---
@@ -81,8 +95,13 @@ mod tests {
     #[test]
     fn normalizes_cognitive_services_root_endpoints_to_openai_v1() {
         assert_eq!(
-            normalize_azure_base_url("https://marc-quicktests-resource.cognitiveservices.azure.com"),
-            Ok("https://marc-quicktests-resource.cognitiveservices.azure.com/openai/v1".to_string())
+            normalize_azure_base_url(
+                "https://marc-quicktests-resource.cognitiveservices.azure.com"
+            ),
+            Ok(
+                "https://marc-quicktests-resource.cognitiveservices.azure.com/openai/v1"
+                    .to_string()
+            )
         );
     }
 
@@ -115,7 +134,9 @@ mod tests {
     #[test]
     fn normalizes_foundry_openai_v1_responses_to_openai_v1() {
         assert_eq!(
-            normalize_azure_base_url("https://my-resource.services.ai.azure.com/openai/v1/responses"),
+            normalize_azure_base_url(
+                "https://my-resource.services.ai.azure.com/openai/v1/responses"
+            ),
             Ok("https://my-resource.services.ai.azure.com/openai/v1".to_string())
         );
     }
@@ -139,7 +160,9 @@ mod tests {
     #[test]
     fn strips_query_params_when_normalizing_azure_host_urls() {
         assert_eq!(
-            normalize_azure_base_url("https://my-resource.openai.azure.com/openai?api-version=2024-12-01"),
+            normalize_azure_base_url(
+                "https://my-resource.openai.azure.com/openai?api-version=2024-12-01"
+            ),
             Ok("https://my-resource.openai.azure.com/openai/v1".to_string())
         );
     }
@@ -157,7 +180,9 @@ mod tests {
         // Mirrors AZURE_OPENAI_RESOURCE_NAME=my-resource.
         assert_eq!(
             resolve_azure_base_url_from(None, Some("my-resource"), ""),
-            Ok(Some("https://my-resource.openai.azure.com/openai/v1".to_string()))
+            Ok(Some(
+                "https://my-resource.openai.azure.com/openai/v1".to_string()
+            ))
         );
     }
 
@@ -171,7 +196,10 @@ mod tests {
         let mut stream = stream_azure_responses(&model, &ctx, &opts);
         let mut err = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); break; }
+            if let Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+                break;
+            }
         }
         let e = err.expect("expected an error for an invalid base URL");
         assert!(e.contains("Invalid Azure OpenAI base URL"), "got: {e}");
@@ -184,7 +212,10 @@ mod tests {
             ..Default::default()
         };
         let p = capture_payload(azure_model("http://127.0.0.1:9"), opts).await;
-        assert_eq!(p.get("prompt_cache_key").and_then(|v| v.as_str()), Some("x".repeat(64).as_str()));
+        assert_eq!(
+            p.get("prompt_cache_key").and_then(|v| v.as_str()),
+            Some("x".repeat(64).as_str())
+        );
     }
 
     #[tokio::test]

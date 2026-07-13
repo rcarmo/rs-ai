@@ -11,7 +11,8 @@
 #[cfg(test)]
 mod tests {
     use crate::provider::bedrock::{
-        bedrock_arn_region, bedrock_standard_endpoint_region, bedrock_use_explicit_endpoint, resolve_bedrock_region,
+        bedrock_arn_region, bedrock_standard_endpoint_region, bedrock_use_explicit_endpoint,
+        resolve_bedrock_region,
     };
     use crate::registry::get_model;
     use crate::types::{Model, ModelCost};
@@ -44,10 +45,22 @@ mod tests {
     #[test]
     fn extract_region_from_url() {
         let cases: &[(&str, Option<&str>)] = &[
-            ("https://bedrock-runtime.us-east-1.amazonaws.com", Some("us-east-1")),
-            ("https://bedrock-runtime.eu-west-1.amazonaws.com", Some("eu-west-1")),
-            ("https://bedrock-runtime-fips.us-gov-west-1.amazonaws.com", Some("us-gov-west-1")),
-            ("https://bedrock-runtime.cn-north-1.amazonaws.com.cn", Some("cn-north-1")),
+            (
+                "https://bedrock-runtime.us-east-1.amazonaws.com",
+                Some("us-east-1"),
+            ),
+            (
+                "https://bedrock-runtime.eu-west-1.amazonaws.com",
+                Some("eu-west-1"),
+            ),
+            (
+                "https://bedrock-runtime-fips.us-gov-west-1.amazonaws.com",
+                Some("us-gov-west-1"),
+            ),
+            (
+                "https://bedrock-runtime.cn-north-1.amazonaws.com.cn",
+                Some("cn-north-1"),
+            ),
             ("https://example.com", None),
             ("", None),
         ];
@@ -77,11 +90,20 @@ mod tests {
     #[test]
     fn should_use_explicit_bedrock_endpoint() {
         let _g = AWS_ENV_LOCK.lock().unwrap();
-        let standard = bedrock_model("https://bedrock-runtime.us-east-1.amazonaws.com", "anthropic.claude");
-        let custom = bedrock_model("https://custom-bedrock-proxy.example.com", "anthropic.claude");
+        let standard = bedrock_model(
+            "https://bedrock-runtime.us-east-1.amazonaws.com",
+            "anthropic.claude",
+        );
+        let custom = bedrock_model(
+            "https://custom-bedrock-proxy.example.com",
+            "anthropic.claude",
+        );
 
         // Custom endpoints are always pinned, regardless of env.
-        assert!(bedrock_use_explicit_endpoint(&custom), "custom endpoints must stay explicit");
+        assert!(
+            bedrock_use_explicit_endpoint(&custom),
+            "custom endpoints must stay explicit"
+        );
 
         // Standard endpoint with no region/profile configured -> pinned.
         unsafe {
@@ -95,10 +117,17 @@ mod tests {
         );
 
         // Standard endpoint with a region configured -> not pinned (SDK resolves it).
-        unsafe { std::env::set_var("AWS_REGION", "eu-west-1"); }
+        unsafe {
+            std::env::set_var("AWS_REGION", "eu-west-1");
+        }
         let pinned_with_region = bedrock_use_explicit_endpoint(&standard);
-        unsafe { std::env::remove_var("AWS_REGION"); }
-        assert!(!pinned_with_region, "standard endpoint must not be pinned when a region is configured");
+        unsafe {
+            std::env::remove_var("AWS_REGION");
+        }
+        assert!(
+            !pinned_with_region,
+            "standard endpoint must not be pinned when a region is configured"
+        );
     }
 
     // --- upstream bedrock-endpoint-resolution region cases ---
@@ -113,8 +142,15 @@ mod tests {
 
     #[test]
     fn assigns_eu_central_1_url_to_builtin_eu_inference_profiles() {
-        let m = get_model("amazon-bedrock", "eu.anthropic.claude-sonnet-4-5-20250929-v1:0").unwrap();
-        assert_eq!(m.base_url, "https://bedrock-runtime.eu-central-1.amazonaws.com");
+        let m = get_model(
+            "amazon-bedrock",
+            "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        )
+        .unwrap();
+        assert_eq!(
+            m.base_url,
+            "https://bedrock-runtime.eu-central-1.amazonaws.com"
+        );
     }
 
     #[test]
@@ -124,25 +160,37 @@ mod tests {
         clear_aws_env();
 
         // EU endpoint with no region/profile -> region derived from the endpoint.
-        let eu = get_model("amazon-bedrock", "eu.anthropic.claude-sonnet-4-5-20250929-v1:0").unwrap();
+        let eu = get_model(
+            "amazon-bedrock",
+            "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        )
+        .unwrap();
         assert_eq!(resolve_bedrock_region(&eu).as_deref(), Some("eu-central-1"));
 
         // Configured AWS_REGION wins for a standard endpoint.
         let us = get_model("amazon-bedrock", "us.anthropic.claude-opus-4-8").unwrap();
-        unsafe { std::env::set_var("AWS_REGION", "us-east-2"); }
+        unsafe {
+            std::env::set_var("AWS_REGION", "us-east-2");
+        }
         assert_eq!(resolve_bedrock_region(&us).as_deref(), Some("us-east-2"));
         clear_aws_env();
 
         // An inference-profile ARN region wins over AWS_REGION.
         let mut arn = us.clone();
-        arn.id = "arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123".into();
-        unsafe { std::env::set_var("AWS_REGION", "us-east-1"); }
+        arn.id =
+            "arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123".into();
+        unsafe {
+            std::env::set_var("AWS_REGION", "us-east-1");
+        }
         assert_eq!(resolve_bedrock_region(&arn).as_deref(), Some("us-west-2"));
 
         // GovCloud ARN region.
         let mut gov = us.clone();
         gov.id = "arn:aws-us-gov:bedrock:us-gov-west-1:123456789012:application-inference-profile/abc123".into();
-        assert_eq!(resolve_bedrock_region(&gov).as_deref(), Some("us-gov-west-1"));
+        assert_eq!(
+            resolve_bedrock_region(&gov).as_deref(),
+            Some("us-gov-west-1")
+        );
         clear_aws_env();
     }
 }

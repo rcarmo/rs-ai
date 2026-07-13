@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use futures::{stream, StreamExt};
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
-use serde_json::{json, Value};
+use futures::{StreamExt, stream};
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
+use serde_json::{Value, json};
 
 use crate::compat::detect_compat;
 use crate::env::client_api_key;
@@ -37,8 +37,8 @@ pub fn stream_azure_responses<'a>(
 /// upstream's `new URL()` validation.
 pub(crate) fn normalize_azure_base_url(base: &str) -> Result<String, String> {
     let trimmed = base.trim().trim_end_matches('/');
-    let mut url = url::Url::parse(trimmed)
-        .map_err(|_| format!("Invalid Azure OpenAI base URL: {base}"))?;
+    let mut url =
+        url::Url::parse(trimmed).map_err(|_| format!("Invalid Azure OpenAI base URL: {base}"))?;
     let host = url.host_str().unwrap_or("").to_string();
     let is_azure_host = host.ends_with(".openai.azure.com")
         || host.ends_with(".cognitiveservices.azure.com")
@@ -81,7 +81,8 @@ pub(crate) fn resolve_azure_base_url_from(
     if let Some(name) = resource_env {
         let t = name.trim();
         if !t.is_empty() {
-            return normalize_azure_base_url(&format!("https://{t}.openai.azure.com/openai/v1")).map(Some);
+            return normalize_azure_base_url(&format!("https://{t}.openai.azure.com/openai/v1"))
+                .map(Some);
         }
     }
     if !model_base_url.trim().is_empty() {
@@ -93,7 +94,12 @@ pub(crate) fn resolve_azure_base_url_from(
 /// Resolve the Azure deployment name from AZURE_OPENAI_DEPLOYMENT_NAME_MAP
 /// ("modelId=deployment,..."), defaulting to the model id (mirrors resolveDeploymentName).
 fn resolve_azure_deployment(model_id: &str) -> String {
-    resolve_azure_deployment_from_map(std::env::var("AZURE_OPENAI_DEPLOYMENT_NAME_MAP").ok().as_deref(), model_id)
+    resolve_azure_deployment_from_map(
+        std::env::var("AZURE_OPENAI_DEPLOYMENT_NAME_MAP")
+            .ok()
+            .as_deref(),
+        model_id,
+    )
 }
 
 pub(crate) fn resolve_azure_deployment_from_map(map_str: Option<&str>, model_id: &str) -> String {
@@ -103,7 +109,8 @@ pub(crate) fn resolve_azure_deployment_from_map(map_str: Option<&str>, model_id:
             if let Some((mid, dep)) = entry.split_once('=')
                 && mid.trim() == model_id
                 // Skip entries with an empty deployment value (upstream `!deploymentName`).
-                && !dep.trim().is_empty() {
+                && !dep.trim().is_empty()
+            {
                 // Upstream builds a Map (map.set), so a later duplicate key wins.
                 resolved = Some(dep.trim().to_string());
             }
@@ -122,9 +129,10 @@ fn stream_responses_inner<'a>(
     if api_key.is_none() {
         let err = Event::Error {
             reason: StopReason::Error,
-            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                format!("No API key for provider: {}", model.provider),
-            )),
+            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                "No API key for provider: {}",
+                model.provider
+            ))),
             message: None,
         };
         return Box::pin(stream::once(async { err }));
@@ -179,12 +187,16 @@ fn stream_responses_inner<'a>(
         // Upstream resolveAzureConfig uses `... || DEFAULT_AZURE_API_VERSION` (truthy),
         // so an empty AZURE_OPENAI_API_VERSION falls back to "v1" rather than emitting
         // an empty ?api-version=.
-        let api_version = std::env::var("AZURE_OPENAI_API_VERSION").ok()
+        let api_version = std::env::var("AZURE_OPENAI_API_VERSION")
+            .ok()
             .filter(|v| !v.is_empty())
             .unwrap_or_else(|| "v1".to_string());
         format!("{}/responses?api-version={}", base, api_version)
     } else {
-        let base = match crate::utils::resolve_cloudflare_base_url(model.base_url.trim_end_matches('/'), &model.provider) {
+        let base = match crate::utils::resolve_cloudflare_base_url(
+            model.base_url.trim_end_matches('/'),
+            &model.provider,
+        ) {
             Ok(b) => b,
             Err(msg) => {
                 let err = Event::Error {
@@ -209,10 +221,14 @@ fn stream_responses_inner<'a>(
         // Note: upstream's Azure client sends no session correlation headers
         // (only api-key + model/option headers), so none are added here.
     } else {
-        headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap());
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+        );
         // Cloudflare AI Gateway also requires cf-aig-authorization.
         if model.provider == "cloudflare-ai-gateway"
-            && let Ok(val) = HeaderValue::from_str(&format!("Bearer {}", api_key)) {
+            && let Ok(val) = HeaderValue::from_str(&format!("Bearer {}", api_key))
+        {
             headers.insert("cf-aig-authorization", val);
         }
         // Session headers (non-Azure): the session id is cleared when caching is off
@@ -220,15 +236,17 @@ fn stream_responses_inner<'a>(
         // affinity headers are omitted. `session_id` only when compat.sendSessionIdHeader
         // (default true); `x-client-request-id` always (when a session id remains).
         let affinity_caching_on =
-            crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref()) != crate::types::CacheRetention::None;
+            crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref())
+                != crate::types::CacheRetention::None;
         if affinity_caching_on
             && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
-            && let Ok(val) = HeaderValue::from_str(session_id) {
-                if model.compat.send_session_id_header.unwrap_or(true) {
-                    headers.insert("session_id", val.clone());
-                }
-                headers.insert("x-client-request-id", val);
+            && let Ok(val) = HeaderValue::from_str(session_id)
+        {
+            if model.compat.send_session_id_header.unwrap_or(true) {
+                headers.insert("session_id", val.clone());
             }
+            headers.insert("x-client-request-id", val);
+        }
     }
 
     if let Some(ref model_headers) = model.headers {
@@ -688,7 +706,10 @@ fn is_responses_tool_call_provider(provider: &str) -> bool {
     // OPENAI/CODEX sets are {openai, openai-codex, opencode}; the Azure set additionally
     // includes azure-openai-responses. A model's provider selects its entry path, so the
     // union here reproduces upstream's per-path allowedToolCallProviders behavior.
-    matches!(provider, "openai" | "openai-codex" | "opencode" | "azure-openai-responses")
+    matches!(
+        provider,
+        "openai" | "openai-codex" | "opencode" | "azure-openai-responses"
+    )
 }
 
 /// Sanitize an id part for the Responses API: keep [A-Za-z0-9_-], cap at 64, trim
@@ -696,9 +717,19 @@ fn is_responses_tool_call_provider(provider: &str) -> bool {
 fn normalize_id_part(part: &str) -> String {
     let sanitized: String = part
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '_' || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
-    let truncated = if sanitized.len() > 64 { sanitized[..64].to_string() } else { sanitized };
+    let truncated = if sanitized.len() > 64 {
+        sanitized[..64].to_string()
+    } else {
+        sanitized
+    };
     truncated.trim_end_matches('_').to_string()
 }
 
@@ -723,7 +754,8 @@ fn responses_function_call_ids(
     }
     let (call_part, item_part) = raw_id.split_once('|').unwrap();
     let call_id = normalize_id_part(call_part);
-    let is_foreign = src_provider != Some(model.provider.as_str()) || src_api != Some(model.api.as_str());
+    let is_foreign =
+        src_provider != Some(model.provider.as_str()) || src_api != Some(model.api.as_str());
     let mut item_id = if is_foreign {
         build_foreign_responses_item_id(item_part)
     } else {
@@ -760,17 +792,28 @@ fn parse_text_signature(signature: Option<&str>) -> Option<ParsedTextSignature> 
     if sig.starts_with('{')
         && let Ok(parsed) = serde_json::from_str::<Value>(sig)
         && parsed.get("v").and_then(|v| v.as_i64()) == Some(1)
-        && let Some(id) = parsed.get("id").and_then(|v| v.as_str()) {
+        && let Some(id) = parsed.get("id").and_then(|v| v.as_str())
+    {
         let phase = match parsed.get("phase").and_then(|p| p.as_str()) {
             Some(p @ ("commentary" | "final_answer")) => Some(p.to_string()),
             _ => None,
         };
-        return Some(ParsedTextSignature { id: Some(id.to_string()), phase });
+        return Some(ParsedTextSignature {
+            id: Some(id.to_string()),
+            phase,
+        });
     }
-    Some(ParsedTextSignature { id: Some(sig.to_string()), phase: None })
+    Some(ParsedTextSignature {
+        id: Some(sig.to_string()),
+        phase: None,
+    })
 }
 
-pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &StreamOptions) -> Value {
+pub(crate) fn build_responses_payload(
+    model: &Model,
+    context: &Context,
+    opts: &StreamOptions,
+) -> Value {
     let compat = detect_compat(model);
     let mut input = Vec::new();
 
@@ -809,12 +852,18 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
                 let mut text_block_index = 0usize;
                 for block in &msg.content {
                     match block {
-                        ContentBlock::Thinking { thinking_signature: Some(sig), .. } => {
+                        ContentBlock::Thinking {
+                            thinking_signature: Some(sig),
+                            ..
+                        } => {
                             if let Ok(v) = serde_json::from_str::<Value>(sig) {
                                 input.push(v);
                             }
                         }
-                        ContentBlock::Text { text, text_signature } => {
+                        ContentBlock::Text {
+                            text,
+                            text_signature,
+                        } => {
                             // Upstream emits an output_text message for every text block
                             // (including empty) and increments the index for each, so the
                             // fallback msg_pi ids of later blocks line up.
@@ -826,7 +875,9 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
                             };
                             text_block_index += 1;
                             let msg_id = match parsed.as_ref().and_then(|p| p.id.clone()) {
-                                Some(id) if id.len() > 64 => format!("msg_{}", crate::utils::short_hash(&id)),
+                                Some(id) if id.len() > 64 => {
+                                    format!("msg_{}", crate::utils::short_hash(&id))
+                                }
                                 Some(id) => id,
                                 None => fallback,
                             };
@@ -842,7 +893,12 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
                             }
                             input.push(item);
                         }
-                        ContentBlock::ToolCall { id, name, arguments, .. } => {
+                        ContentBlock::ToolCall {
+                            id,
+                            name,
+                            arguments,
+                            ..
+                        } => {
                             let (call_id, item_id) = responses_function_call_ids(
                                 id,
                                 model,
@@ -863,19 +919,32 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
                 }
             }
             Role::ToolResult => {
-                let text_result = msg.content.iter().filter_map(|b| match b {
-                    ContentBlock::Text { text, .. } => Some(text.clone()),
-                    _ => None,
-                }).collect::<Vec<_>>().join("\n");
-                let image_parts: Vec<Value> = msg.content.iter().filter_map(|b| match b {
-                    ContentBlock::Image { data, mime_type } => Some(json!({
-                        "type": "input_image",
-                        "detail": "auto",
-                        "image_url": format!("data:{};base64,{}", mime_type, data)
-                    })),
-                    _ => None,
-                }).collect();
-                let call_id = msg.tool_call_id.as_deref().map(|id| responses_function_output_call_id(id, model)).unwrap_or_default();
+                let text_result = msg
+                    .content
+                    .iter()
+                    .filter_map(|b| match b {
+                        ContentBlock::Text { text, .. } => Some(text.clone()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let image_parts: Vec<Value> = msg
+                    .content
+                    .iter()
+                    .filter_map(|b| match b {
+                        ContentBlock::Image { data, mime_type } => Some(json!({
+                            "type": "input_image",
+                            "detail": "auto",
+                            "image_url": format!("data:{};base64,{}", mime_type, data)
+                        })),
+                        _ => None,
+                    })
+                    .collect();
+                let call_id = msg
+                    .tool_call_id
+                    .as_deref()
+                    .map(|id| responses_function_output_call_id(id, model))
+                    .unwrap_or_default();
                 if !image_parts.is_empty() {
                     let mut output = Vec::new();
                     if !text_result.is_empty() {
@@ -919,12 +988,16 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
         CacheRetention::None => {}
         CacheRetention::Short => {
             if let Some(ref session_id) = opts.session_id {
-                payload["prompt_cache_key"] = json!(crate::prompt_cache::clamp_openai_prompt_cache_key(session_id));
+                payload["prompt_cache_key"] = json!(
+                    crate::prompt_cache::clamp_openai_prompt_cache_key(session_id)
+                );
             }
         }
         CacheRetention::Long => {
             if let Some(ref session_id) = opts.session_id {
-                payload["prompt_cache_key"] = json!(crate::prompt_cache::clamp_openai_prompt_cache_key(session_id));
+                payload["prompt_cache_key"] = json!(
+                    crate::prompt_cache::clamp_openai_prompt_cache_key(session_id)
+                );
             }
             if compat.supports_long_cache_retention != Some(false) {
                 payload["prompt_cache_retention"] = json!("24h");
@@ -938,7 +1011,9 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
     // emitted value is floored to OPENAI_RESPONSES_MIN_OUTPUT_TOKENS.
     const OPENAI_RESPONSES_MIN_OUTPUT_TOKENS: u32 = 16;
     let max_output = crate::simple_options::clamp_max_tokens_to_context(
-        model, context, opts.max_tokens.unwrap_or(model.max_tokens),
+        model,
+        context,
+        opts.max_tokens.unwrap_or(model.max_tokens),
     );
     if max_output != 0 {
         payload["max_output_tokens"] = json!(max_output.max(OPENAI_RESPONSES_MIN_OUTPUT_TOKENS));
@@ -954,9 +1029,15 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
     // branch on it so a non-reasoning model never emits reasoning params (e.g. when only
     // reasoning_summary is supplied).
     if model.reasoning
-        && let Some(level) = opts.reasoning.as_ref().and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l)) {
+        && let Some(level) = opts
+            .reasoning
+            .as_ref()
+            .and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l))
+    {
         let key = format!("{:?}", level).to_lowercase();
-        let effort = model.thinking_level_map.as_ref()
+        let effort = model
+            .thinking_level_map
+            .as_ref()
             .and_then(|m| m.get(&key))
             .and_then(|v| v.clone())
             .unwrap_or(key);
@@ -966,7 +1047,12 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
             "summary": opts.reasoning_summary.clone().filter(|s| !s.is_empty()).unwrap_or_else(|| "auto".to_string()),
         });
         payload["include"] = json!(["reasoning.encrypted_content"]);
-    } else if model.reasoning && opts.reasoning_summary.as_deref().is_some_and(|s| !s.is_empty()) {
+    } else if model.reasoning
+        && opts
+            .reasoning_summary
+            .as_deref()
+            .is_some_and(|s| !s.is_empty())
+    {
         // Non-empty summary requested without an explicit effort: default to medium (mirrors upstream).
         payload["reasoning"] = json!({
             "effort": "medium",
@@ -978,21 +1064,29 @@ pub(crate) fn build_responses_payload(model: &Model, context: &Context, opts: &S
         // unless the model maps `off` to null (mirrors the upstream else-if branch).
         match model.thinking_level_map.as_ref().and_then(|m| m.get("off")) {
             Some(None) => {} // off mapped to null -> omit reasoning entirely
-            Some(Some(off)) => { payload["reasoning"] = json!({ "effort": off }); }
-            None => { payload["reasoning"] = json!({ "effort": "none" }); }
+            Some(Some(off)) => {
+                payload["reasoning"] = json!({ "effort": off });
+            }
+            None => {
+                payload["reasoning"] = json!({ "effort": "none" });
+            }
         }
     }
 
     if !context.tools.is_empty() {
-        let tools: Vec<Value> = context.tools.iter().map(|t| {
-            json!({
-                "type": "function",
-                "name": t.name,
-                "description": t.description,
-                "parameters": t.parameters,
-                "strict": false,
+        let tools: Vec<Value> = context
+            .tools
+            .iter()
+            .map(|t| {
+                json!({
+                    "type": "function",
+                    "name": t.name,
+                    "description": t.description,
+                    "parameters": t.parameters,
+                    "strict": false,
+                })
             })
-        }).collect();
+            .collect();
         payload["tools"] = json!(tools);
     }
 

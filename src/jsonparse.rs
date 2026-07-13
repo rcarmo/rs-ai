@@ -103,9 +103,10 @@ pub fn parse_json_with_repair(json: &str) -> Option<Value> {
     }
     let repaired = repair_json(json);
     if repaired != json
-        && let Ok(v) = serde_json::from_str::<Value>(&repaired) {
-            return Some(v);
-        }
+        && let Ok(v) = serde_json::from_str::<Value>(&repaired)
+    {
+        return Some(v);
+    }
     None
 }
 
@@ -138,8 +139,9 @@ pub fn parse_partial_json(input: &str) -> Option<Value> {
     // Complete a trailing partial constant (true/false/null), like the partial-json
     // library, before falling back to dropping it. Covers truncated boolean/null args.
     if let Some(completed) = complete_trailing_constant(input)
-        && let Some(v) = close_and_parse(&completed) {
-            return Some(v);
+        && let Some(v) = close_and_parse(&completed)
+    {
+        return Some(v);
     }
     // Fallback: the truncation landed after a comma/colon or mid-token (e.g.
     // `{"a":1,` or `{"a":1,"b":`). Shrink to the largest prefix that closes into
@@ -302,13 +304,25 @@ mod tests {
     #[test]
     fn test_partial_constants_completed() {
         // partial-json completes a truncated trailing constant; rs-ai must too.
-        assert_eq!(parse_partial_json(r#"{"enabled": tru"#).unwrap()["enabled"], true);
-        assert_eq!(parse_partial_json(r#"{"enabled": t"#).unwrap()["enabled"], true);
+        assert_eq!(
+            parse_partial_json(r#"{"enabled": tru"#).unwrap()["enabled"],
+            true
+        );
+        assert_eq!(
+            parse_partial_json(r#"{"enabled": t"#).unwrap()["enabled"],
+            true
+        );
         assert_eq!(parse_partial_json(r#"{"x": fal"#).unwrap()["x"], false);
-        assert_eq!(parse_partial_json(r#"{"x": n"#).unwrap()["x"], serde_json::Value::Null);
+        assert_eq!(
+            parse_partial_json(r#"{"x": n"#).unwrap()["x"],
+            serde_json::Value::Null
+        );
         // In an array too.
         let arr = parse_partial_json(r#"[true, fal"#).unwrap();
-        assert_eq!(arr.as_array().unwrap(), &vec![serde_json::json!(true), serde_json::json!(false)]);
+        assert_eq!(
+            arr.as_array().unwrap(),
+            &vec![serde_json::json!(true), serde_json::json!(false)]
+        );
         // A non-constant token (e.g. a path letter) is not mis-completed; the key
         // is dropped to the largest valid prefix instead.
         let v = parse_partial_json(r#"{"a": 1, "b": xy"#).unwrap();
@@ -367,7 +381,14 @@ mod tests {
     fn test_partial_trailing_comma_and_dangling_pair() {
         // Truncation after a comma -> drop the trailing comma.
         assert_eq!(parse_partial_json(r#"{"a":1,"#).unwrap()["a"], 1);
-        assert_eq!(parse_partial_json("[1,2,").unwrap().as_array().unwrap().len(), 2);
+        assert_eq!(
+            parse_partial_json("[1,2,")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .len(),
+            2
+        );
         // Truncation after a key+colon with no value -> drop the dangling pair.
         let v = parse_partial_json(r#"{"a":1,"b":"#).unwrap();
         assert_eq!(v["a"], 1);

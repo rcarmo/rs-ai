@@ -24,14 +24,17 @@ impl SessionResources {
     /// Register a session resource for future cleanup.
     pub fn register(&self, session_id: &str, provider: &str) {
         let mut map = self.resources.lock().unwrap();
-        map.insert(session_id.to_string(), SessionEntry {
-            _session_id: session_id.to_string(),
-            _provider: provider.to_string(),
-            _created_at: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_millis() as i64,
-        });
+        map.insert(
+            session_id.to_string(),
+            SessionEntry {
+                _session_id: session_id.to_string(),
+                _provider: provider.to_string(),
+                _created_at: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis() as i64,
+            },
+        );
     }
 
     /// Remove a session resource.

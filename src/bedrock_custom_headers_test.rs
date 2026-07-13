@@ -16,7 +16,15 @@ mod tests {
 
     #[test]
     fn reserves_sigv4_and_auth_headers_case_insensitively() {
-        for key in ["authorization", "Authorization", "host", "Host", "x-amz-date", "X-Amz-Security-Token", "x-amz-content-sha256"] {
+        for key in [
+            "authorization",
+            "Authorization",
+            "host",
+            "Host",
+            "x-amz-date",
+            "X-Amz-Security-Token",
+            "x-amz-content-sha256",
+        ] {
             assert!(is_reserved_bedrock_header(key), "{key} must be reserved");
         }
         for key in ["x-trace-id", "anthropic-beta", "x-allowed", "x-custom"] {
@@ -37,8 +45,12 @@ mod tests {
         ]);
         // Caller headers (mixed case; reserved + allowed).
         let caller: Vec<(&str, &str)> = vec![
-            ("authorization", "evil"), ("x-amz-date", "evil"), ("x-allowed", "ok"),
-            ("Authorization", "evil2"), ("X-Amz-Date", "evil2"), ("HOST", "evil3"),
+            ("authorization", "evil"),
+            ("x-amz-date", "evil"),
+            ("x-allowed", "ok"),
+            ("Authorization", "evil2"),
+            ("X-Amz-Date", "evil2"),
+            ("HOST", "evil3"),
         ];
         for (k, v) in caller {
             if !is_reserved_bedrock_header(k) {
@@ -47,8 +59,14 @@ mod tests {
                 request.insert(k.to_ascii_lowercase(), v.to_string());
             }
         }
-        assert_eq!(request.get("authorization").map(String::as_str), Some("real-auth"));
-        assert_eq!(request.get("x-amz-date").map(String::as_str), Some("real-date"));
+        assert_eq!(
+            request.get("authorization").map(String::as_str),
+            Some("real-auth")
+        );
+        assert_eq!(
+            request.get("x-amz-date").map(String::as_str),
+            Some("real-date")
+        );
         assert_eq!(request.get("host").map(String::as_str), Some("real-host"));
         assert_eq!(request.get("x-allowed").map(String::as_str), Some("ok"));
         // No mixed-case reserved leak.
@@ -56,6 +74,9 @@ mod tests {
         assert!(!request.contains_key("X-Amz-Date"));
         assert!(!request.contains_key("HOST"));
         let keys: Vec<&String> = request.keys().collect();
-        assert_eq!(keys, vec!["authorization", "host", "x-allowed", "x-amz-date"]);
+        assert_eq!(
+            keys,
+            vec!["authorization", "host", "x-allowed", "x-amz-date"]
+        );
     }
 }

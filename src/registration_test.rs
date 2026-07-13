@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
+    use crate::images;
     use crate::provider;
     use crate::registry;
     use crate::types::*;
-    use crate::images;
     use tokio_stream::StreamExt;
 
     #[tokio::test]
@@ -13,18 +13,23 @@ mod tests {
         model.api = "google-vertex".into();
         model.provider = "google-vertex".into();
         model.base_url = "https://{location}-aiplatform.googleapis.com".into();
-        let ctx = Context { system_prompt: None, messages: vec![], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![],
+            tools: vec![],
+        };
         let opts = StreamOptions::default();
         // Skip when the host environment actually configures Vertex project/location.
-        if std::env::var("GOOGLE_CLOUD_PROJECT").is_ok()
-            || std::env::var("GCLOUD_PROJECT").is_ok()
+        if std::env::var("GOOGLE_CLOUD_PROJECT").is_ok() || std::env::var("GCLOUD_PROJECT").is_ok()
         {
             return;
         }
         let mut stream = registry::stream(&model, &ctx, &opts);
         let mut err = None;
         while let Some(evt) = stream.next().await {
-            if let crate::events::Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+            if let crate::events::Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+            }
         }
         // Vertex is now implemented (project/location-scoped REST endpoint); without
         // project/location configured it surfaces the project-required resolution error.
@@ -68,10 +73,19 @@ mod tests {
         registry::clear_api_providers();
         provider::register_builtin_providers();
         let model = openai_model();
-        let ctx = Context { system_prompt: None, messages: vec![user_message("hi")], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![user_message("hi")],
+            tools: vec![],
+        };
         // base_url points nowhere, so once dispatch works we should get a network error, not the old placeholder error
-        let err = registry::complete(&model, &ctx, &StreamOptions::default()).await.unwrap_err();
-        assert!(!err.to_string().contains("provider stream not yet implemented"));
+        let err = registry::complete(&model, &ctx, &StreamOptions::default())
+            .await
+            .unwrap_err();
+        assert!(
+            !err.to_string()
+                .contains("provider stream not yet implemented")
+        );
     }
 
     #[test]
@@ -106,6 +120,8 @@ mod tests {
         let fut = images::generate_images(&model, &ctx, &opts);
         let rt = tokio::runtime::Runtime::new().unwrap();
         let result = rt.block_on(fut);
-        assert!(!matches!(result.error_message.as_deref(), Some(msg) if msg.contains("No API provider registered")));
+        assert!(
+            !matches!(result.error_message.as_deref(), Some(msg) if msg.contains("No API provider registered"))
+        );
     }
 }

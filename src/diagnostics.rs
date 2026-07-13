@@ -45,7 +45,10 @@ pub fn transport_failure_diagnostic(error_msg: &str) -> AssistantMessageDiagnost
 }
 
 /// Create an assistant message diagnostic record.
-pub fn create_assistant_message_diagnostic(diagnostic_type: &str, error_msg: &str) -> AssistantMessageDiagnostic {
+pub fn create_assistant_message_diagnostic(
+    diagnostic_type: &str,
+    error_msg: &str,
+) -> AssistantMessageDiagnostic {
     AssistantMessageDiagnostic {
         diagnostic_type: diagnostic_type.into(),
         timestamp: std::time::SystemTime::now()
@@ -71,6 +74,9 @@ pub fn extract_diagnostic_error(diag: &AssistantMessageDiagnostic) -> &str {
 ///
 /// This helper returns the record so callers can push it into the target
 /// assistant message's `diagnostics` vector at the right point in their flow.
-pub fn append_assistant_message_diagnostic(diagnostic_type: &str, error_msg: &str) -> AssistantMessageDiagnostic {
+pub fn append_assistant_message_diagnostic(
+    diagnostic_type: &str,
+    error_msg: &str,
+) -> AssistantMessageDiagnostic {
     create_assistant_message_diagnostic(diagnostic_type, error_msg)
 }

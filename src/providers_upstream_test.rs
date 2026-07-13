@@ -35,16 +35,26 @@ mod tests {
         assert!(providers.contains(&"anthropic".to_string()));
 
         let anthropic = registry::get_model("anthropic", "claude-haiku-4-5");
-        assert_eq!(anthropic.map(|m| m.api), Some("anthropic-messages".to_string()));
+        assert_eq!(
+            anthropic.map(|m| m.api),
+            Some("anthropic-messages".to_string())
+        );
 
         let all = registry::list_models(None);
-        assert!(all.len() > 500, "expected >500 builtin models, got {}", all.len());
+        assert!(
+            all.len() > 500,
+            "expected >500 builtin models, got {}",
+            all.len()
+        );
 
         // every provider lists at least one model and owns its models
         for provider in &providers {
             let list = registry::list_models(Some(provider));
             assert!(!list.is_empty(), "provider {provider} has no models");
-            assert!(list.iter().all(|m| &m.provider == provider), "provider {provider} owns its models");
+            assert!(
+                list.iter().all(|m| &m.provider == provider),
+                "provider {provider} owns its models"
+            );
         }
     }
 
@@ -76,10 +86,17 @@ mod tests {
         }
         assert!(get_env_api_key("amazon-bedrock").is_none());
 
-        unsafe { std::env::set_var("AWS_PROFILE", "dev"); }
+        unsafe {
+            std::env::set_var("AWS_PROFILE", "dev");
+        }
         let configured = get_env_api_key("amazon-bedrock");
-        unsafe { std::env::remove_var("AWS_PROFILE"); }
-        assert!(configured.is_some(), "AWS_PROFILE should mark bedrock configured");
+        unsafe {
+            std::env::remove_var("AWS_PROFILE");
+        }
+        assert!(
+            configured.is_some(),
+            "AWS_PROFILE should mark bedrock configured"
+        );
     }
 
     #[test]
@@ -90,9 +107,13 @@ mod tests {
         }
         assert!(get_env_api_key("cloudflare-workers-ai").is_none());
 
-        unsafe { std::env::set_var("CLOUDFLARE_API_KEY", "cf-key"); }
+        unsafe {
+            std::env::set_var("CLOUDFLARE_API_KEY", "cf-key");
+        }
         let got = get_env_api_key("cloudflare-workers-ai");
-        unsafe { std::env::remove_var("CLOUDFLARE_API_KEY"); }
+        unsafe {
+            std::env::remove_var("CLOUDFLARE_API_KEY");
+        }
         assert_eq!(got.as_deref(), Some("cf-key"));
     }
 
@@ -117,7 +138,11 @@ mod tests {
             api_key: Some("k".into()),
             compat: Default::default(),
         };
-        let ctx = Context { system_prompt: None, messages: vec![], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![],
+            tools: vec![],
+        };
         let opts = StreamOptions::default();
         let mut stream = registry::stream(&model, &ctx, &opts);
         let mut err = None;
@@ -137,7 +162,10 @@ mod tests {
         let faux = FauxProvider::new("faux", "faux");
         faux.set_responses(vec![Message {
             role: Role::Assistant,
-            content: vec![ContentBlock::Text { text: "hello from faux".into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: "hello from faux".into(),
+                text_signature: None,
+            }],
             timestamp: 0,
             api: None,
             provider: None,
@@ -175,7 +203,10 @@ mod tests {
             system_prompt: None,
             messages: vec![Message {
                 role: Role::User,
-                content: vec![ContentBlock::Text { text: "hi".into(), text_signature: None }],
+                content: vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    text_signature: None,
+                }],
                 timestamp: 0,
                 api: None,
                 provider: None,

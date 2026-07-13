@@ -10,7 +10,9 @@
 #[cfg(test)]
 mod tests {
     use crate::provider::responses::build_responses_payload;
-    use crate::types::{Context, ContentBlock, Message, Model, ModelCost, Role, StopReason, StreamOptions};
+    use crate::types::{
+        ContentBlock, Context, Message, Model, ModelCost, Role, StopReason, StreamOptions,
+    };
 
     fn codex_model() -> Model {
         Model {
@@ -36,16 +38,30 @@ mod tests {
         let assistant = Message {
             role: Role::Assistant,
             content: vec![
-                ContentBlock::Thinking { thinking: "private reasoning".into(), thinking_signature: None, redacted: false },
-                ContentBlock::Text { text: "visible answer".into(), text_signature: None },
+                ContentBlock::Thinking {
+                    thinking: "private reasoning".into(),
+                    thinking_signature: None,
+                    redacted: false,
+                },
+                ContentBlock::Text {
+                    text: "visible answer".into(),
+                    text_signature: None,
+                },
             ],
             timestamp: 0,
             api: Some("anthropic-messages".into()),
             provider: Some("anthropic".into()),
             model: Some("claude-opus-4-8".into()),
-            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: Some(StopReason::Stop), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(StopReason::Stop),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
         let ctx = Context {
             system_prompt: Some("You are concise.".into()),
@@ -53,12 +69,24 @@ mod tests {
             messages: vec![
                 Message {
                     role: Role::User,
-                    content: vec![ContentBlock::Text { text: "hello".into(), text_signature: None }],
+                    content: vec![ContentBlock::Text {
+                        text: "hello".into(),
+                        text_signature: None,
+                    }],
                     timestamp: 0,
-                    api: None, provider: None, model: None, response_id: None,
-                    response_model: None, diagnostics: Vec::new(), usage: None,
-                    stop_reason: None, error_message: None,
-                    tool_call_id: None, tool_name: None, is_error: false, details: None,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
+                    response_model: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: None,
+                    error_message: None,
+                    tool_call_id: None,
+                    tool_name: None,
+                    is_error: false,
+                    details: None,
                 },
                 assistant,
             ],
@@ -66,13 +94,25 @@ mod tests {
 
         let payload = build_responses_payload(&codex_model(), &ctx, &StreamOptions::default());
         let input = payload["input"].as_array().expect("input array");
-        let message_ids: Vec<String> = input.iter()
+        let message_ids: Vec<String> = input
+            .iter()
             .filter(|item| item.get("type").and_then(|t| t.as_str()) == Some("message"))
-            .filter_map(|item| item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()))
+            .filter_map(|item| {
+                item.get("id")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+            })
             .collect();
 
-        assert_eq!(message_ids, vec!["msg_pi_1".to_string(), "msg_pi_1_1".to_string()]);
+        assert_eq!(
+            message_ids,
+            vec!["msg_pi_1".to_string(), "msg_pi_1_1".to_string()]
+        );
         let unique: std::collections::HashSet<_> = message_ids.iter().collect();
-        assert_eq!(unique.len(), message_ids.len(), "fallback message ids must be unique");
+        assert_eq!(
+            unique.len(),
+            message_ids.len(),
+            "fallback message ids must be unique"
+        );
     }
 }

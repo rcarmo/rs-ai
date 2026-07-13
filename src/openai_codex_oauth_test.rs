@@ -12,8 +12,8 @@
 #[cfg(test)]
 mod tests {
     use crate::oauth::refresh_codex_token_at;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[tokio::test]
     async fn token_refresh_failure_includes_status_and_body() {
@@ -27,9 +27,16 @@ mod tests {
             ))
             .mount(&server)
             .await;
-        let err = refresh_codex_token_at(&format!("{}/oauth/token", server.uri()), "invalid-refresh-token")
-            .await.unwrap_err();
-        assert!(err.contains("OpenAI Codex token refresh failed (401)"), "got: {err}");
+        let err = refresh_codex_token_at(
+            &format!("{}/oauth/token", server.uri()),
+            "invalid-refresh-token",
+        )
+        .await
+        .unwrap_err();
+        assert!(
+            err.contains("OpenAI Codex token refresh failed (401)"),
+            "got: {err}"
+        );
         assert!(err.contains("Could not validate your token"), "got: {err}");
     }
 }

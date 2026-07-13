@@ -10,7 +10,7 @@
 #[cfg(test)]
 mod tests {
     use crate::provider::responses::build_responses_payload;
-    use crate::types::{Context, ContentBlock, Message, Model, ModelCost, Role, StreamOptions};
+    use crate::types::{ContentBlock, Context, Message, Model, ModelCost, Role, StreamOptions};
     use crate::utils::short_hash;
     use std::collections::HashMap;
 
@@ -50,22 +50,40 @@ mod tests {
             api: Some("openai-responses".into()),
             provider: Some("github-copilot".into()),
             model: Some("gpt-5.5".into()),
-            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: Some(crate::types::StopReason::ToolUse), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(crate::types::StopReason::ToolUse),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         }
     }
 
     fn tool_result() -> Message {
         Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Text { text: "ok".into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: "ok".into(),
+                text_signature: None,
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: Some(COPILOT_RAW_TOOL_CALL_ID.into()), tool_name: Some("edit".into()),
-            is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some(COPILOT_RAW_TOOL_CALL_ID.into()),
+            tool_name: Some("edit".into()),
+            is_error: false,
+            details: None,
         }
     }
 
@@ -78,12 +96,24 @@ mod tests {
             messages: vec![
                 Message {
                     role: Role::User,
-                    content: vec![ContentBlock::Text { text: "Use the tool.".into(), text_signature: None }],
+                    content: vec![ContentBlock::Text {
+                        text: "Use the tool.".into(),
+                        text_signature: None,
+                    }],
                     timestamp: 0,
-                    api: None, provider: None, model: None, response_id: None,
-                    response_model: None, diagnostics: Vec::new(), usage: None,
-                    stop_reason: None, error_message: None,
-                    tool_call_id: None, tool_name: None, is_error: false, details: None,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
+                    response_model: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: None,
+                    error_message: None,
+                    tool_call_id: None,
+                    tool_name: None,
+                    is_error: false,
+                    details: None,
                 },
                 assistant_with_foreign_toolcall(),
                 tool_result(),
@@ -92,7 +122,8 @@ mod tests {
 
         let payload = build_responses_payload(&model, &ctx, &StreamOptions::default());
         let input = payload["input"].as_array().expect("input array");
-        let function_call = input.iter()
+        let function_call = input
+            .iter()
             .find(|item| item.get("type").and_then(|t| t.as_str()) == Some("function_call"))
             .expect("a function_call item");
 
@@ -103,7 +134,9 @@ mod tests {
         assert_eq!(id, expected_item_id);
         assert!(id.len() <= 64, "item id must be bounded to 64 chars: {id}");
         assert!(
-            id.strip_prefix("fc_").map(|rest| rest.chars().all(|c| c.is_ascii_alphanumeric())).unwrap_or(false),
+            id.strip_prefix("fc_")
+                .map(|rest| rest.chars().all(|c| c.is_ascii_alphanumeric()))
+                .unwrap_or(false),
             "item id must match ^fc_[A-Za-z0-9]+$: {id}"
         );
     }

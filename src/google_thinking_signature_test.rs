@@ -9,19 +9,27 @@ mod tests {
     #[test]
     fn treats_thought_true_as_thinking() {
         assert!(is_thinking_part(&json!({"thought": true})));
-        assert!(is_thinking_part(&json!({"thought": true, "thoughtSignature": "opaque-signature"})));
+        assert!(is_thinking_part(
+            &json!({"thought": true, "thoughtSignature": "opaque-signature"})
+        ));
     }
 
     #[test]
     fn does_not_treat_thought_signature_alone_as_thinking() {
-        assert!(!is_thinking_part(&json!({"thoughtSignature": "opaque-signature"})));
-        assert!(!is_thinking_part(&json!({"thought": false, "thoughtSignature": "opaque-signature"})));
+        assert!(!is_thinking_part(
+            &json!({"thoughtSignature": "opaque-signature"})
+        ));
+        assert!(!is_thinking_part(
+            &json!({"thought": false, "thoughtSignature": "opaque-signature"})
+        ));
     }
 
     #[test]
     fn does_not_treat_empty_or_missing_signatures_as_thinking_if_thought_not_set() {
         assert!(!is_thinking_part(&json!({})));
-        assert!(!is_thinking_part(&json!({"thought": false, "thoughtSignature": ""})));
+        assert!(!is_thinking_part(
+            &json!({"thought": false, "thoughtSignature": ""})
+        ));
     }
 
     #[test]
@@ -36,6 +44,9 @@ mod tests {
 
     #[test]
     fn updates_signature_when_a_new_non_empty_signature_arrives() {
-        assert_eq!(retain_thought_signature(Some("sig-1"), Some("sig-2")).as_deref(), Some("sig-2"));
+        assert_eq!(
+            retain_thought_signature(Some("sig-1"), Some("sig-2")).as_deref(),
+            Some("sig-2")
+        );
     }
 }

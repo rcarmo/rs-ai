@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 use std::sync::RwLock;
 
-use std::sync::{Arc, Once};
 use crate::events::Event;
-use crate::types::{Api, Context, Model, StreamOptions, StopReason, Message};
+use crate::types::{Api, Context, Message, Model, StopReason, StreamOptions};
+use std::sync::{Arc, Once};
 
 use tokio_stream::Stream;
 
@@ -116,9 +116,10 @@ pub fn stream<'a>(
         None => {
             let err = Event::Error {
                 reason: StopReason::Error,
-                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                    format!("No API provider registered for api: {}", model.api),
-                )),
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                    "No API provider registered for api: {}",
+                    model.api
+                ))),
                 message: None,
             };
             Box::pin(tokio_stream::once(err))
@@ -156,7 +157,11 @@ pub async fn complete(
     if let Some(err) = last_err {
         Err(err)
     } else {
-        result.ok_or_else(|| Arc::from(Box::<dyn std::error::Error + Send + Sync>::from("stream ended without done or error event")))
+        result.ok_or_else(|| {
+            Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                "stream ended without done or error event",
+            ))
+        })
     }
 }
 

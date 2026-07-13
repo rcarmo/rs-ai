@@ -7,8 +7,12 @@ mod tests {
     fn test_register_builtin_models() {
         registry::register_builtin_models();
         let providers = registry::list_providers();
-        assert!(providers.len() >= 30, "expected 30+ providers, got {}", providers.len());
-        
+        assert!(
+            providers.len() >= 30,
+            "expected 30+ providers, got {}",
+            providers.len()
+        );
+
         let model = registry::get_model(provider_id::OPENAI, "gpt-4o");
         assert!(model.is_some(), "gpt-4o should be registered");
         let m = model.unwrap();
@@ -26,7 +30,11 @@ mod tests {
     fn test_list_models_filter() {
         registry::register_builtin_models();
         let openai = registry::list_models(Some(provider_id::OPENAI));
-        assert!(openai.len() >= 10, "expected 10+ OpenAI models, got {}", openai.len());
+        assert!(
+            openai.len() >= 10,
+            "expected 10+ OpenAI models, got {}",
+            openai.len()
+        );
         for m in &openai {
             assert_eq!(m.provider, provider_id::OPENAI);
         }

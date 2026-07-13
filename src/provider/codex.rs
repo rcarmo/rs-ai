@@ -2,14 +2,14 @@
 
 use std::sync::Arc;
 
-use futures::stream;
-use serde_json::{json, Value};
-use tokio_tungstenite::tungstenite;
 use crate::env::resolve_api_key;
 use crate::events::Event;
 use crate::provider::responses;
 use crate::transports::sse;
 use crate::types::*;
+use futures::stream;
+use serde_json::{Value, json};
+use tokio_tungstenite::tungstenite;
 
 /// zstd compression level for Codex SSE request bodies (upstream
 /// `REQUEST_COMPRESSION_ZSTD_LEVEL`). The Codex backend accepts zstd-compressed
@@ -60,8 +60,9 @@ fn codex_user_agent() -> String {
 /// Sessions whose Codex WebSocket transport has failed; subsequent requests for
 /// these sessions skip WebSocket and use SSE directly (mirrors upstream
 /// websocketSseFallbackSessions).
-static WS_FALLBACK_SESSIONS: std::sync::LazyLock<std::sync::Mutex<std::collections::HashSet<String>>> =
-    std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashSet::new()));
+static WS_FALLBACK_SESSIONS: std::sync::LazyLock<
+    std::sync::Mutex<std::collections::HashSet<String>>,
+> = std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashSet::new()));
 
 /// Codex error code emitted when the server rejects a WebSocket because too many
 /// are already open (mirrors upstream WEBSOCKET_CONNECTION_LIMIT_REACHED_CODE).
@@ -76,14 +77,18 @@ pub(crate) fn is_ws_connection_limit_error(err: &str) -> bool {
 
 fn ws_fallback_active(session_id: Option<&str>) -> bool {
     match session_id {
-        Some(s) => WS_FALLBACK_SESSIONS.lock().map(|set| set.contains(s)).unwrap_or(false),
+        Some(s) => WS_FALLBACK_SESSIONS
+            .lock()
+            .map(|set| set.contains(s))
+            .unwrap_or(false),
         None => false,
     }
 }
 
 fn record_ws_fallback(session_id: Option<&str>) {
     if let Some(s) = session_id
-        && let Ok(mut set) = WS_FALLBACK_SESSIONS.lock() {
+        && let Ok(mut set) = WS_FALLBACK_SESSIONS.lock()
+    {
         set.insert(s.to_string());
     }
 }
@@ -92,7 +97,9 @@ fn record_ws_fallback(session_id: Option<&str>) {
 pub fn clear_ws_fallback(session_id: Option<&str>) {
     if let Ok(mut set) = WS_FALLBACK_SESSIONS.lock() {
         match session_id {
-            Some(s) => { set.remove(s); }
+            Some(s) => {
+                set.remove(s);
+            }
             None => set.clear(),
         }
     }
@@ -108,9 +115,10 @@ pub fn stream_codex<'a>(
     if api_key.is_none() {
         let err = Event::Error {
             reason: StopReason::Error,
-            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                format!("No API key for provider: {}", model.provider),
-            )),
+            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                "No API key for provider: {}",
+                model.provider
+            ))),
             message: None,
         };
         return Box::pin(stream::once(async { err }));
@@ -122,7 +130,11 @@ pub fn stream_codex<'a>(
         match hook(payload.clone(), model) {
             Ok(next) => payload = next,
             Err(err) => {
-                let err = Event::Error { reason: StopReason::Error, error: Arc::from(err), message: None };
+                let err = Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(err),
+                    message: None,
+                };
                 return Box::pin(stream::once(async { err }));
             }
         }
@@ -341,23 +353,29 @@ async fn try_websocket(
     opts: &StreamOptions,
     payload: &Value,
 ) -> Result<Vec<Event>, String> {
-    use tokio_tungstenite::connect_async;
     use futures::SinkExt;
+    use tokio_tungstenite::connect_async;
 
     let account_id = crate::oauth::codex_account_id(api_key);
     let user_agent = codex_user_agent();
     // Upstream: `sessionId || createCodexRequestId()` (truthy), so an empty session id
     // gets a fresh request id rather than being used verbatim.
-    let request_id = opts.session_id.clone().filter(|s| !s.is_empty())
+    let request_id = opts
+        .session_id
+        .clone()
+        .filter(|s| !s.is_empty())
         .unwrap_or_else(|| format!("req_{}", crate::utils::now_millis()));
     // A fully-built http::Request bypasses tungstenite's automatic handshake-header
     // generation, so we must supply Host + the RFC6455 upgrade headers (including a
     // fresh Sec-WebSocket-Key) ourselves or the server rejects the handshake.
-    let host = url::Url::parse(ws_url).ok()
-        .and_then(|u| u.host_str().map(|h| match u.port() {
-            Some(p) => format!("{h}:{p}"),
-            None => h.to_string(),
-        }))
+    let host = url::Url::parse(ws_url)
+        .ok()
+        .and_then(|u| {
+            u.host_str().map(|h| match u.port() {
+                Some(p) => format!("{h}:{p}"),
+                None => h.to_string(),
+            })
+        })
         .unwrap_or_default();
     let mut builder = tungstenite::http::Request::builder()
         .uri(ws_url)
@@ -365,7 +383,10 @@ async fn try_websocket(
         .header("Connection", "Upgrade")
         .header("Upgrade", "websocket")
         .header("Sec-WebSocket-Version", "13")
-        .header("Sec-WebSocket-Key", tungstenite::handshake::client::generate_key())
+        .header(
+            "Sec-WebSocket-Key",
+            tungstenite::handshake::client::generate_key(),
+        )
         .header("Authorization", format!("Bearer {}", api_key))
         .header("originator", "pi")
         .header("User-Agent", user_agent)
@@ -380,23 +401,24 @@ async fn try_websocket(
             builder = builder.header(k.as_str(), v.as_str());
         }
     }
-    let request = builder
-        .body(())
-        .map_err(|e| e.to_string())?;
+    let request = builder.body(()).map_err(|e| e.to_string())?;
 
-    let (mut ws, _) = connect_async(request)
-        .await
-        .map_err(|e| e.to_string())?;
+    let (mut ws, _) = connect_async(request).await.map_err(|e| e.to_string())?;
 
     // Send the request as a `response.create` message: upstream sends
     // JSON.stringify({ type: "response.create", ...requestBody }) over the socket.
     let mut ws_msg = payload.clone();
     if let Some(obj) = ws_msg.as_object_mut() {
-        obj.insert("type".to_string(), Value::String("response.create".to_string()));
+        obj.insert(
+            "type".to_string(),
+            Value::String("response.create".to_string()),
+        );
     }
-    ws.send(tungstenite::Message::Text(serde_json::to_string(&ws_msg).unwrap().into()))
-        .await
-        .map_err(|e| e.to_string())?;
+    ws.send(tungstenite::Message::Text(
+        serde_json::to_string(&ws_msg).unwrap().into(),
+    ))
+    .await
+    .map_err(|e| e.to_string())?;
 
     use futures::StreamExt;
     let mut state = CodexWsState::new(model);
@@ -417,10 +439,14 @@ async fn try_websocket(
         // pre-start transport failure (retry the WS once, then fall back to SSE) rather
         // than surfacing it. Signal it to the caller via the Err marker.
         if data.get("type").and_then(|v| v.as_str()) == Some("error") {
-            let code = data.get("code").and_then(|v| v.as_str())
+            let code = data
+                .get("code")
+                .and_then(|v| v.as_str())
                 .or_else(|| data.pointer("/error/code").and_then(|v| v.as_str()));
             if code == Some(WS_CONNECTION_LIMIT_CODE) {
-                return Err(format!("{WS_CONNECTION_LIMIT_CODE}: codex websocket connection limit reached"));
+                return Err(format!(
+                    "{WS_CONNECTION_LIMIT_CODE}: codex websocket connection limit reached"
+                ));
             }
         }
         let is_done = state.process_event(&data);
@@ -477,7 +503,9 @@ impl CodexWsState {
             is_error: false,
             details: None,
         };
-        let events = vec![Event::Start { partial: partial.clone() }];
+        let events = vec![Event::Start {
+            partial: partial.clone(),
+        }];
         Self {
             partial,
             model_cost: model.cost.clone(),
@@ -499,7 +527,8 @@ impl CodexWsState {
         match event_type {
             "response.created" => {
                 if let Some(response) = data.get("response")
-                    && let Some(id) = response.get("id").and_then(|v| v.as_str()) {
+                    && let Some(id) = response.get("id").and_then(|v| v.as_str())
+                {
                     self.partial.response_id = Some(id.to_string());
                 }
                 // Upstream does not capture response.model into responseModel.
@@ -508,23 +537,40 @@ impl CodexWsState {
                 if let Some(item) = data.get("item") {
                     match item.get("type").and_then(|v| v.as_str()).unwrap_or("") {
                         "function_call" => {
-                            self.current_tool_call_id = item.get("call_id").and_then(|v| v.as_str()).map(|s| s.to_string());
-                            self.current_tool_item_id = item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string());
-                            self.current_tool_name = item.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
-                            self.current_tool_args = item.get("arguments").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                            if let (Some(id), Some(name)) = (self.current_tool_call_id.clone(), self.current_tool_name.clone()) {
+                            self.current_tool_call_id = item
+                                .get("call_id")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string());
+                            self.current_tool_item_id = item
+                                .get("id")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string());
+                            self.current_tool_name = item
+                                .get("name")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string());
+                            self.current_tool_args = item
+                                .get("arguments")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .to_string();
+                            if let (Some(id), Some(name)) = (
+                                self.current_tool_call_id.clone(),
+                                self.current_tool_name.clone(),
+                            ) {
                                 self.events.push(Event::ToolCallStart { id, name });
                             }
                             if !self.current_tool_args.is_empty() {
-                                self.events.push(Event::ToolCallDelta { delta: self.current_tool_args.clone() });
+                                self.events.push(Event::ToolCallDelta {
+                                    delta: self.current_tool_args.clone(),
+                                });
                             }
                         }
                         "reasoning" => self.events.push(Event::ThinkingStart),
-                        "message"
-                            if !self.text_started => {
-                                self.text_started = true;
-                                self.events.push(Event::TextStart);
-                            }
+                        "message" if !self.text_started => {
+                            self.text_started = true;
+                            self.events.push(Event::TextStart);
+                        }
                         _ => {}
                     }
                 }
@@ -542,7 +588,9 @@ impl CodexWsState {
                         self.events.push(Event::TextStart);
                     }
                     self.current_text.push_str(delta);
-                    self.events.push(Event::TextDelta { delta: delta.to_string() });
+                    self.events.push(Event::TextDelta {
+                        delta: delta.to_string(),
+                    });
                 }
             }
             "response.content_part.done" => {
@@ -554,7 +602,9 @@ impl CodexWsState {
             "response.reasoning_text.delta" | "response.reasoning_summary_text.delta" => {
                 if let Some(delta) = data.get("delta").and_then(|v| v.as_str()) {
                     self.current_thinking.push_str(delta);
-                    self.events.push(Event::ThinkingDelta { delta: delta.to_string() });
+                    self.events.push(Event::ThinkingDelta {
+                        delta: delta.to_string(),
+                    });
                 }
             }
             "response.reasoning_summary_part.done" => {
@@ -562,13 +612,17 @@ impl CodexWsState {
                 // when a summary is in progress), matching the shared responses decoder.
                 if !self.current_thinking.is_empty() {
                     self.current_thinking.push_str("\n\n");
-                    self.events.push(Event::ThinkingDelta { delta: "\n\n".to_string() });
+                    self.events.push(Event::ThinkingDelta {
+                        delta: "\n\n".to_string(),
+                    });
                 }
             }
             "response.function_call_arguments.delta" => {
                 if let Some(delta) = data.get("delta").and_then(|v| v.as_str()) {
                     self.current_tool_args.push_str(delta);
-                    self.events.push(Event::ToolCallDelta { delta: delta.to_string() });
+                    self.events.push(Event::ToolCallDelta {
+                        delta: delta.to_string(),
+                    });
                 }
             }
             "response.function_call_arguments.done" => {
@@ -577,7 +631,9 @@ impl CodexWsState {
                         let extra = &arguments[self.current_tool_args.len()..];
                         if !extra.is_empty() {
                             self.current_tool_args.push_str(extra);
-                            self.events.push(Event::ToolCallDelta { delta: extra.to_string() });
+                            self.events.push(Event::ToolCallDelta {
+                                delta: extra.to_string(),
+                            });
                         }
                     } else {
                         self.current_tool_args = arguments.to_string();
@@ -588,34 +644,79 @@ impl CodexWsState {
                 if let Some(item) = data.get("item") {
                     match item.get("type").and_then(|v| v.as_str()) {
                         Some("function_call") => {
-                            let id = item.get("call_id").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| self.current_tool_call_id.clone()).unwrap_or_default();
-                            let name = item.get("name").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| self.current_tool_name.clone()).unwrap_or_default();
-                            let final_args = item.get("arguments").and_then(|v| v.as_str()).unwrap_or(&self.current_tool_args);
+                            let id = item
+                                .get("call_id")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string())
+                                .or_else(|| self.current_tool_call_id.clone())
+                                .unwrap_or_default();
+                            let name = item
+                                .get("name")
+                                .and_then(|v| v.as_str())
+                                .map(|s| s.to_string())
+                                .or_else(|| self.current_tool_name.clone())
+                                .unwrap_or_default();
+                            let final_args = item
+                                .get("arguments")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or(&self.current_tool_args);
                             let parsed: Value = crate::jsonparse::parse_streaming_json(final_args);
                             let parsed_map = match &parsed {
                                 Value::Object(map) => map.clone().into_iter().collect(),
                                 _ => std::collections::HashMap::new(),
                             };
                             self.partial.content.push(ContentBlock::ToolCall {
-                                id: match item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| self.current_tool_item_id.clone()) {
-                                    Some(item_id) if !id.is_empty() => format!("{}|{}", id, item_id),
+                                id: match item
+                                    .get("id")
+                                    .and_then(|v| v.as_str())
+                                    .map(|s| s.to_string())
+                                    .or_else(|| self.current_tool_item_id.clone())
+                                {
+                                    Some(item_id) if !id.is_empty() => {
+                                        format!("{}|{}", id, item_id)
+                                    }
                                     _ => id.clone(),
                                 },
                                 name: name.clone(),
                                 arguments: parsed_map,
                                 thought_signature: None,
                             });
-                            self.events.push(Event::ToolCallEnd { id, name, arguments: parsed });
+                            self.events.push(Event::ToolCallEnd {
+                                id,
+                                name,
+                                arguments: parsed,
+                            });
                             self.current_tool_call_id = None;
                             self.current_tool_item_id = None;
                             self.current_tool_name = None;
                             self.current_tool_args.clear();
                         }
                         Some("reasoning") => {
-                            let thinking_text = item.get("summary").and_then(|v| v.as_array())
-                                .map(|parts| parts.iter().filter_map(|p| p.get("text").and_then(|v| v.as_str())).collect::<Vec<_>>().join("\n\n"))
+                            let thinking_text = item
+                                .get("summary")
+                                .and_then(|v| v.as_array())
+                                .map(|parts| {
+                                    parts
+                                        .iter()
+                                        .filter_map(|p| p.get("text").and_then(|v| v.as_str()))
+                                        .collect::<Vec<_>>()
+                                        .join("\n\n")
+                                })
                                 .filter(|s| !s.is_empty())
-                                .or_else(|| item.get("content").and_then(|v| v.as_array()).map(|parts| parts.iter().filter_map(|p| p.get("text").and_then(|v| v.as_str())).collect::<Vec<_>>().join("\n\n")).filter(|s| !s.is_empty()))
+                                .or_else(|| {
+                                    item.get("content")
+                                        .and_then(|v| v.as_array())
+                                        .map(|parts| {
+                                            parts
+                                                .iter()
+                                                .filter_map(|p| {
+                                                    p.get("text").and_then(|v| v.as_str())
+                                                })
+                                                .collect::<Vec<_>>()
+                                                .join("\n\n")
+                                        })
+                                        .filter(|s| !s.is_empty())
+                                })
                                 .unwrap_or_else(|| self.current_thinking.clone());
                             self.partial.content.push(ContentBlock::Thinking {
                                 thinking: thinking_text,
@@ -628,20 +729,33 @@ impl CodexWsState {
                         Some("message") => {
                             // Capture the message item id/phase as a v1 text signature for
                             // correct reasoning-item pairing on replay (mirrors shared processor).
-                            let text = item.get("content").and_then(|v| v.as_array())
-                                .map(|parts| parts.iter().filter_map(|p| {
-                                    p.get("text").and_then(|v| v.as_str())
-                                        .or_else(|| p.get("refusal").and_then(|v| v.as_str()))
-                                }).collect::<Vec<_>>().join(""))
+                            let text = item
+                                .get("content")
+                                .and_then(|v| v.as_array())
+                                .map(|parts| {
+                                    parts
+                                        .iter()
+                                        .filter_map(|p| {
+                                            p.get("text").and_then(|v| v.as_str()).or_else(|| {
+                                                p.get("refusal").and_then(|v| v.as_str())
+                                            })
+                                        })
+                                        .collect::<Vec<_>>()
+                                        .join("")
+                                })
                                 .filter(|s| !s.is_empty())
                                 .unwrap_or_else(|| self.current_text.clone());
-                            let sig = item.get("id").and_then(|v| v.as_str()).map(|id| {
-                                match item.get("phase").and_then(|v| v.as_str()) {
-                                    Some(p) => json!({"v": 1, "id": id, "phase": p}).to_string(),
-                                    None => json!({"v": 1, "id": id}).to_string(),
-                                }
+                            let sig = item.get("id").and_then(|v| v.as_str()).map(|id| match item
+                                .get("phase")
+                                .and_then(|v| v.as_str())
+                            {
+                                Some(p) => json!({"v": 1, "id": id, "phase": p}).to_string(),
+                                None => json!({"v": 1, "id": id}).to_string(),
                             });
-                            self.partial.content.push(ContentBlock::Text { text, text_signature: sig });
+                            self.partial.content.push(ContentBlock::Text {
+                                text,
+                                text_signature: sig,
+                            });
                             self.current_text.clear();
                         }
                         _ => {}
@@ -662,13 +776,33 @@ impl CodexWsState {
                     }
                     // Upstream does not capture response.model into responseModel.
                     if let Some(usage) = response.get("usage") {
-                        let cached = usage.pointer("/input_tokens_details/cached_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                        let input_total = usage.get("input_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+                        let cached = usage
+                            .pointer("/input_tokens_details/cached_tokens")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as u32;
+                        let input_total = usage
+                            .get("input_tokens")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as u32;
                         let input = input_total.saturating_sub(cached);
-                        let output = usage.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-                        let total = usage.get("total_tokens").and_then(|v| v.as_u64()).unwrap_or((input + output + cached) as u64) as u32;
+                        let output = usage
+                            .get("output_tokens")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0) as u32;
+                        let total = usage
+                            .get("total_tokens")
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or((input + output + cached) as u64)
+                            as u32;
                         let mut u = Usage {
-                            input, output, cache_read: cached, cache_write: 0, cache_write_1h: None, reasoning: None, total_tokens: total, cost: Default::default(),
+                            input,
+                            output,
+                            cache_read: cached,
+                            cache_write: 0,
+                            cache_write_1h: None,
+                            reasoning: None,
+                            total_tokens: total,
+                            cost: Default::default(),
                         };
                         let m = 1_000_000.0;
                         u.cost = crate::types::CostBreakdown {
@@ -678,7 +812,8 @@ impl CodexWsState {
                             cache_write: f64::from(u.cache_write) * self.model_cost.cache_write / m,
                             total: 0.0,
                         };
-                        u.cost.total = u.cost.input + u.cost.output + u.cost.cache_read + u.cost.cache_write;
+                        u.cost.total =
+                            u.cost.input + u.cost.output + u.cost.cache_read + u.cost.cache_write;
                         // Apply service-tier cost multiplier (flex 0.5x, priority 2x/2.5x),
                         // resolving the response's tier over the requested one (resolveCodexServiceTier:
                         // a "default" response keeps an explicitly requested flex/priority tier).
@@ -691,7 +826,13 @@ impl CodexWsState {
                         };
                         let multiplier = match tier {
                             Some("flex") => 0.5,
-                            Some("priority") => if self.model_id == "gpt-5.5" { 2.5 } else { 2.0 },
+                            Some("priority") => {
+                                if self.model_id == "gpt-5.5" {
+                                    2.5
+                                } else {
+                                    2.0
+                                }
+                            }
                             _ => 1.0,
                         };
                         if multiplier != 1.0 {
@@ -699,37 +840,62 @@ impl CodexWsState {
                             u.cost.output *= multiplier;
                             u.cost.cache_read *= multiplier;
                             u.cost.cache_write *= multiplier;
-                            u.cost.total = u.cost.input + u.cost.output + u.cost.cache_read + u.cost.cache_write;
+                            u.cost.total = u.cost.input
+                                + u.cost.output
+                                + u.cost.cache_read
+                                + u.cost.cache_write;
                         }
                         self.partial.usage = Some(u);
                     }
                 }
                 // Map the response status, then override to toolUse only on `stop` when
                 // tool calls are present (mirrors the shared processResponsesStream).
-                let status = data.pointer("/response/status").and_then(|v| v.as_str()).unwrap_or("completed");
+                let status = data
+                    .pointer("/response/status")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("completed");
                 let mut reason = match status {
                     "incomplete" => StopReason::Length,
                     "failed" | "cancelled" => StopReason::Error,
                     _ => StopReason::Stop,
                 };
                 if reason == StopReason::Stop
-                    && self.partial.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. })) {
+                    && self
+                        .partial
+                        .content
+                        .iter()
+                        .any(|b| matches!(b, ContentBlock::ToolCall { .. }))
+                {
                     reason = StopReason::ToolUse;
                 }
                 self.partial.stop_reason = Some(reason);
-                if !self.current_text.is_empty() && !self.partial.content.iter().any(|b| matches!(b, ContentBlock::Text { .. })) {
-                    self.partial.content.push(ContentBlock::Text { text: self.current_text.clone(), text_signature: None });
+                if !self.current_text.is_empty()
+                    && !self
+                        .partial
+                        .content
+                        .iter()
+                        .any(|b| matches!(b, ContentBlock::Text { .. }))
+                {
+                    self.partial.content.push(ContentBlock::Text {
+                        text: self.current_text.clone(),
+                        text_signature: None,
+                    });
                 }
                 return true;
             }
             "error" => {
                 // Codex error event -> `Codex error: <message || code || json>` (mirrors
                 // mapCodexEvents + extractCodexEventError, incl. the nested event.error).
-                let message = data.get("message").and_then(|v| v.as_str())
+                let message = data
+                    .get("message")
+                    .and_then(|v| v.as_str())
                     .or_else(|| data.pointer("/error/message").and_then(|v| v.as_str()));
-                let code = data.get("code").and_then(|v| v.as_str())
+                let code = data
+                    .get("code")
+                    .and_then(|v| v.as_str())
                     .or_else(|| data.pointer("/error/code").and_then(|v| v.as_str()));
-                let detail = message.map(|s| s.to_string())
+                let detail = message
+                    .map(|s| s.to_string())
                     .or_else(|| code.map(|s| s.to_string()))
                     .unwrap_or_else(|| data.to_string());
                 let full = format!("Codex error: {detail}");
@@ -744,7 +910,9 @@ impl CodexWsState {
             }
             "response.failed" => {
                 // mapCodexEvents: response.error.message, else "Codex response failed".
-                let full = data.pointer("/response/error/message").and_then(|v| v.as_str())
+                let full = data
+                    .pointer("/response/error/message")
+                    .and_then(|v| v.as_str())
                     .map(|s| s.to_string())
                     .unwrap_or_else(|| "Codex response failed".to_string());
                 self.partial.stop_reason = Some(StopReason::Error);
@@ -767,7 +935,10 @@ impl CodexWsState {
             return self.events;
         }
         let reason = self.partial.stop_reason.clone().unwrap_or(StopReason::Stop);
-        self.events.push(Event::Done { reason, message: self.partial.clone() });
+        self.events.push(Event::Done {
+            reason,
+            message: self.partial.clone(),
+        });
         self.events
     }
 }
@@ -779,7 +950,8 @@ pub(crate) fn parse_codex_error_response(body: &str, status: u16) -> String {
     let mut message = if body.is_empty() {
         // Upstream: raw || response.statusText || "Request failed". With an empty body,
         // fall back to the HTTP status reason phrase before the generic default.
-        reqwest::StatusCode::from_u16(status).ok()
+        reqwest::StatusCode::from_u16(status)
+            .ok()
             .and_then(|s| s.canonical_reason())
             .unwrap_or("Request failed")
             .to_string()
@@ -788,8 +960,11 @@ pub(crate) fn parse_codex_error_response(body: &str, status: u16) -> String {
     };
     let mut friendly: Option<String> = None;
     if let Ok(parsed) = serde_json::from_str::<Value>(body)
-        && let Some(err) = parsed.get("error") {
-        let code = err.get("code").and_then(|v| v.as_str())
+        && let Some(err) = parsed.get("error")
+    {
+        let code = err
+            .get("code")
+            .and_then(|v| v.as_str())
             .or_else(|| err.get("type").and_then(|v| v.as_str()))
             .unwrap_or("")
             .to_lowercase();
@@ -798,18 +973,31 @@ pub(crate) fn parse_codex_error_response(body: &str, status: u16) -> String {
             || code.contains("rate_limit_exceeded")
             || status == 429;
         if is_usage_limit {
-            let plan = err.get("plan_type").and_then(|v| v.as_str())
+            let plan = err
+                .get("plan_type")
+                .and_then(|v| v.as_str())
                 .map(|p| format!(" ({} plan)", p.to_lowercase()))
                 .unwrap_or_default();
-            let when = err.get("resets_at").and_then(|v| v.as_f64())
+            let when = err
+                .get("resets_at")
+                .and_then(|v| v.as_f64())
                 .map(|r| {
-                    let mins = (((r * 1000.0 - crate::utils::now_millis() as f64) / 60000.0).round()).max(0.0) as i64;
+                    let mins = (((r * 1000.0 - crate::utils::now_millis() as f64) / 60000.0)
+                        .round())
+                    .max(0.0) as i64;
                     format!(" Try again in ~{mins} min.")
                 })
                 .unwrap_or_default();
-            friendly = Some(format!("You have hit your ChatGPT usage limit{plan}.{when}").trim().to_string());
+            friendly = Some(
+                format!("You have hit your ChatGPT usage limit{plan}.{when}")
+                    .trim()
+                    .to_string(),
+            );
         }
-        message = err.get("message").and_then(|v| v.as_str()).map(|s| s.to_string())
+        message = err
+            .get("message")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
             .or_else(|| friendly.clone())
             .unwrap_or(message);
     }
@@ -823,11 +1011,18 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
     let mut input = base.get("input").cloned().unwrap_or_else(|| json!([]));
     if let Some(arr) = input.as_array_mut() {
         arr.retain(|m| {
-            !matches!(m.get("role").and_then(|r| r.as_str()), Some("system") | Some("developer"))
+            !matches!(
+                m.get("role").and_then(|r| r.as_str()),
+                Some("system") | Some("developer")
+            )
         });
     }
 
-    let instructions = context.system_prompt.clone().filter(|p| !p.is_empty()).unwrap_or_else(|| "You are a helpful assistant.".to_string());
+    let instructions = context
+        .system_prompt
+        .clone()
+        .filter(|p| !p.is_empty())
+        .unwrap_or_else(|| "You are a helpful assistant.".to_string());
     let mut body = json!({
         "model": model.id,
         "store": false,
@@ -841,7 +1036,9 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
     });
 
     if let Some(ref session_id) = opts.session_id {
-        body["prompt_cache_key"] = json!(crate::prompt_cache::clamp_openai_prompt_cache_key(session_id));
+        body["prompt_cache_key"] = json!(crate::prompt_cache::clamp_openai_prompt_cache_key(
+            session_id
+        ));
     }
     if let Some(temp) = opts.temperature {
         body["temperature"] = json!(temp);
@@ -850,19 +1047,26 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
         body["service_tier"] = json!(service_tier);
     }
     if !context.tools.is_empty()
-        && let Some(tools) = base.get("tools") {
-            // Codex uses strict: null (not false) on tool definitions.
-            let mut tools = tools.clone();
-            if let Some(arr) = tools.as_array_mut() {
-                for t in arr.iter_mut() {
-                    t["strict"] = Value::Null;
-                }
+        && let Some(tools) = base.get("tools")
+    {
+        // Codex uses strict: null (not false) on tool definitions.
+        let mut tools = tools.clone();
+        if let Some(arr) = tools.as_array_mut() {
+            for t in arr.iter_mut() {
+                t["strict"] = Value::Null;
             }
-            body["tools"] = tools;
+        }
+        body["tools"] = tools;
     }
-    if let Some(level) = opts.reasoning.as_ref().and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l)) {
+    if let Some(level) = opts
+        .reasoning
+        .as_ref()
+        .and_then(|l| crate::simple_options::clamp_reasoning_for_model(model, l))
+    {
         let key = format!("{:?}", level).to_lowercase();
-        let effort = model.thinking_level_map.as_ref()
+        let effort = model
+            .thinking_level_map
+            .as_ref()
             .and_then(|m| m.get(&key))
             .and_then(|v| v.clone())
             .unwrap_or(key);
@@ -880,7 +1084,11 @@ pub(crate) fn replay_codex_ws_events(model: &Model, events: &[Value]) -> Vec<Eve
 }
 
 #[cfg(test)]
-pub(crate) fn replay_codex_ws_events_with_tier(model: &Model, events: &[Value], service_tier: Option<&str>) -> Vec<Event> {
+pub(crate) fn replay_codex_ws_events_with_tier(
+    model: &Model,
+    events: &[Value],
+    service_tier: Option<&str>,
+) -> Vec<Event> {
     let mut state = CodexWsState::new(model);
     state.service_tier = service_tier.map(|s| s.to_string());
     for event in events {

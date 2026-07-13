@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod tests {
     use crate::error_body::{
-        format_provider_http_error, truncate_error_text, MAX_PROVIDER_ERROR_BODY_CHARS,
+        MAX_PROVIDER_ERROR_BODY_CHARS, format_provider_http_error, truncate_error_text,
     };
 
     #[test]
@@ -29,7 +29,10 @@ mod tests {
 
     #[test]
     fn trims_body_and_handles_empty() {
-        assert_eq!(format_provider_http_error(503, "   spaced   ", None), "503: spaced");
+        assert_eq!(
+            format_provider_http_error(503, "   spaced   ", None),
+            "503: spaced"
+        );
         // Empty/whitespace-only body collapses to status (with prefix when branded).
         assert_eq!(format_provider_http_error(503, "   ", None), "503");
         assert_eq!(
@@ -52,6 +55,9 @@ mod tests {
     #[test]
     fn truncate_helper_is_noop_under_cap() {
         assert_eq!(truncate_error_text("short", 4000), "short");
-        assert_eq!(truncate_error_text("abcdef", 3), "abc... [truncated 3 chars]");
+        assert_eq!(
+            truncate_error_text("abcdef", 3),
+            "abc... [truncated 3 chars]"
+        );
     }
 }

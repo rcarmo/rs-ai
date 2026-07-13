@@ -48,7 +48,8 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         requires_tool_result_name: mc.requires_tool_result_name,
         requires_thinking_as_text: mc.requires_thinking_as_text,
         requires_assistant_after_tool_result: mc.requires_assistant_after_tool_result,
-        requires_reasoning_content_on_assistant_messages: mc.requires_reasoning_content_on_assistant_messages,
+        requires_reasoning_content_on_assistant_messages: mc
+            .requires_reasoning_content_on_assistant_messages,
         thinking_format: mc.thinking_format.clone(),
         supports_strict_mode: mc.supports_strict_mode,
         supports_long_cache_retention: mc.supports_long_cache_retention,
@@ -60,26 +61,64 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
 }
 
 /// Detect and merge model-specific compat overrides (mirrors Go's DetectCompatForModel).
-pub fn detect_compat_for_model(model: &Model, overrides: Option<&OpenAICompletionsCompat>) -> OpenAICompletionsCompat {
+pub fn detect_compat_for_model(
+    model: &Model,
+    overrides: Option<&OpenAICompletionsCompat>,
+) -> OpenAICompletionsCompat {
     let mut c = detect_compat_inner(&model.provider, &model.id, &model.base_url);
     if let Some(o) = overrides {
-        if o.supports_store.is_some() { c.supports_store = o.supports_store; }
-        if o.supports_developer_role.is_some() { c.supports_developer_role = o.supports_developer_role; }
-        if o.supports_reasoning_effort.is_some() { c.supports_reasoning_effort = o.supports_reasoning_effort; }
-        if o.supports_usage_in_streaming.is_some() { c.supports_usage_in_streaming = o.supports_usage_in_streaming; }
-        if o.supports_temperature.is_some() { c.supports_temperature = o.supports_temperature; }
-        if o.max_tokens_field.is_some() { c.max_tokens_field = o.max_tokens_field.clone(); }
-        if o.requires_tool_result_name.is_some() { c.requires_tool_result_name = o.requires_tool_result_name; }
-        if o.requires_thinking_as_text.is_some() { c.requires_thinking_as_text = o.requires_thinking_as_text; }
-        if o.requires_assistant_after_tool_result.is_some() { c.requires_assistant_after_tool_result = o.requires_assistant_after_tool_result; }
-        if o.requires_reasoning_content_on_assistant_messages.is_some() { c.requires_reasoning_content_on_assistant_messages = o.requires_reasoning_content_on_assistant_messages; }
-        if o.thinking_format.is_some() { c.thinking_format = o.thinking_format.clone(); }
-        if o.supports_strict_mode.is_some() { c.supports_strict_mode = o.supports_strict_mode; }
-        if o.supports_long_cache_retention.is_some() { c.supports_long_cache_retention = o.supports_long_cache_retention; }
-        if o.supports_session_affinity_headers.is_some() { c.supports_session_affinity_headers = o.supports_session_affinity_headers; }
-        if o.zai_tool_stream.is_some() { c.zai_tool_stream = o.zai_tool_stream; }
-        if o.cache_control_format.is_some() { c.cache_control_format = o.cache_control_format.clone(); }
-        if o.chat_template_kwargs.is_some() { c.chat_template_kwargs = o.chat_template_kwargs.clone(); }
+        if o.supports_store.is_some() {
+            c.supports_store = o.supports_store;
+        }
+        if o.supports_developer_role.is_some() {
+            c.supports_developer_role = o.supports_developer_role;
+        }
+        if o.supports_reasoning_effort.is_some() {
+            c.supports_reasoning_effort = o.supports_reasoning_effort;
+        }
+        if o.supports_usage_in_streaming.is_some() {
+            c.supports_usage_in_streaming = o.supports_usage_in_streaming;
+        }
+        if o.supports_temperature.is_some() {
+            c.supports_temperature = o.supports_temperature;
+        }
+        if o.max_tokens_field.is_some() {
+            c.max_tokens_field = o.max_tokens_field.clone();
+        }
+        if o.requires_tool_result_name.is_some() {
+            c.requires_tool_result_name = o.requires_tool_result_name;
+        }
+        if o.requires_thinking_as_text.is_some() {
+            c.requires_thinking_as_text = o.requires_thinking_as_text;
+        }
+        if o.requires_assistant_after_tool_result.is_some() {
+            c.requires_assistant_after_tool_result = o.requires_assistant_after_tool_result;
+        }
+        if o.requires_reasoning_content_on_assistant_messages.is_some() {
+            c.requires_reasoning_content_on_assistant_messages =
+                o.requires_reasoning_content_on_assistant_messages;
+        }
+        if o.thinking_format.is_some() {
+            c.thinking_format = o.thinking_format.clone();
+        }
+        if o.supports_strict_mode.is_some() {
+            c.supports_strict_mode = o.supports_strict_mode;
+        }
+        if o.supports_long_cache_retention.is_some() {
+            c.supports_long_cache_retention = o.supports_long_cache_retention;
+        }
+        if o.supports_session_affinity_headers.is_some() {
+            c.supports_session_affinity_headers = o.supports_session_affinity_headers;
+        }
+        if o.zai_tool_stream.is_some() {
+            c.zai_tool_stream = o.zai_tool_stream;
+        }
+        if o.cache_control_format.is_some() {
+            c.cache_control_format = o.cache_control_format.clone();
+        }
+        if o.chat_template_kwargs.is_some() {
+            c.chat_template_kwargs = o.chat_template_kwargs.clone();
+        }
     }
     c
 }
@@ -94,8 +133,9 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
     let is_together = provider == "together"
         || base_url.contains("api.together.ai")
         || base_url.contains("api.together.xyz");
-    let is_moonshot =
-        provider == "moonshotai" || provider == "moonshotai-cn" || base_url.contains("api.moonshot.");
+    let is_moonshot = provider == "moonshotai"
+        || provider == "moonshotai-cn"
+        || base_url.contains("api.moonshot.");
     let is_openrouter = provider == "openrouter" || base_url.contains("openrouter.ai");
     let is_cloudflare_workers_ai =
         provider == "cloudflare-workers-ai" || base_url.contains("api.cloudflare.com");
@@ -164,7 +204,12 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
         // supports_temperature is an rs-ai extension (not in upstream compat); default on.
         supports_temperature: Some(true),
         max_tokens_field: Some(
-            if use_max_tokens { "max_tokens" } else { "max_completion_tokens" }.to_string(),
+            if use_max_tokens {
+                "max_tokens"
+            } else {
+                "max_completion_tokens"
+            }
+            .to_string(),
         ),
         requires_tool_result_name: Some(false),
         requires_thinking_as_text: Some(false),

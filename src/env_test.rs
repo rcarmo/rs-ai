@@ -42,31 +42,43 @@ mod tests {
 
     #[test]
     fn test_client_api_key_header_owned_auth() {
-        use std::collections::HashMap;
         use crate::env::client_api_key;
+        use std::collections::HashMap;
         // No configured key for an unknown provider, but an Authorization header is
         // supplied via options -> proceed with the "unused" placeholder (mirrors
         // upstream getClientApiKey header-owned auth path).
         let model = test_model("some-unknown-byo-gateway");
         let mut headers = HashMap::new();
         headers.insert("Authorization".to_string(), "Bearer xyz".to_string());
-        let opts = StreamOptions { headers: Some(headers), ..Default::default() };
+        let opts = StreamOptions {
+            headers: Some(headers),
+            ..Default::default()
+        };
         assert_eq!(client_api_key(&model, &opts), Some("unused".into()));
 
         // cf-aig-authorization header (case-insensitive) also satisfies the gate.
         let mut cf = HashMap::new();
         cf.insert("CF-AIG-Authorization".to_string(), "Bearer tok".to_string());
-        let opts_cf = StreamOptions { headers: Some(cf), ..Default::default() };
+        let opts_cf = StreamOptions {
+            headers: Some(cf),
+            ..Default::default()
+        };
         assert_eq!(client_api_key(&model, &opts_cf), Some("unused".into()));
 
         // A real key still takes precedence over the placeholder.
-        let opts_key = StreamOptions { api_key: Some("sk-real".into()), ..Default::default() };
+        let opts_key = StreamOptions {
+            api_key: Some("sk-real".into()),
+            ..Default::default()
+        };
         assert_eq!(client_api_key(&model, &opts_key), Some("sk-real".into()));
 
         // No key and no auth header -> None (caller raises "no API key").
         let mut other = HashMap::new();
         other.insert("X-Custom".to_string(), "v".to_string());
-        let opts_none = StreamOptions { headers: Some(other), ..Default::default() };
+        let opts_none = StreamOptions {
+            headers: Some(other),
+            ..Default::default()
+        };
         assert_eq!(client_api_key(&model, &opts_none), None);
     }
 
@@ -74,17 +86,28 @@ mod tests {
     fn test_env_bedrock_authenticated_sentinel() {
         // Bedrock uses the AWS credential chain; a present credential source yields
         // the "<authenticated>" sentinel (mirrors upstream getEnvApiKey).
-        unsafe { std::env::set_var("AWS_BEARER_TOKEN_BEDROCK", "tok"); }
-        assert_eq!(get_env_api_key("amazon-bedrock"), Some("<authenticated>".into()));
-        unsafe { std::env::remove_var("AWS_BEARER_TOKEN_BEDROCK"); }
+        unsafe {
+            std::env::set_var("AWS_BEARER_TOKEN_BEDROCK", "tok");
+        }
+        assert_eq!(
+            get_env_api_key("amazon-bedrock"),
+            Some("<authenticated>".into())
+        );
+        unsafe {
+            std::env::remove_var("AWS_BEARER_TOKEN_BEDROCK");
+        }
     }
 
     #[test]
     fn test_env_fallback_generic() {
-        unsafe { std::env::set_var("TOTALLY_CUSTOM_PROVIDER_API_KEY", "custom-key"); }
+        unsafe {
+            std::env::set_var("TOTALLY_CUSTOM_PROVIDER_API_KEY", "custom-key");
+        }
         let key = get_env_api_key("totally-custom-provider");
         assert_eq!(key, Some("custom-key".into()));
-        unsafe { std::env::remove_var("TOTALLY_CUSTOM_PROVIDER_API_KEY"); }
+        unsafe {
+            std::env::remove_var("TOTALLY_CUSTOM_PROVIDER_API_KEY");
+        }
     }
 
     #[test]

@@ -2,21 +2,28 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::validation::*;
-    use crate::session_resources::*;
-    use crate::prompt_cache::*;
-    use crate::jsonparse::*;
     use crate::diagnostics::*;
+    use crate::jsonparse::*;
+    use crate::prompt_cache::*;
+    use crate::session_resources::*;
     use crate::types::*;
+    use crate::validation::*;
     use serde_json::json;
 
     // --- Validation ---
 
     #[test]
     fn test_validate_empty_context() {
-        let ctx = Context { system_prompt: None, messages: vec![], tools: vec![] };
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![],
+            tools: vec![],
+        };
         let errs = validate_context(&ctx).unwrap_err();
-        assert!(errs.iter().any(|e| e.message.contains("at least one message")));
+        assert!(
+            errs.iter()
+                .any(|e| e.message.contains("at least one message"))
+        );
     }
 
     #[test]
@@ -24,7 +31,11 @@ mod tests {
         let ctx = Context {
             system_prompt: Some("sys".into()),
             messages: vec![user_message("hi")],
-            tools: vec![Tool { name: "t".into(), description: "d".into(), parameters: json!({}) }],
+            tools: vec![Tool {
+                name: "t".into(),
+                description: "d".into(),
+                parameters: json!({}),
+            }],
         };
         assert!(validate_context(&ctx).is_ok());
     }
@@ -34,7 +45,11 @@ mod tests {
         let ctx = Context {
             system_prompt: None,
             messages: vec![user_message("hi")],
-            tools: vec![Tool { name: "".into(), description: "d".into(), parameters: json!({}) }],
+            tools: vec![Tool {
+                name: "".into(),
+                description: "d".into(),
+                parameters: json!({}),
+            }],
         };
         let errs = validate_context(&ctx).unwrap_err();
         assert!(errs[0].message.contains("name"));
@@ -42,7 +57,11 @@ mod tests {
 
     #[test]
     fn test_validate_tool_arguments() {
-        let tool = Tool { name: "t".into(), description: "d".into(), parameters: json!({"type": "object"}) };
+        let tool = Tool {
+            name: "t".into(),
+            description: "d".into(),
+            parameters: json!({"type": "object"}),
+        };
         assert!(validate_tool_arguments(&tool, &json!({"key": "val"})).is_ok());
         assert!(validate_tool_arguments(&tool, &json!("string")).is_err());
     }
@@ -52,7 +71,11 @@ mod tests {
         let ctx = Context {
             system_prompt: None,
             messages: vec![user_message("hi")],
-            tools: vec![Tool { name: "search".into(), description: "s".into(), parameters: json!({}) }],
+            tools: vec![Tool {
+                name: "search".into(),
+                description: "s".into(),
+                parameters: json!({}),
+            }],
         };
         assert!(validate_tool_call(&ctx, "search", &json!({})).is_ok());
         assert!(validate_tool_call(&ctx, "unknown", &json!({})).is_err());
@@ -100,7 +123,8 @@ mod tests {
     #[test]
     fn test_should_cache_large_model() {
         let model = Model {
-            context_window: 128000, ..base_model()
+            context_window: 128000,
+            ..base_model()
         };
         let opts = StreamOptions::default();
         assert!(should_cache(&model, &opts));
@@ -109,7 +133,8 @@ mod tests {
     #[test]
     fn test_should_cache_small_model() {
         let model = Model {
-            context_window: 4096, ..base_model()
+            context_window: 4096,
+            ..base_model()
         };
         let opts = StreamOptions::default();
         assert!(!should_cache(&model, &opts));
@@ -117,8 +142,14 @@ mod tests {
 
     #[test]
     fn test_should_cache_explicit_none() {
-        let model = Model { context_window: 128000, ..base_model() };
-        let opts = StreamOptions { cache_retention: Some(CacheRetention::None), ..Default::default() };
+        let model = Model {
+            context_window: 128000,
+            ..base_model()
+        };
+        let opts = StreamOptions {
+            cache_retention: Some(CacheRetention::None),
+            ..Default::default()
+        };
         assert!(!should_cache(&model, &opts));
     }
 
@@ -193,11 +224,19 @@ mod tests {
 
     fn base_model() -> Model {
         Model {
-            id: "test".into(), name: "Test".into(), api: "openai-completions".into(),
-            provider: "openai".into(), base_url: "".into(), reasoning: false,
-            thinking_level_map: None, input: vec!["text".into()],
-            cost: ModelCost::default(), context_window: 128000, max_tokens: 4096,
-            headers: None, api_key: None,
+            id: "test".into(),
+            name: "Test".into(),
+            api: "openai-completions".into(),
+            provider: "openai".into(),
+            base_url: "".into(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 128000,
+            max_tokens: 4096,
+            headers: None,
+            api_key: None,
             compat: Default::default(),
         }
     }

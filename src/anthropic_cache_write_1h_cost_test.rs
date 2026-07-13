@@ -7,23 +7,38 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::events::Event;
     use crate::provider::anthropic::stream_anthropic;
     use crate::registry::get_model;
-    use crate::types::{Context, ContentBlock, Message, Model, Role, StreamOptions};
-    use crate::events::Event;
+    use crate::types::{ContentBlock, Context, Message, Model, Role, StreamOptions};
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn ctx() -> Context {
         Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![Message {
-                role: Role::User, content: vec![ContentBlock::Text { text: "hi".into(), text_signature: None }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role: Role::User,
+                content: vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -31,8 +46,13 @@ mod tests {
     async fn run(model: Model, body: String) -> crate::types::Usage {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
         let mut model = model;
         model.base_url = server.uri();
         model.api_key = Some("test".into());
@@ -41,7 +61,9 @@ mod tests {
         let mut stream = stream_anthropic(&model, &c, &opts);
         let mut usage = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { usage = message.usage; }
+            if let Event::Done { message, .. } = evt {
+                usage = message.usage;
+            }
         }
         usage.expect("usage")
     }
@@ -63,11 +85,19 @@ mod tests {
     #[tokio::test]
     async fn prices_the_1h_portion_at_2x_input_and_the_rest_at_the_5m_rate() {
         let extra = ",\"cache_creation\":{\"ephemeral_5m_input_tokens\":600000,\"ephemeral_1h_input_tokens\":400000}";
-        let u = run(get_model("anthropic", "claude-opus-4-8").unwrap(), body(extra)).await;
+        let u = run(
+            get_model("anthropic", "claude-opus-4-8").unwrap(),
+            body(extra),
+        )
+        .await;
         assert_eq!(u.cache_write, 1_000_000);
         assert_eq!(u.cache_write_1h, Some(400_000));
         // 600k * 6.25/Mtok + 400k * 10/Mtok = 3.75 + 4.0 = 7.75
-        assert!((u.cost.cache_write - 7.75).abs() < 1e-9, "cacheWrite cost = {}", u.cost.cache_write);
+        assert!(
+            (u.cost.cache_write - 7.75).abs() < 1e-9,
+            "cacheWrite cost = {}",
+            u.cost.cache_write
+        );
     }
 
     #[tokio::test]
@@ -76,6 +106,10 @@ mod tests {
         assert_eq!(u.cache_write, 1_000_000);
         assert_eq!(u.cache_write_1h.unwrap_or(0), 0);
         // 1M * 6.25/Mtok = 6.25
-        assert!((u.cost.cache_write - 6.25).abs() < 1e-9, "cacheWrite cost = {}", u.cost.cache_write);
+        assert!(
+            (u.cost.cache_write - 6.25).abs() < 1e-9,
+            "cacheWrite cost = {}",
+            u.cost.cache_write
+        );
     }
 }

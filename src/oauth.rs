@@ -19,7 +19,10 @@ pub fn generate_pkce() -> PkceChallenge {
     rand::rngs::OsRng.fill_bytes(&mut verifier_bytes);
     let verifier = base64url_encode(&verifier_bytes);
     let challenge = base64url_encode(&sha256_bytes(verifier.as_bytes()));
-    PkceChallenge { verifier, challenge }
+    PkceChallenge {
+        verifier,
+        challenge,
+    }
 }
 
 /// Device code authorization response.
@@ -71,7 +74,10 @@ pub async fn refresh_anthropic_token(refresh_token: &str) -> Result<RefreshedTok
 }
 
 /// Refresh against an explicit token endpoint (used for testing).
-pub async fn refresh_anthropic_token_at(token_url: &str, refresh_token: &str) -> Result<RefreshedToken, String> {
+pub async fn refresh_anthropic_token_at(
+    token_url: &str,
+    refresh_token: &str,
+) -> Result<RefreshedToken, String> {
     let client = reqwest::Client::new();
     let resp = client
         .post(token_url)
@@ -82,11 +88,12 @@ pub async fn refresh_anthropic_token_at(token_url: &str, refresh_token: &str) ->
         }))
         .send()
         .await
-        .map_err(|e| format!("Anthropic token refresh request failed. url={token_url}; details={e}"))?;
-    let body = resp
-        .text()
-        .await
-        .map_err(|e| format!("Anthropic token refresh request failed. url={token_url}; details={e}"))?;
+        .map_err(|e| {
+            format!("Anthropic token refresh request failed. url={token_url}; details={e}")
+        })?;
+    let body = resp.text().await.map_err(|e| {
+        format!("Anthropic token refresh request failed. url={token_url}; details={e}")
+    })?;
     let data: serde_json::Value = serde_json::from_str(&body)
         .map_err(|e| format!("Anthropic token refresh returned invalid JSON. url={token_url}; body={body}; details={e}"))?;
     let access = data
@@ -94,10 +101,17 @@ pub async fn refresh_anthropic_token_at(token_url: &str, refresh_token: &str) ->
         .and_then(|v| v.as_str())
         .ok_or_else(|| format!("Anthropic token refresh missing access_token. body={body}"))?
         .to_string();
-    let refresh = data.get("refresh_token").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let refresh = data
+        .get("refresh_token")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
     let expires_in = data.get("expires_in").and_then(|v| v.as_i64()).unwrap_or(0);
     let expires_at_ms = crate::utils::now_millis() + expires_in * 1000 - 5 * 60 * 1000;
-    Ok(RefreshedToken { access, refresh, expires_at_ms })
+    Ok(RefreshedToken {
+        access,
+        refresh,
+        expires_at_ms,
+    })
 }
 
 /// Anthropic OAuth authorize endpoint.
@@ -111,7 +125,9 @@ fn url_encode(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for b in s.bytes() {
         match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => out.push(b as char),
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char)
+            }
             _ => out.push_str(&format!("%{b:02X}")),
         }
     }
@@ -119,7 +135,11 @@ fn url_encode(s: &str) -> String {
 }
 
 /// Build the Anthropic OAuth authorization URL (mirrors the login authParams).
-pub fn build_anthropic_authorize_url(challenge: &str, verifier: &str, redirect_uri: &str) -> String {
+pub fn build_anthropic_authorize_url(
+    challenge: &str,
+    verifier: &str,
+    redirect_uri: &str,
+) -> String {
     let params = [
         ("code", "true"),
         ("client_id", ANTHROPIC_CLIENT_ID),
@@ -139,12 +159,23 @@ pub fn build_anthropic_authorize_url(challenge: &str, verifier: &str, redirect_u
 }
 
 /// Exchange an Anthropic authorization code for tokens (mirrors exchangeAuthorizationCode).
-pub async fn exchange_anthropic_code(code: &str, state: &str, verifier: &str, redirect_uri: &str) -> Result<RefreshedToken, String> {
+pub async fn exchange_anthropic_code(
+    code: &str,
+    state: &str,
+    verifier: &str,
+    redirect_uri: &str,
+) -> Result<RefreshedToken, String> {
     exchange_anthropic_code_at(ANTHROPIC_TOKEN_URL, code, state, verifier, redirect_uri).await
 }
 
 /// Exchange against an explicit token endpoint (used for testing).
-pub async fn exchange_anthropic_code_at(token_url: &str, code: &str, state: &str, verifier: &str, redirect_uri: &str) -> Result<RefreshedToken, String> {
+pub async fn exchange_anthropic_code_at(
+    token_url: &str,
+    code: &str,
+    state: &str,
+    verifier: &str,
+    redirect_uri: &str,
+) -> Result<RefreshedToken, String> {
     let client = reqwest::Client::new();
     let resp = client
         .post(token_url)
@@ -160,15 +191,27 @@ pub async fn exchange_anthropic_code_at(token_url: &str, code: &str, state: &str
         .await
         .map_err(|e| format!("Token exchange request failed. url={token_url}; redirect_uri={redirect_uri}; details={e}"))?;
     let status = resp.status();
-    let body = resp.text().await.map_err(|e| format!("Token exchange request failed. url={token_url}; details={e}"))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("Token exchange request failed. url={token_url}; details={e}"))?;
     if !status.is_success() {
-        return Err(format!("HTTP request failed. status={status}; url={token_url}; body={body}"));
+        return Err(format!(
+            "HTTP request failed. status={status}; url={token_url}; body={body}"
+        ));
     }
-    let data: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|e| format!("Token exchange returned invalid JSON. url={token_url}; body={body}; details={e}"))?;
-    let access = data.get("access_token").and_then(|v| v.as_str())
-        .ok_or_else(|| format!("Token exchange missing access_token. body={body}"))?.to_string();
-    let refresh = data.get("refresh_token").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let data: serde_json::Value = serde_json::from_str(&body).map_err(|e| {
+        format!("Token exchange returned invalid JSON. url={token_url}; body={body}; details={e}")
+    })?;
+    let access = data
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| format!("Token exchange missing access_token. body={body}"))?
+        .to_string();
+    let refresh = data
+        .get("refresh_token")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
     let expires_in = data.get("expires_in").and_then(|v| v.as_i64()).unwrap_or(0);
     Ok(RefreshedToken {
         access,
@@ -190,7 +233,12 @@ pub const CODEX_SCOPE: &str = "openid profile email offline_access";
 pub const CODEX_REDIRECT_URI: &str = "http://localhost:1455/auth/callback";
 
 /// Build the OpenAI Codex authorization URL (mirrors createAuthorizationFlow).
-pub fn build_codex_authorize_url(challenge: &str, state: &str, redirect_uri: &str, originator: &str) -> String {
+pub fn build_codex_authorize_url(
+    challenge: &str,
+    state: &str,
+    redirect_uri: &str,
+    originator: &str,
+) -> String {
     let params = [
         ("response_type", "code"),
         ("client_id", CODEX_CLIENT_ID),
@@ -213,12 +261,21 @@ pub fn build_codex_authorize_url(challenge: &str, state: &str, redirect_uri: &st
 
 /// Exchange an OpenAI Codex authorization code for credentials (mirrors
 /// exchangeAuthorizationCodeForCredentials).
-pub async fn exchange_codex_code(code: &str, verifier: &str, redirect_uri: &str) -> Result<CodexCredentials, String> {
+pub async fn exchange_codex_code(
+    code: &str,
+    verifier: &str,
+    redirect_uri: &str,
+) -> Result<CodexCredentials, String> {
     exchange_codex_code_at(CODEX_TOKEN_URL, code, verifier, redirect_uri).await
 }
 
 /// Exchange against an explicit token endpoint (used for testing).
-pub async fn exchange_codex_code_at(token_url: &str, code: &str, verifier: &str, redirect_uri: &str) -> Result<CodexCredentials, String> {
+pub async fn exchange_codex_code_at(
+    token_url: &str,
+    code: &str,
+    verifier: &str,
+    redirect_uri: &str,
+) -> Result<CodexCredentials, String> {
     let client = reqwest::Client::new();
     let resp = client
         .post(token_url)
@@ -233,20 +290,40 @@ pub async fn exchange_codex_code_at(token_url: &str, code: &str, verifier: &str,
         .await
         .map_err(|e| format!("OpenAI Codex token exchange error: {e}"))?;
     let status = resp.status();
-    let body = resp.text().await.map_err(|e| format!("OpenAI Codex token exchange error: {e}"))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("OpenAI Codex token exchange error: {e}"))?;
     if !status.is_success() {
-        return Err(format!("OpenAI Codex token exchange failed ({status}): {body}"));
+        return Err(format!(
+            "OpenAI Codex token exchange failed ({status}): {body}"
+        ));
     }
-    let data: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|e| format!("OpenAI Codex token exchange invalid JSON: body={body}; details={e}"))?;
-    let access = data.get("access_token").and_then(|v| v.as_str())
-        .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?.to_string();
-    let refresh = data.get("refresh_token").and_then(|v| v.as_str())
-        .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?.to_string();
-    let expires_in = data.get("expires_in").and_then(|v| v.as_i64())
+    let data: serde_json::Value = serde_json::from_str(&body).map_err(|e| {
+        format!("OpenAI Codex token exchange invalid JSON: body={body}; details={e}")
+    })?;
+    let access = data
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?
+        .to_string();
+    let refresh = data
+        .get("refresh_token")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?
+        .to_string();
+    let expires_in = data
+        .get("expires_in")
+        .and_then(|v| v.as_i64())
         .ok_or_else(|| format!("OpenAI Codex token exchange response missing fields: {body}"))?;
     let account_id = decode_jwt_payload(&access)
-        .and_then(|p| p.get(CODEX_JWT_CLAIM_PATH).and_then(|a| a.get("chatgpt_account_id")).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(|s| s.to_string()))
+        .and_then(|p| {
+            p.get(CODEX_JWT_CLAIM_PATH)
+                .and_then(|a| a.get("chatgpt_account_id"))
+                .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string())
+        })
         .ok_or_else(|| "Failed to extract accountId from token".to_string())?;
     Ok(CodexCredentials {
         access,
@@ -281,13 +358,14 @@ fn decode_jwt_payload(token: &str) -> Option<serde_json::Value> {
 
 /// Extract the ChatGPT account id from a Codex OAuth access token's JWT claims.
 pub fn codex_account_id(token: &str) -> Option<String> {
-    decode_jwt_payload(token)
-        .and_then(|p| p.get(CODEX_JWT_CLAIM_PATH)
+    decode_jwt_payload(token).and_then(|p| {
+        p.get(CODEX_JWT_CLAIM_PATH)
             .and_then(|a| a.get("chatgpt_account_id"))
             .and_then(|v| v.as_str())
             // Upstream getAccountId returns null for an empty account id.
             .filter(|s| !s.is_empty())
-            .map(|s| s.to_string()))
+            .map(|s| s.to_string())
+    })
 }
 
 /// Refresh an OpenAI Codex OAuth token (mirrors refreshOpenAICodexToken).
@@ -296,7 +374,10 @@ pub async fn refresh_codex_token(refresh_token: &str) -> Result<CodexCredentials
 }
 
 /// Refresh against an explicit token endpoint (used for testing).
-pub async fn refresh_codex_token_at(token_url: &str, refresh_token: &str) -> Result<CodexCredentials, String> {
+pub async fn refresh_codex_token_at(
+    token_url: &str,
+    refresh_token: &str,
+) -> Result<CodexCredentials, String> {
     let client = reqwest::Client::new();
     let resp = client
         .post(token_url)
@@ -309,22 +390,41 @@ pub async fn refresh_codex_token_at(token_url: &str, refresh_token: &str) -> Res
         .await
         .map_err(|e| format!("OpenAI Codex token refresh error: {e}"))?;
     let status = resp.status();
-    let body = resp.text().await.map_err(|e| format!("OpenAI Codex token refresh error: {e}"))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("OpenAI Codex token refresh error: {e}"))?;
     if !status.is_success() {
-        return Err(format!("OpenAI Codex token refresh failed ({}): {body}", status.as_u16()));
+        return Err(format!(
+            "OpenAI Codex token refresh failed ({}): {body}",
+            status.as_u16()
+        ));
     }
-    let data: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|e| format!("OpenAI Codex token refresh invalid JSON: body={body}; details={e}"))?;
-    let access = data.get("access_token").and_then(|v| v.as_str())
+    let data: serde_json::Value = serde_json::from_str(&body).map_err(|e| {
+        format!("OpenAI Codex token refresh invalid JSON: body={body}; details={e}")
+    })?;
+    let access = data
+        .get("access_token")
+        .and_then(|v| v.as_str())
         .ok_or_else(|| format!("OpenAI Codex token refresh response missing fields: {body}"))?
         .to_string();
-    let refresh = data.get("refresh_token").and_then(|v| v.as_str())
+    let refresh = data
+        .get("refresh_token")
+        .and_then(|v| v.as_str())
         .ok_or_else(|| format!("OpenAI Codex token refresh response missing fields: {body}"))?
         .to_string();
-    let expires_in = data.get("expires_in").and_then(|v| v.as_i64())
+    let expires_in = data
+        .get("expires_in")
+        .and_then(|v| v.as_i64())
         .ok_or_else(|| format!("OpenAI Codex token refresh response missing fields: {body}"))?;
     let account_id = decode_jwt_payload(&access)
-        .and_then(|p| p.get(CODEX_JWT_CLAIM_PATH).and_then(|a| a.get("chatgpt_account_id")).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(|s| s.to_string()))
+        .and_then(|p| {
+            p.get(CODEX_JWT_CLAIM_PATH)
+                .and_then(|a| a.get("chatgpt_account_id"))
+                .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string())
+        })
         .ok_or_else(|| "Failed to extract accountId from token".to_string())?;
     Ok(CodexCredentials {
         access,
@@ -362,11 +462,18 @@ pub struct DeviceCode {
 
 /// Start a GitHub device-code flow (mirrors startDeviceFlow).
 pub async fn start_github_device_flow(domain: &str) -> Result<DeviceCode, String> {
-    start_github_device_flow_at(&format!("https://{domain}/login/device/code"), COPILOT_CLIENT_ID).await
+    start_github_device_flow_at(
+        &format!("https://{domain}/login/device/code"),
+        COPILOT_CLIENT_ID,
+    )
+    .await
 }
 
 /// Start against an explicit device-code endpoint (used for testing).
-pub async fn start_github_device_flow_at(device_code_url: &str, client_id: &str) -> Result<DeviceCode, String> {
+pub async fn start_github_device_flow_at(
+    device_code_url: &str,
+    client_id: &str,
+) -> Result<DeviceCode, String> {
     let client = reqwest::Client::new();
     let resp = client
         .post(device_code_url)
@@ -376,23 +483,43 @@ pub async fn start_github_device_flow_at(device_code_url: &str, client_id: &str)
         .send()
         .await
         .map_err(|e| format!("Device code request failed: {e}"))?;
-    let body = resp.text().await.map_err(|e| format!("Device code request failed: {e}"))?;
-    let data: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|_| "Invalid device code response".to_string())?;
-    let device_code = data.get("device_code").and_then(|v| v.as_str())
-        .ok_or_else(|| "Invalid device code response fields".to_string())?.to_string();
-    let user_code = data.get("user_code").and_then(|v| v.as_str())
-        .ok_or_else(|| "Invalid device code response fields".to_string())?.to_string();
-    let verification_uri = data.get("verification_uri").and_then(|v| v.as_str())
-        .ok_or_else(|| "Invalid device code response fields".to_string())?.to_string();
-    let expires_in = data.get("expires_in").and_then(|v| v.as_u64())
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("Device code request failed: {e}"))?;
+    let data: serde_json::Value =
+        serde_json::from_str(&body).map_err(|_| "Invalid device code response".to_string())?;
+    let device_code = data
+        .get("device_code")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "Invalid device code response fields".to_string())?
+        .to_string();
+    let user_code = data
+        .get("user_code")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "Invalid device code response fields".to_string())?
+        .to_string();
+    let verification_uri = data
+        .get("verification_uri")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "Invalid device code response fields".to_string())?
+        .to_string();
+    let expires_in = data
+        .get("expires_in")
+        .and_then(|v| v.as_u64())
         .ok_or_else(|| "Invalid device code response fields".to_string())?;
     // Reject non-http(s) verification URIs to avoid opening arbitrary handlers.
     if !(verification_uri.starts_with("https://") || verification_uri.starts_with("http://")) {
         return Err("Untrusted verification_uri in device code response".to_string());
     }
     let interval = data.get("interval").and_then(|v| v.as_u64());
-    Ok(DeviceCode { device_code, user_code, verification_uri, interval, expires_in })
+    Ok(DeviceCode {
+        device_code,
+        user_code,
+        verification_uri,
+        interval,
+        expires_in,
+    })
 }
 
 /// Result of a single device-code token poll (mirrors the poll callback classification).
@@ -467,7 +594,10 @@ where
                 // (+5s). Both clamp to a 1s minimum.
                 interval_ms = match server_interval {
                     Some(s) if s > 0 => std::cmp::max(MINIMUM_INTERVAL_MS, s.saturating_mul(1000)),
-                    _ => std::cmp::max(MINIMUM_INTERVAL_MS, interval_ms + SLOW_DOWN_INTERVAL_INCREMENT_MS),
+                    _ => std::cmp::max(
+                        MINIMUM_INTERVAL_MS,
+                        interval_ms + SLOW_DOWN_INTERVAL_INCREMENT_MS,
+                    ),
                 };
             }
             DevicePollOutcome::Pending => {}
@@ -483,22 +613,35 @@ where
             _ = tokio::time::sleep(wait) => {}
         }
     }
-    Err(if slow_down_responses > 0 { SLOW_DOWN_TIMEOUT_MESSAGE } else { TIMEOUT_MESSAGE }.to_string())
+    Err(if slow_down_responses > 0 {
+        SLOW_DOWN_TIMEOUT_MESSAGE
+    } else {
+        TIMEOUT_MESSAGE
+    }
+    .to_string())
 }
 
 /// Whether a GitHub Copilot `/models` entry is selectable for the model picker
 /// (mirrors the upstream catalog filter): `model_picker_enabled` is true, the
 /// model is not policy-disabled, and it supports tool calls.
 pub fn is_selectable_copilot_model(model: &serde_json::Value) -> bool {
-    let picker_enabled = model.get("model_picker_enabled").and_then(|v| v.as_bool()).unwrap_or(false);
-    let policy_disabled = model.pointer("/policy/state").and_then(|v| v.as_str()) == Some("disabled");
-    let supports_tools = model.pointer("/capabilities/supports/tool_calls").and_then(|v| v.as_bool()).unwrap_or(false);
+    let picker_enabled = model
+        .get("model_picker_enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let policy_disabled =
+        model.pointer("/policy/state").and_then(|v| v.as_str()) == Some("disabled");
+    let supports_tools = model
+        .pointer("/capabilities/supports/tool_calls")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
     picker_enabled && !policy_disabled && supports_tools
 }
 
 /// The selectable Copilot model ids from a `/models` response `data` array.
 pub fn selectable_copilot_model_ids(models_data: &[serde_json::Value]) -> Vec<String> {
-    models_data.iter()
+    models_data
+        .iter()
         .filter(|m| is_selectable_copilot_model(m))
         .filter_map(|m| m.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()))
         .collect()
@@ -506,11 +649,20 @@ pub fn selectable_copilot_model_ids(models_data: &[serde_json::Value]) -> Vec<St
 
 /// Poll once for a GitHub device-code access token (mirrors pollForGitHubAccessToken's poll).
 pub async fn poll_github_device_token(domain: &str, device_code: &str) -> DevicePollStatus {
-    poll_github_device_token_at(&format!("https://{domain}/login/oauth/access_token"), COPILOT_CLIENT_ID, device_code).await
+    poll_github_device_token_at(
+        &format!("https://{domain}/login/oauth/access_token"),
+        COPILOT_CLIENT_ID,
+        device_code,
+    )
+    .await
 }
 
 /// Poll against an explicit access-token endpoint (used for testing).
-pub async fn poll_github_device_token_at(access_token_url: &str, client_id: &str, device_code: &str) -> DevicePollStatus {
+pub async fn poll_github_device_token_at(
+    access_token_url: &str,
+    client_id: &str,
+    device_code: &str,
+) -> DevicePollStatus {
     let client = reqwest::Client::new();
     let resp = client
         .post(access_token_url)
@@ -537,12 +689,15 @@ pub async fn poll_github_device_token_at(access_token_url: &str, client_id: &str
     if let Some(error) = data.get("error").and_then(|v| v.as_str()) {
         return match error {
             "authorization_pending" => DevicePollStatus::Pending,
-            "slow_down" => DevicePollStatus::SlowDown(
-                data.get("interval").and_then(|v| v.as_u64()),
-            ),
+            "slow_down" => {
+                DevicePollStatus::SlowDown(data.get("interval").and_then(|v| v.as_u64()))
+            }
             other => {
-                let desc = data.get("error_description").and_then(|v| v.as_str())
-                    .map(|d| format!(": {d}")).unwrap_or_default();
+                let desc = data
+                    .get("error_description")
+                    .and_then(|v| v.as_str())
+                    .map(|d| format!(": {d}"))
+                    .unwrap_or_default();
                 DevicePollStatus::Failed(format!("Device flow failed: {other}{desc}"))
             }
         };
@@ -551,13 +706,19 @@ pub async fn poll_github_device_token_at(access_token_url: &str, client_id: &str
 }
 
 /// Refresh a GitHub Copilot token (mirrors refreshGitHubCopilotToken).
-pub async fn refresh_copilot_token(refresh_token: &str, enterprise_domain: Option<&str>) -> Result<CopilotCredentials, String> {
+pub async fn refresh_copilot_token(
+    refresh_token: &str,
+    enterprise_domain: Option<&str>,
+) -> Result<CopilotCredentials, String> {
     let domain = enterprise_domain.unwrap_or("github.com");
     refresh_copilot_token_at(&copilot_token_url(domain), refresh_token).await
 }
 
 /// Refresh against an explicit token endpoint (used for testing).
-pub async fn refresh_copilot_token_at(token_url: &str, refresh_token: &str) -> Result<CopilotCredentials, String> {
+pub async fn refresh_copilot_token_at(
+    token_url: &str,
+    refresh_token: &str,
+) -> Result<CopilotCredentials, String> {
     let client = reqwest::Client::new();
     let mut req = client
         .get(token_url)
@@ -566,13 +727,23 @@ pub async fn refresh_copilot_token_at(token_url: &str, refresh_token: &str) -> R
     for (k, v) in crate::utils::copilot_headers() {
         req = req.header(k, v);
     }
-    let resp = req.send().await.map_err(|e| format!("Copilot token refresh error: {e}"))?;
-    let body = resp.text().await.map_err(|e| format!("Copilot token refresh error: {e}"))?;
-    let data: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|_| "Invalid Copilot token response".to_string())?;
-    let token = data.get("token").and_then(|v| v.as_str())
+    let resp = req
+        .send()
+        .await
+        .map_err(|e| format!("Copilot token refresh error: {e}"))?;
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("Copilot token refresh error: {e}"))?;
+    let data: serde_json::Value =
+        serde_json::from_str(&body).map_err(|_| "Invalid Copilot token response".to_string())?;
+    let token = data
+        .get("token")
+        .and_then(|v| v.as_str())
         .ok_or_else(|| "Invalid Copilot token response fields".to_string())?;
-    let expires_at = data.get("expires_at").and_then(|v| v.as_i64())
+    let expires_at = data
+        .get("expires_at")
+        .and_then(|v| v.as_i64())
         .ok_or_else(|| "Invalid Copilot token response fields".to_string())?;
     Ok(CopilotCredentials {
         access: token.to_string(),
@@ -591,18 +762,28 @@ mod tests {
         assert!(!pkce.verifier.is_empty());
         assert!(!pkce.challenge.is_empty());
         assert_ne!(pkce.verifier, pkce.challenge);
-        assert!(pkce.verifier.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
-        assert!(pkce.challenge.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_'));
+        assert!(
+            pkce.verifier
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        );
+        assert!(
+            pkce.challenge
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+        );
     }
 
     #[tokio::test]
     async fn test_refresh_anthropic_token() {
+        use wiremock::matchers::{body_partial_json, method, path};
         use wiremock::{Mock, MockServer, ResponseTemplate};
-        use wiremock::matchers::{method, path, body_partial_json};
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/oauth/token"))
-            .and(body_partial_json(serde_json::json!({"grant_type": "refresh_token", "refresh_token": "old-refresh"})))
+            .and(body_partial_json(
+                serde_json::json!({"grant_type": "refresh_token", "refresh_token": "old-refresh"}),
+            ))
             .respond_with(ResponseTemplate::new(200).set_body_string(
                 r#"{"access_token":"new-access","refresh_token":"new-refresh","expires_in":3600}"#,
             ))
@@ -610,7 +791,9 @@ mod tests {
             .await;
         let url = format!("{}/oauth/token", server.uri());
         let before = crate::utils::now_millis();
-        let tok = refresh_anthropic_token_at(&url, "old-refresh").await.unwrap();
+        let tok = refresh_anthropic_token_at(&url, "old-refresh")
+            .await
+            .unwrap();
         assert_eq!(tok.access, "new-access");
         assert_eq!(tok.refresh.as_deref(), Some("new-refresh"));
         // expires ~= now + 3600s - 5min safety margin.
@@ -620,22 +803,24 @@ mod tests {
 
     #[tokio::test]
     async fn test_refresh_anthropic_token_invalid_json() {
-        use wiremock::{Mock, MockServer, ResponseTemplate};
         use wiremock::matchers::method;
+        use wiremock::{Mock, MockServer, ResponseTemplate};
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .respond_with(ResponseTemplate::new(200).set_body_string("<html>nope</html>"))
             .mount(&server)
             .await;
-        let err = refresh_anthropic_token_at(&server.uri(), "r").await.unwrap_err();
+        let err = refresh_anthropic_token_at(&server.uri(), "r")
+            .await
+            .unwrap_err();
         assert!(err.contains("invalid JSON"));
     }
 
     #[tokio::test]
     async fn test_refresh_codex_token_extracts_account_id() {
         use base64::Engine;
-        use wiremock::{Mock, MockServer, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
         // Build a JWT whose payload carries the chatgpt_account_id claim.
         let payload = serde_json::json!({
             "https://api.openai.com/auth": {"chatgpt_account_id": "acc_123"}
@@ -660,15 +845,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_refresh_copilot_token() {
+        use wiremock::matchers::{header, method, path};
         use wiremock::{Mock, MockServer, ResponseTemplate};
-        use wiremock::matchers::{method, path, header};
         let server = MockServer::start().await;
         Mock::given(method("GET"))
             .and(path("/copilot_internal/v2/token"))
             .and(header("Authorization", "Bearer gho_refresh"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(
-                r#"{"token":"copilot-access","expires_at":1000000}"#,
-            ))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(r#"{"token":"copilot-access","expires_at":1000000}"#),
+            )
             .mount(&server)
             .await;
         let url = format!("{}/copilot_internal/v2/token", server.uri());
@@ -681,8 +867,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_start_github_device_flow() {
-        use wiremock::{Mock, MockServer, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/login/device/code"))
@@ -692,7 +878,9 @@ mod tests {
             .mount(&server)
             .await;
         let url = format!("{}/login/device/code", server.uri());
-        let dc = start_github_device_flow_at(&url, COPILOT_CLIENT_ID).await.unwrap();
+        let dc = start_github_device_flow_at(&url, COPILOT_CLIENT_ID)
+            .await
+            .unwrap();
         assert_eq!(dc.device_code, "dc");
         assert_eq!(dc.user_code, "WXYZ-1234");
         assert_eq!(dc.verification_uri, "https://github.com/login/device");
@@ -702,8 +890,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_start_github_device_flow_rejects_untrusted_uri() {
-        use wiremock::{Mock, MockServer, ResponseTemplate};
         use wiremock::matchers::method;
+        use wiremock::{Mock, MockServer, ResponseTemplate};
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .respond_with(ResponseTemplate::new(200).set_body_string(
@@ -711,38 +899,67 @@ mod tests {
             ))
             .mount(&server)
             .await;
-        let err = start_github_device_flow_at(&server.uri(), COPILOT_CLIENT_ID).await.unwrap_err();
+        let err = start_github_device_flow_at(&server.uri(), COPILOT_CLIENT_ID)
+            .await
+            .unwrap_err();
         assert!(err.contains("Untrusted verification_uri"));
     }
 
     #[tokio::test]
     async fn test_poll_github_device_token_classifies_responses() {
-        use wiremock::{Mock, MockServer, ResponseTemplate};
         use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
         // pending
         let s1 = MockServer::start().await;
-        Mock::given(method("POST")).and(path("/t"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"error":"authorization_pending"}"#))
-            .mount(&s1).await;
-        assert_eq!(poll_github_device_token_at(&format!("{}/t", s1.uri()), COPILOT_CLIENT_ID, "dc").await, DevicePollStatus::Pending);
+        Mock::given(method("POST"))
+            .and(path("/t"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_string(r#"{"error":"authorization_pending"}"#),
+            )
+            .mount(&s1)
+            .await;
+        assert_eq!(
+            poll_github_device_token_at(&format!("{}/t", s1.uri()), COPILOT_CLIENT_ID, "dc").await,
+            DevicePollStatus::Pending
+        );
         // slow_down
         let s2 = MockServer::start().await;
-        Mock::given(method("POST")).and(path("/t"))
+        Mock::given(method("POST"))
+            .and(path("/t"))
             .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"error":"slow_down"}"#))
-            .mount(&s2).await;
-        assert_eq!(poll_github_device_token_at(&format!("{}/t", s2.uri()), COPILOT_CLIENT_ID, "dc").await, DevicePollStatus::SlowDown(None));
+            .mount(&s2)
+            .await;
+        assert_eq!(
+            poll_github_device_token_at(&format!("{}/t", s2.uri()), COPILOT_CLIENT_ID, "dc").await,
+            DevicePollStatus::SlowDown(None)
+        );
         // complete
         let s3 = MockServer::start().await;
-        Mock::given(method("POST")).and(path("/t"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"access_token":"gho_tok"}"#))
-            .mount(&s3).await;
-        assert_eq!(poll_github_device_token_at(&format!("{}/t", s3.uri()), COPILOT_CLIENT_ID, "dc").await, DevicePollStatus::Complete("gho_tok".to_string()));
+        Mock::given(method("POST"))
+            .and(path("/t"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_string(r#"{"access_token":"gho_tok"}"#),
+            )
+            .mount(&s3)
+            .await;
+        assert_eq!(
+            poll_github_device_token_at(&format!("{}/t", s3.uri()), COPILOT_CLIENT_ID, "dc").await,
+            DevicePollStatus::Complete("gho_tok".to_string())
+        );
         // failed with description
         let s4 = MockServer::start().await;
-        Mock::given(method("POST")).and(path("/t"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(r#"{"error":"access_denied","error_description":"nope"}"#))
-            .mount(&s4).await;
-        assert_eq!(poll_github_device_token_at(&format!("{}/t", s4.uri()), COPILOT_CLIENT_ID, "dc").await, DevicePollStatus::Failed("Device flow failed: access_denied: nope".to_string()));
+        Mock::given(method("POST"))
+            .and(path("/t"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(r#"{"error":"access_denied","error_description":"nope"}"#),
+            )
+            .mount(&s4)
+            .await;
+        assert_eq!(
+            poll_github_device_token_at(&format!("{}/t", s4.uri()), COPILOT_CLIENT_ID, "dc").await,
+            DevicePollStatus::Failed("Device flow failed: access_denied: nope".to_string())
+        );
     }
 
     #[test]
@@ -761,8 +978,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_exchange_anthropic_code() {
+        use wiremock::matchers::{body_partial_json, method, path};
         use wiremock::{Mock, MockServer, ResponseTemplate};
-        use wiremock::matchers::{method, path, body_partial_json};
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/oauth/token"))
@@ -775,7 +992,15 @@ mod tests {
             .mount(&server)
             .await;
         let url = format!("{}/oauth/token", server.uri());
-        let tok = exchange_anthropic_code_at(&url, "the-code", "st", "v", "http://localhost:53692/callback").await.unwrap();
+        let tok = exchange_anthropic_code_at(
+            &url,
+            "the-code",
+            "st",
+            "v",
+            "http://localhost:53692/callback",
+        )
+        .await
+        .unwrap();
         assert_eq!(tok.access, "acc");
         assert_eq!(tok.refresh.as_deref(), Some("ref"));
     }
@@ -796,10 +1021,12 @@ mod tests {
     #[tokio::test]
     async fn test_exchange_codex_code() {
         use base64::Engine;
-        use wiremock::{Mock, MockServer, ResponseTemplate};
         use wiremock::matchers::{method, path};
-        let payload = serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": "acc_9"}});
-        let payload_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(serde_json::to_vec(&payload).unwrap());
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+        let payload =
+            serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": "acc_9"}});
+        let payload_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(serde_json::to_vec(&payload).unwrap());
         let jwt = format!("h.{payload_b64}.s");
         let server = MockServer::start().await;
         Mock::given(method("POST"))
@@ -810,7 +1037,9 @@ mod tests {
             .mount(&server)
             .await;
         let url = format!("{}/oauth/token", server.uri());
-        let creds = exchange_codex_code_at(&url, "code", "verifier", CODEX_REDIRECT_URI).await.unwrap();
+        let creds = exchange_codex_code_at(&url, "code", "verifier", CODEX_REDIRECT_URI)
+            .await
+            .unwrap();
         assert_eq!(creds.account_id, "acc_9");
         assert_eq!(creds.refresh.as_deref(), Some("r"));
     }
@@ -819,8 +1048,10 @@ mod tests {
     fn test_codex_account_id_empty_is_none() {
         use base64::Engine;
         let mk = |acc: &str| {
-            let payload = serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": acc}});
-            let b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(serde_json::to_vec(&payload).unwrap());
+            let payload =
+                serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": acc}});
+            let b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD
+                .encode(serde_json::to_vec(&payload).unwrap());
             format!("h.{b64}.s")
         };
         // Upstream getAccountId returns null for an empty account id.
@@ -834,22 +1065,27 @@ mod tests {
     #[tokio::test]
     async fn test_codex_exchange_requires_refresh_token() {
         use base64::Engine;
-        use wiremock::{Mock, MockServer, ResponseTemplate};
         use wiremock::matchers::{method, path};
-        let payload = serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": "a"}});
-        let payload_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(serde_json::to_vec(&payload).unwrap());
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+        let payload =
+            serde_json::json!({"https://api.openai.com/auth": {"chatgpt_account_id": "a"}});
+        let payload_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(serde_json::to_vec(&payload).unwrap());
         let jwt = format!("h.{payload_b64}.s");
         let server = MockServer::start().await;
         // Response omits refresh_token -> upstream rejects with "missing fields".
         Mock::given(method("POST"))
             .and(path("/oauth/token"))
-            .respond_with(ResponseTemplate::new(200).set_body_string(format!(
-                r#"{{"access_token":"{jwt}","expires_in":3600}}"#
-            )))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(format!(r#"{{"access_token":"{jwt}","expires_in":3600}}"#)),
+            )
             .mount(&server)
             .await;
         let url = format!("{}/oauth/token", server.uri());
-        let err = exchange_codex_code_at(&url, "code", "v", CODEX_REDIRECT_URI).await.unwrap_err();
+        let err = exchange_codex_code_at(&url, "code", "v", CODEX_REDIRECT_URI)
+            .await
+            .unwrap_err();
         assert!(err.contains("missing fields"), "{err}");
     }
 }

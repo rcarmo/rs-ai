@@ -11,12 +11,24 @@ mod tests {
                 user_message("Hello"),
                 Message {
                     role: Role::Assistant,
-                    content: vec![ContentBlock::Text { text: "Hi there!".into(), text_signature: None }],
+                    content: vec![ContentBlock::Text {
+                        text: "Hi there!".into(),
+                        text_signature: None,
+                    }],
                     timestamp: 0,
-                    api: None, provider: None, model: None, response_id: None,
-                    response_model: None, diagnostics: Vec::new(),
-                    usage: None, stop_reason: Some(StopReason::Stop), error_message: None,
-                    tool_call_id: None, tool_name: None, is_error: false, details: None,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
+                    response_model: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: Some(StopReason::Stop),
+                    error_message: None,
+                    tool_call_id: None,
+                    tool_name: None,
+                    is_error: false,
+                    details: None,
                 },
             ],
             tools: vec![],
@@ -25,11 +37,19 @@ mod tests {
 
     fn sample_model() -> Model {
         Model {
-            id: "test".into(), name: "Test".into(), api: "test".into(),
-            provider: "test".into(), base_url: "".into(), reasoning: false,
-            thinking_level_map: None, input: vec!["text".into()],
-            cost: ModelCost::default(), context_window: 4096, max_tokens: 1024,
-            headers: None, api_key: None,
+            id: "test".into(),
+            name: "Test".into(),
+            api: "test".into(),
+            provider: "test".into(),
+            base_url: "".into(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 4096,
+            max_tokens: 1024,
+            headers: None,
+            api_key: None,
             compat: Default::default(),
         }
     }
@@ -39,16 +59,33 @@ mod tests {
         let msg = Message {
             role: Role::Assistant,
             content: vec![
-                ContentBlock::Thinking { thinking: "hmm".into(), thinking_signature: None, redacted: false },
-                ContentBlock::Text { text: "Answer: ".into(), text_signature: None },
-                ContentBlock::Text { text: "42".into(), text_signature: None },
+                ContentBlock::Thinking {
+                    thinking: "hmm".into(),
+                    thinking_signature: None,
+                    redacted: false,
+                },
+                ContentBlock::Text {
+                    text: "Answer: ".into(),
+                    text_signature: None,
+                },
+                ContentBlock::Text {
+                    text: "42".into(),
+                    text_signature: None,
+                },
             ],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
             response_model: None,
             diagnostics: Vec::new(),
-            usage: None, stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false,
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
             details: None,
         };
         assert_eq!(get_text_content(&msg), "Answer: 42");
@@ -77,11 +114,18 @@ mod tests {
                 thought_signature: None,
             }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
             response_model: None,
             diagnostics: Vec::new(),
-            usage: None, stop_reason: Some(StopReason::ToolUse), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false,
+            usage: None,
+            stop_reason: Some(StopReason::ToolUse),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
             details: None,
         };
         assert!(is_tool_use(&msg));
@@ -106,7 +150,10 @@ mod tests {
     #[test]
     fn test_models_are_equal() {
         let a = sample_model();
-        let b = Model { id: "other".into(), ..a.clone() };
+        let b = Model {
+            id: "other".into(),
+            ..a.clone()
+        };
         assert!(models_are_equal(&a, &a));
         assert!(!models_are_equal(&a, &b));
     }
@@ -114,7 +161,10 @@ mod tests {
     #[test]
     fn test_invoke_on_payload() {
         let payload = serde_json::json!({"model": "test"});
-        let hook = |mut p: serde_json::Value| { p["added"] = serde_json::json!(true); p };
+        let hook = |mut p: serde_json::Value| {
+            p["added"] = serde_json::json!(true);
+            p
+        };
         let result = invoke_on_payload(payload, Some(&hook));
         assert_eq!(result["added"], true);
     }

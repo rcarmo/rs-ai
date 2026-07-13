@@ -5,7 +5,7 @@
 //! project/location resolution instead.
 
 use crate::provider::google::{build_stream_url, resolve_vertex_project_location};
-use crate::types::{api, Model, ModelCost, StreamOptions};
+use crate::types::{Model, ModelCost, StreamOptions, api};
 
 fn make_model(id: &str, api: &str, provider: &str, base_url: &str) -> Model {
     Model {
@@ -27,7 +27,12 @@ fn make_model(id: &str, api: &str, provider: &str, base_url: &str) -> Model {
 }
 
 fn vertex_model(base_url: &str) -> Model {
-    make_model("gemini-2.5-pro", api::GOOGLE_VERTEX, "google-vertex", base_url)
+    make_model(
+        "gemini-2.5-pro",
+        api::GOOGLE_VERTEX,
+        "google-vertex",
+        base_url,
+    )
 }
 
 #[test]
@@ -52,7 +57,9 @@ fn vertex_url_defaults_base_url_when_empty() {
         ..Default::default()
     };
     let got = build_stream_url(&model, "", &opts).expect("url");
-    assert!(got.starts_with("https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/"));
+    assert!(got.starts_with(
+        "https://us-central1-aiplatform.googleapis.com/v1/projects/p/locations/us-central1/"
+    ));
     // No API key supplied -> no key query parameter (ADC path).
     assert!(!got.contains("&key="));
 }

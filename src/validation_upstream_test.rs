@@ -10,7 +10,7 @@
 mod tests {
     use crate::types::Tool;
     use crate::validation::validate_tool_arguments;
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
 
     fn tool_with_value_schema(schema: Value) -> Tool {
         Tool {
@@ -40,7 +40,11 @@ mod tests {
             (json!({"type": "null"}), json!(""), json!(null)),
             (json!({"type": "null"}), json!(0), json!(null)),
             (json!({"type": "null"}), json!(false), json!(null)),
-            (json!({"type": ["number", "string"]}), json!("1"), json!("1")),
+            (
+                json!({"type": ["number", "string"]}),
+                json!("1"),
+                json!("1"),
+            ),
             (json!({"type": ["boolean", "number"]}), json!("1"), json!(1)),
         ];
         for (schema, input, expected) in passing {
@@ -48,7 +52,11 @@ mod tests {
             let args = json!({ "value": input });
             let got = validate_tool_arguments(&tool, &args)
                 .unwrap_or_else(|e| panic!("schema {schema} input {input}: {e}"));
-            assert_eq!(got, json!({ "value": expected }), "schema {schema} input {input}");
+            assert_eq!(
+                got,
+                json!({ "value": expected }),
+                "schema {schema} input {input}"
+            );
         }
     }
 
@@ -65,7 +73,10 @@ mod tests {
             let args = json!({ "value": input });
             let err = validate_tool_arguments(&tool, &args)
                 .expect_err(&format!("schema {schema} input {input} must fail"));
-            assert!(err.contains("Validation failed"), "schema {schema} input {input}: {err}");
+            assert!(
+                err.contains("Validation failed"),
+                "schema {schema} input {input}: {err}"
+            );
         }
     }
 }

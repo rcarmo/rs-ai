@@ -64,10 +64,18 @@ impl Logger for NoopLogger {
 }
 
 /// Log helpers.
-pub fn log_debug(msg: &str, fields: &[(&str, &str)]) { get_logger().log(LogLevel::Debug, msg, fields); }
-pub fn log_info(msg: &str, fields: &[(&str, &str)]) { get_logger().log(LogLevel::Info, msg, fields); }
-pub fn log_warn(msg: &str, fields: &[(&str, &str)]) { get_logger().log(LogLevel::Warn, msg, fields); }
-pub fn log_error(msg: &str, fields: &[(&str, &str)]) { get_logger().log(LogLevel::Error, msg, fields); }
+pub fn log_debug(msg: &str, fields: &[(&str, &str)]) {
+    get_logger().log(LogLevel::Debug, msg, fields);
+}
+pub fn log_info(msg: &str, fields: &[(&str, &str)]) {
+    get_logger().log(LogLevel::Info, msg, fields);
+}
+pub fn log_warn(msg: &str, fields: &[(&str, &str)]) {
+    get_logger().log(LogLevel::Warn, msg, fields);
+}
+pub fn log_error(msg: &str, fields: &[(&str, &str)]) {
+    get_logger().log(LogLevel::Error, msg, fields);
+}
 
 /// Create a new stderr logger (alias for convenience).
 pub fn new_stderr_logger(min_level: LogLevel) -> StderrLogger {

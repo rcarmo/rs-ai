@@ -37,7 +37,10 @@ pub fn clone_context(ctx: &Context) -> Context {
 /// Check if a message indicates the model wants to use tools.
 pub fn is_tool_use(msg: &Message) -> bool {
     msg.stop_reason == Some(StopReason::ToolUse)
-        || msg.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. }))
+        || msg
+            .content
+            .iter()
+            .any(|b| matches!(b, ContentBlock::ToolCall { .. }))
 }
 
 /// Extract tool calls from a message.
@@ -49,7 +52,12 @@ pub fn get_tool_calls(msg: &Message) -> Vec<&ContentBlock> {
 }
 
 /// Create a tool result message.
-pub fn tool_result_message(tool_call_id: &str, tool_name: &str, result: &str, is_error: bool) -> Message {
+pub fn tool_result_message(
+    tool_call_id: &str,
+    tool_name: &str,
+    result: &str,
+    is_error: bool,
+) -> Message {
     Message {
         role: Role::ToolResult,
         content: vec![ContentBlock::Text {
@@ -83,15 +91,28 @@ mod tests {
         let msg = Message {
             role: Role::Assistant,
             content: vec![
-                ContentBlock::Text { text: "Hello ".into(), text_signature: None },
-                ContentBlock::Text { text: "world".into(), text_signature: None },
+                ContentBlock::Text {
+                    text: "Hello ".into(),
+                    text_signature: None,
+                },
+                ContentBlock::Text {
+                    text: "world".into(),
+                    text_signature: None,
+                },
             ],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
             response_model: None,
             diagnostics: Vec::new(),
-            usage: None, stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false,
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
             details: None,
         };
         assert_eq!(get_text_content(&msg), "Hello world");
@@ -108,11 +129,18 @@ mod tests {
                 thought_signature: None,
             }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
             response_model: None,
             diagnostics: Vec::new(),
-            usage: None, stop_reason: Some(StopReason::ToolUse), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false,
+            usage: None,
+            stop_reason: Some(StopReason::ToolUse),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
             details: None,
         };
         assert!(is_tool_use(&msg));
@@ -128,14 +156,27 @@ mod tests {
 }
 
 /// Append a tool result to a context.
-pub fn append_tool_result(mut ctx: Context, tool_call_id: &str, tool_name: &str, result: &str, is_error: bool) -> Context {
-    ctx.messages.push(tool_result_message(tool_call_id, tool_name, result, is_error));
+pub fn append_tool_result(
+    mut ctx: Context,
+    tool_call_id: &str,
+    tool_name: &str,
+    result: &str,
+    is_error: bool,
+) -> Context {
+    ctx.messages.push(tool_result_message(
+        tool_call_id,
+        tool_name,
+        result,
+        is_error,
+    ));
     ctx
 }
 
 /// Check if a message has tool calls.
 pub fn has_tool_calls(msg: &Message) -> bool {
-    msg.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. }))
+    msg.content
+        .iter()
+        .any(|b| matches!(b, ContentBlock::ToolCall { .. }))
 }
 
 /// Check if a message needs tool execution (tool_use stop + has tool calls).

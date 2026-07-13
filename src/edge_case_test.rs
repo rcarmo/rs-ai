@@ -2,20 +2,28 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::faux::*;
-    use crate::harness::*;
-    use crate::types::*;
     use crate::events::Event;
+    use crate::harness::*;
+    use crate::provider::faux::*;
     use crate::transform::*;
+    use crate::types::*;
     use tokio_stream::StreamExt;
 
     fn faux_model() -> Model {
         Model {
-            id: "faux".into(), name: "Faux".into(), api: "faux".into(),
-            provider: "faux".into(), base_url: "".into(), reasoning: true,
-            thinking_level_map: None, input: vec!["text".into(), "image".into()],
-            cost: ModelCost::default(), context_window: 128000, max_tokens: 4096,
-            headers: None, api_key: None,
+            id: "faux".into(),
+            name: "Faux".into(),
+            api: "faux".into(),
+            provider: "faux".into(),
+            base_url: "".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost::default(),
+            context_window: 128000,
+            max_tokens: 4096,
+            headers: None,
+            api_key: None,
             compat: Default::default(),
         }
     }
@@ -63,7 +71,10 @@ mod tests {
         let messages = vec![Message {
             role: Role::Assistant,
             content: vec![
-                ContentBlock::Text { text: "Let me search".into(), text_signature: None },
+                ContentBlock::Text {
+                    text: "Let me search".into(),
+                    text_signature: None,
+                },
                 ContentBlock::ToolCall {
                     id: "tc1".into(),
                     name: "search".into(),
@@ -72,41 +83,74 @@ mod tests {
                 },
             ],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
             response_model: None,
             diagnostics: Vec::new(),
-            usage: None, stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false,
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
             details: None,
         }];
         let result = transform_messages(&messages, &model);
         assert_eq!(result[0].content.len(), 2);
-        assert!(matches!(&result[0].content[1], ContentBlock::ToolCall { .. }));
+        assert!(matches!(
+            &result[0].content[1],
+            ContentBlock::ToolCall { .. }
+        ));
     }
 
     #[test]
     fn test_transform_multiple_images_downgraded() {
-        let text_model = Model { input: vec!["text".into()], ..faux_model() };
+        let text_model = Model {
+            input: vec!["text".into()],
+            ..faux_model()
+        };
         let messages = vec![Message {
             role: Role::User,
             content: vec![
-                ContentBlock::Text { text: "Compare:".into(), text_signature: None },
-                ContentBlock::Image { data: "img1".into(), mime_type: "image/png".into() },
-                ContentBlock::Image { data: "img2".into(), mime_type: "image/jpeg".into() },
+                ContentBlock::Text {
+                    text: "Compare:".into(),
+                    text_signature: None,
+                },
+                ContentBlock::Image {
+                    data: "img1".into(),
+                    mime_type: "image/png".into(),
+                },
+                ContentBlock::Image {
+                    data: "img2".into(),
+                    mime_type: "image/jpeg".into(),
+                },
             ],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
             response_model: None,
             diagnostics: Vec::new(),
-            usage: None, stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false,
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
             details: None,
         }];
         let result = transform_messages(&messages, &text_model);
         // Consecutive images collapse to a single placeholder (matches upstream).
         assert_eq!(result[0].content.len(), 2);
-        assert!(matches!(&result[0].content[0], ContentBlock::Text { text, .. } if text == "Compare:"));
-        assert!(matches!(&result[0].content[1], ContentBlock::Text { text, .. } if text.contains("omitted")));
+        assert!(
+            matches!(&result[0].content[0], ContentBlock::Text { text, .. } if text == "Compare:")
+        );
+        assert!(
+            matches!(&result[0].content[1], ContentBlock::Text { text, .. } if text.contains("omitted"))
+        );
     }
 
     // --- Validation Edge Cases ---
@@ -116,7 +160,11 @@ mod tests {
         let ctx = Context {
             system_prompt: None,
             messages: vec![user_message("hi")],
-            tools: vec![Tool { name: "t".into(), description: "".into(), parameters: serde_json::json!({}) }],
+            tools: vec![Tool {
+                name: "t".into(),
+                description: "".into(),
+                parameters: serde_json::json!({}),
+            }],
         };
         let errs = crate::validation::validate_context(&ctx).unwrap_err();
         assert!(errs[0].message.contains("description"));
@@ -132,7 +180,10 @@ mod tests {
                 user_message("hi"),
                 Message {
                     role: Role::Assistant,
-                    content: vec![ContentBlock::Text { text: "hello".into(), text_signature: None }],
+                    content: vec![ContentBlock::Text {
+                        text: "hello".into(),
+                        text_signature: None,
+                    }],
                     timestamp: 42,
                     api: Some("openai".into()),
                     provider: Some("openai".into()),
@@ -140,7 +191,12 @@ mod tests {
                     response_id: Some("r1".into()),
                     response_model: None,
                     diagnostics: Vec::new(),
-                    usage: Some(Usage { input: 5, output: 3, total_tokens: 8, ..Default::default() }),
+                    usage: Some(Usage {
+                        input: 5,
+                        output: 3,
+                        total_tokens: 8,
+                        ..Default::default()
+                    }),
                     stop_reason: Some(StopReason::Stop),
                     error_message: None,
                     tool_call_id: None,
@@ -149,7 +205,11 @@ mod tests {
                     details: None,
                 },
             ],
-            tools: vec![Tool { name: "t".into(), description: "d".into(), parameters: serde_json::json!({"type": "object"}) }],
+            tools: vec![Tool {
+                name: "t".into(),
+                description: "d".into(),
+                parameters: serde_json::json!({"type": "object"}),
+            }],
         };
         let cloned = ctx.clone();
         assert_eq!(cloned.messages.len(), ctx.messages.len());
@@ -172,34 +232,50 @@ mod tests {
                     content: vec![ContentBlock::ToolCall {
                         id: "tc1".into(),
                         name: "search".into(),
-                        arguments: std::collections::HashMap::from([("q".into(), serde_json::json!("rust"))]),
+                        arguments: std::collections::HashMap::from([(
+                            "q".into(),
+                            serde_json::json!("rust"),
+                        )]),
                         thought_signature: None,
                     }],
                     timestamp: 0,
-                    api: None, provider: None, model: None, response_id: None,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
                     response_model: None,
                     diagnostics: Vec::new(),
-                    usage: None, stop_reason: Some(StopReason::ToolUse), error_message: None,
-                    tool_call_id: None, tool_name: None, is_error: false,
+                    usage: None,
+                    stop_reason: Some(StopReason::ToolUse),
+                    error_message: None,
+                    tool_call_id: None,
+                    tool_name: None,
+                    is_error: false,
                     details: None,
                 },
             ],
-            tools: vec![Tool { name: "search".into(), description: "search".into(), parameters: serde_json::json!({}) }],
+            tools: vec![Tool {
+                name: "search".into(),
+                description: "search".into(),
+                parameters: serde_json::json!({}),
+            }],
         };
         let json = save_context(&ctx).unwrap();
         let loaded = load_context(&json).unwrap();
         assert_eq!(loaded.messages.len(), 2);
-        assert!(matches!(&loaded.messages[1].content[0], ContentBlock::ToolCall { name, .. } if name == "search"));
+        assert!(
+            matches!(&loaded.messages[1].content[0], ContentBlock::ToolCall { name, .. } if name == "search")
+        );
     }
 }
 
-    /// Equivalent of Go's TestExamplesBuild — verify the crate compiles cleanly.
-    /// In Rust this is always true when cargo test passes, but we add it for
-    /// explicit parity with the Go test count.
-    #[test]
-    fn test_crate_compiles() {
-        // If this test runs, the entire crate (including all providers,
-        // images, transports, etc.) compiled successfully.
-        let compiled = std::mem::size_of::<crate::types::Message>() > 0;
-        assert!(compiled);
-    }
+/// Equivalent of Go's TestExamplesBuild — verify the crate compiles cleanly.
+/// In Rust this is always true when cargo test passes, but we add it for
+/// explicit parity with the Go test count.
+#[test]
+fn test_crate_compiles() {
+    // If this test runs, the entire crate (including all providers,
+    // images, transports, etc.) compiled successfully.
+    let compiled = std::mem::size_of::<crate::types::Message>() > 0;
+    assert!(compiled);
+}

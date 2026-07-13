@@ -10,27 +10,39 @@
 #[cfg(test)]
 mod tests {
     use crate::compat::detect_compat;
-    use crate::provider::openai::{build_payload, stream_openai};
-    use crate::types::{Context, ContentBlock, Model, ModelCost, StreamOptions, Tool};
     use crate::events::Event;
-    use serde_json::{json, Value};
+    use crate::provider::openai::{build_payload, stream_openai};
+    use crate::types::{ContentBlock, Context, Model, ModelCost, StreamOptions, Tool};
+    use serde_json::{Value, json};
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn model(base_url: &str) -> Model {
         Model {
-            id: "google/gemini-test".into(), name: "Gemini Test".into(), api: "openai-completions".into(),
-            provider: "openrouter".into(), base_url: base_url.into(), reasoning: true,
-            thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-            context_window: 100000, max_tokens: 4096, headers: None, api_key: Some("test".into()),
+            id: "google/gemini-test".into(),
+            name: "Gemini Test".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: base_url.into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 100000,
+            max_tokens: 4096,
+            headers: None,
+            api_key: Some("test".into()),
             compat: Default::default(),
         }
     }
 
     fn read_tool() -> Tool {
-        Tool { name: "read".into(), description: "Read a file".into(),
-            parameters: json!({"type": "object", "properties": {"path": {"type": "string"}}}) }
+        Tool {
+            name: "read".into(),
+            description: "Read a file".into(),
+            parameters: json!({"type": "object", "properties": {"path": {"type": "string"}}}),
+        }
     }
 
     fn detail() -> Value {
@@ -48,36 +60,73 @@ mod tests {
         ).to_string();
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
         let m = model(&server.uri());
-        let ctx = Context { system_prompt: None, tools: vec![read_tool()], messages: Vec::new() };
+        let ctx = Context {
+            system_prompt: None,
+            tools: vec![read_tool()],
+            messages: Vec::new(),
+        };
         let opts = StreamOptions::default();
         let mut stream = stream_openai(&m, &ctx, &opts);
         let mut assistant_msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { assistant_msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                assistant_msg = Some(message);
+            }
         }
         let assistant = assistant_msg.expect("Done");
 
         // The tool call carries the encrypted reasoning as its signature.
-        let tc = assistant.content.iter().find(|b| matches!(b, ContentBlock::ToolCall { .. })).expect("toolCall");
+        let tc = assistant
+            .content
+            .iter()
+            .find(|b| matches!(b, ContentBlock::ToolCall { .. }))
+            .expect("toolCall");
         match tc {
-            ContentBlock::ToolCall { id, name, arguments, thought_signature } => {
+            ContentBlock::ToolCall {
+                id,
+                name,
+                arguments,
+                thought_signature,
+            } => {
                 assert_eq!(id, "call_1");
                 assert_eq!(name, "read");
-                assert_eq!(arguments.get("path").and_then(|v| v.as_str()), Some("README.md"));
-                let sig: Value = serde_json::from_str(thought_signature.as_deref().expect("signature")).unwrap();
+                assert_eq!(
+                    arguments.get("path").and_then(|v| v.as_str()),
+                    Some("README.md")
+                );
+                let sig: Value =
+                    serde_json::from_str(thought_signature.as_deref().expect("signature")).unwrap();
                 assert_eq!(sig, detail());
             }
             _ => unreachable!(),
         }
 
         // Replaying the assistant message serializes the signature back to reasoning_details.
-        let replay_ctx = Context { system_prompt: None, tools: vec![read_tool()], messages: vec![assistant] };
-        let payload = build_payload(&m, &replay_ctx, &StreamOptions::default(), &detect_compat(&m));
-        let assistant_payload = payload["messages"].as_array().unwrap().iter()
-            .find(|msg| msg.get("role").and_then(|r| r.as_str()) == Some("assistant")).expect("assistant payload");
+        let replay_ctx = Context {
+            system_prompt: None,
+            tools: vec![read_tool()],
+            messages: vec![assistant],
+        };
+        let payload = build_payload(
+            &m,
+            &replay_ctx,
+            &StreamOptions::default(),
+            &detect_compat(&m),
+        );
+        let assistant_payload = payload["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|msg| msg.get("role").and_then(|r| r.as_str()) == Some("assistant"))
+            .expect("assistant payload");
         assert_eq!(assistant_payload["reasoning_details"], json!([detail()]));
     }
 }

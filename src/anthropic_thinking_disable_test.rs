@@ -8,18 +8,33 @@
 mod tests {
     use crate::provider::anthropic::build_anthropic_payload;
     use crate::registry::get_model;
-    use crate::types::{Context, ContentBlock, Message, Model, Role, StreamOptions, ThinkingLevel};
-    use serde_json::{json, Value};
+    use crate::types::{ContentBlock, Context, Message, Model, Role, StreamOptions, ThinkingLevel};
+    use serde_json::{Value, json};
 
     fn ctx() -> Context {
         Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![Message {
-                role: Role::User, content: vec![ContentBlock::Text { text: "Hello".into(), text_signature: None }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role: Role::User,
+                content: vec![ContentBlock::Text {
+                    text: "Hello".into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -29,7 +44,10 @@ mod tests {
     }
 
     fn payload(id: &str, reasoning: Option<ThinkingLevel>) -> Value {
-        let opts = StreamOptions { reasoning, ..Default::default() };
+        let opts = StreamOptions {
+            reasoning,
+            ..Default::default()
+        };
         build_anthropic_payload(&anthropic(id), &ctx(), &opts)
     }
 
@@ -64,7 +82,10 @@ mod tests {
     #[test]
     fn uses_adaptive_thinking_for_claude_opus_4_8_when_reasoning_enabled() {
         let p = payload("claude-opus-4-8", Some(ThinkingLevel::High));
-        assert_eq!(p["thinking"], json!({"type": "adaptive", "display": "summarized"}));
+        assert_eq!(
+            p["thinking"],
+            json!({"type": "adaptive", "display": "summarized"})
+        );
         assert_eq!(p["output_config"], json!({"effort": "high"}));
     }
 
@@ -72,7 +93,10 @@ mod tests {
     fn uses_adaptive_thinking_for_claude_sonnet_5_when_reasoning_enabled() {
         // v0.80.3: claude-sonnet-5 ships compat.forceAdaptiveThinking=true.
         let p = payload("claude-sonnet-5", Some(ThinkingLevel::High));
-        assert_eq!(p["thinking"], json!({"type": "adaptive", "display": "summarized"}));
+        assert_eq!(
+            p["thinking"],
+            json!({"type": "adaptive", "display": "summarized"})
+        );
         assert_eq!(p["output_config"], json!({"effort": "high"}));
     }
 
@@ -87,16 +111,34 @@ mod tests {
         model.context_window = 5000;
         model.max_tokens = 8192;
         let ctx = Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![Message {
-                role: Role::User, content: vec![ContentBlock::Text { text: "hello".into(), text_signature: None }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role: Role::User,
+                content: vec![ContentBlock::Text {
+                    text: "hello".into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         };
-        let opts = StreamOptions { max_tokens: Some(2000), ..Default::default() };
+        let opts = StreamOptions {
+            max_tokens: Some(2000),
+            ..Default::default()
+        };
         let p = build_anthropic_payload(&model, &ctx, &opts);
         assert_eq!(p["max_tokens"], json!(902));
     }
@@ -104,7 +146,10 @@ mod tests {
     #[test]
     fn maps_xhigh_reasoning_to_effort_xhigh_for_claude_opus_4_8() {
         let p = payload("claude-opus-4-8", Some(ThinkingLevel::XHigh));
-        assert_eq!(p["thinking"], json!({"type": "adaptive", "display": "summarized"}));
+        assert_eq!(
+            p["thinking"],
+            json!({"type": "adaptive", "display": "summarized"})
+        );
         assert_eq!(p["output_config"], json!({"effort": "xhigh"}));
     }
 }

@@ -9,33 +9,61 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::codex::stream_codex;
-    use crate::types::{Context, ContentBlock, Message, Model, ModelCost, Role, StopReason, StreamOptions, Transport};
     use crate::events::Event;
+    use crate::provider::codex::stream_codex;
+    use crate::types::{
+        ContentBlock, Context, Message, Model, ModelCost, Role, StopReason, StreamOptions,
+        Transport,
+    };
     use serde_json::Value;
     use std::collections::HashMap;
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn codex_model(base_url: &str) -> Model {
         Model {
-            id: "gpt-5.5".into(), name: "GPT-5.5".into(), api: "openai-codex-responses".into(),
-            provider: "openai-codex".into(), base_url: base_url.into(), reasoning: true,
-            thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-            context_window: 256000, max_tokens: 16384, headers: None, api_key: Some("a.b.c".into()), compat: Default::default(),
+            id: "gpt-5.5".into(),
+            name: "GPT-5.5".into(),
+            api: "openai-codex-responses".into(),
+            provider: "openai-codex".into(),
+            base_url: base_url.into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 256000,
+            max_tokens: 16384,
+            headers: None,
+            api_key: Some("a.b.c".into()),
+            compat: Default::default(),
         }
     }
 
     fn ctx() -> Context {
         Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![Message {
-                role: Role::User, content: vec![ContentBlock::Text { text: "hi".into(), text_signature: None }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role: Role::User,
+                content: vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -48,14 +76,23 @@ mod tests {
     );
 
     /// Drive a codex SSE request; return (events-text, terminal reason, request headers, request body).
-    async fn run(body_sse: &str, opts: StreamOptions) -> (String, StopReason, HashMap<String, String>, Value) {
+    async fn run(
+        body_sse: &str,
+        opts: StreamOptions,
+    ) -> (String, StopReason, HashMap<String, String>, Value) {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body_sse))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body_sse),
+            )
+            .mount(&server)
+            .await;
         let model = codex_model(&server.uri());
         let c = ctx();
-        let mut o = opts; o.transport = Some(Transport::Sse);
+        let mut o = opts;
+        o.transport = Some(Transport::Sse);
         let mut stream = stream_codex(&model, &c, &o);
         let mut text = String::new();
         let mut reason = StopReason::Stop;
@@ -72,8 +109,17 @@ mod tests {
         assert!(saw_start, "a Start event is expected");
         let reqs = server.received_requests().await.unwrap();
         let req = reqs.last().unwrap();
-        let headers = req.headers.iter().map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string())).collect();
-        let body: Value = decode_request_body(req.headers.get("content-encoding").and_then(|v| v.to_str().ok()), &req.body);
+        let headers = req
+            .headers
+            .iter()
+            .map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or("").to_string()))
+            .collect();
+        let body: Value = decode_request_body(
+            req.headers
+                .get("content-encoding")
+                .and_then(|v| v.to_str().ok()),
+            &req.body,
+        );
         (text, reason, headers, body)
     }
 
@@ -101,20 +147,32 @@ mod tests {
         use std::time::Duration;
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200)
-                .insert_header("content-type", "text/event-stream")
-                .set_delay(Duration::from_secs(30))
-                .set_body_string(COMPLETED_SSE))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_delay(Duration::from_secs(30))
+                    .set_body_string(COMPLETED_SSE),
+            )
+            .mount(&server)
+            .await;
         let model = codex_model(&server.uri());
         let c = ctx();
-        let o = StreamOptions { transport: Some(Transport::Sse), timeout_ms: Some(10), ..Default::default() };
+        let o = StreamOptions {
+            transport: Some(Transport::Sse),
+            timeout_ms: Some(10),
+            ..Default::default()
+        };
         let mut stream = stream_codex(&model, &c, &o);
         let mut err: Option<String> = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+            if let Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+            }
         }
-        assert_eq!(err.as_deref(), Some("Codex SSE response headers timed out after 10ms"));
+        assert_eq!(
+            err.as_deref(),
+            Some("Codex SSE response headers timed out after 10ms")
+        );
     }
 
     #[tokio::test]
@@ -130,17 +188,32 @@ mod tests {
 
     #[tokio::test]
     async fn sets_session_headers_and_prompt_cache_key_when_session_provided() {
-        let opts = StreamOptions { session_id: Some("test-session-123".into()), ..Default::default() };
+        let opts = StreamOptions {
+            session_id: Some("test-session-123".into()),
+            ..Default::default()
+        };
         let (_t, _r, h, b) = run(COMPLETED_SSE, opts).await;
-        assert_eq!(h.get("session-id").map(String::as_str), Some("test-session-123"));
-        assert!(!h.contains_key("session_id"), "underscore session_id must not be set");
-        assert_eq!(h.get("x-client-request-id").map(String::as_str), Some("test-session-123"));
+        assert_eq!(
+            h.get("session-id").map(String::as_str),
+            Some("test-session-123")
+        );
+        assert!(
+            !h.contains_key("session_id"),
+            "underscore session_id must not be set"
+        );
+        assert_eq!(
+            h.get("x-client-request-id").map(String::as_str),
+            Some("test-session-123")
+        );
         assert_eq!(b["prompt_cache_key"], serde_json::json!("test-session-123"));
     }
 
     #[tokio::test]
     async fn clamps_prompt_cache_key_to_64_chars() {
-        let opts = StreamOptions { session_id: Some("x".repeat(67)), ..Default::default() };
+        let opts = StreamOptions {
+            session_id: Some("x".repeat(67)),
+            ..Default::default()
+        };
         let (_t, _r, _h, b) = run(COMPLETED_SSE, opts).await;
         assert_eq!(b["prompt_cache_key"], serde_json::json!("x".repeat(64)));
     }
@@ -160,23 +233,37 @@ mod tests {
         // captured request is really zstd-framed and decodes back to the payload.
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(COMPLETED_SSE))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(COMPLETED_SSE),
+            )
+            .mount(&server)
+            .await;
         let model = codex_model(&server.uri());
         let c = ctx();
-        let o = StreamOptions { transport: Some(Transport::Sse), ..Default::default() };
+        let o = StreamOptions {
+            transport: Some(Transport::Sse),
+            ..Default::default()
+        };
         let mut stream = stream_codex(&model, &c, &o);
         while stream.next().await.is_some() {}
 
         let reqs = server.received_requests().await.unwrap();
         let req = reqs.last().unwrap();
         assert_eq!(
-            req.headers.get("content-encoding").and_then(|v| v.to_str().ok()),
+            req.headers
+                .get("content-encoding")
+                .and_then(|v| v.to_str().ok()),
             Some("zstd"),
             "content-encoding must be zstd"
         );
         // zstd magic number: 0x28 0xB5 0x2F 0xFD (little-endian 0xFD2FB528).
-        assert_eq!(&req.body[0..4], &[0x28, 0xB5, 0x2F, 0xFD], "body must be a zstd frame");
+        assert_eq!(
+            &req.body[0..4],
+            &[0x28, 0xB5, 0x2F, 0xFD],
+            "body must be a zstd frame"
+        );
         // The frame decompresses back to the JSON payload with the expected model.
         let decoded = zstd::stream::decode_all(&req.body[..]).expect("valid zstd frame");
         let body: Value = serde_json::from_slice(&decoded).unwrap();
@@ -188,14 +275,19 @@ mod tests {
         // v0.80.5: a cached session WebSocket is recycled once its age reaches the
         // backend connection age limit (SESSION_WEBSOCKET_MAX_AGE_MS = 55 min); a
         // younger socket stays reusable.
-        use crate::provider::codex::{codex_websocket_session_expired, SESSION_WEBSOCKET_MAX_AGE_MS};
+        use crate::provider::codex::{
+            SESSION_WEBSOCKET_MAX_AGE_MS, codex_websocket_session_expired,
+        };
         let now = 3_600_000_u64; // 60 min
         // Older than 55 min -> expired (open a fresh connection).
         let old_created = now - SESSION_WEBSOCKET_MAX_AGE_MS; // exactly 55 min old
         assert!(codex_websocket_session_expired(old_created, now));
         assert!(codex_websocket_session_expired(now - (56 * 60 * 1000), now));
         // Younger than 55 min -> reusable.
-        assert!(!codex_websocket_session_expired(now - (54 * 60 * 1000), now));
+        assert!(!codex_websocket_session_expired(
+            now - (54 * 60 * 1000),
+            now
+        ));
         assert!(!codex_websocket_session_expired(now, now));
     }
 }

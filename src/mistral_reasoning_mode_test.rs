@@ -9,10 +9,12 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::events::Event;
     use crate::provider::mistral::stream_mistral;
     use crate::registry::get_model;
-    use crate::types::{CacheRetention, Context, Message, Model, Role, StreamOptions, ThinkingLevel};
-    use crate::events::Event;
+    use crate::types::{
+        CacheRetention, Context, Message, Model, Role, StreamOptions, ThinkingLevel,
+    };
     use serde_json::Value;
     use std::sync::{Arc, Mutex};
     use tokio_stream::StreamExt;
@@ -23,12 +25,24 @@ mod tests {
             tools: Vec::new(),
             messages: vec![Message {
                 role: Role::User,
-                content: vec![crate::types::ContentBlock::Text { text: "Hello".into(), text_signature: None }],
+                content: vec![crate::types::ContentBlock::Text {
+                    text: "Hello".into(),
+                    text_signature: None,
+                }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -51,7 +65,11 @@ mod tests {
                 break;
             }
         }
-        captured.lock().unwrap().clone().expect("payload captured before request failure")
+        captured
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("payload captured before request failure")
     }
 
     fn mistral(id: &str) -> Model {
@@ -62,9 +80,16 @@ mod tests {
     async fn uses_reasoning_effort_for_mistral_small_4() {
         let p = capture_payload(
             mistral("mistral-small-2603"),
-            StreamOptions { reasoning: Some(ThinkingLevel::Medium), ..Default::default() },
-        ).await;
-        assert_eq!(p.get("reasoning_effort").and_then(|v| v.as_str()), Some("high"));
+            StreamOptions {
+                reasoning: Some(ThinkingLevel::Medium),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert_eq!(
+            p.get("reasoning_effort").and_then(|v| v.as_str()),
+            Some("high")
+        );
         assert!(p.get("prompt_mode").is_none());
     }
 
@@ -79,9 +104,16 @@ mod tests {
     async fn uses_prompt_mode_for_magistral_reasoning_models() {
         let p = capture_payload(
             mistral("magistral-medium-latest"),
-            StreamOptions { reasoning: Some(ThinkingLevel::Medium), ..Default::default() },
-        ).await;
-        assert_eq!(p.get("prompt_mode").and_then(|v| v.as_str()), Some("reasoning"));
+            StreamOptions {
+                reasoning: Some(ThinkingLevel::Medium),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert_eq!(
+            p.get("prompt_mode").and_then(|v| v.as_str()),
+            Some("reasoning")
+        );
         assert!(p.get("reasoning_effort").is_none());
     }
 
@@ -89,9 +121,16 @@ mod tests {
     async fn uses_reasoning_effort_for_mistral_medium_3_5() {
         let p = capture_payload(
             mistral("mistral-medium-3.5"),
-            StreamOptions { reasoning: Some(ThinkingLevel::Medium), ..Default::default() },
-        ).await;
-        assert_eq!(p.get("reasoning_effort").and_then(|v| v.as_str()), Some("high"));
+            StreamOptions {
+                reasoning: Some(ThinkingLevel::Medium),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert_eq!(
+            p.get("reasoning_effort").and_then(|v| v.as_str()),
+            Some("high")
+        );
         assert!(p.get("prompt_mode").is_none());
     }
 
@@ -106,9 +145,16 @@ mod tests {
     async fn uses_the_session_id_as_prompt_cache_key() {
         let p = capture_payload(
             mistral("mistral-large-latest"),
-            StreamOptions { session_id: Some("session-123".into()), ..Default::default() },
-        ).await;
-        assert_eq!(p.get("prompt_cache_key").and_then(|v| v.as_str()), Some("session-123"));
+            StreamOptions {
+                session_id: Some("session-123".into()),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert_eq!(
+            p.get("prompt_cache_key").and_then(|v| v.as_str()),
+            Some("session-123")
+        );
     }
 
     #[tokio::test]
@@ -120,7 +166,8 @@ mod tests {
                 cache_retention: Some(CacheRetention::None),
                 ..Default::default()
             },
-        ).await;
+        )
+        .await;
         assert!(p.get("prompt_cache_key").is_none());
     }
 }

@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, Once, RwLock};
 
-pub mod types;
-pub mod openrouter;
 pub mod models_generated;
+pub mod openrouter;
+pub mod types;
 
 pub use types::*;
 
@@ -77,7 +77,10 @@ pub fn get_image_model(provider: &str, id: &str) -> Option<ImagesModel> {
 /// List image models, optionally filtered by provider.
 pub fn list_image_models(provider: Option<&str>) -> Vec<ImagesModel> {
     ensure_image_builtins_registered();
-    IMAGE_MODELS.read().unwrap().values()
+    IMAGE_MODELS
+        .read()
+        .unwrap()
+        .values()
         .filter(|m| provider.is_none_or(|p| m.provider == p))
         .cloned()
         .collect()
@@ -87,7 +90,12 @@ pub fn list_image_models(provider: Option<&str>) -> Vec<ImagesModel> {
 pub fn list_image_providers() -> Vec<String> {
     ensure_image_builtins_registered();
     let models = IMAGE_MODELS.read().unwrap();
-    let mut seen: Vec<String> = models.values().map(|m| m.provider.clone()).collect::<std::collections::HashSet<_>>().into_iter().collect();
+    let mut seen: Vec<String> = models
+        .values()
+        .map(|m| m.provider.clone())
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
     seen.sort();
     seen
 }
@@ -111,7 +119,10 @@ pub async fn generate_images(
             model: model.id.clone(),
             output: Vec::new(),
             stop_reason: crate::types::StopReason::Error,
-            timestamp: std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as i64,
+            timestamp: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as i64,
             response_id: None,
             usage: None,
             error_message: Some(format!("No API provider registered for api: {}", model.api)),
@@ -121,7 +132,9 @@ pub async fn generate_images(
 
 struct OpenRouterImagesProvider;
 impl ImagesApiProvider for OpenRouterImagesProvider {
-    fn api(&self) -> &str { "openrouter-images" }
+    fn api(&self) -> &str {
+        "openrouter-images"
+    }
     fn generate<'a>(
         &self,
         model: &'a ImagesModel,

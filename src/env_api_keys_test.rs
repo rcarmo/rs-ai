@@ -31,7 +31,10 @@ mod tests {
         }
         let got = get_env_api_key("github-copilot");
         clear();
-        assert!(got.is_none(), "generic GitHub tokens must not resolve github-copilot");
+        assert!(
+            got.is_none(),
+            "generic GitHub tokens must not resolve github-copilot"
+        );
     }
 
     #[test]
@@ -52,7 +55,9 @@ mod tests {
     fn resolves_zai_china_coding_plan_from_zai_coding_cn_api_key() {
         let _g = ENV_LOCK.lock().unwrap();
         clear();
-        unsafe { std::env::set_var("ZAI_CODING_CN_API_KEY", "zai-coding-cn-token"); }
+        unsafe {
+            std::env::set_var("ZAI_CODING_CN_API_KEY", "zai-coding-cn-token");
+        }
         let got = get_env_api_key("zai-coding-cn");
         clear();
         assert_eq!(got.as_deref(), Some("zai-coding-cn-token"));

@@ -9,9 +9,12 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::codex::{stream_codex, clear_ws_fallback};
-    use crate::types::{Context, ContentBlock, Message, Model, ModelCost, Role, StopReason, StreamOptions, Transport};
     use crate::events::Event;
+    use crate::provider::codex::{clear_ws_fallback, stream_codex};
+    use crate::types::{
+        ContentBlock, Context, Message, Model, ModelCost, Role, StopReason, StreamOptions,
+        Transport,
+    };
     use futures::{SinkExt, StreamExt};
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
@@ -43,12 +46,24 @@ mod tests {
             tools: Vec::new(),
             messages: vec![Message {
                 role: Role::User,
-                content: vec![ContentBlock::Text { text: "hello".into(), text_signature: None }],
+                content: vec![ContentBlock::Text {
+                    text: "hello".into(),
+                    text_signature: None,
+                }],
                 timestamp: 0,
-                api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -63,10 +78,12 @@ mod tests {
 
         let server = tokio::spawn(async move {
             if let Ok((stream, _)) = listener.accept().await
-                && let Ok(mut ws) = tokio_tungstenite::accept_async(stream).await {
+                && let Ok(mut ws) = tokio_tungstenite::accept_async(stream).await
+            {
                 // Capture the outbound response.create frame.
                 if let Some(Ok(WsMessage::Text(t))) = ws.next().await
-                    && let Ok(v) = serde_json::from_str::<serde_json::Value>(&t) {
+                    && let Ok(v) = serde_json::from_str::<serde_json::Value>(&t)
+                {
                     *sink.lock().unwrap() = Some(v);
                 }
                 for frame in [
@@ -83,7 +100,10 @@ mod tests {
         });
 
         let model = codex_model(&format!("http://{addr}"));
-        let opts = StreamOptions { transport: Some(Transport::Auto), ..Default::default() };
+        let opts = StreamOptions {
+            transport: Some(Transport::Auto),
+            ..Default::default()
+        };
         let c = ctx();
 
         let mut saw_start = false;
@@ -102,17 +122,26 @@ mod tests {
                 }
             }
         };
-        tokio::time::timeout(Duration::from_secs(5), run).await.expect("codex ws stream timed out");
+        tokio::time::timeout(Duration::from_secs(5), run)
+            .await
+            .expect("codex ws stream timed out");
         let _ = server.await;
 
         // Outbound payload carries the model id.
-        let payload = received.lock().unwrap().clone().expect("server received a client frame");
+        let payload = received
+            .lock()
+            .unwrap()
+            .clone()
+            .expect("server received a client frame");
         assert_eq!(payload["model"], serde_json::json!("codex-mini"));
         assert_eq!(payload["type"], serde_json::json!("response.create"));
 
         assert!(!saw_error, "happy-path WS flow must not surface an error");
         assert!(saw_start, "expected a Start event");
         assert!(saw_text, "expected a TextDelta(\"ok\") event");
-        assert!(matches!(done_reason, Some(StopReason::Stop)), "expected Done(Stop), got {done_reason:?}");
+        assert!(
+            matches!(done_reason, Some(StopReason::Stop)),
+            "expected Done(Stop), got {done_reason:?}"
+        );
     }
 }

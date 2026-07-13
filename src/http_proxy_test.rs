@@ -2,7 +2,9 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::http_proxy::{resolve_http_proxy_url_for_target, UNSUPPORTED_PROXY_PROTOCOL_MESSAGE};
+    use crate::http_proxy::{
+        UNSUPPORTED_PROXY_PROTOCOL_MESSAGE, resolve_http_proxy_url_for_target,
+    };
     use std::collections::HashMap;
 
     // These tests rely on a caller-supplied env map rather than mutating process
@@ -10,7 +12,10 @@ mod tests {
     // resets process.env per case via fake timers/afterEach).
 
     fn env(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-        pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 
     #[test]

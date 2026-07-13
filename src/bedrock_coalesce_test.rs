@@ -34,24 +34,48 @@ mod tests {
     fn user(text: &str) -> Message {
         Message {
             role: Role::User,
-            content: vec![ContentBlock::Text { text: text.into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: text.into(),
+                text_signature: None,
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         }
     }
 
     fn tool_result(id: &str, name: &str, text: &str, is_error: bool) -> Message {
         Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Text { text: text.into(), text_signature: None }],
+            content: vec![ContentBlock::Text {
+                text: text.into(),
+                text_signature: None,
+            }],
             timestamp: 0,
-            api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: Some(id.into()), tool_name: Some(name.into()), is_error, details: None,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some(id.into()),
+            tool_name: Some(name.into()),
+            is_error,
+            details: None,
         }
     }
 
@@ -65,13 +89,27 @@ mod tests {
         ];
         let msgs = build_bedrock_messages(&messages, &model, &StreamOptions::default()).unwrap();
 
-        assert_eq!(msgs.len(), 2, "expected user + coalesced tool-result message");
-        assert_eq!(*msgs[1].role(), ConversationRole::User, "tool results become a user message");
+        assert_eq!(
+            msgs.len(),
+            2,
+            "expected user + coalesced tool-result message"
+        );
+        assert_eq!(
+            *msgs[1].role(),
+            ConversationRole::User,
+            "tool results become a user message"
+        );
 
         let content = msgs[1].content();
         assert_eq!(content.len(), 3, "expected 2 tool results + 1 cache point");
-        let tool_results = content.iter().filter(|b| matches!(b, BedrockContent::ToolResult(_))).count();
-        let cache_points = content.iter().filter(|b| matches!(b, BedrockContent::CachePoint(_))).count();
+        let tool_results = content
+            .iter()
+            .filter(|b| matches!(b, BedrockContent::ToolResult(_)))
+            .count();
+        let cache_points = content
+            .iter()
+            .filter(|b| matches!(b, BedrockContent::CachePoint(_)))
+            .count();
         assert_eq!(tool_results, 2);
         assert_eq!(cache_points, 1);
     }
@@ -88,6 +126,10 @@ mod tests {
         ];
         let msgs = build_bedrock_messages(&messages, &model, &StreamOptions::default()).unwrap();
         assert_eq!(msgs.len(), 2);
-        assert_eq!(msgs[1].content().len(), 2, "no cache point for a non-caching model");
+        assert_eq!(
+            msgs[1].content().len(),
+            2,
+            "no cache point for a non-caching model"
+        );
     }
 }

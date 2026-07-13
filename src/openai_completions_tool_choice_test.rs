@@ -10,14 +10,16 @@
 #[cfg(test)]
 mod tests {
     use crate::compat::detect_compat;
+    use crate::events::Event;
     use crate::provider::openai::{build_payload, stream_openai};
     use crate::registry::get_model;
-    use crate::types::{Context, ContentBlock, Message, Model, Role, StreamOptions, ThinkingLevel, Tool};
-    use crate::events::Event;
-    use serde_json::{json, Value};
+    use crate::types::{
+        ContentBlock, Context, Message, Model, Role, StreamOptions, ThinkingLevel, Tool,
+    };
+    use serde_json::{Value, json};
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn cat(provider: &str, id: &str) -> Model {
         get_model(provider, id).unwrap_or_else(|| panic!("missing catalog model {provider}/{id}"))
@@ -25,14 +27,16 @@ mod tests {
 
     fn user_ctx() -> Context {
         Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![msg(Role::User, "Hi")],
         }
     }
 
     fn sys_ctx() -> Context {
         Context {
-            system_prompt: Some("Follow instructions.".into()), tools: Vec::new(),
+            system_prompt: Some("Follow instructions.".into()),
+            tools: Vec::new(),
             messages: vec![msg(Role::User, "Hi")],
         }
     }
@@ -40,17 +44,33 @@ mod tests {
     fn msg(role: Role, text: &str) -> Message {
         Message {
             role,
-            content: vec![ContentBlock::Text { text: text.into(), text_signature: None }],
-            timestamp: 0, api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            content: vec![ContentBlock::Text {
+                text: text.into(),
+                text_signature: None,
+            }],
+            timestamp: 0,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         }
     }
 
     fn ping_tool() -> Tool {
-        Tool { name: "ping".into(), description: "Ping tool".into(),
-            parameters: json!({"type": "object", "properties": {"ok": {"type": "boolean"}}}) }
+        Tool {
+            name: "ping".into(),
+            description: "Ping tool".into(),
+            parameters: json!({"type": "object", "properties": {"ok": {"type": "boolean"}}}),
+        }
     }
 
     fn payload(model: &Model, ctx: &Context, opts: &StreamOptions) -> Value {
@@ -58,7 +78,10 @@ mod tests {
     }
 
     fn reasoning(level: ThinkingLevel) -> StreamOptions {
-        StreamOptions { reasoning: Some(level), ..Default::default() }
+        StreamOptions {
+            reasoning: Some(level),
+            ..Default::default()
+        }
     }
 
     // --- payload shape ---
@@ -67,7 +90,10 @@ mod tests {
     fn forwards_tool_choice_from_simple_options_to_payload() {
         let mut ctx = user_ctx();
         ctx.tools = vec![ping_tool()];
-        let opts = StreamOptions { tool_choice: Some(json!("required")), ..Default::default() };
+        let opts = StreamOptions {
+            tool_choice: Some(json!("required")),
+            ..Default::default()
+        };
         let p = payload(&cat("openai", "gpt-4o-mini"), &ctx, &opts);
         assert_eq!(p["tool_choice"], json!("required"));
         assert!(p["tools"].as_array().is_some_and(|a| !a.is_empty()));
@@ -81,18 +107,29 @@ mod tests {
         ctx.tools = vec![ping_tool()];
         let p = payload(&model, &ctx, &StreamOptions::default());
         let func = &p["tools"][0]["function"];
-        assert!(func.get("strict").is_none(), "strict must be omitted: {func}");
+        assert!(
+            func.get("strict").is_none(),
+            "strict must be omitted: {func}"
+        );
     }
 
     #[test]
     fn maps_groq_qwen3_reasoning_levels_to_default_reasoning_effort() {
-        let p = payload(&cat("groq", "qwen/qwen3-32b"), &user_ctx(), &reasoning(ThinkingLevel::Medium));
+        let p = payload(
+            &cat("groq", "qwen/qwen3-32b"),
+            &user_ctx(),
+            &reasoning(ThinkingLevel::Medium),
+        );
         assert_eq!(p["reasoning_effort"], json!("default"));
     }
 
     #[test]
     fn keeps_normal_reasoning_effort_for_groq_models_without_compat_mapping() {
-        let p = payload(&cat("groq", "openai/gpt-oss-20b"), &user_ctx(), &reasoning(ThinkingLevel::Medium));
+        let p = payload(
+            &cat("groq", "openai/gpt-oss-20b"),
+            &user_ctx(),
+            &reasoning(ThinkingLevel::Medium),
+        );
         assert_eq!(p["reasoning_effort"], json!("medium"));
     }
 
@@ -114,7 +151,11 @@ mod tests {
 
     #[test]
     fn omits_tool_stream_when_no_tools_are_provided() {
-        let p = payload(&cat("zai", "glm-5.1"), &user_ctx(), &StreamOptions::default());
+        let p = payload(
+            &cat("zai", "glm-5.1"),
+            &user_ctx(),
+            &StreamOptions::default(),
+        );
         assert!(p.get("tool_stream").is_none());
     }
 
@@ -126,15 +167,27 @@ mod tests {
             (ThinkingLevel::High, "high"),
             (ThinkingLevel::XHigh, "max"),
         ] {
-            let p = payload(&cat("zai", "glm-5.2"), &user_ctx(), &reasoning(level.clone()));
-            assert_eq!(p["thinking"], json!({"type": "enabled", "clear_thinking": false}), "level {level:?}");
+            let p = payload(
+                &cat("zai", "glm-5.2"),
+                &user_ctx(),
+                &reasoning(level.clone()),
+            );
+            assert_eq!(
+                p["thinking"],
+                json!({"type": "enabled", "clear_thinking": false}),
+                "level {level:?}"
+            );
             assert_eq!(p["reasoning_effort"], json!(effort), "level {level:?}");
         }
     }
 
     #[test]
     fn omits_zai_glm_5_2_reasoning_effort_when_thinking_is_off() {
-        let p = payload(&cat("zai", "glm-5.2"), &user_ctx(), &StreamOptions::default());
+        let p = payload(
+            &cat("zai", "glm-5.2"),
+            &user_ctx(),
+            &StreamOptions::default(),
+        );
         assert_eq!(p["thinking"], json!({"type": "disabled"}));
         assert!(p.get("reasoning_effort").is_none());
     }
@@ -154,27 +207,51 @@ mod tests {
                     redacted: false,
                 },
                 ContentBlock::ToolCall {
-                    id: "call_1".into(), name: "read".into(),
-                    arguments: thinking_args, thought_signature: None,
+                    id: "call_1".into(),
+                    name: "read".into(),
+                    arguments: thinking_args,
+                    thought_signature: None,
                 },
             ],
-            timestamp: 0, api: Some("openai-completions".into()), provider: Some("zai".into()),
-            model: Some("glm-5.2".into()), response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            timestamp: 0,
+            api: Some("openai-completions".into()),
+            provider: Some("zai".into()),
+            model: Some("glm-5.2".into()),
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
         let tool_result = Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Text { text: "contents".into(), text_signature: None }],
-            timestamp: 0, api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: Some("call_1".into()), tool_name: Some("read".into()),
-            is_error: false, details: None,
+            content: vec![ContentBlock::Text {
+                text: "contents".into(),
+                text_signature: None,
+            }],
+            timestamp: 0,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some("call_1".into()),
+            tool_name: Some("read".into()),
+            is_error: false,
+            details: None,
         };
         let ctx = Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![
                 msg(Role::User, "Read README.md"),
                 assistant,
@@ -182,38 +259,67 @@ mod tests {
                 msg(Role::User, "Continue"),
             ],
         };
-        let p = payload(&cat("zai", "glm-5.2"), &ctx, &reasoning(ThinkingLevel::High));
-        let replayed = p["messages"].as_array().unwrap().iter()
-            .find(|m| m["role"] == json!("assistant")).expect("assistant message");
+        let p = payload(
+            &cat("zai", "glm-5.2"),
+            &ctx,
+            &reasoning(ThinkingLevel::High),
+        );
+        let replayed = p["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["role"] == json!("assistant"))
+            .expect("assistant message");
         assert_eq!(replayed["reasoning_content"], json!("prior reasoning"));
-        assert_eq!(p["thinking"], json!({"type": "enabled", "clear_thinking": false}));
+        assert_eq!(
+            p["thinking"],
+            json!({"type": "enabled", "clear_thinking": false})
+        );
     }
 
     #[test]
     fn sends_thinking_disabled_for_opencode_go_kimi_when_off() {
-        let p = payload(&cat("opencode-go", "kimi-k2.6"), &user_ctx(), &StreamOptions::default());
+        let p = payload(
+            &cat("opencode-go", "kimi-k2.6"),
+            &user_ctx(),
+            &StreamOptions::default(),
+        );
         assert_eq!(p["thinking"], json!({"type": "disabled"}));
         assert!(p.get("reasoning_effort").is_none());
     }
 
     #[test]
     fn sends_thinking_enabled_for_opencode_go_kimi_when_enabled() {
-        let p = payload(&cat("opencode-go", "kimi-k2.6"), &user_ctx(), &reasoning(ThinkingLevel::High));
+        let p = payload(
+            &cat("opencode-go", "kimi-k2.6"),
+            &user_ctx(),
+            &reasoning(ThinkingLevel::High),
+        );
         assert_eq!(p["thinking"], json!({"type": "enabled"}));
         assert!(p.get("reasoning_effort").is_none());
     }
 
     #[test]
     fn omits_reasoning_effort_for_opencode_grok_build() {
-        let p = payload(&cat("opencode", "grok-build-0.1"), &user_ctx(), &reasoning(ThinkingLevel::High));
+        let p = payload(
+            &cat("opencode", "grok-build-0.1"),
+            &user_ctx(),
+            &reasoning(ThinkingLevel::High),
+        );
         assert!(p.get("reasoning_effort").is_none());
     }
 
     #[test]
     fn sends_max_tokens_for_opencode_completions_models() {
-        for model in [cat("opencode-go", "kimi-k2.6"), cat("opencode", "grok-build-0.1")] {
+        for model in [
+            cat("opencode-go", "kimi-k2.6"),
+            cat("opencode", "grok-build-0.1"),
+        ] {
             assert_eq!(model.compat.max_tokens_field.as_deref(), Some("max_tokens"));
-            let opts = StreamOptions { max_tokens: Some(123), ..Default::default() };
+            let opts = StreamOptions {
+                max_tokens: Some(123),
+                ..Default::default()
+            };
             let p = payload(&model, &user_ctx(), &opts);
             assert_eq!(p["max_tokens"], json!(123));
             assert!(p.get("max_completion_tokens").is_none());
@@ -222,14 +328,22 @@ mod tests {
 
     #[test]
     fn uses_openrouter_reasoning_object_instead_of_reasoning_effort() {
-        let p = payload(&cat("openrouter", "deepseek/deepseek-r1"), &user_ctx(), &reasoning(ThinkingLevel::High));
+        let p = payload(
+            &cat("openrouter", "deepseek/deepseek-r1"),
+            &user_ctx(),
+            &reasoning(ThinkingLevel::High),
+        );
         assert_eq!(p["reasoning"], json!({"effort": "high"}));
         assert!(p.get("reasoning_effort").is_none());
     }
 
     #[test]
     fn keeps_developer_messages_for_openai_reasoning_model_instructions() {
-        let p = payload(&cat("openai", "gpt-5.5"), &sys_ctx(), &StreamOptions::default());
+        let p = payload(
+            &cat("openai", "gpt-5.5"),
+            &sys_ctx(),
+            &StreamOptions::default(),
+        );
         assert_eq!(p["messages"][0]["role"], json!("developer"));
     }
 
@@ -255,12 +369,21 @@ mod tests {
 
     /// Returns (terminal stop reason, error string if any, terminal message),
     /// mapping rs-ai's event-level Error to upstream's response.stopReason/errorMessage.
-    async fn run_openai_chunks(model: Model, body: String) -> (crate::types::StopReason, Option<String>, crate::types::Message) {
+    async fn run_openai_chunks(
+        model: Model,
+        body: String,
+    ) -> (
+        crate::types::StopReason,
+        Option<String>,
+        crate::types::Message,
+    ) {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200)
-                .insert_header("content-type", "text/event-stream")
-                .set_body_string(body))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
             .mount(&server)
             .await;
         let mut model = model;
@@ -272,9 +395,19 @@ mod tests {
         let mut out = None;
         while let Some(evt) = stream.next().await {
             match evt {
-                Event::Done { reason, message } => out = Some((reason, message.error_message.clone(), message)),
-                Event::Error { reason, error, message } => {
-                    out = Some((reason, Some(error.to_string()), message.unwrap_or_else(|| msg(Role::Assistant, ""))));
+                Event::Done { reason, message } => {
+                    out = Some((reason, message.error_message.clone(), message))
+                }
+                Event::Error {
+                    reason,
+                    error,
+                    message,
+                } => {
+                    out = Some((
+                        reason,
+                        Some(error.to_string()),
+                        message.unwrap_or_else(|| msg(Role::Assistant, "")),
+                    ));
                 }
                 _ => {}
             }
@@ -291,7 +424,10 @@ mod tests {
         ).to_string();
         let (reason, err, _m) = run_openai_chunks(cat("openai", "gpt-4o-mini"), body).await;
         assert!(matches!(reason, crate::types::StopReason::Error));
-        assert_eq!(err.as_deref(), Some("Provider finish_reason: network_error"));
+        assert_eq!(
+            err.as_deref(),
+            Some("Provider finish_reason: network_error")
+        );
     }
 
     #[tokio::test]
@@ -353,22 +489,43 @@ mod tests {
 
     // --- chat-template thinking kwargs ---
 
-    fn local_vllm(id: &str, compat: crate::types::ModelCompat, thinking_level_map: Option<std::collections::HashMap<String, Option<String>>>) -> Model {
+    fn local_vllm(
+        id: &str,
+        compat: crate::types::ModelCompat,
+        thinking_level_map: Option<std::collections::HashMap<String, Option<String>>>,
+    ) -> Model {
         Model {
-            id: id.into(), name: id.into(), api: "openai-completions".into(),
-            provider: "local-vllm".into(), base_url: "http://localhost:8000/v1".into(),
-            reasoning: true, thinking_level_map,
-            input: vec!["text".into()], cost: crate::types::ModelCost::default(),
-            context_window: 128000, max_tokens: 8192, headers: None, api_key: None, compat,
+            id: id.into(),
+            name: id.into(),
+            api: "openai-completions".into(),
+            provider: "local-vllm".into(),
+            base_url: "http://localhost:8000/v1".into(),
+            reasoning: true,
+            thinking_level_map,
+            input: vec!["text".into()],
+            cost: crate::types::ModelCost::default(),
+            context_window: 128000,
+            max_tokens: 8192,
+            headers: None,
+            api_key: None,
+            compat,
         }
     }
 
     #[test]
     fn uses_configurable_chat_template_boolean_thinking_kwargs() {
-        let compat = crate::types::ModelCompat { thinking_format: Some("chat-template".into()), supports_reasoning_effort: Some(false), chat_template_kwargs: Some(json!({"thinking": {"$var": "thinking.enabled"}})), ..Default::default() };
+        let compat = crate::types::ModelCompat {
+            thinking_format: Some("chat-template".into()),
+            supports_reasoning_effort: Some(false),
+            chat_template_kwargs: Some(json!({"thinking": {"$var": "thinking.enabled"}})),
+            ..Default::default()
+        };
         let model = local_vllm("deepseek-ai/DeepSeek-V3.1", compat, None);
         for (level, expected) in [(Some(ThinkingLevel::High), true), (None, false)] {
-            let opts = StreamOptions { reasoning: level, ..Default::default() };
+            let opts = StreamOptions {
+                reasoning: level,
+                ..Default::default()
+            };
             let p = payload(&model, &user_ctx(), &opts);
             assert_eq!(p["chat_template_kwargs"], json!({"thinking": expected}));
             assert!(p.get("thinking").is_none());
@@ -385,9 +542,15 @@ mod tests {
         };
         let model = local_vllm("Qwen/Qwen3-Coder", compat, None);
         for (level, expected) in [(Some(ThinkingLevel::High), true), (None, false)] {
-            let opts = StreamOptions { reasoning: level, ..Default::default() };
+            let opts = StreamOptions {
+                reasoning: level,
+                ..Default::default()
+            };
             let p = payload(&model, &user_ctx(), &opts);
-            assert_eq!(p["chat_template_kwargs"], json!({"enable_thinking": expected, "preserve_thinking": true}));
+            assert_eq!(
+                p["chat_template_kwargs"],
+                json!({"enable_thinking": expected, "preserve_thinking": true})
+            );
             assert!(p.get("reasoning_effort").is_none());
         }
     }
@@ -406,9 +569,15 @@ mod tests {
         let mut map = std::collections::HashMap::new();
         map.insert("xhigh".to_string(), Some("max".to_string()));
         let model = local_vllm("unsloth/gpt-oss-120b-GGUF", compat, Some(map));
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::XHigh), ..Default::default() };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::XHigh),
+            ..Default::default()
+        };
         let p = payload(&model, &user_ctx(), &opts);
-        assert_eq!(p["chat_template_kwargs"], json!({"preserve_thinking": true, "reasoning_effort": "max"}));
+        assert_eq!(
+            p["chat_template_kwargs"],
+            json!({"preserve_thinking": true, "reasoning_effort": "max"})
+        );
         assert!(p.get("reasoning_effort").is_none());
     }
 
@@ -416,25 +585,43 @@ mod tests {
 
     #[test]
     fn omits_disabled_thinking_for_moonshot_kimi_k2_7_code_models() {
-        for model in [cat("moonshotai", "kimi-k2.7-code"), cat("moonshotai-cn", "kimi-k2.7-code")] {
+        for model in [
+            cat("moonshotai", "kimi-k2.7-code"),
+            cat("moonshotai-cn", "kimi-k2.7-code"),
+        ] {
             let p = payload(&model, &user_ctx(), &StreamOptions::default());
-            assert!(p.get("thinking").is_none(), "k2.7-code must omit disabled thinking");
+            assert!(
+                p.get("thinking").is_none(),
+                "k2.7-code must omit disabled thinking"
+            );
             assert!(p.get("reasoning_effort").is_none());
         }
     }
 
     #[test]
     fn keeps_disabled_thinking_for_moonshot_kimi_k2_6_when_off() {
-        let p = payload(&cat("moonshotai-cn", "kimi-k2.6"), &user_ctx(), &StreamOptions::default());
+        let p = payload(
+            &cat("moonshotai-cn", "kimi-k2.6"),
+            &user_ctx(),
+            &StreamOptions::default(),
+        );
         assert_eq!(p["thinking"], json!({"type": "disabled"}));
         assert!(p.get("reasoning_effort").is_none());
     }
 
     #[test]
     fn stores_xiaomi_mimo_reasoning_replay_compat_metadata() {
-        for provider in ["xiaomi", "xiaomi-token-plan-cn", "xiaomi-token-plan-ams", "xiaomi-token-plan-sgp"] {
+        for provider in [
+            "xiaomi",
+            "xiaomi-token-plan-cn",
+            "xiaomi-token-plan-ams",
+            "xiaomi-token-plan-sgp",
+        ] {
             let m = cat(provider, "mimo-v2.5-pro");
-            assert_eq!(m.compat.requires_reasoning_content_on_assistant_messages, Some(true));
+            assert_eq!(
+                m.compat.requires_reasoning_content_on_assistant_messages,
+                Some(true)
+            );
             assert_eq!(m.compat.thinking_format.as_deref(), Some("deepseek"));
         }
     }
@@ -463,13 +650,22 @@ mod tests {
         ).to_string();
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
         let mut model = cat("openai", "gpt-4o-mini");
         model.base_url = server.uri();
         model.api_key = Some("test".into());
         let mut ctx = user_ctx();
-        ctx.tools = vec![Tool { name: "read".into(), description: "Read a file".into(), parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}) }];
+        ctx.tools = vec![Tool {
+            name: "read".into(),
+            description: "Read a file".into(),
+            parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}),
+        }];
         let opts = StreamOptions::default();
         let mut stream = stream_openai(&model, &ctx, &opts);
         let mut indexes: Vec<usize> = Vec::new();
@@ -484,14 +680,29 @@ mod tests {
             }
         }
         let m = message.expect("Done");
-        assert!(matches!(m.stop_reason, Some(crate::types::StopReason::ToolUse)));
-        assert_eq!(indexes, vec![0, 0, 0, 0, 0], "all tool events on stable content index 0");
+        assert!(matches!(
+            m.stop_reason,
+            Some(crate::types::StopReason::ToolUse)
+        ));
+        assert_eq!(
+            indexes,
+            vec![0, 0, 0, 0, 0],
+            "all tool events on stable content index 0"
+        );
         assert_eq!(m.content.len(), 1);
         match &m.content[0] {
-            ContentBlock::ToolCall { id, name, arguments, .. } => {
+            ContentBlock::ToolCall {
+                id,
+                name,
+                arguments,
+                ..
+            } => {
                 assert_eq!(id, "functions.read:0", "first id is kept across mutations");
                 assert_eq!(name, "read");
-                assert_eq!(arguments.get("path").and_then(|v| v.as_str()), Some("README.md"));
+                assert_eq!(
+                    arguments.get("path").and_then(|v| v.as_str()),
+                    Some("README.md")
+                );
             }
             other => panic!("expected toolCall, got {other:?}"),
         }
@@ -513,15 +724,27 @@ mod tests {
 
     #[test]
     fn uses_system_messages_for_non_openai_anthropic_openrouter_reasoning_model() {
-        let p = payload(&cat("openrouter", "deepseek/deepseek-v4-pro"), &sys_ctx(), &StreamOptions::default());
+        let p = payload(
+            &cat("openrouter", "deepseek/deepseek-v4-pro"),
+            &sys_ctx(),
+            &StreamOptions::default(),
+        );
         assert_eq!(p["messages"][0]["role"], json!("system"));
     }
 
     #[test]
     fn keeps_developer_messages_for_openai_and_anthropic_openrouter_reasoning_models() {
-        for model in [cat("openrouter", "openai/gpt-5.2-codex"), cat("openrouter", "anthropic/claude-sonnet-4.5")] {
+        for model in [
+            cat("openrouter", "openai/gpt-5.2-codex"),
+            cat("openrouter", "anthropic/claude-sonnet-4.5"),
+        ] {
             let p = payload(&model, &sys_ctx(), &StreamOptions::default());
-            assert_eq!(p["messages"][0]["role"], json!("developer"), "model {}", model.id);
+            assert_eq!(
+                p["messages"][0]["role"],
+                json!("developer"),
+                "model {}",
+                model.id
+            );
         }
     }
 
@@ -529,14 +752,25 @@ mod tests {
     fn stores_openrouter_kimi_k2_6_reasoning_replay_compat() {
         let m = cat("openrouter", "moonshotai/kimi-k2.6");
         assert_eq!(m.compat.supports_developer_role, Some(false));
-        assert_eq!(m.compat.requires_reasoning_content_on_assistant_messages, Some(true));
+        assert_eq!(
+            m.compat.requires_reasoning_content_on_assistant_messages,
+            Some(true)
+        );
     }
 
     // --- reasoning-delta signature normalization ---
 
     fn thinking_block(m: &crate::types::Message) -> (&str, Option<&str>) {
-        match m.content.iter().find(|b| matches!(b, ContentBlock::Thinking { .. })) {
-            Some(ContentBlock::Thinking { thinking, thinking_signature, .. }) => (thinking.as_str(), thinking_signature.as_deref()),
+        match m
+            .content
+            .iter()
+            .find(|b| matches!(b, ContentBlock::Thinking { .. }))
+        {
+            Some(ContentBlock::Thinking {
+                thinking,
+                thinking_signature,
+                ..
+            }) => (thinking.as_str(), thinking_signature.as_deref()),
             _ => panic!("no thinking block"),
         }
     }
@@ -568,51 +802,121 @@ mod tests {
         let assistant = Message {
             role: Role::Assistant,
             content: vec![
-                ContentBlock::Thinking { thinking: "think".into(), thinking_signature: Some("reasoning".into()), redacted: false },
-                ContentBlock::ToolCall { id: "call_1".into(), name: "read".into(), arguments: args, thought_signature: None },
+                ContentBlock::Thinking {
+                    thinking: "think".into(),
+                    thinking_signature: Some("reasoning".into()),
+                    redacted: false,
+                },
+                ContentBlock::ToolCall {
+                    id: "call_1".into(),
+                    name: "read".into(),
+                    arguments: args,
+                    thought_signature: None,
+                },
             ],
             timestamp: 0,
-            api: Some("openai-completions".into()), provider: Some("opencode-go".into()), model: Some("kimi-k2.6".into()),
-            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: Some(crate::types::StopReason::Stop), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            api: Some("openai-completions".into()),
+            provider: Some("opencode-go".into()),
+            model: Some("kimi-k2.6".into()),
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(crate::types::StopReason::Stop),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, tools: Vec::new(), messages: vec![assistant] };
-        let p = payload(&cat("opencode-go", "kimi-k2.6"), &ctx, &StreamOptions::default());
-        let replayed = p["messages"].as_array().unwrap().iter()
+        let ctx = Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: vec![assistant],
+        };
+        let p = payload(
+            &cat("opencode-go", "kimi-k2.6"),
+            &ctx,
+            &StreamOptions::default(),
+        );
+        let replayed = p["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
             .find(|msg| msg.get("role").and_then(|r| r.as_str()) == Some("assistant"))
             .expect("assistant message");
         assert_eq!(replayed["reasoning_content"], json!("think"));
-        assert!(replayed.get("reasoning").is_none(), "must not use the `reasoning` key");
+        assert!(
+            replayed.get("reasoning").is_none(),
+            "must not use the `reasoning` key"
+        );
     }
 
     #[tokio::test]
-    async fn replays_xiaomi_mimo_assistant_tool_calls_with_empty_reasoning_content_when_thinking_missing() {
+    async fn replays_xiaomi_mimo_assistant_tool_calls_with_empty_reasoning_content_when_thinking_missing()
+     {
         let mut args = std::collections::HashMap::new();
         args.insert("path".to_string(), json!("README.md"));
         let assistant = Message {
             role: Role::Assistant,
-            content: vec![ContentBlock::ToolCall { id: "call_1".into(), name: "read".into(), arguments: args, thought_signature: None }],
+            content: vec![ContentBlock::ToolCall {
+                id: "call_1".into(),
+                name: "read".into(),
+                arguments: args,
+                thought_signature: None,
+            }],
             timestamp: 0,
-            api: Some("openai-completions".into()), provider: Some("xiaomi".into()), model: Some("mimo-v2.5-pro".into()),
-            response_id: None, response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: Some(crate::types::StopReason::ToolUse), error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            api: Some("openai-completions".into()),
+            provider: Some("xiaomi".into()),
+            model: Some("mimo-v2.5-pro".into()),
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(crate::types::StopReason::ToolUse),
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         };
         let tool_result = Message {
             role: Role::ToolResult,
-            content: vec![ContentBlock::Text { text: "contents".into(), text_signature: None }],
-            timestamp: 0, api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: Some("call_1".into()), tool_name: Some("read".into()), is_error: false, details: None,
+            content: vec![ContentBlock::Text {
+                text: "contents".into(),
+                text_signature: None,
+            }],
+            timestamp: 0,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: Some("call_1".into()),
+            tool_name: Some("read".into()),
+            is_error: false,
+            details: None,
         };
-        let ctx = Context { system_prompt: None, tools: Vec::new(),
-            messages: vec![msg(Role::User, "Read README.md"), assistant, tool_result] };
-        let opts = StreamOptions { reasoning: Some(ThinkingLevel::High), ..Default::default() };
+        let ctx = Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: vec![msg(Role::User, "Read README.md"), assistant, tool_result],
+        };
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::High),
+            ..Default::default()
+        };
         let p = payload(&cat("xiaomi", "mimo-v2.5-pro"), &ctx, &opts);
-        let replayed = p["messages"].as_array().unwrap().iter()
-            .find(|m| m.get("role").and_then(|r| r.as_str()) == Some("assistant")).expect("assistant");
+        let replayed = p["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m.get("role").and_then(|r| r.as_str()) == Some("assistant"))
+            .expect("assistant");
         assert_eq!(replayed["reasoning_content"], json!(""));
         assert_eq!(p["thinking"], json!({"type": "enabled"}));
         assert_eq!(p["reasoning_effort"], json!("high"));
@@ -641,17 +945,38 @@ mod tests {
         ).to_string();
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(body))
-            .mount(&server).await;
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
         let mut model = cat("openai", "gpt-4o-mini");
         model.base_url = server.uri();
         model.api_key = Some("test".into());
         let mut ctx = user_ctx();
         ctx.tools = vec![
-            Tool { name: "read".into(), description: "r".into(), parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}) },
-            Tool { name: "grep".into(), description: "g".into(), parameters: json!({"type":"object","properties":{"pattern":{"type":"string"},"path":{"type":"string"}}}) },
-            Tool { name: "list".into(), description: "l".into(), parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}) },
-            Tool { name: "write".into(), description: "w".into(), parameters: json!({"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}}}) },
+            Tool {
+                name: "read".into(),
+                description: "r".into(),
+                parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}),
+            },
+            Tool {
+                name: "grep".into(),
+                description: "g".into(),
+                parameters: json!({"type":"object","properties":{"pattern":{"type":"string"},"path":{"type":"string"}}}),
+            },
+            Tool {
+                name: "list".into(),
+                description: "l".into(),
+                parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}),
+            },
+            Tool {
+                name: "write".into(),
+                description: "w".into(),
+                parameters: json!({"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}}}),
+            },
         ];
         let opts = StreamOptions::default();
         let mut stream = stream_openai(&model, &ctx, &opts);
@@ -659,32 +984,69 @@ mod tests {
         let mut message = None;
         while let Some(evt) = stream.next().await {
             let key = match &evt {
-                Event::TextStart => "text_start", Event::TextDelta { .. } => "text_delta", Event::TextEnd => "text_end",
-                Event::ThinkingStart => "thinking_start", Event::ThinkingDelta { .. } => "thinking_delta", Event::ThinkingEnd => "thinking_end",
-                Event::ToolCallStart { .. } => "toolcall_start", Event::ToolCallDelta { .. } => "toolcall_delta", Event::ToolCallEnd { .. } => "toolcall_end",
-                Event::Done { message: m, .. } => { message = Some(m.clone()); "done" }
+                Event::TextStart => "text_start",
+                Event::TextDelta { .. } => "text_delta",
+                Event::TextEnd => "text_end",
+                Event::ThinkingStart => "thinking_start",
+                Event::ThinkingDelta { .. } => "thinking_delta",
+                Event::ThinkingEnd => "thinking_end",
+                Event::ToolCallStart { .. } => "toolcall_start",
+                Event::ToolCallDelta { .. } => "toolcall_delta",
+                Event::ToolCallEnd { .. } => "toolcall_end",
+                Event::Done { message: m, .. } => {
+                    message = Some(m.clone());
+                    "done"
+                }
                 _ => "other",
             };
             *counts.entry(key).or_default() += 1;
         }
         let c = |k: &str| *counts.get(k).unwrap_or(&0);
-        assert_eq!(c("text_start"), 1); assert_eq!(c("text_delta"), 3); assert_eq!(c("text_end"), 1);
-        assert_eq!(c("thinking_start"), 1); assert_eq!(c("thinking_delta"), 2); assert_eq!(c("thinking_end"), 1);
-        assert_eq!(c("toolcall_start"), 4); assert_eq!(c("toolcall_delta"), 9); assert_eq!(c("toolcall_end"), 4);
+        assert_eq!(c("text_start"), 1);
+        assert_eq!(c("text_delta"), 3);
+        assert_eq!(c("text_end"), 1);
+        assert_eq!(c("thinking_start"), 1);
+        assert_eq!(c("thinking_delta"), 2);
+        assert_eq!(c("thinking_end"), 1);
+        assert_eq!(c("toolcall_start"), 4);
+        assert_eq!(c("toolcall_delta"), 9);
+        assert_eq!(c("toolcall_end"), 4);
 
         let m = message.expect("Done");
-        assert!(matches!(m.stop_reason, Some(crate::types::StopReason::ToolUse)));
+        assert!(matches!(
+            m.stop_reason,
+            Some(crate::types::StopReason::ToolUse)
+        ));
         assert_eq!(m.content.len(), 6);
-        assert!(matches!(&m.content[0], ContentBlock::Text { text, .. } if text == "answer 1 answer 2\n"));
-        assert!(matches!(&m.content[1], ContentBlock::Thinking { thinking, thinking_signature, .. }
-            if thinking == "think 1 think 2" && thinking_signature.as_deref() == Some("reasoning_content")));
+        assert!(
+            matches!(&m.content[0], ContentBlock::Text { text, .. } if text == "answer 1 answer 2\n")
+        );
+        assert!(
+            matches!(&m.content[1], ContentBlock::Thinking { thinking, thinking_signature, .. }
+            if thinking == "think 1 think 2" && thinking_signature.as_deref() == Some("reasoning_content"))
+        );
         let tc = |i: usize| match &m.content[i] {
-            ContentBlock::ToolCall { id, name, arguments, .. } => (id.as_str(), name.as_str(), arguments.clone()),
+            ContentBlock::ToolCall {
+                id,
+                name,
+                arguments,
+                ..
+            } => (id.as_str(), name.as_str(), arguments.clone()),
             other => panic!("expected toolCall at {i}, got {other:?}"),
         };
-        let (id, name, a) = tc(2); assert_eq!((id, name), ("tc_read_initial", "read")); assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("README.md"));
-        let (id, name, a) = tc(3); assert_eq!((id, name), ("tc_grep_initial", "grep")); assert_eq!(a.get("pattern").and_then(|v| v.as_str()), Some("TODO")); assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("src"));
-        let (id, name, a) = tc(4); assert_eq!((id, name), ("tc_list_no_index", "list")); assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("packages/ai"));
-        let (id, name, a) = tc(5); assert_eq!((id, name), ("tc_write_no_index", "write")); assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("out.txt")); assert_eq!(a.get("content").and_then(|v| v.as_str()), Some("ok"));
+        let (id, name, a) = tc(2);
+        assert_eq!((id, name), ("tc_read_initial", "read"));
+        assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("README.md"));
+        let (id, name, a) = tc(3);
+        assert_eq!((id, name), ("tc_grep_initial", "grep"));
+        assert_eq!(a.get("pattern").and_then(|v| v.as_str()), Some("TODO"));
+        assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("src"));
+        let (id, name, a) = tc(4);
+        assert_eq!((id, name), ("tc_list_no_index", "list"));
+        assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("packages/ai"));
+        let (id, name, a) = tc(5);
+        assert_eq!((id, name), ("tc_write_no_index", "write"));
+        assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("out.txt"));
+        assert_eq!(a.get("content").and_then(|v| v.as_str()), Some("ok"));
     }
 }

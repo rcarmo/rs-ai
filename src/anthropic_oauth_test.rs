@@ -9,9 +9,11 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::oauth::{exchange_anthropic_code_at, refresh_anthropic_token_at, ANTHROPIC_TOKEN_URL};
-    use wiremock::{Mock, MockServer, ResponseTemplate};
+    use crate::oauth::{
+        ANTHROPIC_TOKEN_URL, exchange_anthropic_code_at, refresh_anthropic_token_at,
+    };
     use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     async fn last_request_body(server: &MockServer) -> serde_json::Value {
         let reqs = server.received_requests().await.unwrap();
@@ -22,7 +24,10 @@ mod tests {
     #[test]
     fn uses_the_platform_claude_com_token_endpoint() {
         // Upstream asserts the production token URL is platform.claude.com.
-        assert_eq!(ANTHROPIC_TOKEN_URL, "https://platform.claude.com/v1/oauth/token");
+        assert_eq!(
+            ANTHROPIC_TOKEN_URL,
+            "https://platform.claude.com/v1/oauth/token"
+        );
     }
 
     #[tokio::test]
@@ -35,8 +40,10 @@ mod tests {
             ))
             .mount(&server)
             .await;
-        let creds = refresh_anthropic_token_at(&format!("{}/oauth/token", server.uri()), "refresh-token")
-            .await.unwrap();
+        let creds =
+            refresh_anthropic_token_at(&format!("{}/oauth/token", server.uri()), "refresh-token")
+                .await
+                .unwrap();
         assert_eq!(creds.access, "new-access-token");
         assert_eq!(creds.refresh.as_deref(), Some("new-refresh-token"));
 
@@ -44,7 +51,10 @@ mod tests {
         assert_eq!(body["grant_type"], serde_json::json!("refresh_token"));
         assert_eq!(body["refresh_token"], serde_json::json!("refresh-token"));
         assert!(body["client_id"].as_str().is_some_and(|s| !s.is_empty()));
-        assert!(body.get("scope").is_none(), "refresh must not send `scope`: {body}");
+        assert!(
+            body.get("scope").is_none(),
+            "refresh must not send `scope`: {body}"
+        );
     }
 
     #[tokio::test]
@@ -59,14 +69,22 @@ mod tests {
             .await;
         let creds = exchange_anthropic_code_at(
             &format!("{}/oauth/token", server.uri()),
-            "manual-code", "the-state", "the-verifier", "http://localhost:53692/callback",
-        ).await.unwrap();
+            "manual-code",
+            "the-state",
+            "the-verifier",
+            "http://localhost:53692/callback",
+        )
+        .await
+        .unwrap();
         assert_eq!(creds.access, "access-token");
         assert_eq!(creds.refresh.as_deref(), Some("refresh-token"));
 
         let body = last_request_body(&server).await;
         assert_eq!(body["grant_type"], serde_json::json!("authorization_code"));
         assert_eq!(body["code"], serde_json::json!("manual-code"));
-        assert_eq!(body["redirect_uri"], serde_json::json!("http://localhost:53692/callback"));
+        assert_eq!(
+            body["redirect_uri"],
+            serde_json::json!("http://localhost:53692/callback")
+        );
     }
 }

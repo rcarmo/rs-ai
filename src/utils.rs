@@ -39,7 +39,9 @@ pub fn copilot_headers_with_intent(intent: &str) -> HashMap<String, String> {
 /// GitHub Copilot dynamic per-request headers (mirrors buildCopilotDynamicHeaders):
 /// X-Initiator (agent when the last message isn't from the user), Openai-Intent,
 /// and Copilot-Vision-Request when any user/tool-result message carries an image.
-pub fn copilot_dynamic_headers(messages: &[crate::types::Message]) -> Vec<(&'static str, &'static str)> {
+pub fn copilot_dynamic_headers(
+    messages: &[crate::types::Message],
+) -> Vec<(&'static str, &'static str)> {
     let mut headers = vec![
         ("X-Initiator", infer_copilot_initiator(messages)),
         ("Openai-Intent", "conversation-edits"),
@@ -63,10 +65,12 @@ pub fn infer_copilot_initiator(messages: &[crate::types::Message]) -> &'static s
 /// Mirrors upstream `hasCopilotVisionInput`: true when any user/toolResult message
 /// carries an image content block.
 pub fn has_copilot_vision_input(messages: &[crate::types::Message]) -> bool {
-    use crate::types::{Role, ContentBlock};
+    use crate::types::{ContentBlock, Role};
     messages.iter().any(|m| {
         matches!(m.role, Role::User | Role::ToolResult)
-            && m.content.iter().any(|c| matches!(c, ContentBlock::Image { .. }))
+            && m.content
+                .iter()
+                .any(|c| matches!(c, ContentBlock::Image { .. }))
     })
 }
 
@@ -101,24 +105,54 @@ mod tests {
 
     #[test]
     fn test_copilot_dynamic_headers() {
-        use crate::types::{Message, Role, ContentBlock};
+        use crate::types::{ContentBlock, Message, Role};
         fn msg(role: Role, content: Vec<ContentBlock>) -> Message {
             Message {
-                role, content, timestamp: 0,
-                api: None, provider: None, model: None, response_id: None, response_model: None,
-                diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role,
+                content,
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }
         }
         // Last message from user -> initiator user, no vision.
-        let h = copilot_dynamic_headers(&[msg(Role::User, vec![ContentBlock::Text { text: "hi".into(), text_signature: None }])]);
+        let h = copilot_dynamic_headers(&[msg(
+            Role::User,
+            vec![ContentBlock::Text {
+                text: "hi".into(),
+                text_signature: None,
+            }],
+        )]);
         assert!(h.contains(&("X-Initiator", "user")));
         assert!(h.contains(&("Openai-Intent", "conversation-edits")));
         assert!(!h.iter().any(|(k, _)| *k == "Copilot-Vision-Request"));
         // Last message from assistant -> initiator agent; user image -> vision header.
         let h2 = copilot_dynamic_headers(&[
-            msg(Role::User, vec![ContentBlock::Image { data: "a".into(), mime_type: "image/png".into() }]),
-            msg(Role::Assistant, vec![ContentBlock::Text { text: "ok".into(), text_signature: None }]),
+            msg(
+                Role::User,
+                vec![ContentBlock::Image {
+                    data: "a".into(),
+                    mime_type: "image/png".into(),
+                }],
+            ),
+            msg(
+                Role::Assistant,
+                vec![ContentBlock::Text {
+                    text: "ok".into(),
+                    text_signature: None,
+                }],
+            ),
         ]);
         assert!(h2.contains(&("X-Initiator", "agent")));
         assert!(h2.contains(&("Copilot-Vision-Request", "true")));
@@ -126,13 +160,25 @@ mod tests {
 
     #[test]
     fn test_infer_copilot_initiator_and_vision() {
-        use crate::types::{Message, Role, ContentBlock};
+        use crate::types::{ContentBlock, Message, Role};
         fn msg(role: Role, content: Vec<ContentBlock>) -> Message {
             Message {
-                role, content, timestamp: 0,
-                api: None, provider: None, model: None, response_id: None, response_model: None,
-                diagnostics: Vec::new(), usage: None, stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                role,
+                content,
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }
         }
         // empty -> user
@@ -140,15 +186,39 @@ mod tests {
         // last user -> user
         assert_eq!(infer_copilot_initiator(&[msg(Role::User, vec![])]), "user");
         // last assistant -> agent
-        assert_eq!(infer_copilot_initiator(&[msg(Role::Assistant, vec![])]), "agent");
+        assert_eq!(
+            infer_copilot_initiator(&[msg(Role::Assistant, vec![])]),
+            "agent"
+        );
         // last toolResult -> agent
-        assert_eq!(infer_copilot_initiator(&[msg(Role::ToolResult, vec![])]), "agent");
+        assert_eq!(
+            infer_copilot_initiator(&[msg(Role::ToolResult, vec![])]),
+            "agent"
+        );
         // vision: user image
-        assert!(has_copilot_vision_input(&[msg(Role::User, vec![ContentBlock::Image { data: "a".into(), mime_type: "image/png".into() }])]));
+        assert!(has_copilot_vision_input(&[msg(
+            Role::User,
+            vec![ContentBlock::Image {
+                data: "a".into(),
+                mime_type: "image/png".into()
+            }]
+        )]));
         // vision: toolResult image
-        assert!(has_copilot_vision_input(&[msg(Role::ToolResult, vec![ContentBlock::Image { data: "a".into(), mime_type: "image/png".into() }])]));
+        assert!(has_copilot_vision_input(&[msg(
+            Role::ToolResult,
+            vec![ContentBlock::Image {
+                data: "a".into(),
+                mime_type: "image/png".into()
+            }]
+        )]));
         // no vision: text only
-        assert!(!has_copilot_vision_input(&[msg(Role::User, vec![ContentBlock::Text { text: "hi".into(), text_signature: None }])]));
+        assert!(!has_copilot_vision_input(&[msg(
+            Role::User,
+            vec![ContentBlock::Text {
+                text: "hi".into(),
+                text_signature: None
+            }]
+        )]));
     }
 }
 
@@ -164,8 +234,10 @@ pub fn short_hash(s: &str) -> String {
         h1 = (h1 ^ ch).wrapping_mul(2_654_435_761);
         h2 = (h2 ^ ch).wrapping_mul(1_597_334_677);
     }
-    h1 = (h1 ^ (h1 >> 16)).wrapping_mul(2_246_822_507) ^ (h2 ^ (h2 >> 13)).wrapping_mul(3_266_489_909);
-    h2 = (h2 ^ (h2 >> 16)).wrapping_mul(2_246_822_507) ^ (h1 ^ (h1 >> 13)).wrapping_mul(3_266_489_909);
+    h1 = (h1 ^ (h1 >> 16)).wrapping_mul(2_246_822_507)
+        ^ (h2 ^ (h2 >> 13)).wrapping_mul(3_266_489_909);
+    h2 = (h2 ^ (h2 >> 16)).wrapping_mul(2_246_822_507)
+        ^ (h1 ^ (h1 >> 13)).wrapping_mul(3_266_489_909);
     format!("{}{}", to_base36(u64::from(h2)), to_base36(u64::from(h1)))
 }
 
@@ -203,19 +275,30 @@ pub fn resolve_cloudflare_base_url(base_url: &str, provider: &str) -> Result<Str
     let mut i = 0;
     while i < base_url.len() {
         if bytes[i] == b'{'
-            && let Some(end) = base_url[i + 1..].find('}') {
-                let name = &base_url[i + 1..i + 1 + end];
-                if name.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
-                    && name.chars().next().map(|c| c.is_ascii_uppercase() || c == '_').unwrap_or(false)
-                {
-                    match std::env::var(name) {
-                        Ok(value) if !value.is_empty() => out.push_str(&value),
-                        _ => return Err(format!("{name} is required for provider {provider} but is not set.")),
+            && let Some(end) = base_url[i + 1..].find('}')
+        {
+            let name = &base_url[i + 1..i + 1 + end];
+            if name
+                .chars()
+                .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+                && name
+                    .chars()
+                    .next()
+                    .map(|c| c.is_ascii_uppercase() || c == '_')
+                    .unwrap_or(false)
+            {
+                match std::env::var(name) {
+                    Ok(value) if !value.is_empty() => out.push_str(&value),
+                    _ => {
+                        return Err(format!(
+                            "{name} is required for provider {provider} but is not set."
+                        ));
                     }
-                    i = i + 1 + end + 1;
-                    continue;
                 }
+                i = i + 1 + end + 1;
+                continue;
             }
+        }
         out.push(bytes[i] as char);
         i += 1;
     }

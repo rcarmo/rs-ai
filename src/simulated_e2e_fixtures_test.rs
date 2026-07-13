@@ -18,41 +18,68 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::context::is_context_overflow;
+    use crate::events::Event;
     use crate::provider::anthropic::stream_anthropic;
     use crate::provider::google::stream_google;
     use crate::provider::openai::stream_openai;
     use crate::provider::responses::stream_responses;
-    use crate::context::is_context_overflow;
-    use crate::types::{Context, ContentBlock, Message, Model, ModelCost, Role, StopReason, StreamOptions};
-    use crate::events::Event;
+    use crate::types::{
+        ContentBlock, Context, Message, Model, ModelCost, Role, StopReason, StreamOptions,
+    };
     use serde_json::Value;
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn model(api: &str, provider: &str, base_url: &str) -> Model {
         Model {
-            id: "test-model".into(), name: "Test".into(), api: api.into(), provider: provider.into(),
-            base_url: base_url.into(), reasoning: false, thinking_level_map: None,
-            input: vec!["text".into()], cost: ModelCost::default(), context_window: 1000,
-            max_tokens: 4096, headers: None, api_key: Some("test".into()), compat: Default::default(),
+            id: "test-model".into(),
+            name: "Test".into(),
+            api: api.into(),
+            provider: provider.into(),
+            base_url: base_url.into(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 1000,
+            max_tokens: 4096,
+            headers: None,
+            api_key: Some("test".into()),
+            compat: Default::default(),
         }
     }
 
     fn user_ctx(text: &str) -> Context {
         Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![msg(Role::User, text)],
         }
     }
 
     fn msg(role: Role, text: &str) -> Message {
         Message {
-            role, content: vec![ContentBlock::Text { text: text.into(), text_signature: None }],
-            timestamp: 0, api: None, provider: None, model: None, response_id: None,
-            response_model: None, diagnostics: Vec::new(), usage: None,
-            stop_reason: None, error_message: None,
-            tool_call_id: None, tool_name: None, is_error: false, details: None,
+            role,
+            content: vec![ContentBlock::Text {
+                text: text.into(),
+                text_signature: None,
+            }],
+            timestamp: 0,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            error_message: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
         }
     }
 
@@ -61,11 +88,15 @@ mod tests {
     async fn drive(m: Model, c: Context, sse: &str) -> (Message, Value) {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200)
-                .insert_header("content-type", "text/event-stream")
-                .set_body_string(sse.to_string()))
-            .mount(&server).await;
-        let mut m = m; m.base_url = server.uri();
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(sse.to_string()),
+            )
+            .mount(&server)
+            .await;
+        let mut m = m;
+        m.base_url = server.uri();
         let opts = StreamOptions::default();
         let api = m.api.clone();
         let mut stream = match api.as_str() {
@@ -78,8 +109,21 @@ mod tests {
         let mut out: Option<Message> = None;
         while let Some(evt) = stream.next().await {
             match evt {
-                Event::Done { reason, mut message } => { message.stop_reason = Some(reason); out = Some(message); }
-                Event::Error { reason, message: Some(mut mm), .. } => { mm.stop_reason = Some(reason); out = Some(mm); }
+                Event::Done {
+                    reason,
+                    mut message,
+                } => {
+                    message.stop_reason = Some(reason);
+                    out = Some(message);
+                }
+                Event::Error {
+                    reason,
+                    message: Some(mut mm),
+                    ..
+                } => {
+                    mm.stop_reason = Some(reason);
+                    out = Some(mm);
+                }
                 Event::Error { .. } => {}
                 _ => {}
             }
@@ -92,11 +136,15 @@ mod tests {
     async fn drive_events(m: Model, c: Context, sse: &str) -> Vec<Event> {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200)
-                .insert_header("content-type", "text/event-stream")
-                .set_body_string(sse.to_string()))
-            .mount(&server).await;
-        let mut m = m; m.base_url = server.uri();
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(sse.to_string()),
+            )
+            .mount(&server)
+            .await;
+        let mut m = m;
+        m.base_url = server.uri();
         let opts = StreamOptions::default();
         let api = m.api.clone();
         let mut stream = match api.as_str() {
@@ -107,7 +155,9 @@ mod tests {
             _ => stream_openai(&m, &c, &opts),
         };
         let mut events = Vec::new();
-        while let Some(evt) = stream.next().await { events.push(evt); }
+        while let Some(evt) = stream.next().await {
+            events.push(evt);
+        }
         events
     }
 
@@ -115,11 +165,15 @@ mod tests {
     async fn drive_opts(m: Model, c: Context, opts: StreamOptions, sse: &str) -> Value {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200)
-                .insert_header("content-type", "text/event-stream")
-                .set_body_string(sse.to_string()))
-            .mount(&server).await;
-        let mut m = m; m.base_url = server.uri();
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(sse.to_string()),
+            )
+            .mount(&server)
+            .await;
+        let mut m = m;
+        m.base_url = server.uri();
         let api = m.api.clone();
         let mut stream = match api.as_str() {
             "anthropic-messages" | "anthropic" => stream_anthropic(&m, &c, &opts),
@@ -142,8 +196,11 @@ mod tests {
     );
 
     fn sys_ctx() -> Context {
-        Context { system_prompt: Some("You are a helpful assistant.".into()), tools: Vec::new(),
-            messages: vec![msg(Role::User, "Hello")] }
+        Context {
+            system_prompt: Some("You are a helpful assistant.".into()),
+            tools: Vec::new(),
+            messages: vec![msg(Role::User, "Hello")],
+        }
     }
 
     // ---------- responseid.test.ts ----------
@@ -157,7 +214,12 @@ mod tests {
     #[tokio::test]
     async fn responseid_openai_completions_surfaces_response_id() {
         for _ in 0..3 {
-            let (m, _b) = drive(model("openai-completions", "openai", "x"), user_ctx("hi"), OPENAI_COMPLETED).await;
+            let (m, _b) = drive(
+                model("openai-completions", "openai", "x"),
+                user_ctx("hi"),
+                OPENAI_COMPLETED,
+            )
+            .await;
             assert_ne!(m.stop_reason, Some(StopReason::Error));
             assert_eq!(m.response_id.as_deref(), Some("chatcmpl-abc123"));
         }
@@ -167,7 +229,12 @@ mod tests {
     async fn responseid_google_surfaces_response_id() {
         let sse = "data: {\"responseId\":\"gen-resp-77\",\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"response id test\"}]},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":5,\"candidatesTokenCount\":4,\"totalTokenCount\":9}}\n\n";
         for _ in 0..3 {
-            let (m, _b) = drive(model("google-generative-ai", "google", "x"), user_ctx("hi"), sse).await;
+            let (m, _b) = drive(
+                model("google-generative-ai", "google", "x"),
+                user_ctx("hi"),
+                sse,
+            )
+            .await;
             assert_ne!(m.stop_reason, Some(StopReason::Error));
             assert_eq!(m.response_id.as_deref(), Some("gen-resp-77"));
         }
@@ -178,7 +245,12 @@ mod tests {
     #[tokio::test]
     async fn tokens_openai_surfaces_usage_on_terminal_message() {
         for _ in 0..3 {
-            let (m, _b) = drive(model("openai-completions", "openai", "x"), user_ctx("hi"), OPENAI_COMPLETED).await;
+            let (m, _b) = drive(
+                model("openai-completions", "openai", "x"),
+                user_ctx("hi"),
+                OPENAI_COMPLETED,
+            )
+            .await;
             let u = m.usage.expect("usage present");
             assert_eq!(u.input, 12);
             assert_eq!(u.output, 4);
@@ -198,11 +270,15 @@ mod tests {
             "data: [DONE]\n\n",
         );
         for _ in 0..3 {
-            let (m, _b) = drive(model("openai-completions", "openai", "x"), user_ctx("hi"), sse).await;
+            let (m, _b) = drive(
+                model("openai-completions", "openai", "x"),
+                user_ctx("hi"),
+                sse,
+            )
+            .await;
             assert_eq!(m.usage.unwrap().total_tokens, 16);
         }
     }
-
 
     #[tokio::test]
     async fn total_tokens_anthropic_is_computed_sum() {
@@ -216,7 +292,12 @@ mod tests {
             "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
         );
         for _ in 0..3 {
-            let (m, _b) = drive(model("anthropic-messages", "anthropic", "x"), user_ctx("hi"), sse).await;
+            let (m, _b) = drive(
+                model("anthropic-messages", "anthropic", "x"),
+                user_ctx("hi"),
+                sse,
+            )
+            .await;
             let u = m.usage.expect("usage");
             assert_eq!(u.input, 100);
             assert_eq!(u.output, 50);
@@ -236,7 +317,12 @@ mod tests {
             "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp-1\",\"status\":\"completed\",\"usage\":{\"input_tokens\":8,\"output_tokens\":2,\"total_tokens\":99,\"input_tokens_details\":{\"cached_tokens\":0}}}}\n\n",
         );
         for _ in 0..3 {
-            let (m, _b) = drive(model("openai-responses", "openai", "x"), user_ctx("hi"), sse).await;
+            let (m, _b) = drive(
+                model("openai-responses", "openai", "x"),
+                user_ctx("hi"),
+                sse,
+            )
+            .await;
             assert_eq!(m.usage.unwrap().total_tokens, 99);
         }
     }
@@ -248,10 +334,18 @@ mod tests {
         // Anthropic surfaces overflow as an SSE error event with "prompt is too long".
         let sse = "event: error\ndata: {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"prompt is too long: 213462 tokens > 200000 maximum\"}}\n\n";
         for _ in 0..3 {
-            let (m, _b) = drive(model("anthropic-messages", "anthropic", "x"), user_ctx("hi"), sse).await;
+            let (m, _b) = drive(
+                model("anthropic-messages", "anthropic", "x"),
+                user_ctx("hi"),
+                sse,
+            )
+            .await;
             assert_eq!(m.stop_reason, Some(StopReason::Error));
             let model_def = model("anthropic-messages", "anthropic", "x");
-            assert!(is_context_overflow(&m, &model_def), "overflow error must be detected");
+            assert!(
+                is_context_overflow(&m, &model_def),
+                "overflow error must be detected"
+            );
         }
     }
 
@@ -260,10 +354,18 @@ mod tests {
         // A throttling/rate-limit error must NOT be classified as overflow.
         let sse = "event: error\ndata: {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"rate limit exceeded, too many requests\"}}\n\n";
         for _ in 0..3 {
-            let (m, _b) = drive(model("anthropic-messages", "anthropic", "x"), user_ctx("hi"), sse).await;
+            let (m, _b) = drive(
+                model("anthropic-messages", "anthropic", "x"),
+                user_ctx("hi"),
+                sse,
+            )
+            .await;
             assert_eq!(m.stop_reason, Some(StopReason::Error));
             let model_def = model("anthropic-messages", "anthropic", "x");
-            assert!(!is_context_overflow(&m, &model_def), "rate-limit must not be overflow");
+            assert!(
+                !is_context_overflow(&m, &model_def),
+                "rate-limit must not be overflow"
+            );
         }
     }
 
@@ -275,10 +377,16 @@ mod tests {
         tr.tool_name = Some("emoji_tool".into());
         let mut assistant = msg(Role::Assistant, "");
         assistant.content = vec![ContentBlock::ToolCall {
-            id: "test_1".into(), name: "emoji_tool".into(),
-            arguments: std::collections::HashMap::new(), thought_signature: None,
+            id: "test_1".into(),
+            name: "emoji_tool".into(),
+            arguments: std::collections::HashMap::new(),
+            thought_signature: None,
         }];
-        Context { system_prompt: None, tools: Vec::new(), messages: vec![msg(Role::User, "use the tool"), assistant, tr] }
+        Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: vec![msg(Role::User, "use the tool"), assistant, tr],
+        }
     }
 
     #[tokio::test]
@@ -286,9 +394,17 @@ mod tests {
         // Astral-plane emoji (🎉 U+1F389) must serialize intact (no lone surrogates).
         let emoji = "🎉🚀😀";
         for _ in 0..3 {
-            let (_m, body) = drive(model("openai-completions", "openai", "x"), tool_result_ctx(emoji), OPENAI_COMPLETED).await;
+            let (_m, body) = drive(
+                model("openai-completions", "openai", "x"),
+                tool_result_ctx(emoji),
+                OPENAI_COMPLETED,
+            )
+            .await;
             let serialized = serde_json::to_string(&body).unwrap();
-            assert!(serialized.contains(emoji), "request body must contain intact emoji: {serialized}");
+            assert!(
+                serialized.contains(emoji),
+                "request body must contain intact emoji: {serialized}"
+            );
         }
     }
 
@@ -304,9 +420,17 @@ mod tests {
             "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
         );
         for _ in 0..3 {
-            let (_m, body) = drive(model("anthropic-messages", "anthropic", "x"), tool_result_ctx(emoji), sse).await;
+            let (_m, body) = drive(
+                model("anthropic-messages", "anthropic", "x"),
+                tool_result_ctx(emoji),
+                sse,
+            )
+            .await;
             let serialized = serde_json::to_string(&body).unwrap();
-            assert!(serialized.contains(emoji), "anthropic request body must contain intact emoji");
+            assert!(
+                serialized.contains(emoji),
+                "anthropic request body must contain intact emoji"
+            );
         }
     }
 
@@ -324,17 +448,36 @@ mod tests {
     #[tokio::test]
     async fn cache_retention_default_short_has_cache_control_without_ttl() {
         for _ in 0..3 {
-            let body = drive_opts(anthropic_cache_model(), sys_ctx(), StreamOptions::default(), ANTHROPIC_OK).await;
+            let body = drive_opts(
+                anthropic_cache_model(),
+                sys_ctx(),
+                StreamOptions::default(),
+                ANTHROPIC_OK,
+            )
+            .await;
             let cc = &body["system"][0]["cache_control"];
-            assert_eq!(*cc, serde_json::json!({"type": "ephemeral"}), "default = ephemeral, no ttl");
+            assert_eq!(
+                *cc,
+                serde_json::json!({"type": "ephemeral"}),
+                "default = ephemeral, no ttl"
+            );
         }
     }
 
     #[tokio::test]
     async fn cache_retention_long_adds_1h_ttl() {
-        let opts = StreamOptions { cache_retention: Some(CacheRetention::Long), ..Default::default() };
+        let opts = StreamOptions {
+            cache_retention: Some(CacheRetention::Long),
+            ..Default::default()
+        };
         for _ in 0..3 {
-            let body = drive_opts(anthropic_cache_model(), sys_ctx(), opts.clone(), ANTHROPIC_OK).await;
+            let body = drive_opts(
+                anthropic_cache_model(),
+                sys_ctx(),
+                opts.clone(),
+                ANTHROPIC_OK,
+            )
+            .await;
             let cc = &body["system"][0]["cache_control"];
             assert_eq!(*cc, serde_json::json!({"type": "ephemeral", "ttl": "1h"}));
         }
@@ -343,12 +486,22 @@ mod tests {
     #[tokio::test]
     async fn cache_retention_long_omitted_when_compat_unsupported() {
         let mut m = anthropic_cache_model();
-        m.compat = ModelCompat { supports_long_cache_retention: Some(false), ..Default::default() };
-        let opts = StreamOptions { cache_retention: Some(CacheRetention::Long), ..Default::default() };
+        m.compat = ModelCompat {
+            supports_long_cache_retention: Some(false),
+            ..Default::default()
+        };
+        let opts = StreamOptions {
+            cache_retention: Some(CacheRetention::Long),
+            ..Default::default()
+        };
         for _ in 0..3 {
             let body = drive_opts(m.clone(), sys_ctx(), opts.clone(), ANTHROPIC_OK).await;
             let cc = &body["system"][0]["cache_control"];
-            assert_eq!(*cc, serde_json::json!({"type": "ephemeral"}), "unsupported long retention omits ttl");
+            assert_eq!(
+                *cc,
+                serde_json::json!({"type": "ephemeral"}),
+                "unsupported long retention omits ttl"
+            );
         }
     }
 
@@ -360,12 +513,27 @@ mod tests {
         // surface text and produce zero Thinking events.
         let sse = "data: {\"responseId\":\"r\",\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"pong pong pong\"}]},\"finishReason\":\"STOP\"}],\"usageMetadata\":{\"promptTokenCount\":5,\"candidatesTokenCount\":3,\"totalTokenCount\":8}}\n\n";
         for _ in 0..3 {
-            let events = drive_events(model("google-generative-ai", "google", "x"), user_ctx("pong x40"), sse).await;
-            let thinking = events.iter().filter(|e| matches!(e, Event::ThinkingDelta { .. })).count();
-            let text: String = events.iter().filter_map(|e| match e {
-                Event::TextDelta { delta } => Some(delta.clone()), _ => None,
-            }).collect();
-            assert_eq!(thinking, 0, "thinking-disabled response must have no thinking events");
+            let events = drive_events(
+                model("google-generative-ai", "google", "x"),
+                user_ctx("pong x40"),
+                sse,
+            )
+            .await;
+            let thinking = events
+                .iter()
+                .filter(|e| matches!(e, Event::ThinkingDelta { .. }))
+                .count();
+            let text: String = events
+                .iter()
+                .filter_map(|e| match e {
+                    Event::TextDelta { delta } => Some(delta.clone()),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(
+                thinking, 0,
+                "thinking-disabled response must have no thinking events"
+            );
             assert!(text.contains("pong"));
         }
     }
@@ -386,11 +554,15 @@ mod tests {
     async fn drive_http_error(m: Model, status: u16, body: &str) -> String {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(status)
-                .insert_header("content-type", "application/json")
-                .set_body_string(body.to_string()))
-            .mount(&server).await;
-        let mut m = m; m.base_url = server.uri();
+            .respond_with(
+                ResponseTemplate::new(status)
+                    .insert_header("content-type", "application/json")
+                    .set_body_string(body.to_string()),
+            )
+            .mount(&server)
+            .await;
+        let mut m = m;
+        m.base_url = server.uri();
         let opts = StreamOptions::default();
         let api = m.api.clone();
         let c = user_ctx("hi");
@@ -401,7 +573,9 @@ mod tests {
         };
         let mut err: Option<String> = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Error { error, .. } = evt { err = Some(error.to_string()); }
+            if let Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+            }
         }
         err.expect("a terminal error")
     }
@@ -410,9 +584,13 @@ mod tests {
     async fn error_body_openai_completions_surfaces_status_and_body() {
         let body = r#"{"error":"blocked by gateway WAF"}"#;
         for _ in 0..3 {
-            let msg = drive_http_error(model("openai-completions", "openrouter", "x"), 403, body).await;
+            let msg =
+                drive_http_error(model("openai-completions", "openrouter", "x"), 403, body).await;
             assert!(msg.contains("403"), "status surfaced: {msg}");
-            assert!(msg.contains("blocked by gateway WAF"), "body reason surfaced: {msg}");
+            assert!(
+                msg.contains("blocked by gateway WAF"),
+                "body reason surfaced: {msg}"
+            );
             assert_eq!(msg, format!("403: {body}"));
         }
     }
@@ -422,8 +600,14 @@ mod tests {
         let body = r#"{"error":"blocked by gateway WAF"}"#;
         for _ in 0..3 {
             let msg = drive_http_error(model("openai-responses", "openai", "x"), 403, body).await;
-            assert!(msg.contains("OpenAI API error (403)"), "branded prefix + status: {msg}");
-            assert!(msg.contains("blocked by gateway WAF"), "body reason surfaced: {msg}");
+            assert!(
+                msg.contains("OpenAI API error (403)"),
+                "branded prefix + status: {msg}"
+            );
+            assert!(
+                msg.contains("blocked by gateway WAF"),
+                "body reason surfaced: {msg}"
+            );
             assert_eq!(msg, format!("OpenAI API error (403): {body}"));
         }
     }
@@ -432,8 +616,12 @@ mod tests {
     async fn error_body_google_surfaces_status_and_body() {
         let body = r#"{"error":{"code":403,"message":"Permission denied"}}"#;
         for _ in 0..3 {
-            let msg = drive_http_error(model("google-generative-ai", "google", "x"), 403, body).await;
-            assert!(msg.contains("403") && msg.contains("Permission denied"), "status+body: {msg}");
+            let msg =
+                drive_http_error(model("google-generative-ai", "google", "x"), 403, body).await;
+            assert!(
+                msg.contains("403") && msg.contains("Permission denied"),
+                "status+body: {msg}"
+            );
             assert_eq!(msg, format!("403: {body}"));
         }
     }

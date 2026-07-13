@@ -21,18 +21,29 @@ mod tests {
             json!({"id": "claude-opus-4.7", "model_picker_enabled": true, "policy": {"state": "disabled"}, "capabilities": {"supports": {"tool_calls": true}}}),
             json!({"id": "gpt-5.4-nano", "model_picker_enabled": false, "capabilities": {"supports": {"tool_calls": true}}}),
         ];
-        assert_eq!(selectable_copilot_model_ids(&data), vec!["gpt-4.1".to_string()]);
+        assert_eq!(
+            selectable_copilot_model_ids(&data),
+            vec!["gpt-4.1".to_string()]
+        );
     }
 
     #[test]
     fn is_selectable_requires_picker_enabled_not_disabled_and_tool_calls() {
         // picker enabled + tool calls + no disabled policy -> selectable.
-        assert!(is_selectable_copilot_model(&json!({"model_picker_enabled": true, "capabilities": {"supports": {"tool_calls": true}}})));
+        assert!(is_selectable_copilot_model(
+            &json!({"model_picker_enabled": true, "capabilities": {"supports": {"tool_calls": true}}})
+        ));
         // policy disabled -> not selectable.
-        assert!(!is_selectable_copilot_model(&json!({"model_picker_enabled": true, "policy": {"state": "disabled"}, "capabilities": {"supports": {"tool_calls": true}}})));
+        assert!(!is_selectable_copilot_model(
+            &json!({"model_picker_enabled": true, "policy": {"state": "disabled"}, "capabilities": {"supports": {"tool_calls": true}}})
+        ));
         // picker disabled -> not selectable.
-        assert!(!is_selectable_copilot_model(&json!({"model_picker_enabled": false, "capabilities": {"supports": {"tool_calls": true}}})));
+        assert!(!is_selectable_copilot_model(
+            &json!({"model_picker_enabled": false, "capabilities": {"supports": {"tool_calls": true}}})
+        ));
         // no tool-call support -> not selectable.
-        assert!(!is_selectable_copilot_model(&json!({"model_picker_enabled": true, "capabilities": {"supports": {"tool_calls": false}}})));
+        assert!(!is_selectable_copilot_model(
+            &json!({"model_picker_enabled": true, "capabilities": {"supports": {"tool_calls": false}}})
+        ));
     }
 }

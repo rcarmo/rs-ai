@@ -1,6 +1,6 @@
 //! Context compaction — summarize long conversations to fit context windows.
 
-use crate::types::{Context, ContentBlock, Message, Role};
+use crate::types::{ContentBlock, Context, Message, Role};
 
 /// Compact a context by removing older messages when approaching context limits.
 ///
@@ -90,7 +90,9 @@ mod tests {
     fn test_compact_keeps_recent() {
         let ctx = Context {
             system_prompt: None,
-            messages: (0..20).map(|i| user_message(&format!("msg {}", i))).collect(),
+            messages: (0..20)
+                .map(|i| user_message(&format!("msg {}", i)))
+                .collect(),
             tools: vec![],
         };
         let result = compact_context(&ctx, 3, Some("first 17 messages about greetings"));

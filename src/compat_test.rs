@@ -36,10 +36,17 @@ mod tests {
         assert_eq!(c.max_tokens_field.as_deref(), Some("max_completion_tokens"));
 
         // DeepSeek: non-standard, deepseek thinking format + reasoning-content flag.
-        let c = detect_compat(&model_with("deepseek", "https://api.deepseek.com/v1", "deepseek-v4"));
+        let c = detect_compat(&model_with(
+            "deepseek",
+            "https://api.deepseek.com/v1",
+            "deepseek-v4",
+        ));
         assert_eq!(c.thinking_format.as_deref(), Some("deepseek"));
         assert_eq!(c.supports_store, Some(false));
-        assert_eq!(c.requires_reasoning_content_on_assistant_messages, Some(true));
+        assert_eq!(
+            c.requires_reasoning_content_on_assistant_messages,
+            Some(true)
+        );
         assert_eq!(c.supports_reasoning_effort, Some(true)); // deepseek is not in the no-effort set
 
         // Z.ai: non-standard, zai thinking format, no reasoning effort.
@@ -49,14 +56,22 @@ mod tests {
         assert_eq!(c.supports_reasoning_effort, Some(false));
 
         // Together: non-standard, max_tokens field, no strict mode, no long cache.
-        let c = detect_compat(&model_with("together", "https://api.together.ai/v1", "deepseek-ai/DeepSeek-R1"));
+        let c = detect_compat(&model_with(
+            "together",
+            "https://api.together.ai/v1",
+            "deepseek-ai/DeepSeek-R1",
+        ));
         assert_eq!(c.thinking_format.as_deref(), Some("together"));
         assert_eq!(c.max_tokens_field.as_deref(), Some("max_tokens"));
         assert_eq!(c.supports_strict_mode, Some(false));
         assert_eq!(c.supports_long_cache_retention, Some(false));
 
         // Nvidia: non-standard, max_tokens, no reasoning effort, no strict mode, no long cache.
-        let c = detect_compat(&model_with("nvidia", "https://integrate.api.nvidia.com/v1", "nim"));
+        let c = detect_compat(&model_with(
+            "nvidia",
+            "https://integrate.api.nvidia.com/v1",
+            "nim",
+        ));
         assert_eq!(c.max_tokens_field.as_deref(), Some("max_tokens"));
         assert_eq!(c.supports_reasoning_effort, Some(false));
         assert_eq!(c.supports_strict_mode, Some(false));
@@ -69,21 +84,33 @@ mod tests {
         assert_eq!(c.thinking_format.as_deref(), Some("openai"));
 
         // ant-ling: non-standard, ant-ling thinking format, no reasoning effort, max_tokens.
-        let c = detect_compat(&model_with("ant-ling", "https://api.ant-ling.com/v1", "ling"));
+        let c = detect_compat(&model_with(
+            "ant-ling",
+            "https://api.ant-ling.com/v1",
+            "ling",
+        ));
         assert_eq!(c.thinking_format.as_deref(), Some("ant-ling"));
         assert_eq!(c.supports_reasoning_effort, Some(false));
         assert_eq!(c.max_tokens_field.as_deref(), Some("max_tokens"));
         assert_eq!(c.supports_long_cache_retention, Some(false));
 
         // OpenRouter generic model: openrouter thinking format, developer role off (non-anthropic/openai id).
-        let c = detect_compat(&model_with("openrouter", "https://openrouter.ai/api/v1", "meta/llama"));
+        let c = detect_compat(&model_with(
+            "openrouter",
+            "https://openrouter.ai/api/v1",
+            "meta/llama",
+        ));
         assert_eq!(c.thinking_format.as_deref(), Some("openrouter"));
         assert_eq!(c.supports_store, Some(true)); // openrouter is not in the non-standard set
         assert_eq!(c.supports_developer_role, Some(false)); // openrouter, non-anthropic/openai id
         assert_eq!(c.cache_control_format, None);
 
         // OpenRouter anthropic/* model: developer role on, anthropic cache-control format.
-        let c = detect_compat(&model_with("openrouter", "https://openrouter.ai/api/v1", "anthropic/claude-3-5-sonnet"));
+        let c = detect_compat(&model_with(
+            "openrouter",
+            "https://openrouter.ai/api/v1",
+            "anthropic/claude-3-5-sonnet",
+        ));
         assert_eq!(c.supports_developer_role, Some(true));
         assert_eq!(c.cache_control_format.as_deref(), Some("anthropic"));
     }
@@ -101,7 +128,10 @@ mod tests {
         assert_eq!(c.thinking_format.as_deref(), Some("deepseek"));
         assert_eq!(c.supports_reasoning_effort, Some(false));
         assert_eq!(c.max_tokens_field.as_deref(), Some("max_tokens"));
-        assert_eq!(c.requires_reasoning_content_on_assistant_messages, Some(true));
+        assert_eq!(
+            c.requires_reasoning_content_on_assistant_messages,
+            Some(true)
+        );
         // Untouched fields keep the detected (openai-standard) default.
         assert_eq!(c.supports_developer_role, Some(true));
         assert_eq!(c.supports_store, Some(true));

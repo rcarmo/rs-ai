@@ -1,7 +1,7 @@
 //! Image generation types.
 
-use serde::{Deserialize, Serialize};
 use crate::types::{ModelCost, StopReason, Usage};
+use serde::{Deserialize, Serialize};
 
 /// Image API identifier.
 pub type ImagesApi = String;

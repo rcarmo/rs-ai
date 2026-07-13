@@ -10,33 +10,56 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::provider::openai::stream_openai;
-    use crate::types::{Context, ContentBlock, Message, Model, ModelCost, Role, StreamOptions};
     use crate::events::Event;
+    use crate::provider::openai::stream_openai;
+    use crate::types::{ContentBlock, Context, Message, Model, ModelCost, Role, StreamOptions};
     use tokio_stream::StreamExt;
-    use wiremock::{Mock, MockServer, ResponseTemplate};
     use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     fn model(base_url: &str) -> Model {
         Model {
-            id: "requested-model".into(), name: "M".into(), api: "openai-completions".into(),
-            provider: "openai".into(), base_url: base_url.into(), reasoning: true,
-            thinking_level_map: None, input: vec!["text".into()], cost: ModelCost::default(),
-            context_window: 128000, max_tokens: 4096, headers: None, api_key: Some("k".into()),
+            id: "requested-model".into(),
+            name: "M".into(),
+            api: "openai-completions".into(),
+            provider: "openai".into(),
+            base_url: base_url.into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 128000,
+            max_tokens: 4096,
+            headers: None,
+            api_key: Some("k".into()),
             compat: Default::default(),
         }
     }
 
     fn ctx() -> Context {
         Context {
-            system_prompt: None, tools: Vec::new(),
+            system_prompt: None,
+            tools: Vec::new(),
             messages: vec![Message {
                 role: Role::User,
-                content: vec![ContentBlock::Text { text: "hi".into(), text_signature: None }],
-                timestamp: 0, api: None, provider: None, model: None, response_id: None,
-                response_model: None, diagnostics: Vec::new(), usage: None,
-                stop_reason: None, error_message: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
+                content: vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                error_message: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
             }],
         }
     }
@@ -51,9 +74,11 @@ mod tests {
         );
         let server = MockServer::start().await;
         Mock::given(method("POST"))
-            .respond_with(ResponseTemplate::new(200)
-                .insert_header("content-type", "text/event-stream")
-                .set_body_string(body))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
             .mount(&server)
             .await;
 
@@ -63,14 +88,22 @@ mod tests {
         let mut stream = stream_openai(&m, &c, &opts);
         let mut done_msg = None;
         while let Some(evt) = stream.next().await {
-            if let Event::Done { message, .. } = evt { done_msg = Some(message); }
+            if let Event::Done { message, .. } = evt {
+                done_msg = Some(message);
+            }
         }
         let msg = done_msg.expect("a Done event");
         assert_eq!(msg.content.len(), 1, "expected a single tool-call block");
         match &msg.content[0] {
-            ContentBlock::ToolCall { name, thought_signature, .. } => {
+            ContentBlock::ToolCall {
+                name,
+                thought_signature,
+                ..
+            } => {
                 assert_eq!(name, "lookup");
-                let sig = thought_signature.as_deref().expect("encrypted reasoning attached as thought_signature");
+                let sig = thought_signature
+                    .as_deref()
+                    .expect("encrypted reasoning attached as thought_signature");
                 // Opaque blob: assert decoded fields (key order is serializer-defined).
                 let v: serde_json::Value = serde_json::from_str(sig).expect("signature is JSON");
                 assert_eq!(v["type"], serde_json::json!("reasoning.encrypted"));
