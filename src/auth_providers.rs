@@ -105,6 +105,107 @@ impl OAuthAuth for AnthropicOAuth {
     }
 }
 
+/// Radius gateway OAuth. The refresh path discovers the gateway OAuth metadata,
+/// refreshes the stored token, and exposes the access token as the request API key.
+pub struct RadiusOAuth {
+    pub gateway: String,
+}
+
+impl RadiusOAuth {
+    pub fn new(gateway: impl Into<String>) -> Self {
+        Self {
+            gateway: crate::oauth::normalize_radius_gateway_url(&gateway.into()),
+        }
+    }
+
+    pub async fn refresh_with_gateway_config(
+        &self,
+        credential: &crate::oauth::RadiusOAuthCredentials,
+    ) -> Result<crate::oauth::RadiusOAuthCredentials, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("radius credential is missing a refresh token"))?;
+        let oauth = crate::oauth::load_radius_oauth_config(&self.gateway)
+            .await
+            .map_err(oauth_err)?;
+        let refreshed = crate::oauth::refresh_radius_token(&oauth, refresh)
+            .await
+            .map_err(oauth_err)?;
+        crate::oauth::attach_radius_gateway_config(&self.gateway, refreshed, Some(credential))
+            .await
+            .map_err(oauth_err)
+    }
+
+    pub fn modify_models(
+        &self,
+        models: &[crate::types::Model],
+        provider_id: &str,
+        credentials: &crate::oauth::RadiusOAuthCredentials,
+    ) -> Vec<crate::types::Model> {
+        let Some(config) = credentials.gateway_config.as_ref() else {
+            return models.to_vec();
+        };
+        let mut out = models.to_vec();
+        let existing: std::collections::HashSet<String> = out
+            .iter()
+            .filter(|m| m.provider == provider_id)
+            .map(|m| m.id.clone())
+            .collect();
+        for model in &config.models {
+            if existing.contains(&model.id) {
+                continue;
+            }
+            out.push(crate::types::Model {
+                id: model.id.clone(),
+                name: model.name.clone(),
+                api: crate::types::api::PI_MESSAGES.to_string(),
+                provider: provider_id.to_string(),
+                base_url: config.base_url.clone(),
+                reasoning: model.reasoning,
+                thinking_level_map: model.thinking_level_map.clone(),
+                input: model.input.clone(),
+                cost: model.cost.clone(),
+                context_window: model.context_window,
+                max_tokens: model.max_tokens,
+                headers: None,
+                api_key: None,
+                compat: Default::default(),
+            });
+        }
+        out
+    }
+}
+
+#[async_trait::async_trait]
+impl OAuthAuth for RadiusOAuth {
+    async fn refresh(&self, credential: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("radius credential is missing a refresh token"))?;
+        let oauth = crate::oauth::load_radius_oauth_config(&self.gateway)
+            .await
+            .map_err(oauth_err)?;
+        let refreshed = crate::oauth::refresh_radius_token(&oauth, refresh)
+            .await
+            .map_err(oauth_err)?;
+        Ok(OAuthCredential {
+            access: refreshed.access,
+            refresh: refreshed.refresh,
+            expires: refreshed.expires,
+            account_id: None,
+        })
+    }
+
+    async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+        Ok(ModelAuth {
+            api_key: Some(credential.access.clone()),
+            ..Default::default()
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

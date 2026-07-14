@@ -189,6 +189,8 @@ mod provider_test;
 #[cfg(test)]
 mod providers_upstream_test;
 #[cfg(test)]
+mod radius_oauth_test;
+#[cfg(test)]
 mod registration_test;
 #[cfg(test)]
 mod registry_test;

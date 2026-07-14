@@ -752,6 +752,440 @@ pub async fn refresh_copilot_token_at(
     })
 }
 
+pub const DEFAULT_RADIUS_GATEWAY: &str = "https://radius.pi.dev";
+pub const RADIUS_REDIRECT_URI: &str = "http://127.0.0.1:1456/oauth/callback";
+const RADIUS_TOKEN_EXPIRY_SKEW_MS: i64 = 60_000;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RadiusOAuthConfig {
+    pub issuer: String,
+    pub authorization_endpoint: String,
+    pub token_endpoint: String,
+    pub device_authorization_endpoint: String,
+    pub device_authorization_events_endpoint: String,
+    pub verification_endpoint: String,
+    pub client_id: String,
+    pub scope: String,
+    pub device_code_grant_type: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct RadiusGatewayModel {
+    pub id: String,
+    pub name: String,
+    pub reasoning: bool,
+    pub thinking_level_map: Option<std::collections::HashMap<String, Option<String>>>,
+    pub input: Vec<String>,
+    pub cost: crate::types::ModelCost,
+    pub context_window: u32,
+    pub max_tokens: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct RadiusGatewayConfig {
+    pub base_url: String,
+    pub models: Vec<RadiusGatewayModel>,
+}
+
+#[derive(Debug, Clone)]
+pub struct RadiusOAuthCredentials {
+    pub access: String,
+    pub refresh: Option<String>,
+    pub expires: i64,
+    pub scope: Option<String>,
+    pub gateway_config: Option<RadiusGatewayConfig>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RadiusDeviceAuthorization {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: Option<String>,
+    pub verification_uri_complete: Option<String>,
+    pub expires_in: u64,
+    pub interval: Option<u64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RadiusAuthorizeRequest {
+    pub url: String,
+    pub verifier: String,
+    pub state: String,
+}
+
+pub fn normalize_radius_gateway_url(value: &str) -> String {
+    let with_scheme = if value.starts_with("http://") || value.starts_with("https://") {
+        value.to_string()
+    } else {
+        format!("https://{value}")
+    };
+    with_scheme.trim_end_matches('/').to_string()
+}
+
+fn truncate_http_body(body: &str) -> String {
+    let trimmed = body.trim();
+    if trimmed.chars().count() > 512 {
+        format!("{}…", trimmed.chars().take(512).collect::<String>())
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn radius_oauth_error(status: reqwest::StatusCode, body: &str, message: &str) -> String {
+    let mut detail = status.as_u16().to_string();
+    if let Ok(v) = serde_json::from_str::<serde_json::Value>(body) {
+        let oauth_error = v.get("error").and_then(|x| x.as_str());
+        let desc = v.get("error_description").and_then(|x| x.as_str());
+        detail = match (oauth_error, desc) {
+            (Some(e), Some(d)) => format!("{e}: {d}"),
+            (Some(e), None) => e.to_string(),
+            (None, Some(d)) => d.to_string(),
+            _ => detail,
+        };
+    } else if !body.trim().is_empty() {
+        detail = truncate_http_body(body);
+    }
+    format!("{message}: {detail}")
+}
+
+fn parse_radius_oauth_error(body: &str) -> Option<String> {
+    serde_json::from_str::<serde_json::Value>(body)
+        .ok()
+        .and_then(|v| v.get("error").and_then(|x| x.as_str()).map(str::to_string))
+}
+
+pub async fn load_radius_oauth_config(gateway: &str) -> Result<RadiusOAuthConfig, String> {
+    let gateway = normalize_radius_gateway_url(gateway);
+    let url = format!("{gateway}/v1/oauth");
+    let response = crate::http_proxy::client_for_target(&url, None)
+        .get(&url)
+        .header("accept", "application/json")
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!(
+            "Could not load Radius OAuth config from {gateway}: {} {}",
+            status.as_u16(),
+            truncate_http_body(&body)
+        ));
+    }
+    let v: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    Ok(RadiusOAuthConfig {
+        issuer: required_string(&v, "issuer")?,
+        authorization_endpoint: required_string(&v, "authorizationEndpoint")?,
+        token_endpoint: required_string(&v, "tokenEndpoint")?,
+        device_authorization_endpoint: required_string(&v, "deviceAuthorizationEndpoint")?,
+        device_authorization_events_endpoint: required_string(
+            &v,
+            "deviceAuthorizationEventsEndpoint",
+        )?,
+        verification_endpoint: required_string(&v, "verificationEndpoint")?,
+        client_id: required_string(&v, "clientId")?,
+        scope: required_string(&v, "scope")?,
+        device_code_grant_type: required_string(&v, "deviceCodeGrantType")?,
+    })
+}
+
+fn required_string(v: &serde_json::Value, key: &str) -> Result<String, String> {
+    v.get(key)
+        .and_then(|x| x.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| format!("Radius OAuth config is missing {key}"))
+}
+
+fn sanitize_radius_gateway_config(v: serde_json::Value) -> Result<RadiusGatewayConfig, String> {
+    let base_url = v
+        .get("baseUrl")
+        .and_then(|x| x.as_str())
+        .ok_or_else(|| "Invalid Radius config from gateway".to_string())?
+        .to_string();
+    let models = v
+        .get("models")
+        .and_then(|x| x.as_array())
+        .ok_or_else(|| "Invalid Radius config from gateway".to_string())?;
+    let mut out = Vec::new();
+    for model in models {
+        let Some(id) = model.get("id").and_then(|x| x.as_str()) else {
+            continue;
+        };
+        let Some(name) = model.get("name").and_then(|x| x.as_str()) else {
+            continue;
+        };
+        let Some(reasoning) = model.get("reasoning").and_then(|x| x.as_bool()) else {
+            continue;
+        };
+        let Some(input) = model.get("input").and_then(|x| x.as_array()) else {
+            continue;
+        };
+        let Some(cost_value) = model.get("cost") else {
+            continue;
+        };
+        let Some(context_window) = model.get("contextWindow").and_then(|x| x.as_u64()) else {
+            continue;
+        };
+        let Some(max_tokens) = model.get("maxTokens").and_then(|x| x.as_u64()) else {
+            continue;
+        };
+        let thinking_level_map = model
+            .get("thinkingLevelMap")
+            .and_then(|x| serde_json::from_value(x.clone()).ok());
+        let cost = serde_json::from_value(cost_value.clone()).unwrap_or_default();
+        out.push(RadiusGatewayModel {
+            id: id.to_string(),
+            name: name.to_string(),
+            reasoning,
+            thinking_level_map,
+            input: input
+                .iter()
+                .filter_map(|x| x.as_str().map(str::to_string))
+                .collect(),
+            cost,
+            context_window: context_window as u32,
+            max_tokens: max_tokens as u32,
+        });
+    }
+    Ok(RadiusGatewayConfig {
+        base_url,
+        models: out,
+    })
+}
+
+pub async fn load_radius_gateway_config(
+    gateway: &str,
+    api_key: Option<&str>,
+) -> Result<RadiusGatewayConfig, String> {
+    let gateway = normalize_radius_gateway_url(gateway);
+    let url = format!("{gateway}/v1/config");
+    let mut req = crate::http_proxy::client_for_target(&url, None)
+        .get(&url)
+        .header("accept", "application/json");
+    if let Some(api_key) = api_key {
+        req = req.bearer_auth(api_key);
+    }
+    let response = req.send().await.map_err(|e| e.to_string())?;
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(format!(
+            "Could not load Radius config from {gateway}: {}: {}",
+            status.as_u16(),
+            truncate_http_body(&body)
+        ));
+    }
+    sanitize_radius_gateway_config(response.json().await.map_err(|e| e.to_string())?)
+}
+
+pub async fn request_radius_oauth_token(
+    oauth: &RadiusOAuthConfig,
+    body: &[(impl AsRef<str>, impl AsRef<str>)],
+) -> Result<RadiusOAuthCredentials, String> {
+    let params: Vec<(String, String)> = body
+        .iter()
+        .map(|(k, v)| (k.as_ref().to_string(), v.as_ref().to_string()))
+        .collect();
+    let response = crate::http_proxy::client_for_target(&oauth.token_endpoint, None)
+        .post(&oauth.token_endpoint)
+        .header("accept", "application/json")
+        .form(&params)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(radius_oauth_error(
+            status,
+            &body,
+            "Radius OAuth token request failed",
+        ));
+    }
+    let v: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    let access = required_string(&v, "access_token")?;
+    let refresh = required_string(&v, "refresh_token")?;
+    let expires_in = v
+        .get("expires_in")
+        .and_then(|x| x.as_i64())
+        .ok_or_else(|| "Radius OAuth token response is missing expires_in".to_string())?;
+    Ok(RadiusOAuthCredentials {
+        access,
+        refresh: Some(refresh),
+        expires: crate::utils::now_millis() + expires_in * 1000 - RADIUS_TOKEN_EXPIRY_SKEW_MS,
+        scope: v.get("scope").and_then(|x| x.as_str()).map(str::to_string),
+        gateway_config: None,
+    })
+}
+
+pub async fn exchange_radius_code(
+    oauth: &RadiusOAuthConfig,
+    code: &str,
+    verifier: &str,
+    redirect_uri: &str,
+) -> Result<RadiusOAuthCredentials, String> {
+    request_radius_oauth_token(
+        oauth,
+        &[
+            ("grant_type", "authorization_code"),
+            ("client_id", oauth.client_id.as_str()),
+            ("redirect_uri", redirect_uri),
+            ("code", code),
+            ("code_verifier", verifier),
+        ],
+    )
+    .await
+}
+
+pub async fn refresh_radius_token(
+    oauth: &RadiusOAuthConfig,
+    refresh_token: &str,
+) -> Result<RadiusOAuthCredentials, String> {
+    request_radius_oauth_token(
+        oauth,
+        &[
+            ("grant_type", "refresh_token"),
+            ("client_id", oauth.client_id.as_str()),
+            ("refresh_token", refresh_token),
+        ],
+    )
+    .await
+}
+
+pub async fn request_radius_device_authorization(
+    oauth: &RadiusOAuthConfig,
+) -> Result<RadiusDeviceAuthorization, String> {
+    let response = crate::http_proxy::client_for_target(&oauth.device_authorization_endpoint, None)
+        .post(&oauth.device_authorization_endpoint)
+        .header("accept", "application/json")
+        .form(&[
+            ("client_id", oauth.client_id.as_str()),
+            ("scope", oauth.scope.as_str()),
+        ])
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        return Err(radius_oauth_error(
+            status,
+            &body,
+            "Radius OAuth device authorization failed",
+        ));
+    }
+    let v: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    let device_code = required_string(&v, "device_code")?;
+    let user_code = required_string(&v, "user_code")?;
+    let expires_in = v
+        .get("expires_in")
+        .and_then(|x| x.as_u64())
+        .ok_or_else(|| {
+            "Radius OAuth device authorization response is missing required fields".to_string()
+        })?;
+    Ok(RadiusDeviceAuthorization {
+        device_code,
+        user_code,
+        verification_uri: v
+            .get("verification_uri")
+            .and_then(|x| x.as_str())
+            .map(str::to_string),
+        verification_uri_complete: v
+            .get("verification_uri_complete")
+            .and_then(|x| x.as_str())
+            .map(str::to_string),
+        expires_in,
+        interval: v.get("interval").and_then(|x| x.as_u64()),
+    })
+}
+
+pub async fn login_radius_device_code(
+    oauth: &RadiusOAuthConfig,
+) -> Result<RadiusOAuthCredentials, String> {
+    let device = request_radius_device_authorization(oauth).await?;
+    poll_oauth_device_code_flow(
+        device.interval.unwrap_or(5),
+        device.expires_in,
+        false,
+        || async {
+            match request_radius_oauth_token(
+                oauth,
+                &[
+                    ("grant_type", oauth.device_code_grant_type.as_str()),
+                    ("client_id", oauth.client_id.as_str()),
+                    ("device_code", device.device_code.as_str()),
+                ],
+            )
+            .await
+            {
+                Ok(credentials) => DevicePollOutcome::Complete(credentials),
+                Err(err) => match parse_radius_oauth_error(
+                    err.strip_prefix("Radius OAuth token request failed: ")
+                        .unwrap_or(&err),
+                )
+                .as_deref()
+                {
+                    Some("authorization_pending") => DevicePollOutcome::Pending,
+                    Some("slow_down") => DevicePollOutcome::SlowDown(None),
+                    Some("expired_token") => {
+                        DevicePollOutcome::Failed("Device authorization expired.".to_string())
+                    }
+                    Some("access_denied") => {
+                        DevicePollOutcome::Failed("Device authorization was denied.".to_string())
+                    }
+                    _ => DevicePollOutcome::Failed(err),
+                },
+            }
+        },
+        std::future::pending::<()>(),
+    )
+    .await
+}
+
+pub async fn attach_radius_gateway_config(
+    gateway: &str,
+    mut credentials: RadiusOAuthCredentials,
+    previous: Option<&RadiusOAuthCredentials>,
+) -> Result<RadiusOAuthCredentials, String> {
+    match load_radius_gateway_config(gateway, Some(&credentials.access)).await {
+        Ok(config) => {
+            credentials.gateway_config = Some(config);
+            Ok(credentials)
+        }
+        Err(err) => {
+            if let Some(prev) = previous.and_then(|p| p.gateway_config.clone()) {
+                credentials.gateway_config = Some(prev);
+                Ok(credentials)
+            } else {
+                Err(err)
+            }
+        }
+    }
+}
+
+pub fn build_radius_authorize_request(
+    oauth: &RadiusOAuthConfig,
+    state: &str,
+    pkce: &PkceChallenge,
+) -> RadiusAuthorizeRequest {
+    let mut url =
+        reqwest::Url::parse(&oauth.authorization_endpoint).expect("valid authorization endpoint");
+    url.query_pairs_mut()
+        .append_pair("response_type", "code")
+        .append_pair("client_id", &oauth.client_id)
+        .append_pair("redirect_uri", RADIUS_REDIRECT_URI)
+        .append_pair("scope", &oauth.scope)
+        .append_pair("code_challenge", &pkce.challenge)
+        .append_pair("code_challenge_method", "S256")
+        .append_pair("handoff", "url")
+        .append_pair("state", state);
+    RadiusAuthorizeRequest {
+        url: url.to_string(),
+        verifier: pkce.verifier.clone(),
+        state: state.to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
