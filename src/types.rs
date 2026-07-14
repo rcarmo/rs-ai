@@ -20,6 +20,7 @@ pub mod api {
     pub const GOOGLE_GENERATIVE_AI: &str = "google-generative-ai";
     pub const GOOGLE_VERTEX: &str = "google-vertex";
     pub const MISTRAL_CONVERSATIONS: &str = "mistral-conversations";
+    pub const PI_MESSAGES: &str = "pi-messages";
 }
 
 /// Provider identifier.
@@ -33,6 +34,7 @@ pub mod provider_id {
     pub const GOOGLE_VERTEX: &str = "google-vertex";
     pub const AZURE_OPENAI: &str = "azure-openai-responses";
     pub const OPENAI_CODEX: &str = "openai-codex";
+    pub const RADIUS: &str = "radius";
     pub const GITHUB_COPILOT: &str = "github-copilot";
     pub const AMAZON_BEDROCK: &str = "amazon-bedrock";
     pub const MISTRAL: &str = "mistral";

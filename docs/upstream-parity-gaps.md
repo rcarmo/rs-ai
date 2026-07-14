@@ -1,5 +1,19 @@
 # Upstream parity gap analysis
 
+## Current parity audit: `@earendil-works/pi-ai` v0.80.7
+
+Authoritative package: npm `@earendil-works/pi-ai@0.80.7`, tarball shasum `6125379d71fe8314c2166e7cddb6e4b847213562`, integrity `sha512-8RLKLwe5TFM9kKFMNu/lTzveduq4GxZbnlG6ba8FAhLeb5wJP4zbj1eBumKBRvggpFQnW5R/Vo2a8zTlHsV9SQ==`, package/tag SHA `818d67457cdd6b60bce6b121d16b23141c252dd8` (`github.com/earendil-works/pi` tag `v0.80.7`). Current upstream main HEAD at audit time: `9d09075c53812f7af955ce4397d0508c4a62efac`; diff `v0.80.7..HEAD` in `packages/ai` is changelog-only (1 file), no runtime/test delta.
+
+Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`. Source delta baseline→v0.80.7 in `packages/ai`: **25 paths** (24 runtime/test/catalog files plus one rename), **1706 insertions / 237 deletions**. Runtime-impact ledger:
+
+- **Model and image registries — PORTED.** Regenerated text catalog from upstream v0.80.7: **1065 text provider/id pairs across 35 providers**; image catalog remains **35/35**. Repro comparator evidence: `text: upstream=1065 local=1065 missing=0 extra=0`; `image: upstream=35 local=35 missing=0 extra=0` using `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-upstream/src 818d67457cdd6b60bce6b121d16b23141c252dd8`.
+- **New `pi-messages` API and dynamic `radius` provider — PORTED.** Added `api::PI_MESSAGES`, `provider_id::RADIUS`, builtin provider registration, `PI_GATEWAY_API_KEY` env resolution, and `src/provider/pi_messages.rs` implementing POST `<baseUrl>/messages`, `debug=1`, provider headers, `on_payload`, `on_response`, SSE event conversion, terminal `done`/`error`, rewrite diagnostics, and deterministic error handling.
+- **`pi-messages.test.ts` — PORTED.** Added `src/pi_messages_test.rs` with deterministic wiremock coverage for streaming text/tool calls, terminal message state, response headers/debug, server-sent errors, missing API key, and missing terminal event. The Rust test is compressed into 3 async tests but covers the upstream assertions without headline skips.
+- **`types.ts`/`compat.ts`/`providers/all.ts` type-only changes — PORTED/N/A.** Runtime-relevant `pi-messages` registration is ported. TypeScript-only `BuiltinProvider` narrowing is N/A in Rust because registry lookups are runtime typed (`Model.api`/`provider` strings) rather than generic TS provider-map indexing.
+- **`utils/oauth/radius.ts` — N/A for this crate pass.** Upstream adds a Radius OAuth browser/device helper around the gateway catalog. rs-ai has existing OAuth helpers for token-based providers, but no browser/device helper public surface for Radius consumers yet; no Rust callers or provider registry contract depend on it. The auth path needed by `pi-messages` (`PI_GATEWAY_API_KEY`/explicit `api_key`) is ported.
+- **Existing e2e timeout edits (`anthropic-*e2e.test.ts`) — N/A.** They only increase live test timeouts; no deterministic runtime behavior changes.
+- **OpenAI Responses test rename/additions — ALREADY COVERED/PORTED.** Upstream renames `openai-responses-copilot-provider.test.ts` to `openai-responses-compat.test.ts` and adds compat assertions; corresponding Rust coverage remains in `src/openai_responses_copilot_provider_test.rs` and existing compat/prompt-cache response tests.
+
 Canonical upstream: `@earendil-works/pi-ai` **v0.80.3**
 (`github.com/earendil-works/pi`, `packages/ai`, commit `ec6311b`).
 Port: `rs-ai` (crate `rs-ai`), branch `main`, tag `v0.80.3`.

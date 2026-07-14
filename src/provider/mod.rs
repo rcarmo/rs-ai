@@ -14,6 +14,7 @@ pub mod faux;
 pub mod google;
 pub mod mistral;
 pub mod openai;
+pub mod pi_messages;
 pub mod responses;
 
 struct OpenAIProvider;
@@ -140,6 +141,21 @@ impl ApiProvider for BedrockProvider {
     }
 }
 
+struct PiMessagesProvider;
+impl ApiProvider for PiMessagesProvider {
+    fn api(&self) -> &str {
+        "pi-messages"
+    }
+    fn stream<'a>(
+        &self,
+        model: &'a Model,
+        context: &'a Context,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+        pi_messages::stream_pi_messages(model, context, opts)
+    }
+}
+
 struct CodexProvider;
 impl ApiProvider for CodexProvider {
     fn api(&self) -> &str {
@@ -165,5 +181,6 @@ pub fn register_builtin_providers() {
     registry::register_api(Arc::new(GoogleVertexProvider));
     registry::register_api(Arc::new(MistralProvider));
     registry::register_api(Arc::new(BedrockProvider));
+    registry::register_api(Arc::new(PiMessagesProvider));
     registry::register_api(Arc::new(CodexProvider));
 }

@@ -181,6 +181,8 @@ mod openrouter_images_test;
 #[cfg(test)]
 mod overflow_test;
 #[cfg(test)]
+mod pi_messages_test;
+#[cfg(test)]
 mod provider_retry_test;
 #[cfg(test)]
 mod provider_test;
