@@ -1102,6 +1102,13 @@ pub async fn request_radius_device_authorization(
 pub async fn login_radius_device_code(
     oauth: &RadiusOAuthConfig,
 ) -> Result<RadiusOAuthCredentials, String> {
+    login_radius_device_code_with_cancel(oauth, std::future::pending::<()>()).await
+}
+
+pub async fn login_radius_device_code_with_cancel(
+    oauth: &RadiusOAuthConfig,
+    cancel: impl std::future::Future<Output = ()>,
+) -> Result<RadiusOAuthCredentials, String> {
     let device = request_radius_device_authorization(oauth).await?;
     poll_oauth_device_code_flow(
         device.interval.unwrap_or(5),
@@ -1119,25 +1126,27 @@ pub async fn login_radius_device_code(
             .await
             {
                 Ok(credentials) => DevicePollOutcome::Complete(credentials),
-                Err(err) => match parse_radius_oauth_error(
-                    err.strip_prefix("Radius OAuth token request failed: ")
-                        .unwrap_or(&err),
-                )
-                .as_deref()
-                {
-                    Some("authorization_pending") => DevicePollOutcome::Pending,
-                    Some("slow_down") => DevicePollOutcome::SlowDown(None),
-                    Some("expired_token") => {
-                        DevicePollOutcome::Failed("Device authorization expired.".to_string())
+                Err(err) => {
+                    let detail = err
+                        .strip_prefix("Radius OAuth token request failed: ")
+                        .unwrap_or(&err);
+                    let oauth_error =
+                        parse_radius_oauth_error(detail).unwrap_or_else(|| detail.to_string());
+                    match oauth_error.as_str() {
+                        "authorization_pending" => DevicePollOutcome::Pending,
+                        "slow_down" => DevicePollOutcome::SlowDown(None),
+                        "expired_token" => {
+                            DevicePollOutcome::Failed("Device authorization expired.".to_string())
+                        }
+                        "access_denied" => DevicePollOutcome::Failed(
+                            "Device authorization was denied.".to_string(),
+                        ),
+                        _ => DevicePollOutcome::Failed(err),
                     }
-                    Some("access_denied") => {
-                        DevicePollOutcome::Failed("Device authorization was denied.".to_string())
-                    }
-                    _ => DevicePollOutcome::Failed(err),
-                },
+                }
             }
         },
-        std::future::pending::<()>(),
+        cancel,
     )
     .await
 }

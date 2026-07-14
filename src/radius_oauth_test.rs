@@ -11,8 +11,11 @@ mod tests {
     use crate::oauth::*;
     use crate::types::{Model, ModelCost};
     use serde_json::json;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
     use wiremock::matchers::{method, path};
-    use wiremock::{Mock, MockServer, ResponseTemplate};
+    use wiremock::{Mock, MockServer, Request, Respond, ResponseTemplate};
 
     fn oauth_config(base: &str) -> serde_json::Value {
         json!({
@@ -26,6 +29,58 @@ mod tests {
             "scope": "openid profile",
             "deviceCodeGrantType": "urn:ietf:params:oauth:grant-type:device_code"
         })
+    }
+
+    struct SequenceResponder {
+        calls: Arc<AtomicUsize>,
+        responses: Vec<(u16, serde_json::Value)>,
+    }
+
+    impl Respond for SequenceResponder {
+        fn respond(&self, _request: &Request) -> ResponseTemplate {
+            let idx = self.calls.fetch_add(1, Ordering::SeqCst);
+            let (status, body) = self
+                .responses
+                .get(idx)
+                .or_else(|| self.responses.last())
+                .cloned()
+                .expect("at least one response");
+            ResponseTemplate::new(status).set_body_json(body)
+        }
+    }
+
+    fn oauth_for_server(server: &MockServer) -> RadiusOAuthConfig {
+        RadiusOAuthConfig {
+            issuer: server.uri(),
+            authorization_endpoint: format!("{}/authorize", server.uri()),
+            token_endpoint: format!("{}/token", server.uri()),
+            device_authorization_endpoint: format!("{}/device", server.uri()),
+            device_authorization_events_endpoint: format!("{}/events", server.uri()),
+            verification_endpoint: format!("{}/verify", server.uri()),
+            client_id: "radius-client".into(),
+            scope: "openid profile".into(),
+            device_code_grant_type: "urn:ietf:params:oauth:grant-type:device_code".into(),
+        }
+    }
+
+    async fn mount_device(server: &MockServer, interval: u64, expires_in: u64) {
+        Mock::given(method("POST"))
+            .and(path("/device"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "device_code":"dev-1", "user_code":"USER-1", "verification_uri":"https://verify", "expires_in":expires_in, "interval":interval
+            })))
+            .mount(server)
+            .await;
+    }
+
+    async fn wait_for_calls(calls: &AtomicUsize, expected: usize) {
+        for _ in 0..100 {
+            if calls.load(Ordering::SeqCst) >= expected {
+                return;
+            }
+            tokio::task::yield_now().await;
+            tokio::time::advance(Duration::from_millis(1)).await;
+        }
     }
 
     fn base_model() -> Model {
@@ -212,6 +267,127 @@ mod tests {
             String::from_utf8_lossy(&server.received_requests().await.unwrap()[0].body).to_string();
         assert!(body.contains("client_id=radius-client"));
         assert!(body.contains("scope=openid+profile"));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn login_device_code_polls_pending_slow_down_then_success_without_runaway() {
+        let server = MockServer::start().await;
+        mount_device(&server, 2, 120).await;
+        let calls = Arc::new(AtomicUsize::new(0));
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            .respond_with(SequenceResponder {
+                calls: calls.clone(),
+                responses: vec![
+                    (400, json!({"error":"authorization_pending"})),
+                    (400, json!({"error":"slow_down"})),
+                    (200, json!({"access_token":"access-ok","refresh_token":"refresh-ok","expires_in":600})),
+                ],
+            })
+            .mount(&server)
+            .await;
+        let oauth = oauth_for_server(&server);
+        let handle = tokio::spawn(async move { login_radius_device_code(&oauth).await });
+        for _ in 0..20 {
+            tokio::time::advance(Duration::from_secs(1)).await;
+            tokio::task::yield_now().await;
+            if calls.load(Ordering::SeqCst) >= 3 {
+                break;
+            }
+        }
+        let creds = handle.await.unwrap().unwrap();
+        assert_eq!(creds.access, "access-ok");
+        assert_eq!(creds.refresh.as_deref(), Some("refresh-ok"));
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            3,
+            "stops polling after success"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn login_device_code_maps_expired_and_access_denied_terminal_errors() {
+        for (oauth_error, expected) in [
+            ("expired_token", "Device authorization expired."),
+            ("access_denied", "Device authorization was denied."),
+        ] {
+            let server = MockServer::start().await;
+            mount_device(&server, 2, 120).await;
+            let calls = Arc::new(AtomicUsize::new(0));
+            Mock::given(method("POST"))
+                .and(path("/token"))
+                .respond_with(SequenceResponder {
+                    calls: calls.clone(),
+                    responses: vec![(400, json!({"error": oauth_error}))],
+                })
+                .mount(&server)
+                .await;
+            let oauth = oauth_for_server(&server);
+            let err = login_radius_device_code(&oauth).await.unwrap_err();
+            assert_eq!(err, expected);
+            assert_eq!(
+                calls.load(Ordering::SeqCst),
+                1,
+                "terminal error stops polling"
+            );
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn login_device_code_propagates_timeout_without_runaway_polling() {
+        let server = MockServer::start().await;
+        mount_device(&server, 2, 6).await;
+        let calls = Arc::new(AtomicUsize::new(0));
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            .respond_with(SequenceResponder {
+                calls: calls.clone(),
+                responses: vec![(400, json!({"error":"authorization_pending"}))],
+            })
+            .mount(&server)
+            .await;
+        let oauth = oauth_for_server(&server);
+        let handle = tokio::spawn(async move { login_radius_device_code(&oauth).await });
+        wait_for_calls(&calls, 1).await;
+        tokio::time::advance(Duration::from_secs(7)).await;
+        let err = handle.await.unwrap().unwrap_err();
+        assert_eq!(err, "Device flow timed out");
+        assert!(
+            calls.load(Ordering::SeqCst) <= 4,
+            "bounded polls before timeout"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn login_device_code_cancellation_aborts_in_flight_wait() {
+        let server = MockServer::start().await;
+        mount_device(&server, 5, 60).await;
+        let calls = Arc::new(AtomicUsize::new(0));
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            .respond_with(SequenceResponder {
+                calls: calls.clone(),
+                responses: vec![(400, json!({"error":"authorization_pending"}))],
+            })
+            .mount(&server)
+            .await;
+        let oauth = oauth_for_server(&server);
+        let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+        let handle = tokio::spawn(async move {
+            login_radius_device_code_with_cancel(&oauth, async {
+                let _ = rx.await;
+            })
+            .await
+        });
+        wait_for_calls(&calls, 1).await;
+        let before_cancel = calls.load(Ordering::SeqCst);
+        tx.send(()).unwrap();
+        let err = handle.await.unwrap().unwrap_err();
+        assert_eq!(err, "Login cancelled");
+        assert!(
+            calls.load(Ordering::SeqCst) <= before_cancel + 1,
+            "cancel stops without runaway polling"
+        );
     }
 
     #[tokio::test]
