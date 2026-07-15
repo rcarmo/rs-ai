@@ -28,6 +28,12 @@ Status: **ADAPTED**. The two deterministic cases verify that completed-output `e
 
 Status: **ADAPTED**. Run `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3` to import upstream `MODELS`/`IMAGE_MODELS` with Bun, recursively flatten provider maps, and compare provider/id pairs against rs-ai. Expected for the agreed source: text `1057/1057`, image `35/35`, missing `0`, extra `0`.
 
+## Current upstream main OpenAI Codex session-id clamp fixture
+
+Source: upstream main commit `dcfe36c79702ec240b146c45f167ab75ecddd205` (`clamp session-id to 64 chars for openai-codex (#6653)`). rs-ai adaptation: `src/provider/codex.rs` and `src/openai_codex_stream_test.rs`.
+
+Status: **ADAPTED**. `clamps_prompt_cache_key_and_codex_session_headers_to_64_chars` verifies a long Codex `session_id` is clamped to the same 64-character value for `prompt_cache_key`, `session-id`, and `x-client-request-id` in the SSE path; the same clamp is applied to the WebSocket request id/session headers.
+
 ## v0.80.7 Radius OAuth helper fixture
 
 Source: upstream `packages/ai/src/utils/oauth/radius.ts` at `818d67457cdd6b60bce6b121d16b23141c252dd8`. rs-ai adaptation: `src/oauth.rs`, `src/auth_providers.rs`, and `src/radius_oauth_test.rs`.

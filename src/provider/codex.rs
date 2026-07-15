@@ -223,7 +223,10 @@ pub fn stream_codex<'a>(
                     req = req.header("chatgpt-account-id", aid);
                 }
                 if let Some(sid) = opts.session_id.as_deref().filter(|s| !s.is_empty()) {
-                    req = req.header("session-id", sid).header("x-client-request-id", sid);
+                    let sid = crate::prompt_cache::clamp_openai_prompt_cache_key(sid);
+                    req = req
+                        .header("session-id", &sid)
+                        .header("x-client-request-id", &sid);
                 }
                 if let Some(ref mh) = model.headers {
                     for (k, v) in mh {
@@ -358,12 +361,14 @@ async fn try_websocket(
 
     let account_id = crate::oauth::codex_account_id(api_key);
     let user_agent = codex_user_agent();
-    // Upstream: `sessionId || createCodexRequestId()` (truthy), so an empty session id
-    // gets a fresh request id rather than being used verbatim.
+    // Upstream: `clampOpenAIPromptCacheKey(sessionId) || createCodexRequestId()`
+    // (truthy), so an empty session id gets a fresh request id rather than being
+    // used verbatim; long session ids are clamped to the OpenAI 64-char limit.
     let request_id = opts
         .session_id
-        .clone()
+        .as_deref()
         .filter(|s| !s.is_empty())
+        .map(crate::prompt_cache::clamp_openai_prompt_cache_key)
         .unwrap_or_else(|| format!("req_{}", crate::utils::now_millis()));
     // A fully-built http::Request bypasses tungstenite's automatic handshake-header
     // generation, so we must supply Host + the RFC6455 upgrade headers (including a

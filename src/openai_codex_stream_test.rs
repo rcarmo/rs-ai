@@ -210,13 +210,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn clamps_prompt_cache_key_to_64_chars() {
+    async fn clamps_prompt_cache_key_and_codex_session_headers_to_64_chars() {
         let opts = StreamOptions {
             session_id: Some("x".repeat(67)),
             ..Default::default()
         };
-        let (_t, _r, _h, b) = run(COMPLETED_SSE, opts).await;
-        assert_eq!(b["prompt_cache_key"], serde_json::json!("x".repeat(64)));
+        let (_t, _r, h, b) = run(COMPLETED_SSE, opts).await;
+        let expected = "x".repeat(64);
+        assert_eq!(b["prompt_cache_key"], serde_json::json!(expected));
+        assert_eq!(h.get("session-id"), Some(&expected));
+        assert_eq!(h.get("x-client-request-id"), Some(&expected));
     }
 
     #[tokio::test]
