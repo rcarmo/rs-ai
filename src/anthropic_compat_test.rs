@@ -167,6 +167,11 @@ mod tests {
             "anthropic/claude-fable-5",
             "anthropic/claude-opus-4-8",
             "cloudflare-ai-gateway/claude-fable-5",
+            "kimi-coding/k2p7",
+            "kimi-coding/k3",
+            "kimi-coding/kimi-for-coding",
+            "kimi-coding/kimi-for-coding-highspeed",
+            "kimi-coding/kimi-k2-thinking",
             "opencode/claude-opus-4-8",
             "vercel-ai-gateway/anthropic/claude-opus-4.8",
         ] {
@@ -185,7 +190,7 @@ mod tests {
     }
 
     /// Mirrors the upstream adaptive-thinking model families
-    /// (opus 4.6/4.7/4.8, sonnet 4.6, sonnet 5, fable 5).
+    /// (opus 4.6/4.7/4.8, sonnet 4.6, sonnet 5, fable 5, Kimi Coding).
     fn regex_lite_matches(id: &str) -> bool {
         let opus = id.contains("opus")
             && (id.contains("4-6")
@@ -200,7 +205,8 @@ mod tests {
                 || id.contains("sonnet-5")
                 || id.contains("sonnet.5"));
         let fable = id.contains("fable-5") || id.contains("fable.5");
-        opus || sonnet || fable
+        let kimi_coding = id.starts_with("kimi-coding/");
+        opus || sonnet || fable || kimi_coding
     }
 
     // --- empty thinking signature ---
@@ -232,6 +238,20 @@ mod tests {
     }
 
     fn thinking_ctx_with_text(signature: &str, thinking: &str) -> Context {
+        thinking_ctx_with_text_for(
+            signature,
+            thinking,
+            "xiaomi-token-plan-ams",
+            "mimo-v2.5-pro",
+        )
+    }
+
+    fn thinking_ctx_with_text_for(
+        signature: &str,
+        thinking: &str,
+        provider: &str,
+        model_id: &str,
+    ) -> Context {
         let assistant = Message {
             role: Role::Assistant,
             content: vec![ContentBlock::Thinking {
@@ -241,8 +261,8 @@ mod tests {
             }],
             timestamp: 0,
             api: Some("anthropic-messages".into()),
-            provider: Some("xiaomi-token-plan-ams".into()),
-            model: Some("mimo-v2.5-pro".into()),
+            provider: Some(provider.into()),
+            model: Some(model_id.into()),
             response_id: None,
             response_model: None,
             diagnostics: Vec::new(),
@@ -342,6 +362,24 @@ mod tests {
             *assistant_content(&p),
             json!([{"type": "thinking", "thinking": "internal reasoning", "signature": ""}])
         );
+    }
+
+    #[test]
+    fn kimi_coding_models_allow_empty_signatures() {
+        for id in ["k3", "kimi-for-coding"] {
+            let model = crate::registry::get_model("kimi-coding", id).expect("kimi-coding model");
+            assert_eq!(model.compat.allow_empty_signature, Some(true));
+            let p = build_anthropic_payload(
+                &model,
+                &thinking_ctx_with_text_for(" ", "internal reasoning", "kimi-coding", id),
+                &StreamOptions::default(),
+            );
+            assert_eq!(
+                *assistant_content(&p),
+                json!([{"type": "thinking", "thinking": "internal reasoning", "signature": ""}]),
+                "model {id}"
+            );
+        }
     }
 
     #[test]

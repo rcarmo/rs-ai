@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: models.generated.js (1075 models, 35 providers)
-//! Generated: 2026-07-16T22:18:25.259018Z
+//! Source: models.generated.js (1072 models, 35 providers)
+//! Generated: 2026-07-16T23:01:39.452158Z
 
 #![allow(clippy::approx_constant)]
 
@@ -6711,7 +6711,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32768,
             headers: Some(HashMap::from([("User-Agent".into(), "KimiCLI/1.5".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "k3".into(),
@@ -6720,14 +6723,26 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "kimi-coding".into(),
             base_url: "https://api.kimi.com/coding".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), None),
+                ("xhigh".into(), None),
+                ("max".into(), Some("max".into()))
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             headers: Some(HashMap::from([("User-Agent".into(), "KimiCLI/1.5".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                force_adaptive_thinking: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "kimi-for-coding".into(),
@@ -6743,7 +6758,11 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32768,
             headers: Some(HashMap::from([("User-Agent".into(), "KimiCLI/1.5".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                force_adaptive_thinking: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "kimi-for-coding-highspeed".into(),
@@ -6759,7 +6778,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32768,
             headers: Some(HashMap::from([("User-Agent".into(), "KimiCLI/1.5".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "kimi-k2-thinking".into(),
@@ -6775,7 +6797,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32768,
             headers: Some(HashMap::from([("User-Agent".into(), "KimiCLI/1.5".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "MiniMax-M2.7".into(),
@@ -7590,7 +7615,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("max".into(), Some("max".into()))
             ])),
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 3_f64, output: 15_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             headers: None,
@@ -7843,7 +7868,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("max".into(), Some("max".into()))
             ])),
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 3_f64, output: 15_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             headers: None,
@@ -10490,6 +10515,27 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
+            id: "grok-4.5".into(),
+            name: "Grok 4.5".into(),
+            api: "openai-completions".into(),
+            provider: "opencode-go".into(),
+            base_url: "https://opencode.ai/zen/go/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 500000,
+            max_tokens: 500000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                supports_developer_role: Some(false),
+                supports_store: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
             id: "kimi-k2.6".into(),
             name: "Kimi K2.6".into(),
             api: "openai-completions".into(),
@@ -10529,6 +10575,27 @@ pub fn builtin_models() -> Vec<Model> {
             cost: ModelCost { input: 0.95_f64, output: 4_f64, cache_read: 0.19_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 262144,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                supports_developer_role: Some(false),
+                supports_store: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "kimi-k3".into(),
+            name: "Kimi K3".into(),
+            api: "openai-completions".into(),
+            provider: "opencode-go".into(),
+            base_url: "https://opencode.ai/zen/go/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 3_f64, output: 15_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -11550,7 +11617,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.098_f64, output: 0.196_f64, cache_read: 0.02_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.098_f64, output: 0.196_f64, cache_read: 0.0196_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048575,
             max_tokens: 4096,
             headers: None,
@@ -12601,7 +12668,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.02_f64, output: 0.04_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.019_f64, output: 0.03_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
             max_tokens: 16384,
             headers: None,
@@ -15890,7 +15957,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.9212_f64, output: 2.8952_f64, cache_read: 0.17108_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.9086_f64, output: 2.8556_f64, cache_read: 0.16874_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             headers: None,
@@ -19806,90 +19873,6 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
-            id: "grok-3".into(),
-            name: "Grok 3".into(),
-            api: "openai-completions".into(),
-            provider: "xai".into(),
-            base_url: "https://api.x.ai/v1".into(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec!["text".into()],
-            cost: ModelCost { input: 3_f64, output: 15_f64, cache_read: 0.75_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 131072,
-            max_tokens: 8192,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "grok-3-fast".into(),
-            name: "Grok 3 Fast".into(),
-            api: "openai-completions".into(),
-            provider: "xai".into(),
-            base_url: "https://api.x.ai/v1".into(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec!["text".into()],
-            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 1.25_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 131072,
-            max_tokens: 8192,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "grok-4.20-0309-non-reasoning".into(),
-            name: "Grok 4.20 (Non-Reasoning)".into(),
-            api: "openai-completions".into(),
-            provider: "xai".into(),
-            base_url: "https://api.x.ai/v1".into(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 2.5_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 30000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "grok-4.20-0309-reasoning".into(),
-            name: "Grok 4.20 (Reasoning)".into(),
-            api: "openai-completions".into(),
-            provider: "xai".into(),
-            base_url: "https://api.x.ai/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 2.5_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 30000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                ..Default::default()
-            },
-        },
-        Model {
             id: "grok-4.3".into(),
             name: "Grok 4.3".into(),
             api: "openai-completions".into(),
@@ -19944,27 +19927,6 @@ pub fn builtin_models() -> Vec<Model> {
             cost: ModelCost { input: 1_f64, output: 2_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 256000,
             max_tokens: 256000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "grok-code-fast-1".into(),
-            name: "Grok Code Fast 1".into(),
-            api: "openai-completions".into(),
-            provider: "xai".into(),
-            base_url: "https://api.x.ai/v1".into(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec!["text".into()],
-            cost: ModelCost { input: 0.2_f64, output: 1.5_f64, cache_read: 0.02_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 32768,
-            max_tokens: 8192,
             headers: None,
             api_key: None,
             compat: ModelCompat {

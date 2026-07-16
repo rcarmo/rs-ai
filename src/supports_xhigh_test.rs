@@ -123,6 +123,11 @@ mod tests {
     }
 
     #[test]
+    fn kimi_coding_k3_includes_only_max() {
+        assert_eq!(levels(&m("kimi-coding", "k3")), vec!["max"]);
+    }
+
+    #[test]
     fn moonshot_kimi_k2_7_code_excludes_off() {
         for provider in ["moonshotai", "moonshotai-cn"] {
             assert_eq!(

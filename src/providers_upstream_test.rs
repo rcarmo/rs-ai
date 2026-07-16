@@ -59,6 +59,33 @@ mod tests {
     }
 
     #[test]
+    fn uses_official_kimi_k3_pricing_for_moonshot_providers() {
+        for provider in ["moonshotai", "moonshotai-cn"] {
+            let model = registry::get_model(provider, "kimi-k3").expect("kimi-k3 model");
+            assert_eq!(model.cost.input, 3.0);
+            assert_eq!(model.cost.output, 15.0);
+            assert_eq!(model.cost.cache_read, 0.3);
+            assert_eq!(model.cost.cache_write, 0.0);
+        }
+    }
+
+    #[test]
+    fn excludes_retired_xai_models_from_builtin_catalog() {
+        for model_id in [
+            "grok-3",
+            "grok-3-fast",
+            "grok-4.20-0309-non-reasoning",
+            "grok-4.20-0309-reasoning",
+            "grok-code-fast-1",
+        ] {
+            assert!(
+                registry::get_model("xai", model_id).is_none(),
+                "retired xai/{model_id} should not be registered"
+            );
+        }
+    }
+
+    #[test]
     fn resolves_anthropic_auth_from_env_with_oauth_token_precedence() {
         let _g = ENV_LOCK.lock().unwrap();
         unsafe {
