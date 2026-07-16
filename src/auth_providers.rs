@@ -105,6 +105,45 @@ impl OAuthAuth for AnthropicOAuth {
     }
 }
 
+/// xAI (Grok/X subscription) OAuth.
+pub struct XaiOAuth {
+    pub token_url: Option<String>,
+}
+
+impl XaiOAuth {
+    pub fn new() -> Self {
+        Self { token_url: None }
+    }
+}
+
+impl Default for XaiOAuth {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl OAuthAuth for XaiOAuth {
+    async fn refresh(&self, credential: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("xai credential is missing a refresh token"))?;
+        match self.token_url.as_deref() {
+            Some(url) => crate::oauth::refresh_xai_token_at(url, refresh).await,
+            None => crate::oauth::refresh_xai_token(refresh).await,
+        }
+        .map_err(oauth_err)
+    }
+
+    async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+        Ok(ModelAuth {
+            api_key: Some(credential.access.clone()),
+            ..Default::default()
+        })
+    }
+}
+
 /// Radius gateway OAuth. The refresh path discovers the gateway OAuth metadata,
 /// refreshes the stored token, and exposes the access token as the request API key.
 pub struct RadiusOAuth {

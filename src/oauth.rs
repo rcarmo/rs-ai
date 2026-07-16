@@ -752,6 +752,228 @@ pub async fn refresh_copilot_token_at(
     })
 }
 
+pub const XAI_CLIENT_ID: &str = "b1a00492-073a-47ea-816f-4c329264a828";
+pub const XAI_SCOPE: &str = "openid profile email offline_access grok-cli:access api:access";
+pub const XAI_DEVICE_CODE_URL: &str = "https://auth.x.ai/oauth2/device/code";
+pub const XAI_TOKEN_URL: &str = "https://auth.x.ai/oauth2/token";
+const XAI_REFRESH_SKEW_MS: i64 = 5 * 60 * 1000;
+const XAI_DEFAULT_TOKEN_LIFETIME_SECONDS: i64 = 3600;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct XaiDeviceCode {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: String,
+    pub interval_seconds: Option<u64>,
+    pub expires_in_seconds: u64,
+}
+
+fn xai_required_string(v: &serde_json::Value, field: &str) -> Result<String, String> {
+    v.get(field)
+        .and_then(|x| x.as_str())
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .ok_or_else(|| format!("Invalid xAI OAuth response field: {field}"))
+}
+
+fn xai_positive_i64(v: &serde_json::Value, field: &str) -> Result<i64, String> {
+    v.get(field)
+        .and_then(|x| x.as_i64())
+        .filter(|n| *n > 0)
+        .ok_or_else(|| format!("Invalid xAI OAuth response field: {field}"))
+}
+
+fn validate_xai_verification_uri(raw: &str) -> Result<String, String> {
+    let url = reqwest::Url::parse(raw)
+        .map_err(|_| "Untrusted verification URI in xAI OAuth response".to_string())?;
+    if url.scheme() != "https" {
+        return Err("Untrusted verification URI in xAI OAuth response".to_string());
+    }
+    Ok(url.to_string())
+}
+
+async fn post_xai_form(
+    url: &str,
+    fields: &[(&str, &str)],
+) -> Result<(reqwest::StatusCode, serde_json::Value), String> {
+    let response = crate::http_proxy::client_for_target(url, None)
+        .post(url)
+        .header("accept", "application/json")
+        .form(fields)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    let status = response.status();
+    let body = response
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|_| format!("xAI OAuth returned invalid JSON (HTTP {})", status.as_u16()))?;
+    Ok((status, body))
+}
+
+fn xai_request_failure(
+    action: &str,
+    status: reqwest::StatusCode,
+    body: &serde_json::Value,
+) -> String {
+    let error = body.get("error").and_then(|x| x.as_str());
+    let desc = body.get("error_description").and_then(|x| x.as_str());
+    let detail = match (error, desc) {
+        (Some(e), Some(d)) => format!(": {e}: {d}"),
+        (Some(e), None) => format!(": {e}"),
+        (None, Some(d)) => format!(": {d}"),
+        _ => String::new(),
+    };
+    format!(
+        "xAI OAuth {action} failed (HTTP {}){detail}",
+        status.as_u16()
+    )
+}
+
+pub async fn request_xai_device_code_at(device_url: &str) -> Result<XaiDeviceCode, String> {
+    let (status, body) = post_xai_form(
+        device_url,
+        &[
+            ("client_id", XAI_CLIENT_ID),
+            ("scope", XAI_SCOPE),
+            ("referrer", "pi"),
+        ],
+    )
+    .await?;
+    if !status.is_success() {
+        return Err(xai_request_failure("device authorization", status, &body));
+    }
+    let interval_seconds = body
+        .get("interval")
+        .and_then(|x| x.as_u64())
+        .filter(|n| *n > 0);
+    Ok(XaiDeviceCode {
+        device_code: xai_required_string(&body, "device_code")?,
+        user_code: xai_required_string(&body, "user_code")?,
+        verification_uri: validate_xai_verification_uri(&xai_required_string(
+            &body,
+            "verification_uri",
+        )?)?,
+        interval_seconds,
+        expires_in_seconds: xai_positive_i64(&body, "expires_in")? as u64,
+    })
+}
+
+pub async fn request_xai_device_code() -> Result<XaiDeviceCode, String> {
+    request_xai_device_code_at(XAI_DEVICE_CODE_URL).await
+}
+
+fn xai_credentials_from_token_response(
+    body: &serde_json::Value,
+    previous_refresh: Option<&str>,
+) -> Result<crate::auth::OAuthCredential, String> {
+    let access = xai_required_string(body, "access_token")?;
+    let refresh = match body.get("refresh_token").and_then(|x| x.as_str()) {
+        Some(r) if !r.is_empty() => r.to_string(),
+        _ => previous_refresh
+            .ok_or_else(|| "Invalid xAI OAuth response field: refresh_token".to_string())?
+            .to_string(),
+    };
+    let expires = body
+        .get("expires_in")
+        .and_then(|x| x.as_i64())
+        .filter(|n| *n > 0)
+        .unwrap_or(XAI_DEFAULT_TOKEN_LIFETIME_SECONDS);
+    Ok(crate::auth::OAuthCredential {
+        access,
+        refresh: Some(refresh),
+        expires: crate::utils::now_millis() + expires * 1000 - XAI_REFRESH_SKEW_MS,
+        account_id: None,
+    })
+}
+
+pub async fn refresh_xai_token_at(
+    token_url: &str,
+    refresh_token: &str,
+) -> Result<crate::auth::OAuthCredential, String> {
+    let (status, body) = post_xai_form(
+        token_url,
+        &[
+            ("grant_type", "refresh_token"),
+            ("client_id", XAI_CLIENT_ID),
+            ("refresh_token", refresh_token),
+        ],
+    )
+    .await?;
+    if !status.is_success() {
+        return Err(xai_request_failure("token refresh", status, &body));
+    }
+    xai_credentials_from_token_response(&body, Some(refresh_token))
+}
+
+pub async fn refresh_xai_token(
+    refresh_token: &str,
+) -> Result<crate::auth::OAuthCredential, String> {
+    refresh_xai_token_at(XAI_TOKEN_URL, refresh_token).await
+}
+
+pub async fn login_xai_device_code_at(
+    device_url: &str,
+    token_url: &str,
+    cancel: impl std::future::Future<Output = ()>,
+) -> Result<crate::auth::OAuthCredential, String> {
+    let device = request_xai_device_code_at(device_url).await?;
+    poll_oauth_device_code_flow(
+        device.interval_seconds.unwrap_or(5),
+        device.expires_in_seconds,
+        true,
+        || async {
+            let (status, body) = match post_xai_form(
+                token_url,
+                &[
+                    ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
+                    ("client_id", XAI_CLIENT_ID),
+                    ("device_code", device.device_code.as_str()),
+                ],
+            )
+            .await
+            {
+                Ok(v) => v,
+                Err(e) => return DevicePollOutcome::Failed(e),
+            };
+            if status.is_success() {
+                return match xai_credentials_from_token_response(&body, None) {
+                    Ok(c) => DevicePollOutcome::Complete(c),
+                    Err(e) => DevicePollOutcome::Failed(e),
+                };
+            }
+            match body.get("error").and_then(|x| x.as_str()) {
+                Some("authorization_pending") => DevicePollOutcome::Pending,
+                Some("slow_down") => {
+                    DevicePollOutcome::SlowDown(body.get("interval").and_then(|x| x.as_u64()))
+                }
+                Some("access_denied") | Some("authorization_denied") => {
+                    DevicePollOutcome::Failed("xAI device authorization was denied".into())
+                }
+                Some("expired_token") => {
+                    DevicePollOutcome::Failed("xAI device code expired".into())
+                }
+                _ => DevicePollOutcome::Failed(xai_request_failure(
+                    "device token polling",
+                    status,
+                    &body,
+                )),
+            }
+        },
+        cancel,
+    )
+    .await
+}
+
+pub async fn login_xai_device_code() -> Result<crate::auth::OAuthCredential, String> {
+    login_xai_device_code_at(
+        XAI_DEVICE_CODE_URL,
+        XAI_TOKEN_URL,
+        std::future::pending::<()>(),
+    )
+    .await
+}
+
 pub const DEFAULT_RADIUS_GATEWAY: &str = "https://radius.pi.dev";
 pub const RADIUS_REDIRECT_URI: &str = "http://127.0.0.1:1456/oauth/callback";
 const RADIUS_TOKEN_EXPIRY_SKEW_MS: i64 = 60_000;

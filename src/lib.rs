@@ -35,6 +35,7 @@ pub mod images;
 pub mod jsonparse;
 pub mod logger;
 pub mod models_generated;
+pub mod models_runtime;
 pub mod oauth;
 pub mod prompt_cache;
 pub mod provider;
@@ -213,3 +214,7 @@ mod together_xiaomi_models_test;
 mod tool_call_id_normalization_test;
 #[cfg(test)]
 mod validation_upstream_test;
+#[cfg(test)]
+mod xai_grok45_responses_test;
+#[cfg(test)]
+mod xai_oauth_test;
