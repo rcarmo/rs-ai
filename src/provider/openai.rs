@@ -1,5 +1,6 @@
 //! OpenAI Chat Completions provider (also serves compatible APIs).
 
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use futures::stream::{self, StreamExt};
@@ -595,6 +596,7 @@ pub(crate) fn build_payload(
         // hold image content) — mirrors upstream convertMessages.
         if msg.role == Role::ToolResult {
             let mut image_blocks: Vec<Value> = Vec::new();
+            let mut deferred_tool_names: HashSet<String> = HashSet::new();
             let mut j = idx;
             while j < transformed_messages.len() && transformed_messages[j].role == Role::ToolResult
             {
@@ -632,6 +634,9 @@ pub(crate) fn build_payload(
                     tm["name"] = json!(name);
                 }
                 messages.push(tm);
+                if compat.deferred_tools_mode.as_deref() == Some("kimi") {
+                    deferred_tool_names.extend(tr.added_tool_names.iter().cloned());
+                }
                 if has_images && model.input.iter().any(|i| i == "image") {
                     for b in &tr.content {
                         if let ContentBlock::Image { data, mime_type } = b {
@@ -656,6 +661,22 @@ pub(crate) fn build_payload(
                 last_role = Some(Role::User);
             } else {
                 last_role = Some(Role::ToolResult);
+            }
+            if !deferred_tool_names.is_empty() {
+                let include_strict = compat.supports_strict_mode != Some(false);
+                let deferred_tools: Vec<Tool> = context
+                    .tools
+                    .iter()
+                    .filter(|tool| deferred_tool_names.contains(&tool.name))
+                    .cloned()
+                    .collect();
+                if !deferred_tools.is_empty() {
+                    // Kimi accepts a system message with tools but omits the standard content field.
+                    messages.push(json!({
+                        "role": "system",
+                        "tools": converted_tools(&deferred_tools, include_strict),
+                    }));
+                }
             }
             continue;
         }
@@ -1007,24 +1028,20 @@ pub(crate) fn build_payload(
     }
 
     // Tools
-    if !context.tools.is_empty() {
+    let deferred_tool_names = if compat.deferred_tools_mode.as_deref() == Some("kimi") {
+        get_deferred_tool_names(&context.messages)
+    } else {
+        HashSet::new()
+    };
+    let active_tools: Vec<Tool> = context
+        .tools
+        .iter()
+        .filter(|tool| !deferred_tool_names.contains(&tool.name))
+        .cloned()
+        .collect();
+    if !active_tools.is_empty() {
         let include_strict = compat.supports_strict_mode != Some(false);
-        let tools: Vec<Value> = context
-            .tools
-            .iter()
-            .map(|t| {
-                let mut function = json!({
-                    "name": t.name,
-                    "description": t.description,
-                    "parameters": t.parameters,
-                });
-                if include_strict {
-                    function["strict"] = json!(false);
-                }
-                json!({ "type": "function", "function": function })
-            })
-            .collect();
-        payload["tools"] = json!(tools);
+        payload["tools"] = json!(converted_tools(&active_tools, include_strict));
         if compat.zai_tool_stream == Some(true) {
             payload["tool_stream"] = json!(true);
         }
@@ -1144,6 +1161,31 @@ fn has_tool_history(messages: &[Message]) -> bool {
                     .iter()
                     .any(|b| matches!(b, ContentBlock::ToolCall { .. })))
     })
+}
+
+fn get_deferred_tool_names(messages: &[Message]) -> HashSet<String> {
+    messages
+        .iter()
+        .filter(|m| m.role == Role::ToolResult)
+        .flat_map(|m| m.added_tool_names.iter().cloned())
+        .collect()
+}
+
+fn converted_tools(tools: &[Tool], include_strict: bool) -> Vec<Value> {
+    tools
+        .iter()
+        .map(|t| {
+            let mut function = json!({
+                "name": t.name,
+                "description": t.description,
+                "parameters": t.parameters,
+            });
+            if include_strict {
+                function["strict"] = json!(false);
+            }
+            json!({ "type": "function", "function": function })
+        })
+        .collect()
 }
 
 /// Normalize a tool-call ID for OpenAI-compatible APIs (mirrors upstream `normalizeToolCallId`).

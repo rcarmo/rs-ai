@@ -358,6 +358,8 @@ pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub cache_control_format: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deferred_tools_mode: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requires_assistant_after_tool_result: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub send_session_affinity_headers: Option<bool>,

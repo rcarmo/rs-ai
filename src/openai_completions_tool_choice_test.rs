@@ -1055,4 +1055,50 @@ mod tests {
         assert_eq!(a.get("path").and_then(|v| v.as_str()), Some("out.txt"));
         assert_eq!(a.get("content").and_then(|v| v.as_str()), Some("ok"));
     }
+
+    #[test]
+    fn kimi_deferred_tools_are_removed_from_top_level_and_reintroduced_after_tool_result() {
+        let mut model = cat("openai", "gpt-4o-mini");
+        model.compat.deferred_tools_mode = Some("kimi".into());
+        let mut ctx = Context {
+            system_prompt: None,
+            tools: vec![
+                Tool {
+                    name: "read".into(),
+                    description: "Read files".into(),
+                    parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}),
+                },
+                Tool {
+                    name: "grep".into(),
+                    description: "Search files".into(),
+                    parameters: json!({"type":"object","properties":{"pattern":{"type":"string"}}}),
+                },
+            ],
+            messages: vec![msg(Role::User, "Hi")],
+        };
+        let mut tool_result = msg(Role::ToolResult, "ok");
+        tool_result.tool_call_id = Some("call_1".into());
+        tool_result.tool_name = Some("read".into());
+        tool_result.added_tool_names = vec!["grep".into()];
+        ctx.messages.push(tool_result);
+
+        let body = payload(&model, &ctx, &StreamOptions::default());
+        let top_tools = body["tools"].as_array().expect("top-level tools");
+        assert_eq!(top_tools.len(), 1);
+        assert_eq!(top_tools[0]["function"]["name"], "read");
+
+        let messages = body["messages"].as_array().expect("messages");
+        let kimi_tools_message = messages
+            .iter()
+            .find(|m| {
+                m.get("role").and_then(|v| v.as_str()) == Some("system") && m.get("tools").is_some()
+            })
+            .expect("kimi deferred-tools system message");
+        assert!(kimi_tools_message.get("content").is_none());
+        let deferred = kimi_tools_message["tools"]
+            .as_array()
+            .expect("deferred tools");
+        assert_eq!(deferred.len(), 1);
+        assert_eq!(deferred[0]["function"]["name"], "grep");
+    }
 }

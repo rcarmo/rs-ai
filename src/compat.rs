@@ -21,6 +21,8 @@ pub struct OpenAICompletionsCompat {
     pub supports_session_affinity_headers: Option<bool>,
     pub zai_tool_stream: Option<bool>,
     pub cache_control_format: Option<String>,
+    /// Provider-specific deferred tool serialization mode (currently `kimi`).
+    pub deferred_tools_mode: Option<String>,
     /// chat-template thinking format kwargs (object map; see resolve_chat_template_kwarg_value).
     pub chat_template_kwargs: Option<serde_json::Value>,
 }
@@ -56,6 +58,7 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         supports_session_affinity_headers: mc.send_session_affinity_headers,
         zai_tool_stream: mc.zai_tool_stream,
         cache_control_format: mc.cache_control_format.clone(),
+        deferred_tools_mode: mc.deferred_tools_mode.clone(),
         chat_template_kwargs: mc.chat_template_kwargs.clone(),
     })
 }
@@ -115,6 +118,9 @@ pub fn detect_compat_for_model(
         }
         if o.cache_control_format.is_some() {
             c.cache_control_format = o.cache_control_format.clone();
+        }
+        if o.deferred_tools_mode.is_some() {
+            c.deferred_tools_mode = o.deferred_tools_mode.clone();
         }
         if o.chat_template_kwargs.is_some() {
             c.chat_template_kwargs = o.chat_template_kwargs.clone();
