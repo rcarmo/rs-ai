@@ -28,6 +28,12 @@ Status: **ADAPTED**. The two deterministic cases verify that completed-output `e
 
 Status: **ADAPTED**. Run `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3` to import upstream `MODELS`/`IMAGE_MODELS` with Bun, recursively flatten provider maps, and compare provider/id pairs against rs-ai. Expected for the agreed source: text `1057/1057`, image `35/35`, missing `0`, extra `0`.
 
+## v0.80.10 release catalog/metadata disposition fixture
+
+Source: upstream tag `8dc78834` (`v0.80.10`), exact delta `2d16f92973230a7e095aa984f150ba8702784f50..8dc78834`. rs-ai adaptation: regenerated `src/models_generated.rs` plus retained Kimi/xAI/runtime tests.
+
+Status: **ADAPTED**. The v0.80.10 release changed 20 `packages/ai` paths. Catalog/generator, Kimi adaptive/max/empty-signature metadata, K3 pricing, xAI removals, OpenCode/OpenRouter metadata, and related deterministic test expectations are represented by the regenerated registry and existing Rust tests. README/changelog/package and live credential test matrix edits are N/A for Rust runtime. Expected comparator: text `1072/1072`, image `35/35`, missing `0`, extra `0`.
+
 ## v0.80.9 runtime refresh, Radius dynamic catalog, and xAI OAuth fixture
 
 Source: upstream tag `2d16f92973230a7e095aa984f150ba8702784f50` (`v0.80.9`), including prior `2be9efa19cd64aed40ca63f92c0c0f9a6bac7c9d` (`feat(ai): publish generated model catalogs to R2 (#6720)`) plus `5220aba6` (`feat(ai): add xAI device OAuth and route grok-4.5 through Responses (#6651)`). rs-ai adaptation: `src/models_runtime.rs`, `src/registry.rs`, `src/models_runtime_refresh_test.rs`, `src/oauth.rs`, `src/auth_providers.rs`, `src/xai_oauth_test.rs`, `src/xai_grok45_responses_test.rs`, and regenerated `src/models_generated.rs`.

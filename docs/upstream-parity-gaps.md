@@ -1,10 +1,29 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.80.9
+## Current parity audit: `@earendil-works/pi-ai` v0.80.10
 
-Authoritative package/tag: npm `@earendil-works/pi-ai@0.80.9`, package/tag SHA `2d16f92973230a7e095aa984f150ba8702784f50` (`github.com/earendil-works/pi` tag `v0.80.9`). Pinned scope for this audit is exactly `2be9efa19cd64aed40ca63f92c0c0f9a6bac7c9d..2d16f92973230a7e095aa984f150ba8702784f50`; do not chase newer main.
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.80.10`, package/tag SHA `8dc78834` (`github.com/earendil-works/pi` tag `v0.80.10`). Pinned scope for this audit is exactly `2d16f92973230a7e095aa984f150ba8702784f50..8dc78834`; do not chase newer main.
 
-Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`; v0.80.7/v0.80.8/current-main deltas through `2be9efa` remain ported. v0.80.9 disposition matrix for changed `packages/ai` paths:
+Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`; v0.80.7/v0.80.8/current-main/v0.80.9 deltas through `2d16f92` remain ported. v0.80.10 changed **20** `packages/ai` paths; disposition matrix:
+
+| Upstream path(s) | Disposition | rs-ai path / evidence |
+|---|---|---|
+| `scripts/generate-models.ts`, generated text catalog metadata | PORTED | `src/models_generated.rs`; exact comparator `text: upstream=1072 local=1072 missing=0 extra=0`, `image: upstream=35 local=35 missing=0 extra=0`. |
+| `src/providers/kimi-coding.models.ts` | PORTED | regenerated metadata for Kimi adaptive/max/empty-signature behavior; retained Kimi deferred-tool tests from `beacab7`. |
+| `src/providers/moonshotai.models.ts`, `src/providers/moonshotai-cn.models.ts` | PORTED | regenerated K3 pricing/catalog metadata in `src/models_generated.rs`. |
+| `src/providers/xai.models.ts`, `test/xai-responses.test.ts` | PORTED | regenerated xAI removals/routes; existing `src/xai_grok45_responses_test.rs` verifies actual `xai/grok-4.5` OpenAI Responses request. |
+| `src/providers/opencode-go.models.ts`, `src/providers/openrouter.models.ts` | PORTED | regenerated OpenCode/OpenRouter catalog metadata. |
+| `test/anthropic-adaptive-thinking-models.test.ts`, `test/anthropic-force-adaptive-thinking.test.ts`, `test/anthropic-empty-thinking-signature-compat.test.ts`, `test/supports-xhigh.test.ts` | PORTED | covered by generated metadata plus existing adaptive-thinking/supports-xhigh/empty-signature Rust tests. |
+| `test/context-overflow.test.ts`, `test/cross-provider-handoff.test.ts`, `test/providers.test.ts`, `test/stream.test.ts`, `test/total-tokens.test.ts` | N/A / live or metadata-gated | upstream test expectation changes follow catalog/provider metadata; deterministic registry/request coverage is in Rust, live credential matrix remains N/A. |
+| `CHANGELOG.md`, `README.md`, `package.json` | N/A docs/package metadata | release docs/package metadata only; reflected here in the v0.80.10 section. |
+
+- **Model and image registries — PORTED.** Regenerated text catalog from upstream v0.80.10: **1072 text provider/id pairs across 35 providers**; image catalog remains **35/35**. Repro comparator evidence: `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 8dc78834` => `text: upstream=1072 local=1072 missing=0 extra=0`; `image: upstream=35 local=35 missing=0 extra=0`.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.80.9
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.80.9`, package/tag SHA `2d16f92973230a7e095aa984f150ba8702784f50` (`github.com/earendil-works/pi` tag `v0.80.9`). Pinned scope for that audit was exactly `2be9efa19cd64aed40ca63f92c0c0f9a6bac7c9d..2d16f92973230a7e095aa984f150ba8702784f50`.
+
+v0.80.9 disposition matrix for changed `packages/ai` paths:
 
 | Upstream path(s) | Disposition | rs-ai path / note |
 |---|---|---|
