@@ -33,6 +33,8 @@ static API_PROVIDERS: std::sync::LazyLock<RwLock<HashMap<Api, Arc<dyn ApiProvide
 
 static MODELS: std::sync::LazyLock<RwLock<HashMap<String, Model>>> =
     std::sync::LazyLock::new(|| RwLock::new(HashMap::new()));
+static RUNTIME: std::sync::LazyLock<crate::models_runtime::ModelsRuntime> =
+    std::sync::LazyLock::new(crate::models_runtime::ModelsRuntime::new);
 static REGISTER_BUILTINS: Once = Once::new();
 
 fn ensure_builtins_registered() {
@@ -57,35 +59,83 @@ pub fn get_api_provider(api: &str) -> bool {
 /// Register a model in the global registry.
 pub fn register_model(model: Model) {
     let key = format!("{}/{}", model.provider, model.id);
-    MODELS.write().unwrap().insert(key, model);
+    MODELS.write().unwrap().insert(key, model.clone());
+    rebuild_runtime_provider(&model.provider);
+}
+
+fn rebuild_runtime_provider(provider_id: &str) {
+    let models = MODELS
+        .read()
+        .unwrap()
+        .values()
+        .filter(|m| m.provider == provider_id)
+        .cloned()
+        .collect::<Vec<_>>();
+    if models.is_empty() {
+        RUNTIME.delete_provider(provider_id);
+    } else {
+        RUNTIME.set_provider(crate::models_runtime::RuntimeProvider::static_provider(
+            provider_id.to_string(),
+            provider_id.to_string(),
+            crate::auth::ProviderAuth::default(),
+            models,
+        ));
+    }
+}
+
+pub fn register_runtime_provider(provider: crate::models_runtime::RuntimeProvider) {
+    ensure_builtins_registered();
+    RUNTIME.set_provider(provider);
+}
+
+pub fn remove_runtime_provider(provider_id: &str) {
+    ensure_builtins_registered();
+    RUNTIME.delete_provider(provider_id);
+}
+
+pub async fn refresh_runtime_models(
+    options: crate::models_runtime::RefreshOptions,
+) -> crate::models_runtime::RefreshResult {
+    ensure_builtins_registered();
+    RUNTIME.refresh(options).await
+}
+
+pub fn register_radius_runtime_provider(gateway: &str) {
+    ensure_builtins_registered();
+    let baseline = MODELS
+        .read()
+        .unwrap()
+        .values()
+        .filter(|m| m.provider == crate::types::provider_id::RADIUS)
+        .cloned()
+        .collect::<Vec<_>>();
+    RUNTIME.set_provider(crate::models_runtime::RuntimeProvider::radius(
+        crate::types::provider_id::RADIUS,
+        "Radius",
+        gateway,
+        baseline,
+    ));
 }
 
 /// Look up a model by provider and ID.
 pub fn get_model(provider: &str, id: &str) -> Option<Model> {
     ensure_builtins_registered();
-    let key = format!("{}/{}", provider, id);
-    MODELS.read().unwrap().get(&key).cloned()
+    RUNTIME.get_model(provider, id)
 }
 
 /// List all models, optionally filtered by provider.
 pub fn list_models(provider: Option<&str>) -> Vec<Model> {
     ensure_builtins_registered();
-    MODELS
-        .read()
-        .unwrap()
-        .values()
-        .filter(|m| provider.is_none_or(|p| m.provider == p))
-        .cloned()
-        .collect()
+    RUNTIME.get_models(provider)
 }
 
 /// List all registered provider names.
 pub fn list_providers() -> Vec<String> {
     ensure_builtins_registered();
-    let models = MODELS.read().unwrap();
-    let mut seen: Vec<String> = models
-        .values()
-        .map(|m| m.provider.clone())
+    let mut seen: Vec<String> = RUNTIME
+        .get_models(None)
+        .into_iter()
+        .map(|m| m.provider)
         .collect::<std::collections::HashSet<_>>()
         .into_iter()
         .collect();
@@ -178,4 +228,5 @@ pub fn clear_api_providers() {
 /// Clear all registered models.
 pub fn clear_models() {
     MODELS.write().unwrap().clear();
+    RUNTIME.clear_providers();
 }

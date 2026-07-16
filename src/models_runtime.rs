@@ -4,7 +4,9 @@
 //! providers own baseline models plus optional dynamic refresh, refreshes are
 //! provider-scoped, coalesced, cache-restored, and best-effort across providers.
 
-use crate::auth::{Credential, InMemoryCredentialStore, ModelsError, ProviderAuth};
+use crate::auth::{
+    Credential, InMemoryCredentialStore, ModelsError, ModelsErrorCode, ProviderAuth,
+};
 use crate::types::Model;
 use futures::future::join_all;
 use std::collections::{HashMap, HashSet};
@@ -146,6 +148,37 @@ impl RuntimeProvider {
         merged
     }
 
+    pub fn radius(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        gateway: impl Into<String>,
+        baseline: Vec<Model>,
+    ) -> Self {
+        let gateway = crate::oauth::normalize_radius_gateway_url(&gateway.into());
+        Self::dynamic(id, name, ProviderAuth::default(), baseline, move |ctx| {
+            let gateway = gateway.clone();
+            async move {
+                let api_key = match ctx.credential.as_ref() {
+                    Some(Credential::ApiKey(c)) => c.key.as_deref(),
+                    Some(Credential::OAuth(c)) => Some(c.access.as_str()),
+                    None => None,
+                };
+                let config = crate::oauth::load_radius_gateway_config(&gateway, api_key)
+                    .await
+                    .map_err(|e| ModelsError::new(ModelsErrorCode::ModelSource, e))?;
+                let creds = crate::oauth::RadiusOAuthCredentials {
+                    access: api_key.unwrap_or_default().to_string(),
+                    refresh: None,
+                    expires: 0,
+                    scope: None,
+                    gateway_config: Some(config),
+                };
+                let radius = crate::auth_providers::RadiusOAuth::new(&gateway);
+                Ok(radius.modify_models(&[], "radius", &creds))
+            }
+        })
+    }
+
     async fn refresh_models(&self, ctx: RefreshModelsContext) -> Result<(), ModelsError> {
         let Some(refresh_fn) = self.refresh.clone() else {
             return Ok(());
@@ -231,6 +264,9 @@ impl ModelsRuntime {
     }
     pub fn delete_provider(&self, id: &str) {
         self.providers.lock().unwrap().remove(id);
+    }
+    pub fn clear_providers(&self) {
+        self.providers.lock().unwrap().clear();
     }
     pub fn get_models(&self, provider: Option<&str>) -> Vec<Model> {
         let providers = self.providers.lock().unwrap();

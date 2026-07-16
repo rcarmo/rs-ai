@@ -14,6 +14,7 @@ Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`. Source del
 - **Existing e2e timeout edits (`anthropic-*e2e.test.ts`) — N/A.** They only increase live test timeouts; no deterministic runtime behavior changes.
 - **OpenAI Responses test rename/additions — ALREADY COVERED/PORTED.** Upstream renames `openai-responses-copilot-provider.test.ts` to `openai-responses-compat.test.ts` and adds compat assertions; corresponding Rust coverage remains in `src/openai_responses_copilot_provider_test.rs` and existing compat/prompt-cache response tests.
 - **OpenAI Codex session-id clamp (`dcfe36c7`) — PORTED.** Upstream main after v0.80.7 clamps `sessionId` with `clampOpenAIPromptCacheKey` before Codex SSE `[session]-id`/request-id headers and WebSocket request ids. rs-ai now clamps `session-id`/`x-client-request-id` in SSE and WS paths; deterministic coverage is in `src/openai_codex_stream_test.rs`.
+- **Runtime model refresh + generated catalog publication (`2be9efa`) — PORTED.** Added production `src/models_runtime.rs` (`ModelsRuntime`, provider-scoped `ModelsStore`, `RuntimeProvider`, coalesced refresh, cache restore/offline retention, cancellation) and wired ordinary `registry::get_model/list_models/list_providers` to a shared runtime initialized with builtins. Public `registry::register_runtime_provider`, `remove_runtime_provider`, `refresh_runtime_models`, and `register_radius_runtime_provider` expose production registration/refresh. Radius `/v1/config` refresh is a real `RuntimeProvider::radius` path; ordinary registry lookups reflect additions/removals and retain cache on network/offline failures. xAI device OAuth and `xai/grok-4.5` Responses routing are ported.
 
 Canonical upstream: `@earendil-works/pi-ai` **v0.80.3**
 (`github.com/earendil-works/pi`, `packages/ai`, commit `ec6311b`).
@@ -155,7 +156,7 @@ Status legend:
 |---|---|---|---|
 | `compat.ts` | `src/compat.rs` | DONE | runtime `detect_compat` + static defaults (0.80.2). |
 | `env-api-keys.ts` | `src/env.rs` | DONE | |
-| `models.ts` / `models.generated.ts` | `src/registry.rs` / `src/models_generated.rs` | DONE | 999 models / 35 providers. |
+| `models.ts` / `models-store.ts` / `models.generated.ts` | `src/registry.rs` / `src/models_runtime.rs` / `src/models_generated.rs` | DONE | Static and dynamic runtime registry: shared `ModelsRuntime` powers ordinary `get_model`/`list_models`/`list_providers`; provider-scoped model store, coalesced refresh, cache restore/offline retention, cancellation, public provider registration/removal/refresh, and Radius dynamic `/v1/config` provider are ported. |
 | `image-models*.ts` / `images*.ts` | `src/images/*.rs` | DONE | image catalog + registry. |
 | `images-api-registry.ts` | `src/images/mod.rs` | DONE | |
 | `types.ts` | `src/types.rs` | DONE | serde JSON-compatible. |
@@ -381,7 +382,7 @@ _Total **87** upstream test files (0.80.2 snapshot; see 0.80.3 update above → 
 | 41 | `lazy-module-load.test.ts` | n/a | — | JS lazy module loader (api/*.lazy.ts); rs-ai links statically |
 | 42 | `mistral-reasoning-mode.test.ts` | yes | yes | src/mistral_reasoning_mode_test.rs |
 | 43 | `mistral-tool-schema.test.ts` | n/a | — | TypeBox JS Symbol-key stripping has no Rust analogue (serde_json params carry no symbols) |
-| 44 | `models-runtime.test.ts` | partial | yes (auth-resolution + merge) | src/models_runtime_auth_test.rs + auth.rs/auth_providers.rs (incl. merge_auth_into_request; instance Models collection = global-registry architectural diff) |
+| 44 | `models-runtime.test.ts` | yes | yes | `src/models_runtime_auth_test.rs`, `src/models_runtime_refresh_test.rs`, `src/models_runtime.rs`, `src/registry.rs` cover auth-resolution/merge plus production provider-scoped dynamic refresh, ordinary registry lookups, cache restore/offline retention, cancellation, and Radius runtime provider. |
 | 45 | `node-http-proxy.test.ts` | yes | yes | src/http_proxy_test.rs (ported resolve_http_proxy_url_for_target; NO_PROXY exclusion, HTTP(S) resolution, scoped-env precedence, SOCKS/PAC rejection) |
 | 46 | `oauth-auth.test.ts` | partial | yes (4/8) | src/oauth_auth_test.rs (anthropic/codex toAuth+refresh+resolve-via-store; 4 github-copilot proxy-ep baseUrl cases N/A = Copilot provider gap) |
 | 47 | `oauth-device-code.test.ts` | yes | yes | src/oauth_device_code_test.rs (implemented generic poll_oauth_device_code_flow; tokio paused clock) |

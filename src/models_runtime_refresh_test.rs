@@ -14,6 +14,8 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
     use tokio::sync::watch;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, Request, Respond, ResponseTemplate};
 
     fn model(provider: &str, id: &str) -> Model {
         Model {
@@ -32,6 +34,38 @@ mod tests {
             api_key: None,
             compat: Default::default(),
         }
+    }
+
+    struct ConfigSeq {
+        calls: Arc<AtomicUsize>,
+        responses: Vec<(u16, serde_json::Value)>,
+    }
+    impl Respond for ConfigSeq {
+        fn respond(&self, _request: &Request) -> ResponseTemplate {
+            let idx = self.calls.fetch_add(1, Ordering::SeqCst);
+            let (status, body) = self
+                .responses
+                .get(idx)
+                .or_else(|| self.responses.last())
+                .cloned()
+                .unwrap();
+            ResponseTemplate::new(status).set_body_json(body)
+        }
+    }
+
+    fn radius_config(base: &str, ids: &[&str]) -> serde_json::Value {
+        serde_json::json!({
+            "baseUrl": format!("{base}/v1"),
+            "models": ids.iter().map(|id| serde_json::json!({
+                "id": id,
+                "name": id,
+                "reasoning": false,
+                "input": ["text"],
+                "cost": {"input":0,"output":0,"cacheRead":0,"cacheWrite":0},
+                "contextWindow": 10,
+                "maxTokens": 5
+            })).collect::<Vec<_>>()
+        })
     }
 
     fn gateway_model(id: &str) -> RadiusGatewayModel {
@@ -283,6 +317,84 @@ mod tests {
             &*captured.lock().unwrap(),
             Some(Credential::ApiKey(_))
         ));
+    }
+
+    #[tokio::test]
+    async fn ordinary_registry_lookups_reflect_radius_refresh_replacement_and_cache_retention() {
+        let server = MockServer::start().await;
+        let calls = Arc::new(AtomicUsize::new(0));
+        Mock::given(method("GET"))
+            .and(path("/v1/config"))
+            .respond_with(ConfigSeq {
+                calls: calls.clone(),
+                responses: vec![
+                    (200, radius_config(&server.uri(), &["alpha"])),
+                    (200, radius_config(&server.uri(), &["beta"])),
+                    (503, serde_json::json!({"error":"offline"})),
+                ],
+            })
+            .mount(&server)
+            .await;
+
+        crate::registry::register_radius_runtime_provider(&server.uri());
+        let first =
+            crate::registry::refresh_runtime_models(crate::models_runtime::RefreshOptions {
+                allow_network: true,
+                cancel: None,
+            })
+            .await;
+        assert!(first.errors.is_empty());
+        assert!(crate::registry::get_model("radius", "alpha").is_some());
+        assert!(
+            crate::registry::list_models(Some("radius"))
+                .iter()
+                .any(|m| m.id == "alpha")
+        );
+
+        let second =
+            crate::registry::refresh_runtime_models(crate::models_runtime::RefreshOptions {
+                allow_network: true,
+                cancel: None,
+            })
+            .await;
+        assert!(second.errors.is_empty());
+        assert!(
+            crate::registry::get_model("radius", "alpha").is_none(),
+            "removed remote models disappear from ordinary lookups"
+        );
+        assert!(
+            crate::registry::get_model("radius", "beta").is_some(),
+            "new remote models appear in ordinary lookups"
+        );
+
+        let failed =
+            crate::registry::refresh_runtime_models(crate::models_runtime::RefreshOptions {
+                allow_network: true,
+                cancel: None,
+            })
+            .await;
+        assert!(failed.errors.contains_key("radius"));
+        assert!(
+            crate::registry::get_model("radius", "beta").is_some(),
+            "network failure retains cached dynamic catalog"
+        );
+
+        let offline =
+            crate::registry::refresh_runtime_models(crate::models_runtime::RefreshOptions {
+                allow_network: false,
+                cancel: None,
+            })
+            .await;
+        assert!(offline.errors.is_empty());
+        assert!(
+            crate::registry::get_model("radius", "beta").is_some(),
+            "offline refresh restores cached dynamic catalog"
+        );
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            3,
+            "offline refresh does not hit the network"
+        );
     }
 
     #[test]
