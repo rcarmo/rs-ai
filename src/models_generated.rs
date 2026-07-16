@@ -19697,7 +19697,7 @@ pub fn builtin_models() -> Vec<Model> {
         Model {
             id: "grok-4.5".into(),
             name: "Grok 4.5".into(),
-            api: "openai-completions".into(),
+            api: "openai-responses".into(),
             provider: "xai".into(),
             base_url: "https://api.x.ai/v1".into(),
             reasoning: true,

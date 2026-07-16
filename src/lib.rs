@@ -142,6 +142,8 @@ mod mistral_reasoning_mode_test;
 #[cfg(test)]
 mod models_runtime_auth_test;
 #[cfg(test)]
+mod models_runtime_refresh_test;
+#[cfg(test)]
 mod oauth_auth_test;
 #[cfg(test)]
 mod oauth_device_code_test;
