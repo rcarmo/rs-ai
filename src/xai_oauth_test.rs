@@ -234,6 +234,41 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/device"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "device_code":"dev", "user_code":"USER", "verification_uri":"https://x.ai/activate",
+                "verification_uri_complete":"https://x.ai/activate?user_code=USER", "expires_in":60
+            })))
+            .mount(&server)
+            .await;
+        let device = request_xai_device_code_at(&format!("{}/device", server.uri()))
+            .await
+            .unwrap();
+        assert_eq!(
+            device.verification_uri_complete.as_deref(),
+            Some("https://x.ai/activate?user_code=USER")
+        );
+        assert_eq!(
+            device.preferred_verification_uri(),
+            "https://x.ai/activate?user_code=USER"
+        );
+
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/device"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "device_code":"dev", "user_code":"USER", "verification_uri":"https://x.ai/activate",
+                "verification_uri_complete":"javascript:alert(1)", "expires_in":60
+            })))
+            .mount(&server)
+            .await;
+        let err = request_xai_device_code_at(&format!("{}/device", server.uri()))
+            .await
+            .unwrap_err();
+        assert_eq!(err, "Untrusted verification URI in xAI OAuth response");
+
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/device"))
             .respond_with(ResponseTemplate::new(200).set_body_json(json!({"device_code":"dev"})))
             .mount(&server)
             .await;

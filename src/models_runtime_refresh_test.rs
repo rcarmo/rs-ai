@@ -122,6 +122,7 @@ mod tests {
         let offline = runtime
             .refresh(RefreshOptions {
                 allow_network: false,
+                force: false,
                 cancel: None,
             })
             .await;
@@ -136,6 +137,7 @@ mod tests {
         let online = runtime
             .refresh(RefreshOptions {
                 allow_network: true,
+                force: false,
                 cancel: None,
             })
             .await;
@@ -201,6 +203,7 @@ mod tests {
             async move {
                 a.refresh(RefreshOptions {
                     allow_network: true,
+                    force: false,
                     cancel: None,
                 })
                 .await
@@ -208,6 +211,7 @@ mod tests {
             async move {
                 b.refresh(RefreshOptions {
                     allow_network: true,
+                    force: false,
                     cancel: None,
                 })
                 .await
@@ -254,6 +258,7 @@ mod tests {
         let result = runtime
             .refresh(RefreshOptions {
                 allow_network: true,
+                force: false,
                 cancel: Some(rx),
             })
             .await;
@@ -306,6 +311,7 @@ mod tests {
         let result = runtime
             .refresh(RefreshOptions {
                 allow_network: true,
+                force: false,
                 cancel: None,
             })
             .await;
@@ -317,6 +323,43 @@ mod tests {
             &*captured.lock().unwrap(),
             Some(Credential::ApiKey(_))
         ));
+    }
+
+    #[tokio::test]
+    async fn refresh_force_is_propagated_to_provider_context() {
+        let runtime = ModelsRuntime::new();
+        let seen = Arc::new(Mutex::new(Vec::<bool>::new()));
+        let seen_cb = seen.clone();
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "forcey",
+            "Forcey",
+            ProviderAuth::default(),
+            vec![],
+            move |ctx| {
+                let seen_cb = seen_cb.clone();
+                async move {
+                    seen_cb.lock().unwrap().push(ctx.force);
+                    Ok(vec![model("forcey", "m")])
+                }
+            },
+        ));
+        let a = runtime
+            .refresh(RefreshOptions {
+                allow_network: true,
+                force: false,
+                cancel: None,
+            })
+            .await;
+        assert!(a.errors.is_empty());
+        let b = runtime
+            .refresh(RefreshOptions {
+                allow_network: true,
+                force: true,
+                cancel: None,
+            })
+            .await;
+        assert!(b.errors.is_empty());
+        assert_eq!(&*seen.lock().unwrap(), &[false, true]);
     }
 
     #[tokio::test]
@@ -340,6 +383,7 @@ mod tests {
         let first =
             crate::registry::refresh_runtime_models(crate::models_runtime::RefreshOptions {
                 allow_network: true,
+                force: false,
                 cancel: None,
             })
             .await;
@@ -354,6 +398,7 @@ mod tests {
         let second =
             crate::registry::refresh_runtime_models(crate::models_runtime::RefreshOptions {
                 allow_network: true,
+                force: false,
                 cancel: None,
             })
             .await;
@@ -370,6 +415,7 @@ mod tests {
         let failed =
             crate::registry::refresh_runtime_models(crate::models_runtime::RefreshOptions {
                 allow_network: true,
+                force: false,
                 cancel: None,
             })
             .await;
@@ -382,6 +428,7 @@ mod tests {
         let offline =
             crate::registry::refresh_runtime_models(crate::models_runtime::RefreshOptions {
                 allow_network: false,
+                force: false,
                 cancel: None,
             })
             .await;

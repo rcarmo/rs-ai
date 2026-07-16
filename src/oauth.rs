@@ -764,8 +764,17 @@ pub struct XaiDeviceCode {
     pub device_code: String,
     pub user_code: String,
     pub verification_uri: String,
+    pub verification_uri_complete: Option<String>,
     pub interval_seconds: Option<u64>,
     pub expires_in_seconds: u64,
+}
+
+impl XaiDeviceCode {
+    pub fn preferred_verification_uri(&self) -> &str {
+        self.verification_uri_complete
+            .as_deref()
+            .unwrap_or(&self.verification_uri)
+    }
 }
 
 fn xai_required_string(v: &serde_json::Value, field: &str) -> Result<String, String> {
@@ -847,6 +856,13 @@ pub async fn request_xai_device_code_at(device_url: &str) -> Result<XaiDeviceCod
         .get("interval")
         .and_then(|x| x.as_u64())
         .filter(|n| *n > 0);
+    let verification_uri_complete = match body
+        .get("verification_uri_complete")
+        .and_then(|x| x.as_str())
+    {
+        Some(raw) if !raw.is_empty() => Some(validate_xai_verification_uri(raw)?),
+        _ => None,
+    };
     Ok(XaiDeviceCode {
         device_code: xai_required_string(&body, "device_code")?,
         user_code: xai_required_string(&body, "user_code")?,
@@ -854,6 +870,7 @@ pub async fn request_xai_device_code_at(device_url: &str) -> Result<XaiDeviceCod
             &body,
             "verification_uri",
         )?)?,
+        verification_uri_complete,
         interval_seconds,
         expires_in_seconds: xai_positive_i64(&body, "expires_in")? as u64,
     })

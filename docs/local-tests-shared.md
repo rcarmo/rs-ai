@@ -28,11 +28,11 @@ Status: **ADAPTED**. The two deterministic cases verify that completed-output `e
 
 Status: **ADAPTED**. Run `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3` to import upstream `MODELS`/`IMAGE_MODELS` with Bun, recursively flatten provider maps, and compare provider/id pairs against rs-ai. Expected for the agreed source: text `1057/1057`, image `35/35`, missing `0`, extra `0`.
 
-## Current upstream main runtime refresh, Radius dynamic catalog, and xAI OAuth fixture
+## v0.80.9 runtime refresh, Radius dynamic catalog, and xAI OAuth fixture
 
-Source: upstream main `2be9efa19cd64aed40ca63f92c0c0f9a6bac7c9d` (`feat(ai): publish generated model catalogs to R2 (#6720)`) plus `5220aba6` (`feat(ai): add xAI device OAuth and route grok-4.5 through Responses (#6651)`). rs-ai adaptation: `src/models_runtime.rs`, `src/registry.rs`, `src/models_runtime_refresh_test.rs`, `src/oauth.rs`, `src/auth_providers.rs`, `src/xai_oauth_test.rs`, and `src/xai_grok45_responses_test.rs`.
+Source: upstream tag `2d16f92973230a7e095aa984f150ba8702784f50` (`v0.80.9`), including prior `2be9efa19cd64aed40ca63f92c0c0f9a6bac7c9d` (`feat(ai): publish generated model catalogs to R2 (#6720)`) plus `5220aba6` (`feat(ai): add xAI device OAuth and route grok-4.5 through Responses (#6651)`). rs-ai adaptation: `src/models_runtime.rs`, `src/registry.rs`, `src/models_runtime_refresh_test.rs`, `src/oauth.rs`, `src/auth_providers.rs`, `src/xai_oauth_test.rs`, `src/xai_grok45_responses_test.rs`, and regenerated `src/models_generated.rs`.
 
-Status: **ADAPTED**. Tests cover provider-scoped model-store entries, shared runtime-backed ordinary registry lookup/list paths, public runtime provider register/remove/refresh APIs, dynamic refresh replacement/removal, concurrent refresh dedupe, cancellation, cache restore/offline retention, production Radius `/v1/config` provider refresh through `registry::refresh_runtime_models`, xAI device OAuth pending/slow_down/success/terminal/timeout/cancel/refresh behavior, and an actual `xai/grok-4.5` OpenAI Responses request.
+Status: **ADAPTED**. Tests cover provider-scoped model-store entries, shared runtime-backed ordinary registry lookup/list paths, public runtime provider register/remove/refresh APIs, dynamic refresh replacement/removal, concurrent refresh dedupe, cancellation, `force` propagation, cache restore/offline retention, production Radius `/v1/config` provider refresh through `registry::refresh_runtime_models`, xAI device OAuth pending/slow_down/success/terminal/timeout/cancel/refresh behavior, `verification_uri_complete` validation/preference, and an actual `xai/grok-4.5` OpenAI Responses request. Comparator expectation for v0.80.9: text `1075/1075`, image `35/35`, missing `0`, extra `0`.
 
 ## Current upstream main OpenAI Codex session-id clamp fixture
 

@@ -80,6 +80,7 @@ pub struct RefreshModelsContext {
     pub credential: Option<Credential>,
     pub store: ProviderModelsStore,
     pub allow_network: bool,
+    pub force: bool,
     pub cancel: watch::Receiver<bool>,
 }
 
@@ -227,6 +228,7 @@ impl RuntimeProvider {
 #[derive(Default, Clone)]
 pub struct RefreshOptions {
     pub allow_network: bool,
+    pub force: bool,
     pub cancel: Option<watch::Receiver<bool>>,
 }
 
@@ -332,6 +334,7 @@ impl ModelsRuntime {
                         credential,
                         store: store.clone(),
                         allow_network: options.allow_network,
+                        force: options.force,
                         cancel: cancel.clone(),
                     };
                     match provider.refresh_models(ctx).await {
@@ -341,6 +344,7 @@ impl ModelsRuntime {
                                 credential: stored,
                                 store,
                                 allow_network: false,
+                                force: false,
                                 cancel,
                             };
                             let _ = provider.refresh_models(restore_ctx).await;
