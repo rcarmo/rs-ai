@@ -151,6 +151,81 @@ mod tests {
         assert_eq!(cfg.max_delay, Duration::from_millis(1500));
     }
 
+    fn assistant_msg(stop: crate::types::StopReason, err: Option<&str>) -> crate::types::Message {
+        crate::types::Message {
+            role: crate::types::Role::Assistant,
+            content: Vec::new(),
+            timestamp: 0,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(stop),
+            error_message: err.map(str::to_string),
+            tool_call_id: None,
+            tool_name: None,
+            is_error: err.is_some(),
+            details: None,
+            added_tool_names: Vec::new(),
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn retry_assistant_reports_abort_after_scheduled_retry_as_unsuccessful() {
+        use std::sync::{Arc, Mutex};
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let calls_cb = calls.clone();
+        let (tx, rx) = tokio::sync::watch::channel(false);
+        let finished = Arc::new(Mutex::new(Vec::<(bool, u32, Option<String>)>::new()));
+        let finished_cb = finished.clone();
+        let handle = tokio::spawn(async move {
+            retry_assistant_call(
+                move || {
+                    let calls_cb = calls_cb.clone();
+                    async move {
+                        let n = calls_cb.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        if n == 0 {
+                            assistant_msg(
+                                crate::types::StopReason::Error,
+                                Some("503 stream ended before a terminal response event"),
+                            )
+                        } else {
+                            assistant_msg(crate::types::StopReason::Stop, None)
+                        }
+                    }
+                },
+                Some(AssistantRetryPolicy {
+                    enabled: true,
+                    max_retries: 1,
+                    base_delay_ms: 5000,
+                }),
+                Some(rx),
+                Some(AssistantRetryCallbacks {
+                    on_retry_finished: Some(Box::new(move |success, attempt, err| {
+                        finished_cb.lock().unwrap().push((success, attempt, err))
+                    })),
+                }),
+            )
+            .await
+        });
+        tokio::task::yield_now().await;
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+        tx.send(true).unwrap();
+        let msg = handle.await.unwrap();
+        assert_eq!(msg.stop_reason, Some(crate::types::StopReason::Aborted));
+        assert_eq!(
+            &*finished.lock().unwrap(),
+            &[(
+                false,
+                1,
+                Some("503 stream ended before a terminal response event".into())
+            )]
+        );
+    }
+
     #[tokio::test]
     async fn test_do_with_retry_retries_retryable_status() {
         let server = MockServer::start().await;
@@ -356,6 +431,7 @@ const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Gap(&["websocket", "error"]),
     ErrPat::Plain("ended without"),
     ErrPat::Plain("stream ended before message_stop"),
+    ErrPat::Plain("stream ended before a terminal response event"),
     ErrPat::Plain("http2 request did not get a response"),
     ErrPat::Plain("retry delay"),
     ErrPat::Plain("you can retry your request"),
@@ -364,6 +440,120 @@ const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     // gRPC based providers (e.g. NVIDIA NIM).
     ErrPat::Plain("resourceexhausted"),
 ];
+
+#[derive(Debug, Clone)]
+pub struct AssistantRetryPolicy {
+    pub enabled: bool,
+    pub max_retries: u32,
+    pub base_delay_ms: u64,
+}
+
+type RetryFinishedCallback<'a> = Box<dyn FnMut(bool, u32, Option<String>) + Send + 'a>;
+
+pub struct AssistantRetryCallbacks<'a> {
+    pub on_retry_finished: Option<RetryFinishedCallback<'a>>,
+}
+
+fn emit_retry_finished(
+    callbacks: &mut Option<AssistantRetryCallbacks<'_>>,
+    success: bool,
+    attempt: u32,
+    final_error: Option<String>,
+) {
+    if let Some(cb) = callbacks
+        .as_mut()
+        .and_then(|c| c.on_retry_finished.as_mut())
+    {
+        cb(success, attempt, final_error);
+    }
+}
+
+async fn retry_sleep(
+    ms: u64,
+    cancel: Option<&mut tokio::sync::watch::Receiver<bool>>,
+) -> Result<(), ()> {
+    match cancel {
+        Some(rx) => {
+            if *rx.borrow() {
+                return Err(());
+            }
+            tokio::select! {
+                _ = tokio::time::sleep(Duration::from_millis(ms)) => Ok(()),
+                changed = rx.changed() => {
+                    if changed.is_ok() && *rx.borrow() { Err(()) } else { Ok(()) }
+                }
+            }
+        }
+        None => {
+            tokio::time::sleep(Duration::from_millis(ms)).await;
+            Ok(())
+        }
+    }
+}
+
+pub async fn retry_assistant_call<F, Fut>(
+    mut produce: F,
+    policy: Option<AssistantRetryPolicy>,
+    mut cancel: Option<tokio::sync::watch::Receiver<bool>>,
+    mut callbacks: Option<AssistantRetryCallbacks<'_>>,
+) -> crate::types::Message
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = crate::types::Message>,
+{
+    let max_attempts = policy
+        .as_ref()
+        .filter(|p| p.enabled)
+        .map(|p| p.max_retries)
+        .unwrap_or(0);
+    let base_delay_ms = policy.as_ref().map(|p| p.base_delay_ms).unwrap_or(0);
+    let mut attempt = 0u32;
+    let mut last_retry: Option<(u32, String)> = None;
+    loop {
+        let response = produce().await;
+        if matches!(
+            response.stop_reason,
+            Some(crate::types::StopReason::Aborted)
+        ) {
+            if let Some((last_attempt, _)) = last_retry {
+                emit_retry_finished(&mut callbacks, false, last_attempt, None);
+            }
+            return response;
+        }
+        if !matches!(response.stop_reason, Some(crate::types::StopReason::Error)) {
+            if let Some((last_attempt, _)) = last_retry {
+                emit_retry_finished(&mut callbacks, true, last_attempt, None);
+            }
+            return response;
+        }
+        if attempt >= max_attempts || !is_retryable_assistant_error(&response) {
+            if let Some((last_attempt, _)) = last_retry {
+                emit_retry_finished(
+                    &mut callbacks,
+                    false,
+                    last_attempt,
+                    response.error_message.clone(),
+                );
+            }
+            return response;
+        }
+        attempt += 1;
+        let error = response
+            .error_message
+            .clone()
+            .unwrap_or_else(|| "Unknown error".into());
+        last_retry = Some((attempt, error.clone()));
+        let delay = base_delay_ms.saturating_mul(2_u64.saturating_pow(attempt.saturating_sub(1)));
+        let sleep_result = retry_sleep(delay, cancel.as_mut()).await;
+        if sleep_result.is_err() {
+            emit_retry_finished(&mut callbacks, false, attempt, Some(error));
+            let mut aborted = response;
+            aborted.stop_reason = Some(crate::types::StopReason::Aborted);
+            aborted.error_message = None;
+            return aborted;
+        }
+    }
+}
 
 /// Classify whether a failed assistant message looks like a transient provider
 /// or transport error, so callers can decide if the last assistant turn should

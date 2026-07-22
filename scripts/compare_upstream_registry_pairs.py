@@ -2,7 +2,11 @@
 """Mechanically compare rs-ai registry provider/id pairs with an upstream pi-ai worktree.
 
 This intentionally imports/flattens upstream TypeScript exports with Bun instead of
-regex-counting provider files. It checks both text MODELS and image IMAGE_MODELS.
+regex-counting provider files. For v0.81+ generated-provider JSON shards, set
+PI_AI_MODEL_DATA_DIR to the hydrated JSON output directory (e.g.
+/workspace/tmp/pi-v0811-json); the script then reads models.json directly while
+still checking image IMAGE_MODELS from the tag. It checks both text MODELS and
+image IMAGE_MODELS.
 
 Usage:
   python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3
@@ -14,6 +18,7 @@ that the upstream worktree's HEAD is exactly that commit.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -25,6 +30,27 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def run(cmd: list[str], cwd: Path | None = None) -> str:
     return subprocess.check_output(cmd, cwd=cwd, text=True)
+
+
+def flatten_json_models(value) -> list[dict]:
+    out: list[dict] = []
+    if isinstance(value, list):
+        for item in value:
+            out.extend(flatten_json_models(item))
+    elif isinstance(value, dict):
+        if isinstance(value.get("provider"), str) and isinstance(value.get("id"), str):
+            out.append(value)
+        else:
+            for item in value.values():
+                out.extend(flatten_json_models(item))
+    return out
+
+
+def upstream_pairs_from_json(data_dir: Path) -> set[tuple[str, str]]:
+    models_path = data_dir / "models.json"
+    if not models_path.exists():
+        raise SystemExit(f"PI_AI_MODEL_DATA_DIR is set but models.json is missing: {models_path}")
+    return {(m["provider"], m["id"]) for m in flatten_json_models(json.loads(models_path.read_text()))}
 
 
 def upstream_pairs(upstream: Path, module_rel: str, export_name: str) -> set[tuple[str, str]]:
@@ -107,7 +133,8 @@ def main() -> int:
             print(f"upstream HEAD mismatch: got {head}, expected {expected}", file=sys.stderr)
             return 2
 
-    text_up = upstream_pairs(upstream, "packages/ai/src/models.generated.ts", "MODELS")
+    data_dir = os.environ.get("PI_AI_MODEL_DATA_DIR")
+    text_up = upstream_pairs_from_json(Path(data_dir).resolve()) if data_dir else upstream_pairs(upstream, "packages/ai/src/models.generated.ts", "MODELS")
     image_up = upstream_pairs(upstream, "packages/ai/src/image-models.generated.ts", "IMAGE_MODELS")
     text_local = rust_pairs(ROOT / "src/models_generated.rs")
     image_local = rust_pairs(ROOT / "src/images/models_generated.rs")

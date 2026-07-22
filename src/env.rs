@@ -14,6 +14,8 @@ static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyL
             &["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"][..],
         ),
         ("ant-ling", &["ANT_LING_API_KEY"][..]),
+        ("qwen-token-plan", &["QWEN_TOKEN_PLAN_API_KEY"][..]),
+        ("qwen-token-plan-cn", &["QWEN_TOKEN_PLAN_CN_API_KEY"][..]),
         ("openai", &["OPENAI_API_KEY"][..]),
         ("azure-openai-responses", &["AZURE_OPENAI_API_KEY"][..]),
         ("nvidia", &["NVIDIA_API_KEY"][..]),
@@ -23,7 +25,7 @@ static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyL
         ("groq", &["GROQ_API_KEY"][..]),
         ("cerebras", &["CEREBRAS_API_KEY"][..]),
         ("xai", &["XAI_API_KEY"][..]),
-        ("radius", &["PI_GATEWAY_API_KEY"][..]),
+        ("radius", &["RADIUS_API_KEY", "PI_GATEWAY_API_KEY"][..]),
         ("openrouter", &["OPENROUTER_API_KEY"][..]),
         ("vercel-ai-gateway", &["AI_GATEWAY_API_KEY"][..]),
         ("zai", &["ZAI_API_KEY"][..]),
@@ -57,10 +59,15 @@ static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyL
     ])
 });
 
+/// Return configured API-key environment variables for a provider.
+pub fn api_key_env_vars(provider: &str) -> Option<&'static [&'static str]> {
+    ENV_MAP.get(provider).copied()
+}
+
 /// Look up an API key from environment variables for a provider.
 pub fn get_env_api_key(provider: &str) -> Option<String> {
-    if let Some(vars) = ENV_MAP.get(provider) {
-        for var in *vars {
+    if let Some(vars) = api_key_env_vars(provider) {
+        for var in vars {
             if let Ok(val) = std::env::var(var)
                 && !val.is_empty()
             {

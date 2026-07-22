@@ -1,6 +1,7 @@
 //! Utility helpers: sanitize, hashing, Copilot headers.
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Sanitize surrogate pairs from a string (replaces unpaired surrogates with replacement char).
 pub fn sanitize_surrogates(s: &str) -> String {
@@ -17,6 +18,86 @@ pub fn hash_string(s: &str) -> u64 {
         hash = hash.wrapping_mul(0x100000001b3);
     }
     hash
+}
+
+static UUIDV7_LAST_MS: AtomicU64 = AtomicU64::new(0);
+static UUIDV7_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+/// Extract and join text blocks from message content (upstream `contentText`).
+pub fn content_text(content: &[crate::types::ContentBlock], separator: &str) -> String {
+    content
+        .iter()
+        .filter_map(|block| match block {
+            crate::types::ContentBlock::Text { text, .. } => Some(text.as_str()),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join(separator)
+}
+
+/// Generate a time-ordered UUIDv7 (RFC 9562 layout; mirrors upstream utility).
+pub fn uuidv7() -> String {
+    use rand::RngCore;
+    let mut random = [0u8; 16];
+    rand::rngs::OsRng.fill_bytes(&mut random);
+    let now = crate::utils::now_millis().max(0) as u64;
+    let mut last = UUIDV7_LAST_MS.load(Ordering::SeqCst);
+    let sequence = loop {
+        if now > last {
+            let seed = ((random[6] as u64) << 24)
+                | ((random[7] as u64) << 16)
+                | ((random[8] as u64) << 8)
+                | random[9] as u64;
+            if UUIDV7_LAST_MS
+                .compare_exchange(last, now, Ordering::SeqCst, Ordering::SeqCst)
+                .is_ok()
+            {
+                UUIDV7_SEQUENCE.store(seed, Ordering::SeqCst);
+                break seed;
+            }
+            last = UUIDV7_LAST_MS.load(Ordering::SeqCst);
+        } else {
+            let seq = UUIDV7_SEQUENCE
+                .fetch_add(1, Ordering::SeqCst)
+                .wrapping_add(1)
+                & 0xffff_ffff;
+            break seq;
+        }
+    };
+    let ts = UUIDV7_LAST_MS.load(Ordering::SeqCst).max(now);
+    let mut bytes = [0u8; 16];
+    bytes[0] = ((ts >> 40) & 0xff) as u8;
+    bytes[1] = ((ts >> 32) & 0xff) as u8;
+    bytes[2] = ((ts >> 24) & 0xff) as u8;
+    bytes[3] = ((ts >> 16) & 0xff) as u8;
+    bytes[4] = ((ts >> 8) & 0xff) as u8;
+    bytes[5] = (ts & 0xff) as u8;
+    bytes[6] = 0x70 | (((sequence >> 28) & 0x0f) as u8);
+    bytes[7] = ((sequence >> 20) & 0xff) as u8;
+    bytes[8] = 0x80 | (((sequence >> 14) & 0x3f) as u8);
+    bytes[9] = ((sequence >> 6) & 0xff) as u8;
+    bytes[10] = (((sequence & 0x3f) << 2) as u8) | (random[10] & 0x03);
+    bytes[11..16].copy_from_slice(&random[11..16]);
+    let hex = bytes.map(|b| format!("{b:02x}"));
+    format!(
+        "{}{}{}{}-{}{}-{}{}-{}{}-{}{}{}{}{}{}",
+        hex[0],
+        hex[1],
+        hex[2],
+        hex[3],
+        hex[4],
+        hex[5],
+        hex[6],
+        hex[7],
+        hex[8],
+        hex[9],
+        hex[10],
+        hex[11],
+        hex[12],
+        hex[13],
+        hex[14],
+        hex[15]
+    )
 }
 
 /// Generate GitHub Copilot headers.

@@ -123,8 +123,8 @@ mod tests {
     }
 
     #[test]
-    fn kimi_coding_k3_includes_only_max() {
-        assert_eq!(levels(&m("kimi-coding", "k3")), vec!["max"]);
+    fn kimi_coding_k3_includes_low_high_max() {
+        assert_eq!(levels(&m("kimi-coding", "k3")), vec!["low", "high", "max"]);
     }
 
     #[test]

@@ -1189,8 +1189,8 @@ fn converted_tools(tools: &[Tool], include_strict: bool) -> Vec<Value> {
 }
 
 /// Normalize a tool-call ID for OpenAI-compatible APIs (mirrors upstream `normalizeToolCallId`).
-/// Pipe-separated IDs (from the Responses API) are reduced to the sanitized call_id,
-/// and overly-long OpenAI IDs are truncated to 40 chars.
+/// Pipe-separated IDs (from the Responses API) combine sanitized call_id + item_id
+/// for uniqueness, then truncate/hash to OpenAI's 40-char limit.
 /// Build the `chat_template_kwargs` object for the `chat-template` thinking format
 /// (mirrors buildChatTemplateKwargs): resolve each configured value, dropping any
 /// that resolve to undefined; returns None when the result is empty.
@@ -1252,9 +1252,8 @@ fn resolve_chat_template_kwarg_value(
 }
 
 pub(crate) fn normalize_tool_call_id(id: &str, provider: &str) -> String {
-    if let Some((call_id, _)) = id.split_once('|') {
-        return call_id
-            .chars()
+    let sanitize = |s: &str| -> String {
+        s.chars()
             .map(|c| {
                 if c.is_ascii_alphanumeric() || c == '_' || c == '-' {
                     c
@@ -1262,8 +1261,29 @@ pub(crate) fn normalize_tool_call_id(id: &str, provider: &str) -> String {
                     '_'
                 }
             })
-            .take(40)
-            .collect();
+            .collect()
+    };
+    if let Some((call_id, item_id)) = id.split_once('|') {
+        let call_id = sanitize(call_id);
+        let item_id = sanitize(item_id);
+        let combined = if item_id.is_empty() {
+            call_id.clone()
+        } else {
+            format!("{call_id}_{item_id}")
+        };
+        if combined.chars().count() <= 40 {
+            return combined;
+        }
+        let suffix = crate::utils::short_hash(id)
+            .chars()
+            .take(8)
+            .collect::<String>();
+        let prefix_len = 40usize.saturating_sub(1 + suffix.chars().count());
+        return format!(
+            "{}_{}",
+            call_id.chars().take(prefix_len).collect::<String>(),
+            suffix
+        );
     }
     if provider == "openai" && id.len() > 40 {
         return id.chars().take(40).collect();

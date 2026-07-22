@@ -1770,7 +1770,7 @@ mod tests {
         let id = payload["messages"][0]["tool_calls"][0]["id"]
             .as_str()
             .unwrap();
-        assert_eq!(id, "call_abc");
+        assert_eq!(id, "call_abc_1hu5j051");
         assert!(!id.contains('|'));
     }
 

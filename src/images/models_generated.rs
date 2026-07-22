@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (35 image models, 1 provider)
-//! Generated: 2026-07-14T18:08:05.730999+00:00
+//! Source: image-models.generated.js (39 image models, 1 provider)
+//! Generated: 2026-07-21T14:43:09.814572+00:00
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
@@ -186,6 +186,54 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             },
         },
         ImagesModel {
+            id: "krea/krea-2-large".into(),
+            name: "Krea: Krea 2 Large".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "krea/krea-2-medium".into(),
+            name: "Krea: Krea 2 Medium".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "krea/krea-2-medium-turbo".into(),
+            name: "Krea: Krea 2 Medium Turbo".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
             id: "microsoft/mai-image-2.5".into(),
             name: "Microsoft: MAI-Image-2.5".into(),
             api: "openrouter-images".into(),
@@ -300,6 +348,22 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         ImagesModel {
             id: "openrouter/auto".into(),
             name: "Auto Router".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["text".into(), "image".into()],
+            cost: ModelCost {
+                input: -1000000_f64,
+                output: -1000000_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "openrouter/auto-beta".into(),
+            name: "Auto Router (Beta)".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),

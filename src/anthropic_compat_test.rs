@@ -167,11 +167,9 @@ mod tests {
             "anthropic/claude-fable-5",
             "anthropic/claude-opus-4-8",
             "cloudflare-ai-gateway/claude-fable-5",
-            "kimi-coding/k2p7",
             "kimi-coding/k3",
             "kimi-coding/kimi-for-coding",
             "kimi-coding/kimi-for-coding-highspeed",
-            "kimi-coding/kimi-k2-thinking",
             "opencode/claude-opus-4-8",
             "vercel-ai-gateway/anthropic/claude-opus-4.8",
         ] {

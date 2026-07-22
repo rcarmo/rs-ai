@@ -30,6 +30,7 @@ pub fn is_context_overflow(msg: &Message, model: &Model) -> bool {
             "maximum prompt length",                 // xAI / Grok
             "reduce the length of the messages",     // Groq
             "maximum allowed input length",          // OpenRouter / Poolside
+            "range of input length should be",       // DashScope / Qwen
             "context length",                        // Together AI / generic
             "exceeds the limit of",                  // GitHub Copilot
             "exceeds the available context size",    // llama.cpp

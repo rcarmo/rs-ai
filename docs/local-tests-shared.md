@@ -28,11 +28,11 @@ Status: **ADAPTED**. The two deterministic cases verify that completed-output `e
 
 Status: **ADAPTED**. Run `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3` to import upstream `MODELS`/`IMAGE_MODELS` with Bun, recursively flatten provider maps, and compare provider/id pairs against rs-ai. Expected for the agreed source: text `1057/1057`, image `35/35`, missing `0`, extra `0`.
 
-## v0.80.10 release catalog/metadata disposition fixture
+## v0.81.1 release catalog/metadata/runtime disposition fixture
 
-Source: upstream tag `8dc78834` (`v0.80.10`), exact delta `2d16f92973230a7e095aa984f150ba8702784f50..8dc78834`. rs-ai adaptation: regenerated `src/models_generated.rs` plus retained Kimi/xAI/runtime tests.
+Source: upstream tag `20be4b18d4c57487f8993d2762bace129f0cf7c6` (`v0.81.1`), exact release-only delta `8dc78834..20be4b18d4c57487f8993d2762bace129f0cf7c6`. rs-ai adaptation: regenerated `src/models_generated.rs` and `src/images/models_generated.rs`, plus `src/v0811_release_test.rs`, `src/retry.rs`, `src/context.rs`, `src/env.rs`, and `src/utils.rs`.
 
-Status: **ADAPTED**. The v0.80.10 release changed 20 `packages/ai` paths. Catalog/generator, Kimi adaptive/max/empty-signature metadata, K3 pricing, xAI removals, OpenCode/OpenRouter metadata, and related deterministic test expectations are represented by the regenerated registry and existing Rust tests. README/changelog/package and live credential test matrix edits are N/A for Rust runtime. Expected comparator: text `1072/1072`, image `35/35`, missing `0`, extra `0`.
+Status: **ADAPTED**. The v0.80.10→v0.81.1 release span changes 88 `packages/ai` paths. Catalog/generator/model-data validation, image catalog additions, Qwen Token Plan providers/env, shared text/UUIDv7 utilities, retry abort-finished semantics, overflow phrase matching, OpenCode Go Responses support, Kimi/K3/xAI/OpenRouter/OpenCode/Gemini metadata, and related deterministic tests are represented by regenerated registries and Rust tests. README/changelog/package/TS build metadata and live credential matrix edits are N/A for Rust runtime. Expected comparator: `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0811-json scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0811 20be4b18d4c57487f8993d2762bace129f0cf7c6` -> text `1103/1103`, image `39/39`, missing `0`, extra `0`.
 
 ## v0.80.9 runtime refresh, Radius dynamic catalog, and xAI OAuth fixture
 

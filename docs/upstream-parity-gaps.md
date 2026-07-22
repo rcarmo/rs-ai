@@ -1,23 +1,29 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.80.10
+## Current parity audit: `@earendil-works/pi-ai` v0.81.1
 
-Authoritative package/tag: npm `@earendil-works/pi-ai@0.80.10`, package/tag SHA `8dc78834` (`github.com/earendil-works/pi` tag `v0.80.10`). Pinned scope for this audit is exactly `2d16f92973230a7e095aa984f150ba8702784f50..8dc78834`; do not chase newer main.
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.81.1`, package/tag SHA `20be4b18d4c57487f8993d2762bace129f0cf7c6` (`github.com/earendil-works/pi` tag `v0.81.1`). Pinned scope for this release-only audit is exactly `8dc78834..20be4b18d4c57487f8993d2762bace129f0cf7c6`; do not chase newer main.
 
-Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`; v0.80.7/v0.80.8/current-main/v0.80.9 deltas through `2d16f92` remain ported. v0.80.10 changed **20** `packages/ai` paths; disposition matrix:
+Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`; prior deltas through v0.80.10 remain ported. v0.80.10→v0.81.1 changes **88** unique `packages/ai` paths; disposition matrix:
 
 | Upstream path(s) | Disposition | rs-ai path / evidence |
 |---|---|---|
-| `scripts/generate-models.ts`, generated text catalog metadata | PORTED | `src/models_generated.rs`; exact comparator `text: upstream=1072 local=1072 missing=0 extra=0`, `image: upstream=35 local=35 missing=0 extra=0`. |
-| `src/providers/kimi-coding.models.ts` | PORTED | regenerated metadata for Kimi adaptive/max/empty-signature behavior; retained Kimi deferred-tool tests from `beacab7`. |
-| `src/providers/moonshotai.models.ts`, `src/providers/moonshotai-cn.models.ts` | PORTED | regenerated K3 pricing/catalog metadata in `src/models_generated.rs`. |
-| `src/providers/xai.models.ts`, `test/xai-responses.test.ts` | PORTED | regenerated xAI removals/routes; existing `src/xai_grok45_responses_test.rs` verifies actual `xai/grok-4.5` OpenAI Responses request. |
-| `src/providers/opencode-go.models.ts`, `src/providers/openrouter.models.ts` | PORTED | regenerated OpenCode/OpenRouter catalog metadata. |
-| `test/anthropic-adaptive-thinking-models.test.ts`, `test/anthropic-force-adaptive-thinking.test.ts`, `test/anthropic-empty-thinking-signature-compat.test.ts`, `test/supports-xhigh.test.ts` | PORTED | covered by generated metadata plus existing adaptive-thinking/supports-xhigh/empty-signature Rust tests. |
-| `test/context-overflow.test.ts`, `test/cross-provider-handoff.test.ts`, `test/providers.test.ts`, `test/stream.test.ts`, `test/total-tokens.test.ts` | N/A / live or metadata-gated | upstream test expectation changes follow catalog/provider metadata; deterministic registry/request coverage is in Rust, live credential matrix remains N/A. |
-| `CHANGELOG.md`, `README.md`, `package.json` | N/A docs/package metadata | release docs/package metadata only; reflected here in the v0.80.10 section. |
+| Upstream path group | Count | Disposition | rs-ai path / evidence |
+|---|---:|---|---|
+| Release docs/package/build metadata: `CHANGELOG.md`, `README.md`, `package.json`, `tsconfig.build.json` | 4 | N/A | package/docs metadata only; release disposition recorded here. |
+| Model generator/data validation: `scripts/generate-models.ts`, `scripts/model-data.ts`, `scripts/check-model-data.ts`, `src/providers/data-json.d.ts`, `test/model-data-validation.test.ts` | 5 | PORTED | hydrated v0.81.1 provider data for comparator; regenerated `src/models_generated.rs`; added generated model-data structural validation in `src/v0811_release_test.rs`. |
+| Image generator/catalog/data: `scripts/generate-image-models.ts`, `src/image-models.generated.ts`, `test/image-model-data.test.ts` | 3 | PORTED | regenerated `src/images/models_generated.rs`; image comparator `39/39`; v0.81.1 image additions asserted in `src/v0811_release_test.rs`. |
+| API/runtime source: `src/api/openai-codex-responses.ts`, `src/api/openai-completions.ts`, `src/api/pi-messages.ts`, `src/types.ts`, `src/models-store.ts`, `src/index.ts`, `src/providers/all.ts`, `src/env-api-keys.ts`, `src/providers/radius-config.ts`, `src/providers/amazon-bedrock.ts`, `src/providers/opencode-go.ts`, `src/utils/overflow.ts`, `src/utils/retry.ts`, `src/utils/text.ts`, `src/utils/uuid.ts`, `src/auth/helpers.ts` | 16 | PORTED / N/A where TS glue | OpenCode Go Responses verified by actual request test; Qwen/RADIUS env vars updated; retry/overflow/text/uuid utilities ported/tested; TS barrel/auth-helper glue N/A where no Rust runtime analogue. |
+| Provider text catalogs: `src/providers/*.models.ts` excluding the two Qwen Token Plan shards counted below (35 changed provider shards incl. Gemini v0.81.1 additions, OpenCode/OpenRouter/Kimi/K3/xAI changes) | 35 | PORTED | regenerated `src/models_generated.rs`; comparator `text: upstream=1103 local=1103 missing=0 extra=0`; Qwen Token Plan providers/env tested separately below. |
+| New Qwen Token Plan provider implementations: `src/providers/qwen-token-plan.ts`, `src/providers/qwen-token-plan-cn.ts`, `src/providers/qwen-token-plan.models.ts`, `src/providers/qwen-token-plan-cn.models.ts`, `test/qwen-token-plan-models.test.ts` | 5 | PORTED | generated providers present; env vars `QWEN_TOKEN_PLAN_API_KEY` / `QWEN_TOKEN_PLAN_CN_API_KEY` and catalog presence tested. |
+| Deterministic utility/provider tests: `test/retry.test.ts`, `test/text.test.ts`, `test/uuid.test.ts`, `test/providers.test.ts`, `test/supports-xhigh.test.ts`, `test/anthropic-adaptive-thinking-models.test.ts`, `test/anthropic-empty-thinking-signature-compat.test.ts`, `test/anthropic-force-adaptive-thinking.test.ts`, `test/openai-completions-tool-choice.test.ts`, `test/xai-responses.test.ts` | 10 | PORTED | retry abort finish semantics, text/uuid, catalog/provider metadata, OpenCode Go Responses and xAI Responses covered in Rust tests. |
+| Live/credential/e2e expectation updates: `test/abort.test.ts`, `test/context-overflow.test.ts`, `test/cross-provider-handoff.test.ts`, `test/empty.test.ts`, `test/image-tool-result.test.ts`, `test/stream.test.ts`, `test/tokens.test.ts`, `test/tool-call-without-result.test.ts`, `test/total-tokens.test.ts`, `test/unicode-surrogate.test.ts` | 10 | N/A / simulated where deterministic | live credential matrices remain N/A; deterministic overflow/retry/unicode/request payload behavior covered by existing simulated fixtures and v0.81.1 tests. |
 
-- **Model and image registries — PORTED.** Regenerated text catalog from upstream v0.80.10: **1072 text provider/id pairs across 35 providers**; image catalog remains **35/35**. Repro comparator evidence: `scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 8dc78834` => `text: upstream=1072 local=1072 missing=0 extra=0`; `image: upstream=35 local=35 missing=0 extra=0`.
+- **Model and image registries — PORTED.** Regenerated text catalog from upstream v0.81.1 hydrated JSON shards: **1103 text provider/id pairs across 37 providers**; image catalog is **39/39**. Repro comparator evidence: `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0811-json scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0811 20be4b18d4c57487f8993d2762bace129f0cf7c6` => `text: upstream=1103 local=1103 missing=0 extra=0`; `image: upstream=39 local=39 missing=0 extra=0`.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.80.10
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.80.10`, package/tag SHA `8dc78834` (`github.com/earendil-works/pi` tag `v0.80.10`). v0.80.10 changed **20** `packages/ai` paths and was fully ported before v0.81.1 superseded it.
 
 ## Historical parity audit: `@earendil-works/pi-ai` v0.80.9
 
