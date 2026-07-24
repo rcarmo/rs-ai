@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: models.generated.js (1103 models, 37 providers)
-//! Generated: 2026-07-22T17:42:29.517375Z
+//! Source: models.generated.js (1116 models, 37 providers)
+//! Generated: 2026-07-24T06:24:40.215749Z
 
 #![allow(clippy::approx_constant)]
 
@@ -109,7 +109,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "anthropic.claude-opus-4-1-20250805-v1:0".into(),
@@ -141,7 +144,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "anthropic.claude-opus-4-6-v1".into(),
@@ -159,7 +165,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "anthropic.claude-opus-4-7".into(),
@@ -213,7 +222,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "anthropic.claude-sonnet-4-6".into(),
@@ -231,7 +243,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "anthropic.claude-sonnet-5".into(),
@@ -250,7 +265,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "au.anthropic.claude-haiku-4-5-20251001-v1:0".into(),
@@ -266,7 +284,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "au.anthropic.claude-opus-4-6-v1".into(),
@@ -284,7 +305,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "au.anthropic.claude-opus-4-8".into(),
@@ -319,7 +343,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "au.anthropic.claude-sonnet-4-6".into(),
@@ -337,7 +364,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "au.anthropic.claude-sonnet-5".into(),
@@ -356,7 +386,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "deepseek.r1-v1:0".into(),
@@ -388,7 +421,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 81920,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "deepseek.v3.2".into(),
@@ -404,7 +440,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 81920,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "eu.anthropic.claude-fable-5".into(),
@@ -440,7 +479,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "eu.anthropic.claude-opus-4-5-20251101-v1:0".into(),
@@ -456,7 +498,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "eu.anthropic.claude-opus-4-6-v1".into(),
@@ -474,7 +519,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "eu.anthropic.claude-opus-4-7".into(),
@@ -528,7 +576,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "eu.anthropic.claude-sonnet-4-6".into(),
@@ -546,7 +597,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "eu.anthropic.claude-sonnet-5".into(),
@@ -565,7 +619,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "global.anthropic.claude-fable-5".into(),
@@ -601,7 +658,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "global.anthropic.claude-opus-4-5-20251101-v1:0".into(),
@@ -617,7 +677,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "global.anthropic.claude-opus-4-6-v1".into(),
@@ -635,7 +698,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "global.anthropic.claude-opus-4-7".into(),
@@ -689,7 +755,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "global.anthropic.claude-sonnet-4-6".into(),
@@ -707,7 +776,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "global.anthropic.claude-sonnet-5".into(),
@@ -726,7 +798,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "google.gemma-3-27b-it".into(),
@@ -742,7 +817,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 8192,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "google.gemma-3-4b-it".into(),
@@ -774,7 +852,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "jp.anthropic.claude-opus-4-7".into(),
@@ -828,7 +909,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "jp.anthropic.claude-sonnet-4-6".into(),
@@ -846,7 +930,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "jp.anthropic.claude-sonnet-5".into(),
@@ -865,7 +952,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "meta.llama3-1-70b-instruct-v1:0".into(),
@@ -1009,7 +1099,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 8192,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "mistral.magistral-small-2509".into(),
@@ -1025,7 +1118,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 40000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "mistral.ministral-3-14b-instruct".into(),
@@ -1041,7 +1137,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 4096,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "mistral.ministral-3-3b-instruct".into(),
@@ -1057,7 +1156,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 8192,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "mistral.ministral-3-8b-instruct".into(),
@@ -1073,7 +1175,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 4096,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "mistral.mistral-large-3-675b-instruct".into(),
@@ -1089,7 +1194,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 8192,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "mistral.pixtral-large-2502-v1:0".into(),
@@ -1121,7 +1229,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 4096,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "mistral.voxtral-small-24b-2507".into(),
@@ -1137,7 +1248,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 8192,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "moonshot.kimi-k2-thinking".into(),
@@ -1153,7 +1267,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "moonshotai.kimi-k2.5".into(),
@@ -1169,7 +1286,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "nvidia.nemotron-nano-12b-v2".into(),
@@ -1185,7 +1305,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 4096,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "nvidia.nemotron-nano-3-30b".into(),
@@ -1201,7 +1324,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 4096,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "nvidia.nemotron-nano-9b-v2".into(),
@@ -1217,7 +1343,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 4096,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "nvidia.nemotron-super-3-120b".into(),
@@ -1233,7 +1362,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 131072,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-5.4".into(),
@@ -1251,7 +1383,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-5.5".into(),
@@ -1269,7 +1404,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-5.6-luna".into(),
@@ -1287,7 +1425,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-5.6-sol".into(),
@@ -1305,7 +1446,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-5.6-terra".into(),
@@ -1323,7 +1467,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-oss-120b".into(),
@@ -1339,7 +1486,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-oss-120b-1:0".into(),
@@ -1355,7 +1505,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-oss-20b".into(),
@@ -1371,7 +1524,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-oss-20b-1:0".into(),
@@ -1387,7 +1543,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-oss-safeguard-120b".into(),
@@ -1403,7 +1562,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "openai.gpt-oss-safeguard-20b".into(),
@@ -1419,7 +1581,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "qwen.qwen3-235b-a22b-2507-v1:0".into(),
@@ -1435,7 +1600,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 131072,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "qwen.qwen3-32b-v1:0".into(),
@@ -1451,7 +1619,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "qwen.qwen3-coder-30b-a3b-v1:0".into(),
@@ -1467,7 +1638,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 131072,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "qwen.qwen3-coder-480b-a35b-v1:0".into(),
@@ -1483,7 +1657,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 65536,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "qwen.qwen3-coder-next".into(),
@@ -1499,7 +1676,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 65536,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "qwen.qwen3-next-80b-a3b".into(),
@@ -1515,7 +1695,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 262000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "qwen.qwen3-vl-235b-a22b".into(),
@@ -1531,7 +1714,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 262000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "us.anthropic.claude-fable-5".into(),
@@ -1567,7 +1753,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "us.anthropic.claude-opus-4-1-20250805-v1:0".into(),
@@ -1599,7 +1788,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "us.anthropic.claude-opus-4-6-v1".into(),
@@ -1617,7 +1809,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "us.anthropic.claude-opus-4-7".into(),
@@ -1671,7 +1866,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "us.anthropic.claude-sonnet-4-6".into(),
@@ -1689,7 +1887,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "us.anthropic.claude-sonnet-5".into(),
@@ -1708,7 +1909,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "us.deepseek.r1-v1:0".into(),
@@ -1804,7 +2008,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 131072,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "zai.glm-4.7".into(),
@@ -1820,7 +2027,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 131072,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "zai.glm-4.7-flash".into(),
@@ -1836,7 +2046,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 131072,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "zai.glm-5".into(),
@@ -1852,7 +2065,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 101376,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "Ling-2.6-1T".into(),
@@ -3012,7 +3228,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cerebras".into(),
             base_url: "https://api.cerebras.ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.99_f64, output: 1.49_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -3032,7 +3256,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cerebras".into(),
             base_url: "https://api.cerebras.ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.35_f64, output: 0.75_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -3052,7 +3284,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cerebras".into(),
             base_url: "https://api.cerebras.ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), None),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 2.25_f64, output: 2.75_f64, cache_read: 2.25_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -3504,7 +3744,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/openai".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.13_f64, cache_write: 0_f64, tiers: vec![] },
@@ -3522,7 +3768,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/openai".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
@@ -3541,7 +3793,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -3560,7 +3817,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -3579,7 +3841,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -3598,7 +3865,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2.5_f64, output: 15_f64, cache_read: 0.25_f64, cache_write: 0_f64, tiers: vec![] },
@@ -3617,7 +3889,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 5_f64, output: 30_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
@@ -3636,6 +3913,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -3656,6 +3937,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -3676,6 +3961,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -3694,7 +3983,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-ai-gateway".into(),
             base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/openai".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 15_f64, output: 60_f64, cache_read: 7.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
@@ -3710,7 +4007,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-ai-gateway".into(),
             base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/openai".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2_f64, output: 8_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
@@ -3726,7 +4031,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-ai-gateway".into(),
             base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/openai".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 1.1_f64, output: 4.4_f64, cache_read: 0.55_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
@@ -3742,7 +4055,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-ai-gateway".into(),
             base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/openai".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 20_f64, output: 80_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
@@ -3758,7 +4079,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-ai-gateway".into(),
             base_url: "https://gateway.ai.cloudflare.com/v1/{CLOUDFLARE_ACCOUNT_ID}/{CLOUDFLARE_GATEWAY_ID}/openai".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.1_f64, output: 4.4_f64, cache_read: 0.28_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
@@ -3899,7 +4228,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-workers-ai".into(),
             base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.1_f64, output: 0.3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 256000,
@@ -4009,7 +4346,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-workers-ai".into(),
             base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.95_f64, output: 4_f64, cache_read: 0.16_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
@@ -4031,7 +4376,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-workers-ai".into(),
             base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.95_f64, output: 4_f64, cache_read: 0.19_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
@@ -4053,7 +4406,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-workers-ai".into(),
             base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.5_f64, output: 1.5_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 256000,
@@ -4075,7 +4436,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-workers-ai".into(),
             base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.35_f64, output: 0.75_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 128000,
@@ -4141,7 +4510,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-workers-ai".into(),
             base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.0605_f64, output: 0.4_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -4163,7 +4540,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "cloudflare-workers-ai".into(),
             base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 1.4_f64, output: 4.4_f64, cache_read: 0.26_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
@@ -4312,6 +4697,8 @@ pub fn builtin_models() -> Vec<Model> {
                 ("minimal".into(), None),
                 ("low".into(), Some("high".into())),
                 ("medium".into(), Some("high".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
                 ("max".into(), Some("max".into()))
             ])),
             input: vec!["text".into()],
@@ -4444,7 +4831,7 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.fireworks.ai/inference".into(),
             reasoning: true,
             thinking_level_map: None,
-            input: vec!["text".into()],
+            input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.06_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 512000,
             max_tokens: 512000,
@@ -4514,6 +4901,8 @@ pub fn builtin_models() -> Vec<Model> {
                 ("minimal".into(), None),
                 ("low".into(), Some("high".into())),
                 ("medium".into(), Some("high".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
                 ("max".into(), Some("max".into()))
             ])),
             input: vec!["text".into()],
@@ -4919,7 +5308,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("minimal".into(), Some("low".into()))
+                ("minimal".into(), Some("low".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.25_f64, output: 2_f64, cache_read: 0.025_f64, cache_write: 0_f64, tiers: vec![] },
@@ -4979,7 +5373,11 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
                 ("minimal".into(), Some("low".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -4999,7 +5397,11 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
                 ("minimal".into(), Some("low".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2.5_f64, output: 15_f64, cache_read: 0.25_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 5_f64, output: 22.5_f64, cache_read: 0.5_f64, cache_write: 0_f64 }] },
@@ -5019,7 +5421,11 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
                 ("minimal".into(), Some("low".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.75_f64, output: 4.5_f64, cache_read: 0.075_f64, cache_write: 0_f64, tiers: vec![] },
@@ -5059,7 +5465,11 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
                 ("minimal".into(), Some("low".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 5_f64, output: 30_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 10_f64, output: 45_f64, cache_read: 1_f64, cache_write: 0_f64 }] },
@@ -5079,6 +5489,9 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
                 ("minimal".into(), Some("low".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -5100,6 +5513,9 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
                 ("minimal".into(), Some("low".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -5121,6 +5537,9 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
                 ("minimal".into(), Some("low".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -5160,12 +5579,52 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "github-copilot".into(),
             base_url: "https://api.individual.githubcopilot.com".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.75_f64, output: 4.5_f64, cache_read: 0.075_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 256000,
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "deep-research-max-preview-04-2026".into(),
+            name: "Deep Research Max Preview".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 65536,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "deep-research-preview-04-2026".into(),
+            name: "Gemini Deep Research Preview".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 65536,
+            headers: None,
             api_key: None,
             compat: ModelCompat::default(),
         },
@@ -5197,6 +5656,22 @@ pub fn builtin_models() -> Vec<Model> {
             cost: ModelCost { input: 0.075_f64, output: 0.3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 8192,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "gemini-2.5-computer-use-preview-10-2025".into(),
+            name: "Gemini 2.5 Computer Use Preview".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 128000,
+            max_tokens: 64000,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
@@ -5308,6 +5783,24 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
+            id: "gemini-3.1-flash-lite-image".into(),
+            name: "Nano Banana 2 Lite".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 0.25_f64, output: 30_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 65536,
+            max_tokens: 4096,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
             id: "gemini-3.1-flash-lite-preview".into(),
             name: "Gemini 3.1 Flash Lite Preview".into(),
             api: "google-generative-ai".into(),
@@ -5320,6 +5813,24 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.25_f64, output: 1.5_f64, cache_read: 0.025_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
+            max_tokens: 65536,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "gemini-3.1-flash-live-preview".into(),
+            name: "Gemini 3.1 Flash Live Preview".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 0.75_f64, output: 4.5_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 131072,
             max_tokens: 65536,
             headers: None,
             api_key: None,
@@ -5454,6 +5965,22 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.25_f64, output: 1.5_f64, cache_read: 0.025_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
+            max_tokens: 65536,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "gemini-robotics-er-1.6-preview".into(),
+            name: "Gemini Robotics-ER 1.6 Preview".into(),
+            api: "google-generative-ai".into(),
+            provider: "google".into(),
+            base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 1_f64, output: 5_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 131072,
             max_tokens: 65536,
             headers: None,
             api_key: None,
@@ -5650,6 +6177,42 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
+            id: "gemini-3.5-flash-lite".into(),
+            name: "Gemini 3.5 Flash Lite".into(),
+            api: "google-vertex".into(),
+            provider: "google-vertex".into(),
+            base_url: "https://{location}-aiplatform.googleapis.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 0.3_f64, output: 2.5_f64, cache_read: 0.03_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 65536,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "gemini-3.6-flash".into(),
+            name: "Gemini 3.6 Flash".into(),
+            api: "google-vertex".into(),
+            provider: "google-vertex".into(),
+            base_url: "https://{location}-aiplatform.googleapis.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 1.5_f64, output: 7.5_f64, cache_read: 0.15_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 65536,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
             id: "gemini-flash-latest".into(),
             name: "Gemini Flash Latest".into(),
             api: "google-vertex".into(),
@@ -5740,7 +6303,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "groq".into(),
             base_url: "https://api.groq.com/openai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.15_f64, output: 0.6_f64, cache_read: 0.075_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -5756,7 +6327,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "groq".into(),
             base_url: "https://api.groq.com/openai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.075_f64, output: 0.3_f64, cache_read: 0.0375_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -5772,7 +6351,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "groq".into(),
             base_url: "https://api.groq.com/openai/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.075_f64, output: 0.3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -5789,10 +6376,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.groq.com/openai/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
                 ("minimal".into(), None),
                 ("low".into(), None),
                 ("medium".into(), None),
-                ("high".into(), Some("default".into()))
+                ("high".into(), Some("default".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.29_f64, output: 0.59_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
@@ -6113,7 +6703,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "huggingface".into(),
             base_url: "https://router.huggingface.co/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.6_f64, output: 3.6_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
@@ -6202,13 +6800,48 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
+            id: "XiaomiMiMo/MiMo-V2.5".into(),
+            name: "MiMo-V2.5".into(),
+            api: "openai-completions".into(),
+            provider: "huggingface".into(),
+            base_url: "https://router.huggingface.co/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
+            ])),
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0.4_f64, output: 2_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 131072,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
             id: "XiaomiMiMo/MiMo-V2.5-Pro".into(),
             name: "MiMo-V2.5-Pro".into(),
             api: "openai-completions".into(),
             provider: "huggingface".into(),
             base_url: "https://router.huggingface.co/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 1_f64, output: 3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
@@ -6303,7 +6936,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "huggingface".into(),
             base_url: "https://router.huggingface.co/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.435_f64, output: 0.87_f64, cache_read: 0.003625_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
@@ -6493,7 +7134,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "huggingface".into(),
             base_url: "https://router.huggingface.co/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.25_f64, output: 0.69_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -6512,7 +7161,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "huggingface".into(),
             base_url: "https://router.huggingface.co/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
@@ -6550,7 +7207,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "huggingface".into(),
             base_url: "https://router.huggingface.co/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.2_f64, output: 1.15_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
@@ -8027,30 +8692,6 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
-            id: "mistralai/mistral-large-3-675b-instruct-2512".into(),
-            name: "Mistral Large 3 675B Instruct 2512".into(),
-            api: "openai-completions".into(),
-            provider: "nvidia".into(),
-            base_url: "https://integrate.api.nvidia.com/v1".into(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 262144,
-            headers: Some(HashMap::from([("NVCF-POLL-SECONDS".into(), "3600".into())])),
-            api_key: None,
-            compat: ModelCompat {
-                max_tokens_field: Some("max_tokens".into()),
-                supports_developer_role: Some(false),
-                supports_long_cache_retention: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(false),
-                ..Default::default()
-            },
-        },
-        Model {
             id: "mistralai/mistral-small-4-119b-2603".into(),
             name: "mistral-small-4-119b-2603".into(),
             api: "openai-completions".into(),
@@ -8352,7 +8993,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 8192,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4-turbo".into(),
@@ -8368,7 +9012,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 4096,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4.1".into(),
@@ -8384,7 +9031,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32768,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4.1-mini".into(),
@@ -8400,7 +9050,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32768,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4.1-nano".into(),
@@ -8416,7 +9069,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32768,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4o".into(),
@@ -8432,7 +9088,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4o-2024-05-13".into(),
@@ -8448,7 +9107,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 4096,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4o-2024-08-06".into(),
@@ -8464,7 +9126,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4o-2024-11-20".into(),
@@ -8480,7 +9145,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-4o-mini".into(),
@@ -8496,7 +9164,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5".into(),
@@ -8506,7 +9177,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), Some("minimal".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8514,7 +9191,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-chat-latest".into(),
@@ -8532,7 +9212,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-codex".into(),
@@ -8542,7 +9225,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8550,7 +9239,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-mini".into(),
@@ -8560,7 +9252,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), Some("minimal".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.25_f64, output: 2_f64, cache_read: 0.025_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8568,7 +9266,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-nano".into(),
@@ -8578,7 +9279,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), Some("minimal".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.05_f64, output: 0.4_f64, cache_read: 0.005_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8586,7 +9293,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-pro".into(),
@@ -8596,7 +9306,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 15_f64, output: 120_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8604,7 +9320,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1".into(),
@@ -8614,7 +9333,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), Some("none".into()))
+                ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8622,7 +9347,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1-chat-latest".into(),
@@ -8632,7 +9360,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), None),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8640,7 +9374,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1-codex".into(),
@@ -8650,7 +9387,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8658,7 +9401,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1-codex-max".into(),
@@ -8668,7 +9414,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8676,7 +9428,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1-codex-mini".into(),
@@ -8686,7 +9441,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.25_f64, output: 2_f64, cache_read: 0.025_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8694,7 +9455,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2".into(),
@@ -8705,7 +9469,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8713,7 +9482,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2-chat-latest".into(),
@@ -8724,7 +9496,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), None),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8732,7 +9509,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2-codex".into(),
@@ -8743,7 +9523,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8751,7 +9536,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2-pro".into(),
@@ -8762,7 +9550,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 21_f64, output: 168_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8770,7 +9563,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-chat-latest".into(),
@@ -8789,7 +9585,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-codex".into(),
@@ -8800,7 +9599,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8808,7 +9612,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-codex-spark".into(),
@@ -8819,7 +9626,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8827,7 +9639,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4".into(),
@@ -8838,7 +9653,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2.5_f64, output: 15_f64, cache_read: 0.25_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 5_f64, output: 22.5_f64, cache_read: 0.5_f64, cache_write: 0_f64 }] },
@@ -8846,7 +9666,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-mini".into(),
@@ -8857,7 +9680,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.75_f64, output: 4.5_f64, cache_read: 0.075_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8865,7 +9693,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-nano".into(),
@@ -8876,7 +9707,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.2_f64, output: 1.25_f64, cache_read: 0.02_f64, cache_write: 0_f64, tiers: vec![] },
@@ -8884,7 +9720,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-pro".into(),
@@ -8895,7 +9734,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 30_f64, output: 180_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 60_f64, output: 270_f64, cache_read: 0_f64, cache_write: 0_f64 }] },
@@ -8903,7 +9747,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5".into(),
@@ -8914,8 +9761,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
-                ("minimal".into(), None)
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 5_f64, output: 30_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 10_f64, output: 45_f64, cache_read: 1_f64, cache_write: 0_f64 }] },
@@ -8923,7 +9774,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5-pro".into(),
@@ -8934,9 +9788,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into())),
                 ("minimal".into(), None),
-                ("low".into(), None)
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 30_f64, output: 180_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 60_f64, output: 270_f64, cache_read: 0_f64, cache_write: 0_f64 }] },
@@ -8944,7 +9801,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-luna".into(),
@@ -8955,6 +9815,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -8964,7 +9828,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-sol".into(),
@@ -8975,6 +9842,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -8984,7 +9855,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-terra".into(),
@@ -8995,6 +9869,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -9004,7 +9882,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-realtime-2.1".into(),
@@ -9013,14 +9894,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), Some("minimal".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 4_f64, output: 24_f64, cache_read: 0.4_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 128000,
             max_tokens: 32000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o1".into(),
@@ -9029,14 +9921,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 15_f64, output: 60_f64, cache_read: 7.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o1-pro".into(),
@@ -9045,14 +9948,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 150_f64, output: 600_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o3".into(),
@@ -9061,14 +9975,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2_f64, output: 8_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o3-deep-research".into(),
@@ -9077,14 +10002,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), None),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 10_f64, output: 40_f64, cache_read: 2.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o3-mini".into(),
@@ -9093,14 +10029,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 1.1_f64, output: 4.4_f64, cache_read: 0.55_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o3-pro".into(),
@@ -9109,14 +10056,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 20_f64, output: 80_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o4-mini".into(),
@@ -9125,14 +10083,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.1_f64, output: 4.4_f64, cache_read: 0.275_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o4-mini-deep-research".into(),
@@ -9141,14 +10110,25 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "openai".into(),
             base_url: "https://api.openai.com/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), None),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2_f64, output: 8_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-codex-spark".into(),
@@ -9528,10 +10508,12 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
                 ("minimal".into(), None),
                 ("low".into(), None),
                 ("medium".into(), None),
                 ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
                 ("max".into(), Some("max".into()))
             ])),
             input: vec!["text".into()],
@@ -9557,10 +10539,12 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
                 ("minimal".into(), None),
                 ("low".into(), None),
                 ("medium".into(), None),
                 ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
                 ("max".into(), Some("max".into()))
             ])),
             input: vec!["text".into()],
@@ -9585,10 +10569,12 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
                 ("minimal".into(), None),
                 ("low".into(), None),
                 ("medium".into(), None),
                 ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
                 ("max".into(), Some("max".into()))
             ])),
             input: vec!["text".into()],
@@ -9749,7 +10735,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "opencode".into(),
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), Some("max".into()))
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 1.4_f64, output: 4.4_f64, cache_read: 0.26_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
@@ -9771,7 +10765,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), Some("minimal".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.07_f64, output: 8.5_f64, cache_read: 0.107_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9789,7 +10789,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.07_f64, output: 8.5_f64, cache_read: 0.107_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9807,7 +10813,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), Some("minimal".into())),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.05_f64, output: 0.4_f64, cache_read: 0.005_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9825,7 +10837,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.07_f64, output: 8.5_f64, cache_read: 0.107_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9843,7 +10861,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.07_f64, output: 8.5_f64, cache_read: 0.107_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9861,7 +10885,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9879,7 +10909,13 @@ pub fn builtin_models() -> Vec<Model> {
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.25_f64, output: 2_f64, cache_read: 0.025_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9898,7 +10934,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9917,7 +10958,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9936,7 +10982,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9955,7 +11006,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2.5_f64, output: 15_f64, cache_read: 0.25_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9974,7 +11030,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.75_f64, output: 4.5_f64, cache_read: 0.075_f64, cache_write: 0_f64, tiers: vec![] },
@@ -9993,7 +11054,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.2_f64, output: 1.25_f64, cache_read: 0.02_f64, cache_write: 0_f64, tiers: vec![] },
@@ -10012,7 +11078,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 30_f64, output: 180_f64, cache_read: 30_f64, cache_write: 0_f64, tiers: vec![] },
@@ -10031,7 +11102,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 5_f64, output: 30_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
@@ -10050,9 +11126,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into())),
                 ("minimal".into(), None),
-                ("low".into(), None)
+                ("low".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 30_f64, output: 180_f64, cache_read: 30_f64, cache_write: 0_f64, tiers: vec![] },
@@ -10071,6 +11150,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -10091,6 +11174,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -10111,6 +11198,10 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
                 ("xhigh".into(), Some("xhigh".into())),
                 ("max".into(), Some("max".into()))
             ])),
@@ -10129,7 +11220,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "opencode".into(),
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 500000,
@@ -10239,11 +11338,40 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "opencode".into(),
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 256000,
             max_tokens: 32000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                supports_developer_role: Some(false),
+                supports_store: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "ling-3.0-flash-free".into(),
+            name: "Ling-3.0-flash Free".into(),
+            api: "openai-completions".into(),
+            provider: "opencode".into(),
+            base_url: "https://opencode.ai/zen/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 32768,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -10366,7 +11494,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "opencode".into(),
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 256000,
@@ -10504,6 +11640,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("low".into(), None),
                 ("medium".into(), None),
                 ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
                 ("max".into(), Some("max".into()))
             ])),
             input: vec!["text".into()],
@@ -10526,7 +11663,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "opencode-go".into(),
             base_url: "https://opencode.ai/zen/go/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 500000,
@@ -10534,6 +11679,35 @@ pub fn builtin_models() -> Vec<Model> {
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
+        },
+        Model {
+            id: "hy3".into(),
+            name: "Hy3".into(),
+            api: "openai-completions".into(),
+            provider: "opencode-go".into(),
+            base_url: "https://opencode.ai/zen/go/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), Some("none".into())),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), None),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0.14_f64, output: 0.58_f64, cache_read: 0.035_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 256000,
+            max_tokens: 64000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                supports_developer_role: Some(false),
+                supports_store: Some(false),
+                ..Default::default()
+            },
         },
         Model {
             id: "kimi-k2.6".into(),
@@ -10591,7 +11765,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "opencode-go".into(),
             base_url: "https://opencode.ai/zen/go/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), None),
+                ("medium".into(), None),
+                ("high".into(), None),
+                ("xhigh".into(), None),
+                ("max".into(), Some("max".into()))
+            ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 3_f64, output: 15_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
@@ -11617,7 +12799,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.0938_f64, output: 0.1876_f64, cache_read: 0.01876_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.098_f64, output: 0.196_f64, cache_read: 0.0196_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048575,
             max_tokens: 4096,
             headers: None,
@@ -11899,7 +13081,7 @@ pub fn builtin_models() -> Vec<Model> {
         },
         Model {
             id: "google/gemini-3.5-flash-lite".into(),
-            name: "Google: Gemini 3.5 Flash-Lite".into(),
+            name: "Google: Gemini 3.5 Flash Lite".into(),
             api: "openai-completions".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),
@@ -11966,9 +13148,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.1_f64, output: 0.3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 110000,
-            max_tokens: 4096,
+            cost: ModelCost { input: 0.08_f64, output: 0.45_f64, cache_read: 0.04_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 131072,
+            max_tokens: 131072,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -11986,9 +13168,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.07_f64, output: 0.34_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.12_f64, output: 0.35_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 16384,
+            max_tokens: 262144,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -12026,9 +13208,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.12_f64, output: 0.37_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.1_f64, output: 0.35_f64, cache_read: 0.1_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 16384,
+            max_tokens: 8192,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -12129,6 +13311,26 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: None,
             input: vec!["text".into()],
             cost: ModelCost { input: 0.01_f64, output: 0.03_f64, cache_read: 0.002_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 32768,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "inclusionai/ling-3.0-flash:free".into(),
+            name: "Ling-3.0-flash (free)".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 32768,
             headers: None,
@@ -12448,8 +13650,8 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.25_f64, output: 1_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 196608,
+            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.06_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 204800,
             max_tokens: 131072,
             headers: None,
             api_key: None,
@@ -12929,7 +14131,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.82_f64, output: 3.75_f64, cache_read: 0.16_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.71_f64, output: 3.49_f64, cache_read: 0.15_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 262144,
             headers: None,
@@ -13109,9 +14311,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.6_f64, output: 3.6_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 512288,
-            max_tokens: 4096,
+            cost: ModelCost { input: 0.5_f64, output: 2.2_f64, cache_read: 0.1_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 16384,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -14127,9 +15329,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.03_f64, output: 0.13_f64, cache_read: 0.03_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.029_f64, output: 0.14_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
-            max_tokens: 131072,
+            max_tokens: 4096,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -14655,9 +15857,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.12_f64, output: 0.24_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 40960,
-            max_tokens: 16384,
+            cost: ModelCost { input: 0.2275_f64, output: 0.91_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 131072,
+            max_tokens: 8192,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -14835,7 +16037,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.3_f64, output: 1_f64, cache_read: 0.1_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.38_f64, output: 1.55_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 65536,
             headers: None,
@@ -14975,9 +16177,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.0975_f64, output: 0.78_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 131072,
-            max_tokens: 32768,
+            cost: ModelCost { input: 0.15_f64, output: 1.2_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 262144,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -15055,9 +16257,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.13_f64, output: 0.52_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 131072,
-            max_tokens: 32768,
+            cost: ModelCost { input: 0.15_f64, output: 0.6_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 16384,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -15175,9 +16377,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.26_f64, output: 2.6_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.195_f64, output: 1.56_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 81920,
+            max_tokens: 65536,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -15315,9 +16517,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.45_f64, output: 2.7_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.288_f64, output: 2.4_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 65536,
+            max_tokens: 4096,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -15575,9 +16777,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.14_f64, output: 0.58_f64, cache_read: 0.035_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.132_f64, output: 0.528_f64, cache_read: 0.033_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 262144,
+            max_tokens: 128000,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -15915,9 +17117,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.0605_f64, output: 0.4_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 131072,
-            max_tokens: 131072,
+            cost: ModelCost { input: 0.06_f64, output: 0.4_f64, cache_read: 0.01_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 202752,
+            max_tokens: 16384,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -15997,7 +17199,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.7896_f64, output: 2.4816_f64, cache_read: 0.14664_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.8218_f64, output: 2.5828_f64, cache_read: 0.15262_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             headers: None,
@@ -16043,6 +17245,7 @@ pub fn builtin_models() -> Vec<Model> {
             headers: None,
             api_key: None,
             compat: ModelCompat {
+                cache_control_format: Some("anthropic".into()),
                 supports_developer_role: Some(false),
                 thinking_format: Some("openrouter".into()),
                 ..Default::default()
@@ -16063,6 +17266,7 @@ pub fn builtin_models() -> Vec<Model> {
             headers: None,
             api_key: None,
             compat: ModelCompat {
+                cache_control_format: Some("anthropic".into()),
                 supports_developer_role: Some(false),
                 thinking_format: Some("openrouter".into()),
                 ..Default::default()
@@ -16083,6 +17287,7 @@ pub fn builtin_models() -> Vec<Model> {
             headers: None,
             api_key: None,
             compat: ModelCompat {
+                cache_control_format: Some("anthropic".into()),
                 supports_developer_role: Some(false),
                 thinking_format: Some("openrouter".into()),
                 ..Default::default()
@@ -16103,6 +17308,7 @@ pub fn builtin_models() -> Vec<Model> {
             headers: None,
             api_key: None,
             compat: ModelCompat {
+                cache_control_format: Some("anthropic".into()),
                 supports_developer_role: Some(false),
                 thinking_format: Some("openrouter".into()),
                 ..Default::default()
@@ -17233,7 +18439,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("minimal".into(), None)
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.15_f64, output: 0.6_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
@@ -17261,7 +18472,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("minimal".into(), None)
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0.05_f64, output: 0.2_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
@@ -17699,7 +18915,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 1.25_f64, output: 3.75_f64, cache_read: 0.25_f64, cache_write: 1.5625_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.5_f64, output: 7.5_f64, cache_read: 0.5_f64, cache_write: 3.125_f64, tiers: vec![] },
             context_window: 991000,
             max_tokens: 64000,
             headers: None,
@@ -18521,6 +19737,22 @@ pub fn builtin_models() -> Vec<Model> {
             cost: ModelCost { input: 0.25_f64, output: 1_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 32000,
             max_tokens: 16384,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "inclusionai/ling-3.0-flash-free".into(),
+            name: "Ling 3.0 Flash".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 256000,
+            max_tokens: 256000,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
@@ -20031,6 +21263,22 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
+            id: "tencent/hy3".into(),
+            name: "Hy3".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost { input: 0.14_f64, output: 0.58_f64, cache_read: 0.035_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 262144,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
             id: "thinkingmachines/inkling".into(),
             name: "Inkling".into(),
             api: "anthropic-messages".into(),
@@ -20524,7 +21772,12 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: Some(HashMap::from([
                 ("off".into(), None),
-                ("minimal".into(), None)
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
             ])),
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },

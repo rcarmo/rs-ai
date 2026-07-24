@@ -1229,6 +1229,7 @@ mod tests {
                 name: "t".into(),
                 description: "d".into(),
                 parameters: serde_json::json!({"type":"object"}),
+                constrained_sampling: None,
             }],
         };
         let payload = crate::provider::openai::build_payload(
@@ -2726,6 +2727,7 @@ mod tests {
                 name: "t".into(),
                 description: "d".into(),
                 parameters: serde_json::json!({"type":"object"}),
+                constrained_sampling: None,
             }],
         };
         let payload = build_codex_payload(&model, &ctx, &StreamOptions::default());
@@ -4457,6 +4459,7 @@ mod tests {
             name: "t".into(),
             description: "d".into(),
             parameters: serde_json::json!({"type":"object"}),
+            constrained_sampling: None,
         };
         let ctx_tools = Context {
             system_prompt: None,
@@ -4763,6 +4766,7 @@ mod tests {
                     "required": ["q"],
                     "additionalProperties": false
                 }),
+                constrained_sampling: None,
             }],
         };
         let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
@@ -4859,6 +4863,7 @@ mod tests {
                 name: "bash".into(),
                 description: "d".into(),
                 parameters: serde_json::json!({"type":"object"}),
+                constrained_sampling: None,
             }],
         };
         let payload = build_anthropic_payload(&model, &ctx, &StreamOptions::default());
@@ -5331,6 +5336,7 @@ mod tests {
                 name: "f".into(),
                 description: "d".into(),
                 parameters: schema.clone(),
+                constrained_sampling: None,
             }],
         };
         let payload = build_google_payload_public(&model, &ctx, &StreamOptions::default());
@@ -5612,6 +5618,7 @@ mod tests {
                 name: "t".into(),
                 description: "d".into(),
                 parameters: serde_json::json!({"type":"object"}),
+                constrained_sampling: None,
             }],
         };
         let opts = StreamOptions {

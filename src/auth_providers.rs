@@ -105,6 +105,53 @@ impl OAuthAuth for AnthropicOAuth {
     }
 }
 
+/// OpenRouter OAuth (permanent API key exchange).
+pub struct OpenRouterOAuth {
+    pub token_url: Option<String>,
+}
+
+#[async_trait::async_trait]
+impl OAuthAuth for OpenRouterOAuth {
+    async fn refresh(&self, credential: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+        Ok(credential.clone())
+    }
+    async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+        Ok(ModelAuth {
+            api_key: Some(credential.access.clone()),
+            ..Default::default()
+        })
+    }
+}
+
+/// Kimi Code subscription OAuth.
+pub struct KimiCodeOAuth {
+    pub oauth_host: Option<String>,
+}
+
+#[async_trait::async_trait]
+impl OAuthAuth for KimiCodeOAuth {
+    async fn refresh(&self, credential: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("kimi credential is missing a refresh token"))?;
+        crate::oauth::refresh_kimi_code_token_at(
+            self.oauth_host
+                .as_deref()
+                .unwrap_or(crate::oauth::KIMI_CODE_OAUTH_HOST),
+            refresh,
+        )
+        .await
+        .map_err(oauth_err)
+    }
+    async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+        Ok(ModelAuth {
+            api_key: Some(credential.access.clone()),
+            ..Default::default()
+        })
+    }
+}
+
 /// xAI (Grok/X subscription) OAuth.
 pub struct XaiOAuth {
     pub token_url: Option<String>,

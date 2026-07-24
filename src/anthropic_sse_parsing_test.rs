@@ -110,6 +110,7 @@ mod tests {
             name: "edit".into(),
             description: "Edit a file.".into(),
             parameters: json!({"type": "object", "properties": {"path": {"type": "string"}, "text": {"type": "string"}}, "required": ["path", "text"]}),
+            constrained_sampling: None,
         }];
         let m = run(
             anthropic("claude-haiku-4-5", "http://x"),

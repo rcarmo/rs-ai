@@ -166,6 +166,7 @@ mod tests {
                 name: "t".into(),
                 description: "".into(),
                 parameters: serde_json::json!({}),
+                constrained_sampling: None,
             }],
         };
         let errs = crate::validation::validate_context(&ctx).unwrap_err();
@@ -212,6 +213,7 @@ mod tests {
                 name: "t".into(),
                 description: "d".into(),
                 parameters: serde_json::json!({"type": "object"}),
+                constrained_sampling: None,
             }],
         };
         let cloned = ctx.clone();
@@ -262,6 +264,7 @@ mod tests {
                 name: "search".into(),
                 description: "search".into(),
                 parameters: serde_json::json!({}),
+                constrained_sampling: None,
             }],
         };
         let json = save_context(&ctx).unwrap();

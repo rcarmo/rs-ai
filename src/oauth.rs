@@ -752,6 +752,274 @@ pub async fn refresh_copilot_token_at(
     })
 }
 
+pub const OPENROUTER_AUTH_URL: &str = "https://openrouter.ai/auth";
+pub const OPENROUTER_TOKEN_URL: &str = "https://openrouter.ai/api/v1/auth/keys";
+
+pub async fn exchange_openrouter_code_at(
+    token_url: &str,
+    code: &str,
+    verifier: &str,
+) -> Result<crate::auth::OAuthCredential, String> {
+    let response = crate::http_proxy::client_for_target(token_url, None)
+        .post(token_url)
+        .header("accept", "application/json")
+        .header("content-type", "application/json")
+        .json(&serde_json::json!({"code": code, "code_verifier": verifier, "code_challenge_method": "S256"}))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    let status = response.status();
+    let body = response
+        .json::<serde_json::Value>()
+        .await
+        .unwrap_or_else(|_| serde_json::json!({}));
+    if !status.is_success() {
+        let detail = body
+            .get("error_description")
+            .or_else(|| body.get("message"))
+            .or_else(|| body.get("error"))
+            .and_then(|v| v.as_str())
+            .or_else(|| body.pointer("/error/message").and_then(|v| v.as_str()));
+        return Err(format!(
+            "OpenRouter OAuth key exchange failed (HTTP {}){}",
+            status.as_u16(),
+            detail.map(|d| format!(": {d}")).unwrap_or_default()
+        ));
+    }
+    let key = body
+        .get("key")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "OpenRouter OAuth response carries no \"key\"".to_string())?;
+    Ok(crate::auth::OAuthCredential {
+        access: key.to_string(),
+        refresh: Some(String::new()),
+        expires: i64::MAX,
+        account_id: None,
+    })
+}
+
+pub async fn exchange_openrouter_code(
+    code: &str,
+    verifier: &str,
+) -> Result<crate::auth::OAuthCredential, String> {
+    exchange_openrouter_code_at(OPENROUTER_TOKEN_URL, code, verifier).await
+}
+
+pub const KIMI_CODE_CLIENT_ID: &str = "17e5f671-d194-4dfb-9706-5516cb48c098";
+pub const KIMI_CODE_OAUTH_HOST: &str = "https://auth.kimi.com";
+const KIMI_CODE_DEFAULT_POLL_INTERVAL_SECONDS: u64 = 5;
+const KIMI_CODE_DEVICE_TIMEOUT_SECONDS: u64 = 15 * 60;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KimiDeviceAuthorization {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: String,
+    pub verification_uri_complete: String,
+    pub interval_seconds: u64,
+    pub expires_in_seconds: u64,
+}
+
+fn trusted_http_url(value: &str) -> Option<String> {
+    reqwest::Url::parse(value)
+        .ok()
+        .filter(|u| matches!(u.scheme(), "http" | "https"))
+        .map(|u| u.to_string())
+}
+
+fn kimi_host(host: &str) -> String {
+    host.trim_end_matches('/').to_string()
+}
+
+pub async fn request_kimi_device_authorization_at(
+    host: &str,
+) -> Result<KimiDeviceAuthorization, String> {
+    let host = kimi_host(host);
+    let url = format!("{host}/api/oauth/device_authorization");
+    let response = crate::http_proxy::client_for_target(&url, None)
+        .post(&url)
+        .header("accept", "application/json")
+        .form(&[("client_id", KIMI_CODE_CLIENT_ID)])
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    let status = response.status();
+    if !status.is_success() {
+        return Err(format!(
+            "Kimi Code device authorization failed with status {}",
+            status.as_u16()
+        ));
+    }
+    let json = response
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|e| e.to_string())?;
+    let s = |k: &str| {
+        json.get(k)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+    };
+    let device_code = s("device_code")
+        .ok_or_else(|| format!("Invalid Kimi Code device authorization response: {json}"))?;
+    let user_code = s("user_code")
+        .ok_or_else(|| format!("Invalid Kimi Code device authorization response: {json}"))?;
+    let verification_uri = s("verification_uri")
+        .and_then(|v| trusted_http_url(&v))
+        .ok_or_else(|| format!("Invalid Kimi Code device authorization response: {json}"))?;
+    let verification_uri_complete = s("verification_uri_complete")
+        .and_then(|v| trusted_http_url(&v))
+        .ok_or_else(|| format!("Invalid Kimi Code device authorization response: {json}"))?;
+    Ok(KimiDeviceAuthorization {
+        device_code,
+        user_code,
+        verification_uri,
+        verification_uri_complete,
+        interval_seconds: json
+            .get("interval")
+            .and_then(|v| v.as_u64())
+            .filter(|n| *n > 0)
+            .unwrap_or(KIMI_CODE_DEFAULT_POLL_INTERVAL_SECONDS),
+        expires_in_seconds: json
+            .get("expires_in")
+            .and_then(|v| v.as_u64())
+            .filter(|n| *n > 0)
+            .unwrap_or(KIMI_CODE_DEVICE_TIMEOUT_SECONDS),
+    })
+}
+
+fn kimi_credential_from_json(
+    json: &serde_json::Value,
+    operation: &str,
+) -> Result<crate::auth::OAuthCredential, String> {
+    let access = json
+        .get("access_token")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| format!("Kimi Code token {operation} response missing fields: {json}"))?;
+    let refresh = json
+        .get("refresh_token")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| format!("Kimi Code token {operation} response missing fields: {json}"))?;
+    let expires_in = json
+        .get("expires_in")
+        .and_then(|v| v.as_i64())
+        .filter(|n| *n > 0)
+        .ok_or_else(|| format!("Kimi Code token {operation} response missing fields: {json}"))?;
+    Ok(crate::auth::OAuthCredential {
+        access: access.into(),
+        refresh: Some(refresh.into()),
+        expires: crate::utils::now_millis() + expires_in * 1000,
+        account_id: None,
+    })
+}
+
+pub async fn refresh_kimi_code_token_at(
+    host: &str,
+    refresh_token: &str,
+) -> Result<crate::auth::OAuthCredential, String> {
+    let host = kimi_host(host);
+    let url = format!("{host}/api/oauth/token");
+    let mut last_err = None;
+    for attempt in 0..=3 {
+        if attempt > 0 {
+            tokio::time::sleep(std::time::Duration::from_millis(
+                1000 * 2_u64.pow(attempt - 1),
+            ))
+            .await;
+        }
+        let response = crate::http_proxy::client_for_target(&url, None)
+            .post(&url)
+            .header("accept", "application/json")
+            .form(&[
+                ("client_id", KIMI_CODE_CLIENT_ID),
+                ("grant_type", "refresh_token"),
+                ("refresh_token", refresh_token),
+            ])
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        let status = response.status();
+        let json = response
+            .json::<serde_json::Value>()
+            .await
+            .unwrap_or_else(|_| serde_json::json!({}));
+        if status.is_success() {
+            return kimi_credential_from_json(&json, "refresh");
+        }
+        last_err = Some(format!(
+            "Kimi Code token refresh failed with status {}",
+            status.as_u16()
+        ));
+        if status.as_u16() != 429 && status.as_u16() < 500 {
+            break;
+        }
+    }
+    Err(last_err.unwrap_or_else(|| "Kimi Code token refresh failed".into()))
+}
+
+pub async fn login_kimi_code_device_at(
+    host: &str,
+    cancel: impl std::future::Future<Output = ()>,
+) -> Result<crate::auth::OAuthCredential, String> {
+    let host = kimi_host(host);
+    let device = request_kimi_device_authorization_at(&host).await?;
+    let url = format!("{host}/api/oauth/token");
+    poll_oauth_device_code_flow(
+        device.interval_seconds,
+        device.expires_in_seconds,
+        true,
+        || async {
+            let response = match crate::http_proxy::client_for_target(&url, None)
+                .post(&url)
+                .header("accept", "application/json")
+                .form(&[
+                    ("client_id", KIMI_CODE_CLIENT_ID),
+                    ("device_code", device.device_code.as_str()),
+                    ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
+                ])
+                .send()
+                .await
+            {
+                Ok(r) => r,
+                Err(e) => return DevicePollOutcome::Failed(e.to_string()),
+            };
+            let status = response.status();
+            let json = response
+                .json::<serde_json::Value>()
+                .await
+                .unwrap_or_else(|_| serde_json::json!({}));
+            if status.is_success() {
+                return match kimi_credential_from_json(&json, "poll") {
+                    Ok(c) => DevicePollOutcome::Complete(c),
+                    Err(e) => DevicePollOutcome::Failed(e),
+                };
+            }
+            match json.get("error").and_then(|v| v.as_str()) {
+                Some("authorization_pending") => DevicePollOutcome::Pending,
+                Some("slow_down") => {
+                    DevicePollOutcome::SlowDown(json.get("interval").and_then(|v| v.as_u64()))
+                }
+                Some("expired_token") => DevicePollOutcome::Failed(
+                    "Kimi Code device authorization expired. Please restart login.".into(),
+                ),
+                Some("access_denied") => {
+                    DevicePollOutcome::Failed("Kimi Code login was denied.".into())
+                }
+                other => DevicePollOutcome::Failed(format!(
+                    "Kimi Code device token request failed (status {}){}",
+                    status.as_u16(),
+                    other.map(|e| format!(": {e}")).unwrap_or_default()
+                )),
+            }
+        },
+        cancel,
+    )
+    .await
+}
+
 pub const XAI_CLIENT_ID: &str = "b1a00492-073a-47ea-816f-4c329264a828";
 pub const XAI_SCOPE: &str = "openid profile email offline_access grok-cli:access api:access";
 pub const XAI_DEVICE_CODE_URL: &str = "https://auth.x.ai/oauth2/device/code";

@@ -1,4 +1,4 @@
-//! v0.81.1 release-delta tests: generated model data invariants, image additions,
+//! v0.82.0 release-delta tests: generated model data invariants, image additions,
 //! Qwen Token Plan providers, shared text/uuid utilities, and OpenCode Go Responses.
 
 #[cfg(test)]
@@ -14,13 +14,13 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
-    fn generated_model_data_is_structurally_valid_and_v0811_counts_match() {
+    fn generated_model_data_is_structurally_valid_and_v0820_counts_match() {
         let all = crate::models_generated::builtin_models();
         let pairs = all
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1103);
+        assert_eq!(pairs.len(), 1116);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -69,17 +69,18 @@ mod tests {
     }
 
     #[test]
-    fn image_model_catalog_includes_v0811_openrouter_additions() {
+    fn image_model_catalog_includes_v0820_openrouter_additions() {
         let ids = crate::images::list_image_models(Some("openrouter"))
             .into_iter()
             .map(|m| m.id)
             .collect::<HashSet<_>>();
-        assert_eq!(ids.len(), 39);
+        assert_eq!(ids.len(), 40);
         for id in [
             "krea/krea-2-large",
             "krea/krea-2-medium",
             "krea/krea-2-medium-turbo",
             "openrouter/auto-beta",
+            "microsoft/mai-image-2.5-pro",
         ] {
             assert!(ids.contains(id), "missing image model {id}");
         }
@@ -191,6 +192,35 @@ mod tests {
     }
 
     #[test]
+    fn json_schema_constrained_sampling_resolves_strict_mode() {
+        let tool = crate::types::Tool {
+            name: "emit".into(),
+            description: "emit json".into(),
+            parameters: serde_json::json!({"type":"object"}),
+            constrained_sampling: Some(serde_json::json!({"type":"json_schema","strict":"prefer"})),
+        };
+        assert_eq!(
+            crate::utils::resolve_json_schema_strict_sampling(&tool, true).unwrap(),
+            Some(true)
+        );
+        assert_eq!(
+            crate::utils::resolve_json_schema_strict_sampling(&tool, false).unwrap(),
+            None
+        );
+        let required = crate::types::Tool {
+            constrained_sampling: Some(
+                serde_json::json!({"type":"json_schema","strict":"require"}),
+            ),
+            ..tool
+        };
+        assert!(
+            crate::utils::resolve_json_schema_strict_sampling(&required, false)
+                .unwrap_err()
+                .contains("strict tools are unsupported")
+        );
+    }
+
+    #[test]
     fn pipe_delimited_tool_call_ids_preserve_item_uniqueness() {
         let a =
             crate::provider::openai::normalize_tool_call_id("call_same|item_a", "qwen-token-plan");
@@ -205,6 +235,44 @@ mod tests {
         );
         assert!(long.chars().count() <= 40);
         assert!(long.contains('_'));
+    }
+
+    #[tokio::test]
+    async fn openrouter_and_kimi_oauth_helpers_cover_release_behaviour() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({"key":"or-key"})),
+            )
+            .mount(&server)
+            .await;
+        let openrouter =
+            crate::oauth::exchange_openrouter_code_at(&server.uri(), "code", "verifier")
+                .await
+                .unwrap();
+        assert_eq!(openrouter.access, "or-key");
+        assert_eq!(openrouter.expires, i64::MAX);
+
+        let server = MockServer::start().await;
+        Mock::given(method("POST")).and(wiremock::matchers::path("/api/oauth/device_authorization"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "device_code":"dev", "user_code":"USER", "verification_uri":"https://kimi.com/device",
+                "verification_uri_complete":"https://kimi.com/device?user_code=USER", "interval":1, "expires_in":60
+            }))).mount(&server).await;
+        Mock::given(method("POST")).and(wiremock::matchers::path("/api/oauth/token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({"access_token":"kimi-access","refresh_token":"kimi-refresh","expires_in":60})))
+            .mount(&server).await;
+        let device = crate::oauth::request_kimi_device_authorization_at(&server.uri())
+            .await
+            .unwrap();
+        assert_eq!(
+            device.verification_uri_complete,
+            "https://kimi.com/device?user_code=USER"
+        );
+        let refreshed = crate::oauth::refresh_kimi_code_token_at(&server.uri(), "old-refresh")
+            .await
+            .unwrap();
+        assert_eq!(refreshed.access, "kimi-access");
     }
 
     #[tokio::test]

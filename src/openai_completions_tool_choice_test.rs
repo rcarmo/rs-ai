@@ -71,6 +71,7 @@ mod tests {
             name: "ping".into(),
             description: "Ping tool".into(),
             parameters: json!({"type": "object", "properties": {"ok": {"type": "boolean"}}}),
+            constrained_sampling: None,
         }
     }
 
@@ -668,6 +669,7 @@ mod tests {
             name: "read".into(),
             description: "Read a file".into(),
             parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}),
+            constrained_sampling: None,
         }];
         let opts = StreamOptions::default();
         let mut stream = stream_openai(&model, &ctx, &opts);
@@ -967,21 +969,25 @@ mod tests {
                 name: "read".into(),
                 description: "r".into(),
                 parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}),
+                constrained_sampling: None,
             },
             Tool {
                 name: "grep".into(),
                 description: "g".into(),
                 parameters: json!({"type":"object","properties":{"pattern":{"type":"string"},"path":{"type":"string"}}}),
+                constrained_sampling: None,
             },
             Tool {
                 name: "list".into(),
                 description: "l".into(),
                 parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}),
+                constrained_sampling: None,
             },
             Tool {
                 name: "write".into(),
                 description: "w".into(),
                 parameters: json!({"type":"object","properties":{"path":{"type":"string"},"content":{"type":"string"}}}),
+                constrained_sampling: None,
             },
         ];
         let opts = StreamOptions::default();
@@ -1067,11 +1073,13 @@ mod tests {
                     name: "read".into(),
                     description: "Read files".into(),
                     parameters: json!({"type":"object","properties":{"path":{"type":"string"}}}),
+                    constrained_sampling: None,
                 },
                 Tool {
                     name: "grep".into(),
                     description: "Search files".into(),
                     parameters: json!({"type":"object","properties":{"pattern":{"type":"string"}}}),
+                    constrained_sampling: None,
                 },
             ],
             messages: vec![msg(Role::User, "Hi")],

@@ -74,6 +74,7 @@ mod tests {
                 name: "search".into(),
                 description: "Search the web".into(),
                 parameters: json!({"type": "object", "properties": {}}),
+                constrained_sampling: None,
             }],
         };
         assert!(validate_context(&ctx).is_ok());
@@ -100,6 +101,7 @@ mod tests {
                 name: "".into(),
                 description: "desc".into(),
                 parameters: json!({}),
+                constrained_sampling: None,
             }],
         };
         let errs = validate_context(&ctx).unwrap_err();
@@ -590,6 +592,7 @@ mod coercion_tests {
                 },
                 "required": ["n", "i", "b", "s"],
             }),
+            constrained_sampling: None,
         };
         let out = validate_tool_arguments(&t, &json!({"n": "3.5", "i": "7", "b": "true", "s": 42}))
             .unwrap();
@@ -611,6 +614,7 @@ mod coercion_tests {
                 "properties": { "n": {"type": "number"}, "i": {"type": "integer"} },
                 "required": ["n", "i"],
             }),
+            constrained_sampling: None,
         };
         let out = validate_tool_arguments(&t, &json!({"n": "0x1f", "i": "0b101"})).unwrap();
         assert_eq!(out["n"], json!(31));
@@ -637,6 +641,7 @@ mod coercion_tests {
                 },
                 "required": ["unit", "level"],
             }),
+            constrained_sampling: None,
         };
         assert!(validate_tool_arguments(&t, &json!({"unit": "kelvin", "level": 1})).is_err());
         let ok = validate_tool_arguments(&t, &json!({"unit": "celsius", "level": "2"})).unwrap();
@@ -652,6 +657,7 @@ mod coercion_tests {
                 "properties": { "kind": {"const": "fixed"} },
                 "required": ["kind"],
             }),
+            constrained_sampling: None,
         };
         assert!(validate_tool_arguments(&tc, &json!({"kind": "other"})).is_err());
         assert!(validate_tool_arguments(&tc, &json!({"kind": "fixed"})).is_ok());
@@ -665,6 +671,7 @@ mod coercion_tests {
             parameters: json!({
                 "type": "object", "properties": {"q": {"type": "string"}}, "required": ["q"],
             }),
+            constrained_sampling: None,
         };
         assert!(validate_tool_arguments(&t, &json!({})).is_err());
         assert_eq!(
@@ -685,6 +692,7 @@ mod coercion_tests {
                 "properties": {"q": {"type": "string"}, "n": {"type": "object"}},
                 "required": ["q"],
             }),
+            constrained_sampling: None,
         };
         let err = validate_tool_arguments(&t, &json!({"n": 5})).unwrap_err();
         assert!(
@@ -704,6 +712,7 @@ mod coercion_tests {
             parameters: json!({
                 "type": "object", "properties": {"nums": {"type": "array", "items": {"type": "number"}}},
             }),
+            constrained_sampling: None,
         };
         let out = validate_tool_arguments(&t, &json!({"nums": ["1", "2", "3"]})).unwrap();
         assert_eq!(out["nums"], json!([1, 2, 3]));

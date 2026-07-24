@@ -12,6 +12,7 @@ mod tests {
             name: "test_tool".into(),
             description: "A test tool".into(),
             parameters,
+            constrained_sampling: None,
         }
     }
 

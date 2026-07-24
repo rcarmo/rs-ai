@@ -289,10 +289,13 @@ pub struct Message {
 
 /// Tool definition with JSON Schema parameters.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Tool {
     pub name: String,
     pub description: String,
     pub parameters: serde_json::Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub constrained_sampling: Option<serde_json::Value>,
 }
 
 /// Conversation context passed to stream/complete.

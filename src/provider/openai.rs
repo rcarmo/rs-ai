@@ -1181,7 +1181,12 @@ fn converted_tools(tools: &[Tool], include_strict: bool) -> Vec<Value> {
                 "parameters": t.parameters,
             });
             if include_strict {
-                function["strict"] = json!(false);
+                function["strict"] = json!(
+                    crate::utils::resolve_json_schema_strict_sampling(t, true)
+                        .ok()
+                        .flatten()
+                        .unwrap_or(false)
+                );
             }
             json!({ "type": "function", "function": function })
         })

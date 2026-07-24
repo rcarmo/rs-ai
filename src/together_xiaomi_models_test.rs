@@ -46,7 +46,15 @@ mod tests {
         let gpt_oss = get_model("together", "openai/gpt-oss-120b").unwrap();
         assert_eq!(
             gpt_oss.thinking_level_map,
-            Some(tlm(&[("off", None), ("minimal", None)]))
+            Some(tlm(&[
+                ("off", None),
+                ("minimal", None),
+                ("low", Some("low")),
+                ("medium", Some("medium")),
+                ("high", Some("high")),
+                ("xhigh", None),
+                ("max", None),
+            ]))
         );
         assert_eq!(gpt_oss.compat.supports_reasoning_effort, Some(true));
         assert_eq!(gpt_oss.compat.thinking_format.as_deref(), Some("openai"));

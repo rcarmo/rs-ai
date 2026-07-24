@@ -88,6 +88,7 @@ mod tests {
                 name: "read_file".into(),
                 description: "Read a file".into(),
                 parameters: serde_json::json!({"type": "object", "properties": {"path": {"type": "string"}}}),
+                constrained_sampling: None,
             }],
         };
         let ctx = append_assistant_message(ctx, &msg1);

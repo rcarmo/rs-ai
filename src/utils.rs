@@ -100,6 +100,29 @@ pub fn uuidv7() -> String {
     )
 }
 
+/// Resolve JSON-schema constrained sampling strict mode for a tool.
+pub fn resolve_json_schema_strict_sampling(
+    tool: &crate::types::Tool,
+    supports_strict_mode: bool,
+) -> Result<Option<bool>, String> {
+    let Some(config) = tool.constrained_sampling.as_ref() else {
+        return Ok(None);
+    };
+    if config.get("type").and_then(|v| v.as_str()) != Some("json_schema") {
+        return Ok(None);
+    }
+    if supports_strict_mode {
+        return Ok(Some(true));
+    }
+    if config.get("strict").and_then(|v| v.as_str()) == Some("require") {
+        return Err(format!(
+            "Tool \"{}\" requires JSON-schema constrained sampling, but strict tools are unsupported.",
+            tool.name
+        ));
+    }
+    Ok(None)
+}
+
 /// Generate GitHub Copilot headers.
 pub fn copilot_headers() -> HashMap<String, String> {
     HashMap::from([

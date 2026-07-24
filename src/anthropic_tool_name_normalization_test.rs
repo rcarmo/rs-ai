@@ -18,6 +18,7 @@ mod tests {
             name: name.into(),
             description: "t".into(),
             parameters: json!({"type": "object"}),
+            constrained_sampling: None,
         }
     }
 

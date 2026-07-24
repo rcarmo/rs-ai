@@ -35,6 +35,7 @@ mod tests {
                 name: "t".into(),
                 description: "d".into(),
                 parameters: json!({}),
+                constrained_sampling: None,
             }],
         };
         assert!(validate_context(&ctx).is_ok());
@@ -49,6 +50,7 @@ mod tests {
                 name: "".into(),
                 description: "d".into(),
                 parameters: json!({}),
+                constrained_sampling: None,
             }],
         };
         let errs = validate_context(&ctx).unwrap_err();
@@ -61,6 +63,7 @@ mod tests {
             name: "t".into(),
             description: "d".into(),
             parameters: json!({"type": "object"}),
+            constrained_sampling: None,
         };
         assert!(validate_tool_arguments(&tool, &json!({"key": "val"})).is_ok());
         assert!(validate_tool_arguments(&tool, &json!("string")).is_err());
@@ -75,6 +78,7 @@ mod tests {
                 name: "search".into(),
                 description: "s".into(),
                 parameters: json!({}),
+                constrained_sampling: None,
             }],
         };
         assert!(validate_tool_call(&ctx, "search", &json!({})).is_ok());

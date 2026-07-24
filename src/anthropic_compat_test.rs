@@ -43,6 +43,7 @@ mod tests {
             name: "lookup".into(),
             description: "Look up a value".into(),
             parameters: json!({"type": "object", "properties": {"value": {"type": "string"}}}),
+            constrained_sampling: None,
         }
     }
 

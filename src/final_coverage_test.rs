@@ -90,6 +90,7 @@ mod tests {
                 name: "t".into(),
                 description: "d".into(),
                 parameters: serde_json::json!({}),
+                constrained_sampling: None,
             }],
         };
         let cloned = ctx.clone();

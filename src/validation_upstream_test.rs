@@ -21,6 +21,7 @@ mod tests {
                 "properties": { "value": schema },
                 "required": ["value"],
             }),
+            constrained_sampling: None,
         }
     }
 

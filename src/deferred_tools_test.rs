@@ -15,6 +15,7 @@ mod tests {
             name: name.into(),
             description: format!("The {name} tool"),
             parameters: json!({"type":"object","properties":{"value":{"type":"string"}},"required":["value"]}),
+            constrained_sampling: None,
         }
     }
 

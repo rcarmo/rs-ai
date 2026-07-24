@@ -42,6 +42,7 @@ mod tests {
             name: "read".into(),
             description: "Read a file".into(),
             parameters: json!({"type": "object", "properties": {"path": {"type": "string"}}}),
+            constrained_sampling: None,
         }
     }
 

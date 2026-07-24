@@ -994,7 +994,7 @@ pub(crate) fn build_responses_payload(
                                 "name": t.name,
                                 "description": t.description,
                                 "parameters": t.parameters,
-                                "strict": false,
+                                "strict": crate::utils::resolve_json_schema_strict_sampling(&t, true).ok().flatten().unwrap_or(false),
                                 "defer_loading": true,
                             }))
                         }).collect::<Vec<_>>(),
@@ -1168,7 +1168,7 @@ pub(crate) fn build_responses_payload(
                     "name": t.name,
                     "description": t.description,
                     "parameters": t.parameters,
-                    "strict": false,
+                    "strict": crate::utils::resolve_json_schema_strict_sampling(t, true).ok().flatten().unwrap_or(false),
                 })
             })
             .collect();
@@ -1182,7 +1182,7 @@ pub(crate) fn build_responses_payload(
                         "name": t.name,
                         "description": t.description,
                         "parameters": t.parameters,
-                        "strict": false,
+                        "strict": crate::utils::resolve_json_schema_strict_sampling(t, true).ok().flatten().unwrap_or(false),
                     })
                 })
                 .collect();

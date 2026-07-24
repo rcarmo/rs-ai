@@ -42,6 +42,7 @@ mod tests {
                 name: "shell".into(),
                 description: "run shell".into(),
                 parameters: serde_json::json!({"type": "object"}),
+                constrained_sampling: None,
             }],
             messages: vec![Message {
                 role: Role::User,
