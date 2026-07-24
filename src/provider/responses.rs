@@ -1160,31 +1160,16 @@ pub(crate) fn build_responses_payload(
             false,
             supports_tool_search,
         );
+        let supports_grammar = model.compat.supports_openai_grammar_tools.unwrap_or(false);
         let mut tools: Vec<Value> = active_tools
             .iter()
-            .map(|t| {
-                json!({
-                    "type": "function",
-                    "name": t.name,
-                    "description": t.description,
-                    "parameters": t.parameters,
-                    "strict": crate::utils::resolve_json_schema_strict_sampling(t, true).ok().flatten().unwrap_or(false),
-                })
-            })
+            .map(|t| crate::utils::openai_tool_value(t, supports_grammar, true, false).unwrap())
             .collect();
         if !supports_tool_search || deferred_names.is_empty() {
             tools = context
                 .tools
                 .iter()
-                .map(|t| {
-                    json!({
-                        "type": "function",
-                        "name": t.name,
-                        "description": t.description,
-                        "parameters": t.parameters,
-                        "strict": crate::utils::resolve_json_schema_strict_sampling(t, true).ok().flatten().unwrap_or(false),
-                    })
-                })
+                .map(|t| crate::utils::openai_tool_value(t, supports_grammar, true, false).unwrap())
                 .collect();
         }
         payload["tools"] = json!(tools);

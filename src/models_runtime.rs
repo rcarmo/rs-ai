@@ -286,6 +286,14 @@ impl ModelsRuntime {
             .find(|m| m.id == id)
     }
 
+    pub fn provider_has_oauth(&self, provider: &str) -> bool {
+        self.providers
+            .lock()
+            .unwrap()
+            .get(provider)
+            .is_some_and(|p| p.auth.oauth.is_some())
+    }
+
     pub fn populate_builtin_fallbacks(&self) {
         let mut by_provider: HashMap<String, Vec<Model>> = HashMap::new();
         for model in crate::models_generated::builtin_models() {
@@ -296,10 +304,11 @@ impl ModelsRuntime {
         }
         for (id, models) in by_provider {
             if !self.providers.lock().unwrap().contains_key(&id) {
+                let auth = builtin_provider_auth(&id);
                 self.set_provider(RuntimeProvider::static_provider(
                     id.clone(),
                     id,
-                    ProviderAuth::default(),
+                    auth,
                     models,
                 ));
             }
@@ -369,6 +378,36 @@ impl ModelsRuntime {
 impl Default for ModelsRuntime {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+fn builtin_provider_auth(provider_id: &str) -> ProviderAuth {
+    match provider_id {
+        "openrouter" => ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(crate::auth_providers::OpenRouterOAuth {
+                token_url: None,
+            })),
+        },
+        "kimi-coding" => ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(crate::auth_providers::KimiCodeOAuth {
+                oauth_host: None,
+            })),
+        },
+        "xai" => ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(crate::auth_providers::XaiOAuth::new())),
+        },
+        "openai-codex" => ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(crate::auth_providers::CodexOAuth::new())),
+        },
+        "anthropic" => ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(crate::auth_providers::AnthropicOAuth::new())),
+        },
+        _ => ProviderAuth::default(),
     }
 }
 

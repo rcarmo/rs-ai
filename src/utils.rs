@@ -100,6 +100,170 @@ pub fn uuidv7() -> String {
     )
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GrammarConstrainedSampling {
+    pub format: String,
+    pub definition: String,
+    pub input_property: String,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct GrammarToolInputJsonBuffer {
+    pub input: String,
+    pub started: bool,
+    pub closed: bool,
+}
+
+pub fn get_grammar_tool_input(
+    tool_name: &str,
+    arguments: &serde_json::Value,
+    input_property: &str,
+) -> Result<String, String> {
+    arguments
+        .get(input_property)
+        .and_then(|v| v.as_str())
+        .map(str::to_string)
+        .ok_or_else(|| format!("Grammar tool call \"{tool_name}\" requires argument \"{input_property}\" to be a string."))
+}
+
+pub fn append_grammar_tool_input_json_delta(
+    buffer: &mut GrammarToolInputJsonBuffer,
+    input_property: &str,
+    next_input: &str,
+    close: bool,
+) -> Result<Option<String>, String> {
+    if buffer.closed {
+        if close && next_input == buffer.input {
+            return Ok(None);
+        }
+        return Err(format!(
+            "grammar tool input for property \"{input_property}\" changed after it was closed"
+        ));
+    }
+    if !next_input.starts_with(&buffer.input) {
+        return Err(format!(
+            "grammar tool input for property \"{input_property}\" changed non-monotonically"
+        ));
+    }
+    let input_delta = &next_input[buffer.input.len()..];
+    if !close && input_delta.is_empty() {
+        return Ok(None);
+    }
+    let mut delta = String::new();
+    if !buffer.started {
+        delta.push('{');
+        delta.push_str(&serde_json::to_string(input_property).unwrap());
+        delta.push_str(":\"");
+        buffer.started = true;
+    }
+    let encoded = serde_json::to_string(input_delta).unwrap();
+    delta.push_str(&encoded[1..encoded.len() - 1]);
+    buffer.input = next_input.to_string();
+    if close {
+        delta.push_str("\"}");
+        buffer.closed = true;
+    }
+    Ok(Some(delta))
+}
+
+fn infer_grammar_input_property(tool: &crate::types::Tool) -> Result<String, String> {
+    let schema = &tool.parameters;
+    if schema.get("type").and_then(|v| v.as_str()) != Some("object") {
+        return Err("grammar constrained sampling requires an object parameter schema".into());
+    }
+    let required = schema
+        .get("required")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| {
+            "grammar constrained sampling requires exactly one required string property".to_string()
+        })?;
+    if required.len() != 1 || !required[0].is_string() {
+        return Err(
+            "grammar constrained sampling requires exactly one required string property".into(),
+        );
+    }
+    let input_property = required[0].as_str().unwrap();
+    let prop = schema
+        .pointer(&format!("/properties/{input_property}"))
+        .ok_or_else(|| {
+            format!("grammar constrained sampling requires a properties entry for {input_property}")
+        })?;
+    if prop.get("type").and_then(|v| v.as_str()) != Some("string") {
+        return Err(format!(
+            "grammar constrained sampling property {input_property} must have type string"
+        ));
+    }
+    Ok(input_property.to_string())
+}
+
+pub fn resolve_grammar_constrained_sampling(
+    tool: &crate::types::Tool,
+    supports_openai_grammar_tools: bool,
+) -> Result<Option<GrammarConstrainedSampling>, String> {
+    let Some(config) = tool.constrained_sampling.as_ref() else {
+        return Ok(None);
+    };
+    if config.get("type").and_then(|v| v.as_str()) != Some("grammar") {
+        return Ok(None);
+    }
+    if !supports_openai_grammar_tools {
+        return Ok(None);
+    }
+    let variants = config.get("variants").unwrap_or(&serde_json::Value::Null);
+    let lark = variants
+        .get("openai_lark")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.trim().is_empty());
+    let regex = variants
+        .get("openai_regex")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.trim().is_empty());
+    let (format, definition) = if let Some(d) = lark {
+        ("lark", d)
+    } else if let Some(d) = regex {
+        ("regex", d)
+    } else {
+        return Err(format!(
+            "Tool \"{}\" cannot use grammar constrained sampling: no supported grammar variant was provided.",
+            tool.name
+        ));
+    };
+    let input_property = infer_grammar_input_property(tool).map_err(|e| {
+        format!(
+            "Tool \"{}\" cannot use grammar constrained sampling: {e}.",
+            tool.name
+        )
+    })?;
+    Ok(Some(GrammarConstrainedSampling {
+        format: format.into(),
+        definition: definition.into(),
+        input_property,
+    }))
+}
+
+pub fn openai_tool_value(
+    tool: &crate::types::Tool,
+    supports_grammar: bool,
+    supports_strict: bool,
+    default_strict: bool,
+) -> Result<serde_json::Value, String> {
+    if let Some(grammar) = resolve_grammar_constrained_sampling(tool, supports_grammar)? {
+        return Ok(serde_json::json!({
+            "type": "custom",
+            "name": tool.name,
+            "description": tool.description,
+            "format": {"type": "grammar", "syntax": grammar.format, "definition": grammar.definition},
+        }));
+    }
+    let mut function = serde_json::json!({"name": tool.name, "description": tool.description, "parameters": tool.parameters});
+    if supports_strict {
+        function["strict"] = serde_json::json!(
+            resolve_json_schema_strict_sampling(tool, supports_strict)?.unwrap_or(default_strict)
+        );
+    }
+    Ok(serde_json::json!({"type":"function", "function": function}))
+}
+
 /// Resolve JSON-schema constrained sampling strict mode for a tool.
 pub fn resolve_json_schema_strict_sampling(
     tool: &crate::types::Tool,

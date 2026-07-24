@@ -221,6 +221,47 @@ mod tests {
     }
 
     #[test]
+    fn grammar_constrained_sampling_builds_custom_responses_tool() {
+        let tool = crate::types::Tool {
+            name: "emit".into(),
+            description: "emit grammar".into(),
+            parameters: serde_json::json!({"type":"object","properties":{"input":{"type":"string"}},"required":["input"]}),
+            constrained_sampling: Some(
+                serde_json::json!({"type":"grammar","variants":{"openai_lark":"start: /[a-z]+/"}}),
+            ),
+        };
+        let grammar = crate::utils::resolve_grammar_constrained_sampling(&tool, true)
+            .unwrap()
+            .unwrap();
+        assert_eq!(grammar.input_property, "input");
+        let mut buffer = crate::utils::GrammarToolInputJsonBuffer::default();
+        assert_eq!(
+            crate::utils::append_grammar_tool_input_json_delta(&mut buffer, "input", "ab", false)
+                .unwrap(),
+            Some("{\"input\":\"ab".into())
+        );
+        assert_eq!(
+            crate::utils::append_grammar_tool_input_json_delta(&mut buffer, "input", "abc", true)
+                .unwrap(),
+            Some("c\"}".into())
+        );
+        let mut model = get_model("openai", "gpt-5-mini").unwrap();
+        model.compat.supports_openai_grammar_tools = Some(true);
+        let payload = crate::provider::responses::build_responses_payload(
+            &model,
+            &Context {
+                system_prompt: None,
+                messages: Vec::new(),
+                tools: vec![tool],
+            },
+            &StreamOptions::default(),
+        );
+        assert_eq!(payload["tools"][0]["type"], "custom");
+        assert_eq!(payload["tools"][0]["format"]["type"], "grammar");
+        assert_eq!(payload["tools"][0]["format"]["syntax"], "lark");
+    }
+
+    #[test]
     fn pipe_delimited_tool_call_ids_preserve_item_uniqueness() {
         let a =
             crate::provider::openai::normalize_tool_call_id("call_same|item_a", "qwen-token-plan");
@@ -235,6 +276,14 @@ mod tests {
         );
         assert!(long.chars().count() <= 40);
         assert!(long.contains('_'));
+    }
+
+    #[test]
+    fn builtin_runtime_wires_oauth_providers_for_openrouter_and_kimi() {
+        let runtime = crate::models_runtime::ModelsRuntime::new();
+        runtime.populate_builtin_fallbacks();
+        assert!(runtime.provider_has_oauth("openrouter"));
+        assert!(runtime.provider_has_oauth("kimi-coding"));
     }
 
     #[tokio::test]

@@ -96,6 +96,7 @@ def gen_model(m) -> str:
         "supportsStore": ("supports_store", "bool"),
         "supportsUsageInStreaming": ("supports_usage_in_streaming", "bool"),
         "supportsStrictMode": ("supports_strict_mode", "bool"),
+        "supportsOpenAIGrammarTools": ("supports_openai_grammar_tools", "bool"),
         "supportsTemperature": ("supports_temperature", "bool"),
         "thinkingFormat": ("thinking_format", "str"),
         "zaiToolStream": ("zai_tool_stream", "bool"),

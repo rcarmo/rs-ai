@@ -385,6 +385,8 @@ pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_strict_mode: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_openai_grammar_tools: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_temperature: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_tool_references: Option<bool>,
