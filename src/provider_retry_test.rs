@@ -63,6 +63,58 @@ mod tests {
         assert!(saw_error);
     }
 
+    #[tokio::test]
+    async fn openai_provider_honors_x_should_retry_headers() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(400).insert_header("x-should-retry", "true"))
+            .up_to_n_times(1)
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+            .mount(&server)
+            .await;
+        let model = test_model("openai-completions", "openai", &server.uri());
+        let opts = StreamOptions {
+            max_retries: Some(1),
+            max_retry_delay_ms: Some(5),
+            ..Default::default()
+        };
+        let ctx = test_context();
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut text = String::new();
+        while let Some(evt) = stream.next().await {
+            if let Event::TextDelta { delta } = evt {
+                text.push_str(&delta);
+            }
+        }
+        assert_eq!(text, "ok");
+
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/chat/completions"))
+            .respond_with(
+                ResponseTemplate::new(503)
+                    .insert_header("x-should-retry", "false")
+                    .set_body_string("no"),
+            )
+            .mount(&server)
+            .await;
+        let model = test_model("openai-completions", "openai", &server.uri());
+        let mut stream = stream_openai(&model, &ctx, &opts);
+        let mut err = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Error { error, .. } = evt {
+                err = Some(error.to_string());
+            }
+        }
+        assert!(err.unwrap().contains("503"));
+        assert_eq!(server.received_requests().await.unwrap().len(), 1);
+    }
+
     // --- Google Generative AI ---
 
     #[tokio::test]

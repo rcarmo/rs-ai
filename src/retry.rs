@@ -51,6 +51,19 @@ pub fn is_retryable_status(code: u16) -> bool {
     matches!(code, 408 | 409 | 429) || code >= 500
 }
 
+fn is_retryable_response(resp: &reqwest::Response) -> bool {
+    match resp
+        .headers()
+        .get("x-should-retry")
+        .and_then(|v| v.to_str().ok())
+    {
+        Some("true") => return true,
+        Some("false") => return false,
+        _ => {}
+    }
+    is_retryable_status(resp.status().as_u16())
+}
+
 /// Parse a `Retry-After` header value (integer/float seconds, or HTTP-date) into a Duration.
 pub fn parse_retry_after(value: &str) -> Option<Duration> {
     let trimmed = value.trim();
@@ -227,6 +240,86 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn provider_retry_honors_x_should_retry_and_excessive_delay() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/force"))
+            .respond_with(ResponseTemplate::new(400).insert_header("x-should-retry", "true"))
+            .up_to_n_times(1)
+            .mount(&server)
+            .await;
+        Mock::given(method("GET"))
+            .and(path("/force"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("ok"))
+            .mount(&server)
+            .await;
+        let client = reqwest::Client::new();
+        let cfg = RetryConfig {
+            max_retries: 1,
+            initial_delay: Duration::from_millis(1),
+            max_delay: Duration::from_millis(1),
+            backoff_multiplier: 1.0,
+            jitter_fraction: 0.0,
+            max_retry_delay_ms: 1000,
+        };
+        let resp = do_with_retry(&client, client.get(format!("{}/force", server.uri())), &cfg)
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), 200);
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/no"))
+            .respond_with(ResponseTemplate::new(503).insert_header("x-should-retry", "false"))
+            .mount(&server)
+            .await;
+        let resp = do_with_retry(&client, client.get(format!("{}/no", server.uri())), &cfg)
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), 503);
+
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/delay"))
+            .respond_with(ResponseTemplate::new(503).insert_header("retry-after", "5"))
+            .mount(&server)
+            .await;
+        let err = do_with_retry(&client, client.get(format!("{}/delay", server.uri())), &cfg)
+            .await
+            .unwrap_err();
+        assert!(err.to_string().contains("Server requested 5s retry delay"));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn provider_retry_abort_during_backoff_is_interruptible() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/abort"))
+            .respond_with(ResponseTemplate::new(503))
+            .mount(&server)
+            .await;
+        let client = reqwest::Client::new();
+        let cfg = RetryConfig {
+            max_retries: 1,
+            initial_delay: Duration::from_secs(60),
+            max_delay: Duration::from_secs(60),
+            backoff_multiplier: 1.0,
+            jitter_fraction: 0.0,
+            max_retry_delay_ms: 0,
+        };
+        let (tx, rx) = tokio::sync::watch::channel(false);
+        let handle = tokio::spawn({
+            let client = client.clone();
+            let url = format!("{}/abort", server.uri());
+            async move { do_with_retry_cancel(&client, client.get(url), &cfg, Some(rx)).await }
+        });
+        tokio::task::yield_now().await;
+        tx.send(true).unwrap();
+        let err = handle.await.unwrap().unwrap_err();
+        assert_eq!(err.to_string(), "Request aborted");
+    }
+
+    #[tokio::test]
     async fn test_do_with_retry_retries_retryable_status() {
         let server = MockServer::start().await;
         Mock::given(method("GET"))
@@ -287,11 +380,68 @@ pub fn retry_config_from_options(opts: &crate::types::StreamOptions) -> RetryCon
 }
 
 /// Execute an HTTP request with retry logic (async).
+pub type RetryError = Box<dyn std::error::Error + Send + Sync>;
+
+fn boxed_error(message: impl Into<String>) -> RetryError {
+    Box::new(std::io::Error::other(message.into()))
+}
+
+async fn provider_retry_sleep(
+    delay: Duration,
+    cancel: Option<&mut tokio::sync::watch::Receiver<bool>>,
+) -> Result<(), RetryError> {
+    match cancel {
+        Some(rx) => {
+            if *rx.borrow() {
+                return Err(boxed_error("Request aborted"));
+            }
+            tokio::select! {
+                _ = tokio::time::sleep(delay) => Ok(()),
+                changed = rx.changed() => {
+                    if changed.is_ok() && *rx.borrow() { Err(boxed_error("Request aborted")) } else { Ok(()) }
+                }
+            }
+        }
+        None => {
+            tokio::time::sleep(delay).await;
+            Ok(())
+        }
+    }
+}
+
+fn provider_retry_delay(
+    resp: &reqwest::Response,
+    attempt: u32,
+    config: &RetryConfig,
+) -> Result<Duration, RetryError> {
+    let delay =
+        retry_after_delay(resp.headers()).unwrap_or_else(|| compute_backoff(attempt, config));
+    let max = Duration::from_millis(config.max_retry_delay_ms);
+    if config.max_retry_delay_ms > 0 && delay > max {
+        return Err(boxed_error(format!(
+            "Server requested {}s retry delay (max: {}s). HTTP {}",
+            delay.as_secs().max(1),
+            max.as_secs().max(1),
+            resp.status().as_u16()
+        )));
+    }
+    Ok(delay)
+}
+
 pub async fn do_with_retry(
+    client: &reqwest::Client,
+    request_builder: reqwest::RequestBuilder,
+    config: &RetryConfig,
+) -> Result<reqwest::Response, RetryError> {
+    do_with_retry_cancel(client, request_builder, config, None).await
+}
+
+pub async fn do_with_retry_cancel(
     _client: &reqwest::Client,
     request_builder: reqwest::RequestBuilder,
     config: &RetryConfig,
-) -> Result<reqwest::Response, reqwest::Error> {
+    mut cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> Result<reqwest::Response, RetryError> {
     let mut attempt = 0u32;
     let mut builder = request_builder;
 
@@ -299,15 +449,11 @@ pub async fn do_with_retry(
         let retry_builder = builder.try_clone();
         match builder.send().await {
             Ok(resp) => {
-                if !is_retryable_status(resp.status().as_u16()) || attempt >= config.max_retries {
+                if !is_retryable_response(&resp) || attempt >= config.max_retries {
                     return Ok(resp);
                 }
-
-                let retry_after = retry_after_delay(resp.headers());
-                let mut delay = retry_after.unwrap_or_else(|| compute_backoff(attempt, config));
-                delay = delay.min(Duration::from_millis(config.max_retry_delay_ms));
-                tokio::time::sleep(delay).await;
-
+                let delay = provider_retry_delay(&resp, attempt, config)?;
+                provider_retry_sleep(delay, cancel.as_mut()).await?;
                 attempt += 1;
                 builder = match retry_builder {
                     Some(b) => b,
@@ -316,15 +462,14 @@ pub async fn do_with_retry(
             }
             Err(err) => {
                 if attempt >= config.max_retries {
-                    return Err(err);
+                    return Err(Box::new(err));
                 }
-                let delay = compute_backoff(attempt, config)
-                    .min(Duration::from_millis(config.max_retry_delay_ms));
-                tokio::time::sleep(delay).await;
+                let delay = compute_backoff(attempt, config);
+                provider_retry_sleep(delay, cancel.as_mut()).await?;
                 attempt += 1;
                 builder = match retry_builder {
                     Some(b) => b,
-                    None => return Err(err),
+                    None => return Err(Box::new(err)),
                 };
             }
         }

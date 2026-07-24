@@ -292,7 +292,7 @@ fn stream_responses_inner<'a>(
             Err(e) => {
                 yield Event::Error {
                     reason: StopReason::Error,
-                    error: Arc::from(Box::new(e) as Box<dyn std::error::Error + Send + Sync>),
+                    error: Arc::from(e),
                     message: None,
                 };
                 return;
