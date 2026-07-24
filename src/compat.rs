@@ -17,6 +17,7 @@ pub struct OpenAICompletionsCompat {
     pub requires_reasoning_content_on_assistant_messages: Option<bool>,
     pub thinking_format: Option<String>,
     pub supports_strict_mode: Option<bool>,
+    pub supports_openai_grammar_tools: Option<bool>,
     pub supports_long_cache_retention: Option<bool>,
     pub supports_session_affinity_headers: Option<bool>,
     pub zai_tool_stream: Option<bool>,
@@ -54,6 +55,7 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
             .requires_reasoning_content_on_assistant_messages,
         thinking_format: mc.thinking_format.clone(),
         supports_strict_mode: mc.supports_strict_mode,
+        supports_openai_grammar_tools: mc.supports_openai_grammar_tools,
         supports_long_cache_retention: mc.supports_long_cache_retention,
         supports_session_affinity_headers: mc.send_session_affinity_headers,
         zai_tool_stream: mc.zai_tool_stream,
@@ -106,6 +108,9 @@ pub fn detect_compat_for_model(
         }
         if o.supports_strict_mode.is_some() {
             c.supports_strict_mode = o.supports_strict_mode;
+        }
+        if o.supports_openai_grammar_tools.is_some() {
+            c.supports_openai_grammar_tools = o.supports_openai_grammar_tools;
         }
         if o.supports_long_cache_retention.is_some() {
             c.supports_long_cache_retention = o.supports_long_cache_retention;

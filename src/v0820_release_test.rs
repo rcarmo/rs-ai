@@ -286,6 +286,58 @@ mod tests {
         assert!(runtime.provider_has_oauth("kimi-coding"));
     }
 
+    #[test]
+    fn openai_completions_grammar_tool_request_shape_is_custom() {
+        let tool = crate::types::Tool {
+            name: "emit".into(),
+            description: "emit grammar".into(),
+            parameters: serde_json::json!({"type":"object","properties":{"input":{"type":"string"}},"required":["input"]}),
+            constrained_sampling: Some(
+                serde_json::json!({"type":"grammar","variants":{"openai_regex":"[a-z]+"}}),
+            ),
+        };
+        let mut model = get_model("openai", "gpt-5-mini").unwrap();
+        model.compat.supports_openai_grammar_tools = Some(true);
+        let payload = crate::provider::openai::build_payload(
+            &model,
+            &Context {
+                system_prompt: None,
+                messages: Vec::new(),
+                tools: vec![tool],
+            },
+            &StreamOptions::default(),
+            &crate::compat::detect_compat(&model),
+        );
+        assert_eq!(payload["tools"][0]["type"], "custom");
+        assert_eq!(payload["tools"][0]["format"]["syntax"], "regex");
+    }
+
+    #[test]
+    fn codex_payload_uses_responses_grammar_custom_tool_shape() {
+        let tool = crate::types::Tool {
+            name: "emit".into(),
+            description: "emit grammar".into(),
+            parameters: serde_json::json!({"type":"object","properties":{"input":{"type":"string"}},"required":["input"]}),
+            constrained_sampling: Some(
+                serde_json::json!({"type":"grammar","variants":{"openai_regex":"[a-z]+"}}),
+            ),
+        };
+        let mut model = get_model("openai-codex", "gpt-5.4-codex")
+            .unwrap_or_else(|| get_model("openai-codex", "gpt-5.4").unwrap());
+        model.compat.supports_openai_grammar_tools = Some(true);
+        let payload = crate::provider::codex::build_codex_payload(
+            &model,
+            &Context {
+                system_prompt: None,
+                messages: Vec::new(),
+                tools: vec![tool],
+            },
+            &StreamOptions::default(),
+        );
+        assert_eq!(payload["tools"][0]["type"], "custom");
+        assert_eq!(payload["tools"][0]["format"]["type"], "grammar");
+    }
+
     #[tokio::test]
     async fn openrouter_and_kimi_oauth_helpers_cover_release_behaviour() {
         let server = MockServer::start().await;
@@ -322,6 +374,62 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(refreshed.access, "kimi-access");
+    }
+
+    #[tokio::test]
+    async fn azure_responses_stream_reconstructs_grammar_custom_tool_input() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(concat!(
+                "data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"custom_tool_call\",\"call_id\":\"call_1\",\"id\":\"ctc_1\",\"name\":\"emit\",\"input\":\"\"}}\n\n",
+                "data: {\"type\":\"response.custom_tool_call_input.delta\",\"delta\":\"ab\"}\n\n",
+                "data: {\"type\":\"response.custom_tool_call_input.done\",\"input\":\"abc\"}\n\n",
+                "data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"custom_tool_call\",\"call_id\":\"call_1\",\"id\":\"ctc_1\",\"name\":\"emit\",\"input\":\"abc\"}}\n\n",
+                "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n",
+                "data: [DONE]\n\n"
+            )))
+            .mount(&server).await;
+        let mut model = get_model("azure-openai-responses", "gpt-5-mini")
+            .unwrap_or_else(|| get_model("openai", "gpt-5-mini").unwrap());
+        model.api = "azure-openai-responses".into();
+        model.provider = "azure-openai-responses".into();
+        model.base_url = server.uri();
+        model.api_key = Some("k".into());
+        model.compat.supports_openai_grammar_tools = Some(true);
+        let tool = crate::types::Tool {
+            name: "emit".into(),
+            description: "emit".into(),
+            parameters: serde_json::json!({"type":"object","properties":{"payload":{"type":"string"}},"required":["payload"]}),
+            constrained_sampling: Some(
+                serde_json::json!({"type":"grammar","variants":{"openai_regex":"[a-z]+"}}),
+            ),
+        };
+        let c = Context {
+            system_prompt: None,
+            messages: Vec::new(),
+            tools: vec![tool],
+        };
+        let opts = StreamOptions::default();
+        let mut stream = stream_responses(&model, &c, &opts);
+        let mut delta = String::new();
+        let mut done_args = None;
+        while let Some(event) = stream.next().await {
+            match event {
+                Event::ToolCallDelta { delta: d } => delta.push_str(&d),
+                Event::ToolCallEnd { arguments, .. } => done_args = Some(arguments),
+                Event::Error { error, .. } => panic!("unexpected error: {error}"),
+                _ => {}
+            }
+        }
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&delta).unwrap(),
+            serde_json::json!({"payload":"abc"})
+        );
+        assert_eq!(done_args.unwrap(), serde_json::json!({"payload":"abc"}));
+        assert_eq!(
+            server.received_requests().await.unwrap()[0].url.path(),
+            "/responses"
+        );
     }
 
     #[tokio::test]

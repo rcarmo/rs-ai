@@ -674,7 +674,7 @@ pub(crate) fn build_payload(
                     // Kimi accepts a system message with tools but omits the standard content field.
                     messages.push(json!({
                         "role": "system",
-                        "tools": converted_tools(&deferred_tools, include_strict),
+                        "tools": converted_tools(&deferred_tools, include_strict, compat.supports_openai_grammar_tools.unwrap_or(false)),
                     }));
                 }
             }
@@ -1041,7 +1041,11 @@ pub(crate) fn build_payload(
         .collect();
     if !active_tools.is_empty() {
         let include_strict = compat.supports_strict_mode != Some(false);
-        payload["tools"] = json!(converted_tools(&active_tools, include_strict));
+        payload["tools"] = json!(converted_tools(
+            &active_tools,
+            include_strict,
+            compat.supports_openai_grammar_tools.unwrap_or(false)
+        ));
         if compat.zai_tool_stream == Some(true) {
             payload["tool_stream"] = json!(true);
         }
@@ -1171,24 +1175,11 @@ fn get_deferred_tool_names(messages: &[Message]) -> HashSet<String> {
         .collect()
 }
 
-fn converted_tools(tools: &[Tool], include_strict: bool) -> Vec<Value> {
+fn converted_tools(tools: &[Tool], include_strict: bool, supports_grammar: bool) -> Vec<Value> {
     tools
         .iter()
         .map(|t| {
-            let mut function = json!({
-                "name": t.name,
-                "description": t.description,
-                "parameters": t.parameters,
-            });
-            if include_strict {
-                function["strict"] = json!(
-                    crate::utils::resolve_json_schema_strict_sampling(t, true)
-                        .ok()
-                        .flatten()
-                        .unwrap_or(false)
-                );
-            }
-            json!({ "type": "function", "function": function })
+            crate::utils::openai_tool_value(t, supports_grammar, include_strict, false).unwrap()
         })
         .collect()
 }

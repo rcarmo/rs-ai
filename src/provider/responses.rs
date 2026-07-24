@@ -358,6 +358,10 @@ fn stream_responses_inner<'a>(
         let mut current_tool_item_id: Option<String> = None;
         let mut current_tool_name: Option<String> = None;
         let mut current_tool_args = String::new();
+        let grammar_props: std::collections::HashMap<String, String> = context.tools.iter().filter_map(|t| {
+            crate::utils::resolve_grammar_constrained_sampling(t, model.compat.supports_openai_grammar_tools.unwrap_or(false)).ok().flatten().map(|g| (t.name.clone(), g.input_property))
+        }).collect();
+        let mut current_custom_buffer = crate::utils::GrammarToolInputJsonBuffer::default();
 
         while let Some(chunk_result) = stream.next().await {
             let chunk_bytes = match chunk_result {
@@ -401,6 +405,16 @@ fn stream_responses_inner<'a>(
                     "response.output_item.added" => {
                         if let Some(item) = data.get("item") {
                             match item.get("type").and_then(|v| v.as_str()).unwrap_or("") {
+                                "custom_tool_call" => {
+                                    current_tool_call_id = item.get("call_id").and_then(|v| v.as_str()).map(|s| s.to_string());
+                                    current_tool_item_id = item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string());
+                                    current_tool_name = item.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+                                    current_tool_args = item.get("input").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                                    current_custom_buffer = crate::utils::GrammarToolInputJsonBuffer::default();
+                                    if let (Some(id), Some(name)) = (current_tool_call_id.clone(), current_tool_name.clone()) {
+                                        yield Event::ToolCallStart { id, name };
+                                    }
+                                }
                                 "function_call" => {
                                     current_tool_call_id = item.get("call_id").and_then(|v| v.as_str()).map(|s| s.to_string());
                                     current_tool_item_id = item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string());
@@ -453,6 +467,25 @@ fn stream_responses_inner<'a>(
                             yield Event::ThinkingDelta { delta: "\n\n".to_string() };
                         }
                     }
+                    "response.custom_tool_call_input.delta" => {
+                        if let Some(delta) = data.get("delta").and_then(|v| v.as_str()) {
+                            let prop = current_tool_name.as_deref().and_then(|n| grammar_props.get(n).map(String::as_str)).unwrap_or("input");
+                            let next = format!("{}{}", current_custom_buffer.input, delta);
+                            if let Ok(Some(json_delta)) = crate::utils::append_grammar_tool_input_json_delta(&mut current_custom_buffer, prop, &next, false) {
+                                yield Event::ToolCallDelta { delta: json_delta };
+                            }
+                            current_tool_args = next;
+                        }
+                    }
+                    "response.custom_tool_call_input.done" => {
+                        if let Some(input) = data.get("input").and_then(|v| v.as_str()) {
+                            let prop = current_tool_name.as_deref().and_then(|n| grammar_props.get(n).map(String::as_str)).unwrap_or("input");
+                            if let Ok(Some(json_delta)) = crate::utils::append_grammar_tool_input_json_delta(&mut current_custom_buffer, prop, input, true) {
+                                yield Event::ToolCallDelta { delta: json_delta };
+                            }
+                            current_tool_args = input.to_string();
+                        }
+                    }
                     "response.function_call_arguments.delta" => {
                         if let Some(delta) = data.get("delta").and_then(|v| v.as_str()) {
                             current_tool_args.push_str(delta);
@@ -481,6 +514,18 @@ fn stream_responses_inner<'a>(
                     "response.output_item.done" => {
                         if let Some(item) = data.get("item") {
                             match item.get("type").and_then(|v| v.as_str()) {
+                                Some("custom_tool_call") => {
+                                    let id = item.get("call_id").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| current_tool_call_id.clone()).unwrap_or_default();
+                                    let item_id = item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| current_tool_item_id.clone());
+                                    let name = item.get("name").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| current_tool_name.clone()).unwrap_or_default();
+                                    let input = item.get("input").and_then(|v| v.as_str()).unwrap_or(&current_tool_args);
+                                    let prop = grammar_props.get(&name).map(String::as_str).unwrap_or("input");
+                                    let parsed = serde_json::json!({ prop: input });
+                                    let parsed_map = parsed.as_object().unwrap().clone().into_iter().collect();
+                                    partial.content.push(ContentBlock::ToolCall { id: match item_id { Some(item_id) if !id.is_empty() => format!("{}|{}", id, item_id), _ => id.clone() }, name: name.clone(), arguments: parsed_map, thought_signature: None });
+                                    yield Event::ToolCallEnd { id, name, arguments: parsed };
+                                    current_tool_call_id = None; current_tool_item_id = None; current_tool_name = None; current_tool_args.clear();
+                                }
                                 Some("function_call") => {
                                     let id = item.get("call_id").and_then(|v| v.as_str())
                                         .map(|s| s.to_string())
