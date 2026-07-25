@@ -17,7 +17,17 @@ pub fn stream_anthropic<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
-    let api_key = client_api_key(model, opts);
+    let env_auth_token =
+        if model.provider == "anthropic" && opts.api_key.is_none() && model.api_key.is_none() {
+            std::env::var("ANTHROPIC_AUTH_TOKEN")
+                .ok()
+                .filter(|v| !v.is_empty())
+        } else {
+            None
+        };
+    let api_key = env_auth_token
+        .clone()
+        .or_else(|| client_api_key(model, opts));
     if api_key.is_none() {
         let err = Event::Error {
             reason: StopReason::Error,
@@ -71,6 +81,7 @@ pub fn stream_anthropic<'a>(
         HeaderValue::from_static("true"),
     );
 
+    let is_auth_token = env_auth_token.is_some();
     let is_oauth = api_key.contains("sk-ant-oat");
     if model.provider == "cloudflare-ai-gateway" {
         // Cloudflare AI Gateway: authenticate via cf-aig-authorization, not x-api-key.
@@ -85,7 +96,7 @@ pub fn stream_anthropic<'a>(
             reqwest::header::AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
         );
-    } else if is_oauth {
+    } else if is_auth_token || is_oauth {
         headers.insert(
             reqwest::header::AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),

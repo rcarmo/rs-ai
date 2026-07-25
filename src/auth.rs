@@ -324,12 +324,10 @@ async fn resolve_api_key(
     credential: Option<&ApiKeyCredential>,
 ) -> Result<Option<AuthResult>, ModelsError> {
     api_key.resolve(model, ctx, credential).await.map_err(|e| {
-        ModelsError::new(
+        ModelsError::with_cause(
             ModelsErrorCode::Auth,
-            format!(
-                "API key auth failed for provider {}: {}",
-                model.provider, e.message
-            ),
+            format!("API key auth failed for provider {}", model.provider),
+            e,
         )
     })
 }
@@ -355,9 +353,10 @@ async fn resolve_stored_oauth(
                             return Ok(None);
                         }
                         let refreshed = oauth.refresh(&cur).await.map_err(|e| {
-                            ModelsError::new(
+                            ModelsError::with_cause(
                                 ModelsErrorCode::OAuth,
-                                format!("OAuth refresh failed for {provider_id}: {}", e.message),
+                                format!("OAuth refresh failed for {provider_id}"),
+                                e,
                             )
                         })?;
                         Ok(Some(Credential::OAuth(refreshed)))
@@ -376,12 +375,10 @@ async fn resolve_stored_oauth(
         }
     }
     let auth = oauth.to_auth(&credential).await.map_err(|e| {
-        ModelsError::new(
+        ModelsError::with_cause(
             ModelsErrorCode::OAuth,
-            format!(
-                "OAuth auth derivation failed for {provider_id}: {}",
-                e.message
-            ),
+            format!("OAuth auth derivation failed for {provider_id}"),
+            e,
         )
     })?;
     Ok(Some(AuthResult {

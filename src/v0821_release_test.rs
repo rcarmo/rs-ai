@@ -478,6 +478,98 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn radius_runtime_refresh_reuses_cached_catalog_on_etag_304() {
+        use crate::models_runtime::ModelsStore;
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .respond_with(ResponseTemplate::new(304))
+            .mount(&server)
+            .await;
+        let store = std::sync::Arc::new(crate::models_runtime::InMemoryModelsStore::new());
+        let mut cached = get_model("radius", "auto").unwrap_or_else(|| crate::types::Model {
+            id: "cached".into(),
+            name: "cached".into(),
+            api: "pi-messages".into(),
+            provider: "radius".into(),
+            base_url: "http://cached/v1".into(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: crate::types::ModelCost::default(),
+            context_window: 10,
+            max_tokens: 5,
+            headers: None,
+            api_key: None,
+            compat: Default::default(),
+        });
+        cached.id = "cached".into();
+        store
+            .write(
+                "radius",
+                crate::models_runtime::ModelsStoreEntry {
+                    models: vec![cached],
+                    last_modified: Some(1),
+                    checked_at: Some(1),
+                    etag: Some("\"abc\"".into()),
+                },
+            )
+            .await
+            .unwrap();
+        let runtime = crate::models_runtime::ModelsRuntime::with_models_store(store);
+        runtime.set_provider(crate::models_runtime::RuntimeProvider::radius(
+            "radius",
+            "Radius",
+            server.uri(),
+            Vec::new(),
+        ));
+        let result = runtime
+            .refresh(crate::models_runtime::RefreshOptions {
+                allow_network: true,
+                force: false,
+                cancel: None,
+            })
+            .await;
+        assert!(result.errors.is_empty());
+        assert!(runtime.get_model("radius", "cached").is_some());
+        let req = server.received_requests().await.unwrap().pop().unwrap();
+        assert_eq!(
+            req.headers.get("if-none-match").unwrap().to_str().unwrap(),
+            "\"abc\""
+        );
+    }
+
+    #[tokio::test]
+    async fn anthropic_auth_token_env_sends_bearer_not_x_api_key() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude\",\"stop_reason\":null,\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"))
+            .mount(&server).await;
+        let mut model = get_model("anthropic", "claude-opus-5").unwrap();
+        model.base_url = server.uri();
+        model.api_key = None;
+        unsafe {
+            std::env::set_var("ANTHROPIC_AUTH_TOKEN", "auth-token");
+        }
+        let c = ctx();
+        let opts = StreamOptions::default();
+        let mut stream = crate::provider::anthropic::stream_anthropic(&model, &c, &opts);
+        while let Some(event) = stream.next().await {
+            if let Event::Error { error, .. } = event {
+                panic!("unexpected error: {error}");
+            }
+        }
+        unsafe {
+            std::env::remove_var("ANTHROPIC_AUTH_TOKEN");
+        }
+        let req = server.received_requests().await.unwrap().pop().unwrap();
+        assert_eq!(
+            req.headers.get("authorization").unwrap().to_str().unwrap(),
+            "Bearer auth-token"
+        );
+        assert!(req.headers.get("x-api-key").is_none());
+    }
+
+    #[tokio::test]
     async fn opencode_go_grok_45_uses_openai_responses_request_path() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

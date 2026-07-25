@@ -166,9 +166,50 @@ impl RuntimeProvider {
                     Some(Credential::OAuth(c)) => Some(c.access.as_str()),
                     None => None,
                 };
-                let config = crate::oauth::load_radius_gateway_config(&gateway, api_key)
-                    .await
-                    .map_err(|e| ModelsError::new(ModelsErrorCode::ModelSource, e))?;
+                let stored = ctx.store.read().await?;
+                let config = if let Some(etag) = stored.as_ref().and_then(|s| s.etag.clone()) {
+                    let url = format!("{gateway}/v1/config");
+                    let mut req = crate::http_proxy::client_for_target(&url, None)
+                        .get(&url)
+                        .header("accept", "application/json")
+                        .header("if-none-match", etag);
+                    if let Some(api_key) = api_key {
+                        req = req.bearer_auth(api_key);
+                    }
+                    let resp = req.send().await.map_err(|e| {
+                        ModelsError::with_cause(
+                            ModelsErrorCode::ModelSource,
+                            "Could not load Radius config",
+                            e,
+                        )
+                    })?;
+                    if resp.status().as_u16() == 304 {
+                        return Ok(stored.map(|s| s.models).unwrap_or_default());
+                    }
+                    if !resp.status().is_success() {
+                        return Err(ModelsError::new(
+                            ModelsErrorCode::ModelSource,
+                            format!(
+                                "Could not load Radius config from {gateway}: {}",
+                                resp.status().as_u16()
+                            ),
+                        ));
+                    }
+                    crate::oauth::sanitize_radius_gateway_config(resp.json().await.map_err(
+                        |e| {
+                            ModelsError::with_cause(
+                                ModelsErrorCode::ModelSource,
+                                "Invalid Radius config",
+                                e,
+                            )
+                        },
+                    )?)
+                    .map_err(|e| ModelsError::new(ModelsErrorCode::ModelSource, e))?
+                } else {
+                    crate::oauth::load_radius_gateway_config(&gateway, api_key)
+                        .await
+                        .map_err(|e| ModelsError::new(ModelsErrorCode::ModelSource, e))?
+                };
                 let creds = crate::oauth::RadiusOAuthCredentials {
                     access: api_key.unwrap_or_default().to_string(),
                     refresh: None,

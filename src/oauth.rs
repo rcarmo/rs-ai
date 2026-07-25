@@ -1432,7 +1432,9 @@ fn required_string(v: &serde_json::Value, key: &str) -> Result<String, String> {
         .ok_or_else(|| format!("Radius OAuth config is missing {key}"))
 }
 
-fn sanitize_radius_gateway_config(v: serde_json::Value) -> Result<RadiusGatewayConfig, String> {
+pub(crate) fn sanitize_radius_gateway_config(
+    v: serde_json::Value,
+) -> Result<RadiusGatewayConfig, String> {
     let base_url = v
         .get("baseUrl")
         .and_then(|x| x.as_str())
