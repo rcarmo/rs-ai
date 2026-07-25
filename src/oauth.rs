@@ -1381,18 +1381,47 @@ pub async fn load_radius_oauth_config(gateway: &str) -> Result<RadiusOAuthConfig
     }
     let v: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
     Ok(RadiusOAuthConfig {
-        issuer: required_string(&v, "issuer")?,
+        issuer: v
+            .get("issuer")
+            .and_then(|x| x.as_str())
+            .unwrap_or(&gateway)
+            .to_string(),
         authorization_endpoint: required_string(&v, "authorizationEndpoint")?,
-        token_endpoint: required_string(&v, "tokenEndpoint")?,
-        device_authorization_endpoint: required_string(&v, "deviceAuthorizationEndpoint")?,
-        device_authorization_events_endpoint: required_string(
-            &v,
-            "deviceAuthorizationEventsEndpoint",
-        )?,
-        verification_endpoint: required_string(&v, "verificationEndpoint")?,
-        client_id: required_string(&v, "clientId")?,
-        scope: required_string(&v, "scope")?,
-        device_code_grant_type: required_string(&v, "deviceCodeGrantType")?,
+        token_endpoint: v
+            .get("tokenEndpoint")
+            .and_then(|x| x.as_str())
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("{gateway}/v1/oauth/token")),
+        device_authorization_endpoint: v
+            .get("deviceAuthorizationEndpoint")
+            .and_then(|x| x.as_str())
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("{gateway}/v1/oauth/device_authorization")),
+        device_authorization_events_endpoint: v
+            .get("deviceAuthorizationEventsEndpoint")
+            .and_then(|x| x.as_str())
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("{gateway}/v1/oauth/device_authorization/events")),
+        verification_endpoint: v
+            .get("verificationEndpoint")
+            .and_then(|x| x.as_str())
+            .map(str::to_string)
+            .unwrap_or_else(|| gateway.clone()),
+        client_id: v
+            .get("clientId")
+            .and_then(|x| x.as_str())
+            .unwrap_or("pi-gateway")
+            .to_string(),
+        scope: v
+            .get("scope")
+            .and_then(|x| x.as_str())
+            .unwrap_or("gateway offline_access")
+            .to_string(),
+        device_code_grant_type: v
+            .get("deviceCodeGrantType")
+            .and_then(|x| x.as_str())
+            .unwrap_or("urn:ietf:params:oauth:grant-type:device_code")
+            .to_string(),
     })
 }
 
