@@ -18,7 +18,9 @@ use tokio::sync::watch;
 #[derive(Clone, Debug)]
 pub struct ModelsStoreEntry {
     pub models: Vec<Model>,
+    pub last_modified: Option<i64>,
     pub checked_at: Option<i64>,
+    pub etag: Option<String>,
 }
 
 #[async_trait::async_trait]
@@ -219,7 +221,9 @@ impl RuntimeProvider {
         ctx.store
             .write(ModelsStoreEntry {
                 models: refreshed,
+                last_modified: None,
                 checked_at: Some(crate::utils::now_millis()),
+                etag: None,
             })
             .await
     }

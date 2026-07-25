@@ -91,6 +91,21 @@ impl ModelsError {
             message: message.into(),
         }
     }
+
+    pub fn with_cause(
+        code: ModelsErrorCode,
+        message: impl Into<String>,
+        cause: impl std::fmt::Display,
+    ) -> Self {
+        let message = message.into();
+        let detail = cause.to_string();
+        let message = if detail.trim().is_empty() || message.contains(&detail) {
+            message
+        } else {
+            format!("{message}: {detail}")
+        };
+        Self { code, message }
+    }
 }
 
 impl std::fmt::Display for ModelsError {

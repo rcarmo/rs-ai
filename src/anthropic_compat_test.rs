@@ -197,7 +197,9 @@ mod tests {
                 || id.contains("4-7")
                 || id.contains("4.7")
                 || id.contains("4-8")
-                || id.contains("4.8"));
+                || id.contains("4.8")
+                || id.contains("opus-5")
+                || id.contains("opus.5"));
         let sonnet = id.contains("sonnet")
             && (id.contains("4-6")
                 || id.contains("4.6")

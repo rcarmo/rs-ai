@@ -8,10 +8,15 @@ use crate::types::{Model, StreamOptions};
 static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyLock::new(|| {
     HashMap::from([
         ("github-copilot", &["COPILOT_GITHUB_TOKEN"][..]),
-        // ANTHROPIC_OAUTH_TOKEN takes precedence over ANTHROPIC_API_KEY
+        // ANTHROPIC_AUTH_TOKEN participates in discovery/status, but request API-key
+        // resolution skips it because it must be sent as Authorization: Bearer.
         (
             "anthropic",
-            &["ANTHROPIC_OAUTH_TOKEN", "ANTHROPIC_API_KEY"][..],
+            &[
+                "ANTHROPIC_AUTH_TOKEN",
+                "ANTHROPIC_OAUTH_TOKEN",
+                "ANTHROPIC_API_KEY",
+            ][..],
         ),
         ("ant-ling", &["ANT_LING_API_KEY"][..]),
         ("qwen-token-plan", &["QWEN_TOKEN_PLAN_API_KEY"][..]),
@@ -68,6 +73,9 @@ pub fn api_key_env_vars(provider: &str) -> Option<&'static [&'static str]> {
 pub fn get_env_api_key(provider: &str) -> Option<String> {
     if let Some(vars) = api_key_env_vars(provider) {
         for var in vars {
+            if provider == "anthropic" && *var == "ANTHROPIC_AUTH_TOKEN" {
+                continue;
+            }
             if let Ok(val) = std::env::var(var)
                 && !val.is_empty()
             {

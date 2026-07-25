@@ -1,4 +1,4 @@
-//! v0.82.0 release-delta tests: generated model data invariants, image additions,
+//! v0.82.1 release-delta tests: generated model data invariants, image additions,
 //! Qwen Token Plan providers, shared text/uuid utilities, and OpenCode Go Responses.
 
 #[cfg(test)]
@@ -14,13 +14,13 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
-    fn generated_model_data_is_structurally_valid_and_v0820_counts_match() {
+    fn generated_model_data_is_structurally_valid_and_v0821_counts_match() {
         let all = crate::models_generated::builtin_models();
         let pairs = all
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1116);
+        assert_eq!(pairs.len(), 1109);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -69,7 +69,27 @@ mod tests {
     }
 
     #[test]
-    fn image_model_catalog_includes_v0820_openrouter_additions() {
+    fn opus_5_bedrock_and_anthropic_metadata_is_present() {
+        let anthropic = get_model("anthropic", "claude-opus-5").expect("anthropic opus 5");
+        assert_eq!(
+            anthropic.thinking_level_map.as_ref().unwrap().get("xhigh"),
+            Some(&Some("xhigh".into()))
+        );
+        assert_eq!(
+            anthropic.thinking_level_map.as_ref().unwrap().get("max"),
+            Some(&Some("max".into()))
+        );
+        let bedrock = get_model("amazon-bedrock", "us.anthropic.claude-opus-5")
+            .expect("bedrock opus 5 profile");
+        assert!(bedrock.id.contains("opus-5"));
+        assert_eq!(
+            bedrock.thinking_level_map.as_ref().unwrap().get("xhigh"),
+            Some(&Some("xhigh".into()))
+        );
+    }
+
+    #[test]
+    fn image_model_catalog_includes_v0821_openrouter_additions() {
         let ids = crate::images::list_image_models(Some("openrouter"))
             .into_iter()
             .map(|m| m.id)
@@ -84,6 +104,31 @@ mod tests {
         ] {
             assert!(ids.contains(id), "missing image model {id}");
         }
+    }
+
+    #[test]
+    fn v0821_auth_error_cause_etag_and_anthropic_auth_token_behaviour() {
+        let err = crate::auth::ModelsError::with_cause(
+            crate::auth::ModelsErrorCode::Auth,
+            "Credential store read failed for anthropic",
+            "disk offline",
+        );
+        assert_eq!(
+            err.to_string(),
+            "Credential store read failed for anthropic: disk offline"
+        );
+        let entry = crate::models_runtime::ModelsStoreEntry {
+            models: Vec::new(),
+            last_modified: Some(123),
+            checked_at: Some(456),
+            etag: Some("\"abc\"".into()),
+        };
+        assert_eq!(entry.etag.as_deref(), Some("\"abc\""));
+        assert_eq!(entry.last_modified, Some(123));
+        assert_eq!(
+            crate::env::api_key_env_vars("anthropic").unwrap()[0],
+            "ANTHROPIC_AUTH_TOKEN"
+        );
     }
 
     #[test]

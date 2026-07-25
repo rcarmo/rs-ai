@@ -89,7 +89,9 @@ mod tests {
                 "dyn",
                 ModelsStoreEntry {
                     models: vec![model("dyn", "cached")],
+                    last_modified: None,
                     checked_at: Some(1),
+                    etag: None,
                 },
             )
             .await
@@ -99,7 +101,9 @@ mod tests {
                 "other",
                 ModelsStoreEntry {
                     models: vec![model("other", "cached-other")],
+                    last_modified: None,
                     checked_at: Some(1),
+                    etag: None,
                 },
             )
             .await
@@ -167,7 +171,9 @@ mod tests {
                 "bad",
                 ModelsStoreEntry {
                     models: vec![model("bad", "cached")],
+                    last_modified: None,
                     checked_at: Some(1),
+                    etag: None,
                 },
             )
             .await
@@ -241,7 +247,9 @@ mod tests {
                 "dyn",
                 ModelsStoreEntry {
                     models: vec![model("dyn", "cached")],
+                    last_modified: None,
                     checked_at: Some(1),
+                    etag: None,
                 },
             )
             .await

@@ -1,10 +1,27 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.82.0
+## Current parity audit: `@earendil-works/pi-ai` v0.82.1
 
-Authoritative package/tag: npm `@earendil-works/pi-ai@0.82.0`, package/tag SHA `083e61621276bff9f6faefab87ce07fcd98734e2` (`github.com/earendil-works/pi` tag `v0.82.0`). Pinned scope for this release-only audit is exactly `20be4b18d4c57487f8993d2762bace129f0cf7c6..083e61621276bff9f6faefab87ce07fcd98734e2`; do not chase newer main.
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.82.1`, package/tag SHA `b4f293684bba718d59cc1157679bcf6157b3a7f5` (`github.com/earendil-works/pi` tag `v0.82.1`). Pinned scope for this release-only audit is exactly `083e61621276bff9f6faefab87ce07fcd98734e2..b4f293684bba718d59cc1157679bcf6157b3a7f5`; do not chase newer main.
 
-Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`; prior deltas through v0.81.1 remain ported. v0.81.1→v0.82.0 changes **96** unique `packages/ai` paths; disposition matrix:
+Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`; prior deltas through v0.82.0 remain ported. v0.82.0→v0.82.1 changes **23** unique `packages/ai` paths; disposition matrix:
+
+| Upstream path group | Count | Disposition | rs-ai path / evidence |
+|---|---:|---|---|
+| Release docs/package metadata: `CHANGELOG.md`, `package.json` | 2 | N/A | package/docs metadata only; release disposition recorded here. |
+| Catalog/generator metadata: `scripts/generate-models.ts` and generated provider data | 1 | PORTED | regenerated `src/models_generated.rs` from v0.82.1 JSON shards; comparator `text=1109/1109`, `image=40/40`. |
+| Bedrock Opus 5 runtime/catalog: `src/api/bedrock-converse-stream.ts`, `test/bedrock-models.test.ts`, `test/bedrock-thinking-payload.test.ts` | 3 | PORTED | Opus 5 Bedrock inference profiles/settings are in generated catalog and asserted in `src/v0821_release_test.rs`. |
+| Radius OAuth gateway routing: `src/auth/oauth/radius.ts`, `test/radius-oauth.test.ts` | 2 | PORTED | `src/oauth.rs` accepts discovery-only `/v1/oauth` and routes token/device calls through gateway `/v1/oauth/*`; existing Radius OAuth tests pass. |
+| ModelsError/model-store runtime: `src/auth/resolve.ts`, `src/models-store.ts`, `test/models-runtime.test.ts` | 3 | PORTED | `ModelsError::with_cause` preserves cause detail in messages; `ModelsStoreEntry` now carries `last_modified` and `etag`; tested in `src/v0821_release_test.rs`. |
+| Anthropic bearer-token env auth: `src/env-api-keys.ts`, `src/providers/anthropic.ts`, `test/anthropic-auth-token.test.ts`, `test/env-api-keys.test.ts`, `test/providers.test.ts` | 5 | PORTED | `ANTHROPIC_AUTH_TOKEN` participates in env discovery while `get_env_api_key` skips it as request API key; tested in `src/v0821_release_test.rs`. |
+| Error body formatting/regressions: `src/utils/error-body.ts`, `test/error-body.test.ts`, `test/provider-error-body-regression.test.ts` | 3 | COVERED | Existing Rust `error_body` provider HTTP formatting remains covered by provider/error-body regression tests. |
+| Metadata expectation tests: `test/anthropic-adaptive-thinking-models.test.ts`, `test/openai-responses-reasoning-replay-e2e.test.ts`, `test/supports-xhigh.test.ts`, `test/xhigh.test.ts` | 4 | PORTED / N/A live | deterministic metadata expectations covered by regenerated catalog; live E2E remains N/A. |
+
+- **Model and image registries — PORTED.** Regenerated text catalog from upstream v0.82.1 hydrated JSON shards: **1109 text provider/id pairs across 37 providers**; image catalog remains **40/40**. Repro comparator evidence: `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0821-json scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0821 b4f293684bba718d59cc1157679bcf6157b3a7f5` => `text: upstream=1109 local=1109 missing=0 extra=0`; `image: upstream=40 local=40 missing=0 extra=0`.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.82.0
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.82.0`, package/tag SHA `083e61621276bff9f6faefab87ce07fcd98734e2` (`github.com/earendil-works/pi` tag `v0.82.0`). v0.82.0 changed **96** unique `packages/ai` paths and was fully ported before v0.82.1 superseded it.
 
 | Upstream path group | Count | Disposition | rs-ai path / evidence |
 |---|---:|---|---|

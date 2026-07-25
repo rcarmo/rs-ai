@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: models.generated.js (1116 models, 37 providers)
-//! Generated: 2026-07-24T06:24:40.215749Z
+//! Source: models.generated.js (1109 models, 37 providers)
+//! Generated: 2026-07-25T18:45:52.457691Z
 
 #![allow(clippy::approx_constant)]
 
@@ -330,6 +330,25 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
+            id: "au.anthropic.claude-opus-5".into(),
+            name: "Claude Opus 5 (AU)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
             id: "au.anthropic.claude-sonnet-4-5-20250929-v1:0".into(),
             name: "Claude Sonnet 4.5 (AU)".into(),
             api: "bedrock-converse-stream".into(),
@@ -563,6 +582,25 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
+            id: "eu.anthropic.claude-opus-5".into(),
+            name: "Claude Opus 5 (EU)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.eu-central-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5.5_f64, output: 27.5_f64, cache_read: 0.55_f64, cache_write: 6.875_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
             id: "eu.anthropic.claude-sonnet-4-5-20250929-v1:0".into(),
             name: "Claude Sonnet 4.5 (EU)".into(),
             api: "bedrock-converse-stream".into(),
@@ -742,6 +780,25 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
+            id: "global.anthropic.claude-opus-5".into(),
+            name: "Claude Opus 5 (Global)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
             id: "global.anthropic.claude-sonnet-4-5-20250929-v1:0".into(),
             name: "Claude Sonnet 4.5 (Global)".into(),
             api: "bedrock-converse-stream".into(),
@@ -879,6 +936,25 @@ pub fn builtin_models() -> Vec<Model> {
         Model {
             id: "jp.anthropic.claude-opus-4-8".into(),
             name: "Claude Opus 4.8 (JP)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
+            id: "jp.anthropic.claude-opus-5".into(),
+            name: "Claude Opus 5 (JP)".into(),
             api: "bedrock-converse-stream".into(),
             provider: "amazon-bedrock".into(),
             base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
@@ -1853,6 +1929,25 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
+            id: "us.anthropic.claude-opus-5".into(),
+            name: "Claude Opus 5 (US)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        },
+        Model {
             id: "us.anthropic.claude-sonnet-4-5-20250929-v1:0".into(),
             name: "Claude Sonnet 4.5 (US)".into(),
             api: "bedrock-converse-stream".into(),
@@ -2336,6 +2431,29 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
+            id: "claude-opus-5".into(),
+            name: "Claude Opus 5".into(),
+            api: "anthropic-messages".into(),
+            provider: "anthropic".into(),
+            base_url: "https://api.anthropic.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
             id: "claude-sonnet-4-5".into(),
             name: "Claude Sonnet 4.5 (latest)".into(),
             api: "anthropic-messages".into(),
@@ -2586,7 +2704,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-chat-latest".into(),
@@ -2604,25 +2725,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "gpt-5-codex".into(),
-            name: "GPT-5-Codex".into(),
-            api: "azure-openai-responses".into(),
-            provider: "azure-openai-responses".into(),
-            base_url: "".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-mini".into(),
@@ -2640,7 +2746,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-nano".into(),
@@ -2658,7 +2767,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-pro".into(),
@@ -2676,7 +2788,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1".into(),
@@ -2694,79 +2809,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "gpt-5.1-chat-latest".into(),
-            name: "GPT-5.1 Chat".into(),
-            api: "azure-openai-responses".into(),
-            provider: "azure-openai-responses".into(),
-            base_url: "".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 128000,
-            max_tokens: 16384,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "gpt-5.1-codex".into(),
-            name: "GPT-5.1 Codex".into(),
-            api: "azure-openai-responses".into(),
-            provider: "azure-openai-responses".into(),
-            base_url: "".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "gpt-5.1-codex-max".into(),
-            name: "GPT-5.1 Codex Max".into(),
-            api: "azure-openai-responses".into(),
-            provider: "azure-openai-responses".into(),
-            base_url: "".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "gpt-5.1-codex-mini".into(),
-            name: "GPT-5.1 Codex mini".into(),
-            api: "azure-openai-responses".into(),
-            provider: "azure-openai-responses".into(),
-            base_url: "".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.25_f64, output: 2_f64, cache_read: 0.025_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2".into(),
@@ -2785,7 +2831,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2-chat-latest".into(),
@@ -2804,26 +2853,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "gpt-5.2-codex".into(),
-            name: "GPT-5.2 Codex".into(),
-            api: "azure-openai-responses".into(),
-            provider: "azure-openai-responses".into(),
-            base_url: "".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2-pro".into(),
@@ -2842,7 +2875,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-chat-latest".into(),
@@ -2861,7 +2897,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 16384,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-codex".into(),
@@ -2880,7 +2919,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-codex-spark".into(),
@@ -2899,7 +2941,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 32000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4".into(),
@@ -2918,7 +2963,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-mini".into(),
@@ -2937,7 +2985,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-nano".into(),
@@ -2956,7 +3007,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-pro".into(),
@@ -2975,7 +3029,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5".into(),
@@ -2994,7 +3051,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5-pro".into(),
@@ -3015,7 +3075,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-luna".into(),
@@ -3035,7 +3098,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-sol".into(),
@@ -3055,7 +3121,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-terra".into(),
@@ -3075,7 +3144,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-realtime-2.1".into(),
@@ -3142,22 +3214,6 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
-            id: "o3-deep-research".into(),
-            name: "o3-deep-research".into(),
-            api: "azure-openai-responses".into(),
-            provider: "azure-openai-responses".into(),
-            base_url: "".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 10_f64, output: 40_f64, cache_read: 2.5_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 200000,
-            max_tokens: 100000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
             id: "o3-mini".into(),
             name: "o3-mini".into(),
             api: "azure-openai-responses".into(),
@@ -3199,22 +3255,6 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.1_f64, output: 4.4_f64, cache_read: 0.275_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 200000,
-            max_tokens: 100000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "o4-mini-deep-research".into(),
-            name: "o4-mini-deep-research".into(),
-            api: "azure-openai-responses".into(),
-            provider: "azure-openai-responses".into(),
-            base_url: "".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 2_f64, output: 8_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 200000,
             max_tokens: 100000,
             headers: None,
@@ -3758,7 +3798,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1-codex".into(),
@@ -3782,7 +3825,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2".into(),
@@ -3806,7 +3852,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2-codex".into(),
@@ -3830,7 +3879,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-codex".into(),
@@ -3854,7 +3906,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4".into(),
@@ -3878,7 +3933,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5".into(),
@@ -3902,7 +3960,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-luna".into(),
@@ -3926,7 +3987,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-sol".into(),
@@ -3950,7 +4014,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-terra".into(),
@@ -3974,7 +4041,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "o1".into(),
@@ -5113,6 +5183,29 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
+            id: "claude-opus-5".into(),
+            name: "Claude Opus 5".into(),
+            api: "anthropic-messages".into(),
+            provider: "github-copilot".into(),
+            base_url: "https://api.individual.githubcopilot.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 64000,
+            headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
             id: "claude-sonnet-4".into(),
             name: "Claude Sonnet 4 (latest)".into(),
             api: "anthropic-messages".into(),
@@ -5321,7 +5414,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 64000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2".into(),
@@ -5341,7 +5437,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2-codex".into(),
@@ -5361,7 +5460,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-codex".into(),
@@ -5385,7 +5487,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4".into(),
@@ -5409,7 +5514,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-mini".into(),
@@ -5433,7 +5541,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-nano".into(),
@@ -5453,7 +5564,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5".into(),
@@ -5477,7 +5591,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-luna".into(),
@@ -5501,7 +5618,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-sol".into(),
@@ -5525,7 +5645,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-terra".into(),
@@ -5549,7 +5672,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: Some(HashMap::from([("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Copilot-Integration-Id".into(), "vscode-chat".into())])),
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "kimi-k2.7-code".into(),
@@ -5598,7 +5724,7 @@ pub fn builtin_models() -> Vec<Model> {
         },
         Model {
             id: "deep-research-max-preview-04-2026".into(),
-            name: "Deep Research Max Preview".into(),
+            name: "Deep Research Max Preview (Apr-21-2026)".into(),
             api: "google-generative-ai".into(),
             provider: "google".into(),
             base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
@@ -5606,7 +5732,7 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1048576,
+            context_window: 131072,
             max_tokens: 65536,
             headers: None,
             api_key: None,
@@ -5614,7 +5740,7 @@ pub fn builtin_models() -> Vec<Model> {
         },
         Model {
             id: "deep-research-preview-04-2026".into(),
-            name: "Gemini Deep Research Preview".into(),
+            name: "Deep Research Preview (Apr-21-2026)".into(),
             api: "google-generative-ai".into(),
             provider: "google".into(),
             base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
@@ -5622,7 +5748,7 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1048576,
+            context_window: 131072,
             max_tokens: 65536,
             headers: None,
             api_key: None,
@@ -5662,7 +5788,7 @@ pub fn builtin_models() -> Vec<Model> {
         },
         Model {
             id: "gemini-2.5-computer-use-preview-10-2025".into(),
-            name: "Gemini 2.5 Computer Use Preview".into(),
+            name: "Gemini 2.5 Computer Use Preview 10-2025".into(),
             api: "google-generative-ai".into(),
             provider: "google".into(),
             base_url: "https://generativelanguage.googleapis.com/v1beta".into(),
@@ -5670,8 +5796,8 @@ pub fn builtin_models() -> Vec<Model> {
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 128000,
-            max_tokens: 64000,
+            context_window: 131072,
+            max_tokens: 65536,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
@@ -5795,7 +5921,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0.25_f64, output: 30_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 65536,
-            max_tokens: 4096,
+            max_tokens: 65536,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
@@ -7422,6 +7548,33 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 allow_empty_signature: Some(true),
+                force_adaptive_thinking: Some(true),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "k3-256k".into(),
+            name: "Kimi K3-256K".into(),
+            api: "anthropic-messages".into(),
+            provider: "kimi-coding".into(),
+            base_url: "https://api.kimi.com/coding".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), None),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 131072,
+            headers: Some(HashMap::from([("User-Agent".into(), "KimiCLI/1.5".into())])),
+            api_key: None,
+            compat: ModelCompat {
                 force_adaptive_thinking: Some(true),
                 ..Default::default()
             },
@@ -9193,6 +9346,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9214,33 +9368,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "gpt-5-codex".into(),
-            name: "GPT-5-Codex".into(),
-            api: "openai-responses".into(),
-            provider: "openai".into(),
-            base_url: "https://api.openai.com/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("minimal".into(), None),
-                ("low".into(), Some("low".into())),
-                ("medium".into(), Some("medium".into())),
-                ("high".into(), Some("high".into())),
-                ("xhigh".into(), None),
-                ("max".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9268,6 +9396,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9295,6 +9424,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9322,6 +9452,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9349,114 +9480,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "gpt-5.1-chat-latest".into(),
-            name: "GPT-5.1 Chat".into(),
-            api: "openai-responses".into(),
-            provider: "openai".into(),
-            base_url: "https://api.openai.com/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("minimal".into(), None),
-                ("low".into(), None),
-                ("medium".into(), Some("medium".into())),
-                ("high".into(), None),
-                ("xhigh".into(), None),
-                ("max".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 128000,
-            max_tokens: 16384,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_strict_mode: Some(true),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "gpt-5.1-codex".into(),
-            name: "GPT-5.1 Codex".into(),
-            api: "openai-responses".into(),
-            provider: "openai".into(),
-            base_url: "https://api.openai.com/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("minimal".into(), None),
-                ("low".into(), Some("low".into())),
-                ("medium".into(), Some("medium".into())),
-                ("high".into(), Some("high".into())),
-                ("xhigh".into(), None),
-                ("max".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_strict_mode: Some(true),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "gpt-5.1-codex-max".into(),
-            name: "GPT-5.1 Codex Max".into(),
-            api: "openai-responses".into(),
-            provider: "openai".into(),
-            base_url: "https://api.openai.com/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("minimal".into(), None),
-                ("low".into(), Some("low".into())),
-                ("medium".into(), Some("medium".into())),
-                ("high".into(), Some("high".into())),
-                ("xhigh".into(), Some("xhigh".into())),
-                ("max".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_strict_mode: Some(true),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "gpt-5.1-codex-mini".into(),
-            name: "GPT-5.1 Codex mini".into(),
-            api: "openai-responses".into(),
-            provider: "openai".into(),
-            base_url: "https://api.openai.com/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("minimal".into(), None),
-                ("low".into(), Some("low".into())),
-                ("medium".into(), Some("medium".into())),
-                ("high".into(), Some("high".into())),
-                ("xhigh".into(), None),
-                ("max".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.25_f64, output: 2_f64, cache_read: 0.025_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9484,6 +9508,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9511,33 +9536,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
-                ..Default::default()
-            },
-        },
-        Model {
-            id: "gpt-5.2-codex".into(),
-            name: "GPT-5.2 Codex".into(),
-            api: "openai-responses".into(),
-            provider: "openai".into(),
-            base_url: "https://api.openai.com/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("minimal".into(), None),
-                ("low".into(), Some("low".into())),
-                ("medium".into(), Some("medium".into())),
-                ("high".into(), Some("high".into())),
-                ("xhigh".into(), Some("xhigh".into())),
-                ("max".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 400000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9565,6 +9564,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9587,6 +9587,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9614,6 +9615,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9641,6 +9643,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9668,6 +9671,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9695,6 +9699,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9722,6 +9727,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9749,6 +9755,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9776,6 +9783,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9803,6 +9811,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9830,6 +9839,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9857,6 +9867,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9884,6 +9895,7 @@ pub fn builtin_models() -> Vec<Model> {
             api_key: None,
             compat: ModelCompat {
                 supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
                 ..Default::default()
             },
         },
@@ -9996,33 +10008,6 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
-            id: "o3-deep-research".into(),
-            name: "o3-deep-research".into(),
-            api: "openai-responses".into(),
-            provider: "openai".into(),
-            base_url: "https://api.openai.com/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("minimal".into(), None),
-                ("low".into(), None),
-                ("medium".into(), Some("medium".into())),
-                ("high".into(), None),
-                ("xhigh".into(), None),
-                ("max".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 10_f64, output: 40_f64, cache_read: 2.5_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 200000,
-            max_tokens: 100000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_strict_mode: Some(true),
-                ..Default::default()
-            },
-        },
-        Model {
             id: "o3-mini".into(),
             name: "o3-mini".into(),
             api: "openai-responses".into(),
@@ -10104,33 +10089,6 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
-            id: "o4-mini-deep-research".into(),
-            name: "o4-mini-deep-research".into(),
-            api: "openai-responses".into(),
-            provider: "openai".into(),
-            base_url: "https://api.openai.com/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("off".into(), None),
-                ("minimal".into(), None),
-                ("low".into(), None),
-                ("medium".into(), Some("medium".into())),
-                ("high".into(), None),
-                ("xhigh".into(), None),
-                ("max".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 2_f64, output: 8_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 200000,
-            max_tokens: 100000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_strict_mode: Some(true),
-                ..Default::default()
-            },
-        },
-        Model {
             id: "gpt-5.3-codex-spark".into(),
             name: "GPT-5.3 Codex Spark".into(),
             api: "openai-codex-responses".into(),
@@ -10147,7 +10105,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4".into(),
@@ -10166,7 +10127,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-mini".into(),
@@ -10185,7 +10149,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5".into(),
@@ -10204,7 +10171,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-luna".into(),
@@ -10224,7 +10194,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-sol".into(),
@@ -10244,7 +10217,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-terra".into(),
@@ -10264,7 +10240,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "big-pickle".into(),
@@ -10405,6 +10384,29 @@ pub fn builtin_models() -> Vec<Model> {
         Model {
             id: "claude-opus-4-8".into(),
             name: "Claude Opus 4.8".into(),
+            api: "anthropic-messages".into(),
+            provider: "opencode".into(),
+            base_url: "https://opencode.ai/zen".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "claude-opus-5".into(),
+            name: "Claude Opus 5".into(),
             api: "anthropic-messages".into(),
             provider: "opencode".into(),
             base_url: "https://opencode.ai/zen".into(),
@@ -10779,7 +10781,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-codex".into(),
@@ -10803,7 +10808,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5-nano".into(),
@@ -10827,7 +10835,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1".into(),
@@ -10851,7 +10862,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1-codex".into(),
@@ -10875,7 +10889,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1-codex-max".into(),
@@ -10899,7 +10916,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.1-codex-mini".into(),
@@ -10923,7 +10943,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2".into(),
@@ -10947,7 +10970,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.2-codex".into(),
@@ -10971,7 +10997,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.3-codex".into(),
@@ -10995,7 +11024,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4".into(),
@@ -11019,7 +11051,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-mini".into(),
@@ -11043,7 +11078,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-nano".into(),
@@ -11067,7 +11105,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.4-pro".into(),
@@ -11091,7 +11132,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5".into(),
@@ -11115,7 +11159,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.5-pro".into(),
@@ -11139,7 +11186,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-luna".into(),
@@ -11163,7 +11213,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-sol".into(),
@@ -11187,7 +11240,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "gpt-5.6-terra".into(),
@@ -11211,7 +11267,10 @@ pub fn builtin_models() -> Vec<Model> {
             max_tokens: 128000,
             headers: None,
             api_key: None,
-            compat: ModelCompat::default(),
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
         },
         Model {
             id: "grok-4.5".into(),
@@ -11367,7 +11426,15 @@ pub fn builtin_models() -> Vec<Model> {
             provider: "opencode".into(),
             base_url: "https://opencode.ai/zen/v1".into(),
             reasoning: true,
-            thinking_level_map: None,
+            thinking_level_map: Some(HashMap::from([
+                ("off".into(), None),
+                ("minimal".into(), None),
+                ("low".into(), Some("low".into())),
+                ("medium".into(), Some("medium".into())),
+                ("high".into(), Some("high".into())),
+                ("xhigh".into(), None),
+                ("max".into(), None)
+            ])),
             input: vec!["text".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
@@ -12339,6 +12406,52 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
+            id: "anthropic/claude-opus-5".into(),
+            name: "Claude Opus 5".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                cache_control_format: Some("anthropic".into()),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "anthropic/claude-opus-5-fast".into(),
+            name: "Claude Opus 5 (Fast)".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                cache_control_format: Some("anthropic".into()),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        },
+        Model {
             id: "anthropic/claude-sonnet-4".into(),
             name: "Anthropic: Claude Sonnet 4".into(),
             api: "openai-completions".into(),
@@ -12432,9 +12545,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.25_f64, output: 0.8_f64, cache_read: 0.06_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.22_f64, output: 0.85_f64, cache_read: 0.06_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 80000,
+            max_tokens: 262144,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -12799,7 +12912,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.098_f64, output: 0.196_f64, cache_read: 0.0196_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.0938_f64, output: 0.1876_f64, cache_read: 0.01876_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048575,
             max_tokens: 4096,
             headers: None,
@@ -13208,9 +13321,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.1_f64, output: 0.35_f64, cache_read: 0.1_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.14_f64, output: 0.4_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 8192,
+            max_tokens: 262144,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -13590,7 +13703,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.03_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.255_f64, output: 1.02_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 204800,
             max_tokens: 131072,
             headers: None,
@@ -13650,8 +13763,8 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.06_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 204800,
+            cost: ModelCost { input: 0.25_f64, output: 1_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 196608,
             max_tokens: 131072,
             headers: None,
             api_key: None,
@@ -14110,7 +14223,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.684_f64, output: 3.42_f64, cache_read: 0.144_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.646_f64, output: 2.72_f64, cache_read: 0.1088_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 262144,
             headers: None,
@@ -14131,7 +14244,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.71_f64, output: 3.49_f64, cache_read: 0.15_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.78_f64, output: 3.5_f64, cache_read: 0.15_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 262144,
             headers: None,
@@ -14271,9 +14384,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.08_f64, output: 0.45_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.085_f64, output: 0.4_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 4096,
+            max_tokens: 16384,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -14311,9 +14424,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.5_f64, output: 2.2_f64, cache_read: 0.1_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 16384,
+            cost: ModelCost { input: 0.6_f64, output: 3.6_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 512288,
+            max_tokens: 4096,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -15329,9 +15442,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.029_f64, output: 0.14_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.03_f64, output: 0.13_f64, cache_read: 0.03_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
-            max_tokens: 4096,
+            max_tokens: 131072,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -15957,9 +16070,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.1_f64, output: 0.3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 4096,
+            cost: ModelCost { input: 0.04815_f64, output: 0.19305_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 128000,
+            max_tokens: 32000,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -16037,7 +16150,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.38_f64, output: 1.55_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.3_f64, output: 1_f64, cache_read: 0.1_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 65536,
             headers: None,
@@ -16177,7 +16290,7 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.15_f64, output: 1.2_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.1_f64, output: 1.1_f64, cache_read: 0.07_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 262144,
             headers: None,
@@ -16517,9 +16630,9 @@ pub fn builtin_models() -> Vec<Model> {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.288_f64, output: 2.4_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 4096,
+            cost: ModelCost { input: 0.289_f64, output: 2.4_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 131072,
+            max_tokens: 131072,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -17199,7 +17312,7 @@ pub fn builtin_models() -> Vec<Model> {
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into()],
-            cost: ModelCost { input: 0.8218_f64, output: 2.5828_f64, cache_read: 0.15262_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.7042_f64, output: 2.2132_f64, cache_read: 0.13078_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             headers: None,
@@ -17445,7 +17558,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 196608,
-            max_tokens: 24576,
+            max_tokens: 32768,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -17606,7 +17719,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 32768,
+            max_tokens: 98304,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -17627,7 +17740,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 16384,
+            max_tokens: 262144,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -17711,7 +17824,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
-            max_tokens: 65536,
+            max_tokens: 131072,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -17732,7 +17845,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
-            max_tokens: 64000,
+            max_tokens: 65536,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -17774,7 +17887,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 196608,
-            max_tokens: 24576,
+            max_tokens: 32768,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -17935,7 +18048,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 32768,
+            max_tokens: 98304,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -17956,7 +18069,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 16384,
+            max_tokens: 262144,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -18040,7 +18153,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
-            max_tokens: 65536,
+            max_tokens: 131072,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -18061,7 +18174,7 @@ pub fn builtin_models() -> Vec<Model> {
             input: vec!["text".into(), "image".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
-            max_tokens: 64000,
+            max_tokens: 65536,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -19150,29 +19263,6 @@ pub fn builtin_models() -> Vec<Model> {
             },
         },
         Model {
-            id: "anthropic/claude-opus-4.7-fast".into(),
-            name: "Claude Opus 4.7 (Fast)".into(),
-            api: "anthropic-messages".into(),
-            provider: "vercel-ai-gateway".into(),
-            base_url: "https://ai-gateway.vercel.sh".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("xhigh".into(), Some("xhigh".into())),
-                ("max".into(), Some("max".into()))
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 30_f64, output: 150_f64, cache_read: 3_f64, cache_write: 37.5_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                force_adaptive_thinking: Some(true),
-                supports_temperature: Some(false),
-                ..Default::default()
-            },
-        },
-        Model {
             id: "anthropic/claude-opus-4.8".into(),
             name: "Claude Opus 4.8".into(),
             api: "anthropic-messages".into(),
@@ -19198,6 +19288,52 @@ pub fn builtin_models() -> Vec<Model> {
         Model {
             id: "anthropic/claude-opus-4.8-fast".into(),
             name: "Claude Opus 4.8 (Fast)".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "anthropic/claude-opus-5".into(),
+            name: "Claude Opus 5".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into())),
+                ("max".into(), Some("max".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        },
+        Model {
+            id: "anthropic/claude-opus-5-fast".into(),
+            name: "Claude Opus 5 (Fast)".into(),
             api: "anthropic-messages".into(),
             provider: "vercel-ai-gateway".into(),
             base_url: "https://ai-gateway.vercel.sh".into(),
@@ -19584,22 +19720,6 @@ pub fn builtin_models() -> Vec<Model> {
         Model {
             id: "google/gemini-3.1-flash-lite".into(),
             name: "Gemini 3.1 Flash Lite".into(),
-            api: "anthropic-messages".into(),
-            provider: "vercel-ai-gateway".into(),
-            base_url: "https://ai-gateway.vercel.sh".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 0.25_f64, output: 1.5_f64, cache_read: 0.03_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 65000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "google/gemini-3.1-flash-lite-preview".into(),
-            name: "Gemini 3.1 Flash Lite Preview".into(),
             api: "anthropic-messages".into(),
             provider: "vercel-ai-gateway".into(),
             base_url: "https://ai-gateway.vercel.sh".into(),
@@ -20606,22 +20726,6 @@ pub fn builtin_models() -> Vec<Model> {
             compat: ModelCompat::default(),
         },
         Model {
-            id: "openai/gpt-5-chat".into(),
-            name: "GPT 5 Chat".into(),
-            api: "anthropic-messages".into(),
-            provider: "vercel-ai-gateway".into(),
-            base_url: "https://ai-gateway.vercel.sh".into(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.25_f64, output: 10_f64, cache_read: 0.125_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 128000,
-            max_tokens: 16384,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
             id: "openai/gpt-5-codex".into(),
             name: "GPT-5-Codex".into(),
             api: "anthropic-messages".into(),
@@ -20779,24 +20883,6 @@ pub fn builtin_models() -> Vec<Model> {
             cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 400000,
             max_tokens: 128000,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat::default(),
-        },
-        Model {
-            id: "openai/gpt-5.2-chat".into(),
-            name: "GPT 5.2 Chat".into(),
-            api: "anthropic-messages".into(),
-            provider: "vercel-ai-gateway".into(),
-            base_url: "https://ai-gateway.vercel.sh".into(),
-            reasoning: false,
-            thinking_level_map: Some(HashMap::from([
-                ("xhigh".into(), Some("xhigh".into()))
-            ])),
-            input: vec!["text".into(), "image".into()],
-            cost: ModelCost { input: 1.75_f64, output: 14_f64, cache_read: 0.175_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 128000,
-            max_tokens: 16384,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
