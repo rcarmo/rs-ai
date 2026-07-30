@@ -132,6 +132,9 @@ Existing v0.82.1 work remains active:
 
 ### v0.83 corrective runtime details
 
+- Malformed OpenAI tool delta regression (valid `function` payload plus empty `custom`) preserves function name and arguments.
+- Added focused raw/pending parser tests for Anthropic, Responses/Azure, Codex payload, Google, Mistral, and Bedrock/profile behavior.
+
 - OAuth resolution now refreshes tokens early by default when less than 5 minutes of validity remain. `min_oauth_validity_ms` is floored to that upstream default 5-minute window, and refreshed credentials are rejected when they still do not satisfy the effective minimum validity.
 - OpenAI malformed/empty custom and grammar constrained-sampling request/stream behavior remains covered by v0.82/v0.83 release fixtures.
 - Provider raw stop reason tests cover OpenAI plus provider-specific raw/pending behavior through release and provider tests.

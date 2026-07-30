@@ -863,10 +863,17 @@ impl CodexWsState {
                     .unwrap_or("completed");
                 self.partial.raw_stop_reason = Some(status.to_string());
                 let mut reason = match status {
+                    "completed" => StopReason::Stop,
+                    "in_progress" | "queued" => StopReason::Pending,
                     "incomplete" => StopReason::Length,
                     "failed" | "cancelled" => StopReason::Error,
-                    _ => StopReason::Stop,
+                    _ => StopReason::Error,
                 };
+                if reason == StopReason::Pending {
+                    self.partial.error_message =
+                        Some(format!("Response did not complete: {status}"));
+                    reason = StopReason::Error;
+                }
                 if reason == StopReason::Stop
                     && self
                         .partial

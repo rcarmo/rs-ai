@@ -594,6 +594,154 @@ mod tests {
         assert_eq!(message.raw_stop_reason.as_deref(), Some("queued"));
     }
 
+    fn provider_model(api: &str, provider: &str, base_url: &str) -> crate::types::Model {
+        crate::types::Model {
+            id: "test-model".into(),
+            name: "Test".into(),
+            api: api.into(),
+            provider: provider.into(),
+            base_url: base_url.into(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: crate::types::ModelCost::default(),
+            context_window: 128000,
+            max_tokens: 4096,
+            headers: None,
+            api_key: Some("k".into()),
+            compat: Default::default(),
+        }
+    }
+
+    #[tokio::test]
+    async fn malformed_openai_delta_preserves_function_when_custom_is_empty() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"path\\\":\\\"README.md\\\"}\"},\"custom\":{}}]},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n"))
+            .mount(&server).await;
+        let model = provider_model("openai-completions", "openai", &server.uri());
+        let c = ctx();
+        let opts = StreamOptions::default();
+        let mut stream = crate::provider::openai::stream_openai(&model, &c, &opts);
+        let mut done = None;
+        while let Some(event) = stream.next().await {
+            if let Event::Done { message, .. } = event {
+                done = Some(message);
+            }
+        }
+        let msg = done.unwrap();
+        match &msg.content[0] {
+            ContentBlock::ToolCall {
+                name, arguments, ..
+            } => {
+                assert_eq!(name, "read");
+                assert_eq!(
+                    arguments.get("path").and_then(|v| v.as_str()),
+                    Some("README.md")
+                );
+            }
+            other => panic!("expected tool call, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn anthropic_raw_stop_and_missing_stop_are_executable() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude\",\"stop_reason\":null,\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\nevent: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"output_tokens\":0}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"))
+            .mount(&server).await;
+        let model = provider_model("anthropic-messages", "anthropic", &server.uri());
+        let c = ctx();
+        let opts = StreamOptions::default();
+        let mut stream = crate::provider::anthropic::stream_anthropic(&model, &c, &opts);
+        let mut done = None;
+        while let Some(event) = stream.next().await {
+            if let Event::Done { message, .. } = event {
+                done = Some(message);
+            }
+        }
+        assert_eq!(done.unwrap().raw_stop_reason.as_deref(), Some("end_turn"));
+
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude\",\"stop_reason\":null,\"usage\":{\"input_tokens\":1,\"output_tokens\":0}}}\n\nevent: message_stop\ndata: {\"type\":\"message_stop\"}\n\n"))
+            .mount(&server).await;
+        let model = provider_model("anthropic-messages", "anthropic", &server.uri());
+        let mut stream = crate::provider::anthropic::stream_anthropic(&model, &c, &opts);
+        let mut err = None;
+        while let Some(event) = stream.next().await {
+            if let Event::Error { message, .. } = event {
+                err = message;
+            }
+        }
+        assert_eq!(
+            err.unwrap().stop_reason,
+            Some(crate::types::StopReason::Error)
+        );
+    }
+
+    #[tokio::test]
+    async fn google_and_mistral_raw_stop_reasons_are_executable() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"x\"}]},\"finishReason\":\"SAFETY\"}],\"usageMetadata\":{\"promptTokenCount\":1,\"candidatesTokenCount\":1,\"totalTokenCount\":2}}\n\n"))
+            .mount(&server).await;
+        let model = provider_model("google-generative-ai", "google", &server.uri());
+        let c = ctx();
+        let opts = StreamOptions::default();
+        let mut stream = crate::provider::google::stream_google(&model, &c, &opts);
+        let mut err = None;
+        while let Some(event) = stream.next().await {
+            if let Event::Error { message, .. } = event {
+                err = message;
+            }
+        }
+        assert_eq!(err.unwrap().raw_stop_reason.as_deref(), Some("SAFETY"));
+
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("data: {\"choices\":[{\"delta\":{\"content\":\"x\"},\"finish_reason\":\"length\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}\n\ndata: [DONE]\n\n"))
+            .mount(&server).await;
+        let model = provider_model("mistral-conversations", "mistral", &server.uri());
+        let mut stream = crate::provider::mistral::stream_mistral(&model, &c, &opts);
+        let mut done = None;
+        while let Some(event) = stream.next().await {
+            if let Event::Done { message, .. } = event {
+                done = Some(message);
+            }
+        }
+        assert_eq!(done.unwrap().raw_stop_reason.as_deref(), Some("length"));
+    }
+
+    #[tokio::test]
+    async fn codex_pending_status_is_error_and_raw() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("data: {\"type\":\"response.completed\",\"response\":{\"status\":\"queued\",\"usage\":{\"input_tokens\":1,\"output_tokens\":0,\"total_tokens\":1}}}\n\ndata: [DONE]\n\n"))
+            .mount(&server).await;
+        let mut model = provider_model("openai-codex-responses", "openai-codex", &server.uri());
+        model.api_key = Some("a.b.c".into());
+        let c = ctx();
+        let opts = StreamOptions {
+            transport: Some(crate::types::Transport::Sse),
+            ..Default::default()
+        };
+        let mut stream = crate::provider::codex::stream_codex(&model, &c, &opts);
+        let mut err = None;
+        let mut done = None;
+        while let Some(event) = stream.next().await {
+            match event {
+                Event::Error { message, .. } => err = message,
+                Event::Done { message, .. } => done = Some(message),
+                _ => {}
+            }
+        }
+        if let Some(msg) = err.or(done) {
+            assert_eq!(msg.stop_reason, Some(crate::types::StopReason::Error));
+            assert_eq!(msg.raw_stop_reason.as_deref(), Some("queued"));
+        }
+    }
+
     #[tokio::test]
     async fn openai_completions_preserves_raw_stop_reason() {
         let server = MockServer::start().await;
