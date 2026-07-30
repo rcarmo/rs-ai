@@ -424,6 +424,40 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn azure_responses_pending_terminal_status_is_error_with_raw_reason() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("data: {\"type\":\"response.completed\",\"response\":{\"status\":\"queued\",\"usage\":{\"input_tokens\":1,\"output_tokens\":0,\"total_tokens\":1}}}\n\ndata: [DONE]\n\n"))
+            .mount(&server).await;
+        let mut model = get_model("azure-openai-responses", "gpt-5-mini")
+            .unwrap_or_else(|| get_model("openai", "gpt-5-mini").unwrap());
+        model.api = "azure-openai-responses".into();
+        model.provider = "azure-openai-responses".into();
+        model.base_url = server.uri();
+        model.api_key = Some("k".into());
+        let c = ctx();
+        let opts = StreamOptions::default();
+        let mut stream = stream_responses(&model, &c, &opts);
+        let mut err = None;
+        let mut done = false;
+        while let Some(event) = stream.next().await {
+            match event {
+                Event::Error { message, .. } => err = message,
+                Event::Done { .. } => done = true,
+                _ => {}
+            }
+        }
+        assert!(!done, "queued Azure terminal status must not emit Done");
+        let msg = err.expect("queued terminal status must emit Error with message");
+        assert_eq!(msg.stop_reason, Some(crate::types::StopReason::Error));
+        assert_eq!(msg.raw_stop_reason.as_deref(), Some("queued"));
+        assert_eq!(
+            msg.error_message.as_deref(),
+            Some("Response did not complete: queued")
+        );
+    }
+
+    #[tokio::test]
     async fn azure_responses_stream_reconstructs_grammar_custom_tool_input() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
