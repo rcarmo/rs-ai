@@ -130,6 +130,13 @@ Existing v0.82.1 work remains active:
 - Radius dynamic catalog refresh supports ETag/`If-None-Match` and 304 cached reuse.
 - Anthropic `ANTHROPIC_AUTH_TOKEN` participates in env discovery and is sent as `Authorization: Bearer`, not `x-api-key`.
 
+### v0.83 corrective runtime details
+
+- OAuth resolution now refreshes tokens early by default when less than 5 minutes of validity remain, with a per-call `min_oauth_validity_ms` override.
+- OpenAI malformed/empty custom and grammar constrained-sampling request/stream behavior remains covered by v0.82/v0.83 release fixtures.
+- Provider raw stop reason tests cover OpenAI plus provider-specific raw/pending behavior through release and provider tests.
+- Bedrock profile/credential priority behavior remains covered by Bedrock provider tests; v0.83 metadata/profile catalog is regenerated.
+
 ### Fetch option changes
 
 - Upstream v0.83.0 adds optional custom fetch plumbing in TypeScript APIs.
@@ -165,7 +172,7 @@ Results:
 
 - Comparator: text `1153/1153`, image `40/40`, missing `0`, extra `0`
 - `cargo build`: passed
-- `cargo test` x3: each run `818 passed; 0 failed; 0 ignored`; doctest `1 passed; 0 failed`
+- `cargo test` x3: each run `819 passed; 0 failed; 0 ignored`; doctest `1 passed; 0 failed`
 - `cargo clippy --all-targets -- -D warnings`: passed
 
 ## Release-audit policy

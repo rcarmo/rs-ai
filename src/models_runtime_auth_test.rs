@@ -146,7 +146,7 @@ mod tests {
             Ok(OAuthCredential {
                 access: format!("new-{n}"),
                 refresh: Some("r2".into()),
-                expires: now_millis() + 60_000,
+                expires: now_millis() + 600_000,
                 account_id: None,
             })
         }

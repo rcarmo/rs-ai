@@ -250,6 +250,7 @@ pub struct ProviderAuth {
 pub struct AuthResolutionOverrides {
     pub api_key: Option<String>,
     pub env: Option<ProviderEnv>,
+    pub min_oauth_validity_ms: Option<i64>,
 }
 
 /// Resolve auth for a model (idiomatic port of upstream `resolveProviderAuth`).
@@ -291,7 +292,14 @@ pub async fn resolve_provider_auth(
         match stored {
             Credential::OAuth(o) => {
                 if let Some(oauth) = auth.oauth.as_ref() {
-                    return resolve_stored_oauth(credentials, provider_id, oauth.as_ref(), o).await;
+                    return resolve_stored_oauth(
+                        credentials,
+                        provider_id,
+                        oauth.as_ref(),
+                        o,
+                        overrides.and_then(|o| o.min_oauth_validity_ms),
+                    )
+                    .await;
                 }
                 return Ok(None);
             }
@@ -340,16 +348,18 @@ async fn resolve_stored_oauth(
     provider_id: &str,
     oauth: &dyn OAuthAuth,
     stored: OAuthCredential,
+    min_validity_ms: Option<i64>,
 ) -> Result<Option<AuthResult>, ModelsError> {
+    let min_validity_ms = min_validity_ms.unwrap_or(5 * 60 * 1000).max(0);
     let mut credential = stored;
-    if now_millis() >= credential.expires {
+    if now_millis() + min_validity_ms >= credential.expires {
         let post = credentials
             .modify(provider_id, |current| async move {
                 match current {
                     // Logged out meanwhile.
                     Some(Credential::OAuth(cur)) => {
                         // Another request/process refreshed under the lock.
-                        if now_millis() < cur.expires {
+                        if now_millis() + min_validity_ms < cur.expires {
                             return Ok(None);
                         }
                         let refreshed = oauth.refresh(&cur).await.map_err(|e| {
@@ -613,6 +623,7 @@ mod tests {
         let overrides = AuthResolutionOverrides {
             api_key: Some("ov-key".into()),
             env: None,
+            min_oauth_validity_ms: None,
         };
         let r = resolve_provider_auth(
             "openai",
@@ -703,7 +714,7 @@ mod tests {
             Ok(OAuthCredential {
                 access: "fresh".into(),
                 refresh: Some("r2".into()),
-                expires: now_millis() + 60_000,
+                expires: now_millis() + 600_000,
                 account_id: None,
             })
         }
@@ -716,6 +727,73 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn resolve_oauth_refreshes_when_inside_min_validity_window_and_honors_override() {
+        let store = InMemoryCredentialStore::new();
+        store
+            .modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "soon".into(),
+                    refresh: Some("r".into()),
+                    expires: now_millis() + 60_000,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let refreshes = Arc::new(AtomicUsize::new(0));
+        let provider = ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(CountingOAuth {
+                refreshes: refreshes.clone(),
+            })),
+        };
+        let ctx = EnvAuthContext::new();
+        let r = resolve_provider_auth(
+            "anthropic",
+            &provider,
+            &test_model("anthropic"),
+            &store,
+            &ctx,
+            None,
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(r.auth.api_key.as_deref(), Some("fresh"));
+        assert_eq!(refreshes.load(Ordering::SeqCst), 1);
+
+        store
+            .modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "soon2".into(),
+                    refresh: Some("r".into()),
+                    expires: now_millis() + 60_000,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let overrides = AuthResolutionOverrides {
+            api_key: None,
+            env: None,
+            min_oauth_validity_ms: Some(0),
+        };
+        let r = resolve_provider_auth(
+            "anthropic",
+            &provider,
+            &test_model("anthropic"),
+            &store,
+            &ctx,
+            Some(&overrides),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(r.auth.api_key.as_deref(), Some("soon2"));
+        assert_eq!(refreshes.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
     async fn resolve_oauth_valid_token_skips_refresh() {
         let store = InMemoryCredentialStore::new();
         store
@@ -723,7 +801,7 @@ mod tests {
                 Ok(Some(Credential::OAuth(OAuthCredential {
                     access: "valid".into(),
                     refresh: Some("r".into()),
-                    expires: now_millis() + 60_000,
+                    expires: now_millis() + 600_000,
                     account_id: None,
                 })))
             })

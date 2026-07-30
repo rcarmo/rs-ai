@@ -100,7 +100,7 @@ mod tests {
                 Ok(Some(Credential::OAuth(OAuthCredential {
                     access: "oauth-access-token".into(),
                     refresh: Some("r".into()),
-                    expires: now_millis() + 60_000,
+                    expires: now_millis() + 600_000,
                     account_id: None,
                 })))
             })
