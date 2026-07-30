@@ -124,6 +124,7 @@ pub fn stream_openai<'a>(
             usage: None,
             stop_reason: None,
             error_message: None,
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -313,6 +314,7 @@ pub fn stream_openai<'a>(
                         // Match upstream's truthy `if (choice.finish_reason)` check:
                         // null/absent/empty-string finish_reason is not a terminal signal.
                         if let Some(reason) = choice.get("finish_reason").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+                            partial.raw_stop_reason = Some(reason.to_string());
                             if text_started {
                                 yield Event::TextEnd;
                                 text_started = false;

@@ -111,6 +111,7 @@ fn assistant_message(model: &Model) -> Message {
         usage: Some(empty_usage()),
         stop_reason: Some(StopReason::Stop),
         error_message: None,
+        raw_stop_reason: None,
         tool_call_id: None,
         tool_name: None,
         is_error: false,

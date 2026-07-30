@@ -1,4 +1,4 @@
-//! v0.82.1 release-delta tests: generated model data invariants, image additions,
+//! v0.83.0 release-delta tests: generated model data invariants, image additions,
 //! Qwen Token Plan providers, shared text/uuid utilities, and OpenCode Go Responses.
 
 #[cfg(test)]
@@ -14,13 +14,13 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
-    fn generated_model_data_is_structurally_valid_and_v0821_counts_match() {
+    fn generated_model_data_is_structurally_valid_and_v0830_counts_match() {
         let all = crate::models_generated::builtin_models();
         let pairs = all
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1109);
+        assert_eq!(pairs.len(), 1153);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -89,7 +89,7 @@ mod tests {
     }
 
     #[test]
-    fn image_model_catalog_includes_v0821_openrouter_additions() {
+    fn image_model_catalog_includes_v0830_openrouter_additions() {
         let ids = crate::images::list_image_models(Some("openrouter"))
             .into_iter()
             .map(|m| m.id)
@@ -107,7 +107,7 @@ mod tests {
     }
 
     #[test]
-    fn v0821_auth_error_cause_etag_and_anthropic_auth_token_behaviour() {
+    fn v0830_auth_error_cause_etag_and_anthropic_auth_token_behaviour() {
         let err = crate::auth::ModelsError::with_cause(
             crate::auth::ModelsErrorCode::Auth,
             "Credential store read failed for anthropic",
@@ -162,6 +162,7 @@ mod tests {
             usage: None,
             stop_reason: Some(crate::types::StopReason::Error),
             error_message: Some("stream ended before a terminal response event".into()),
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: true,
@@ -227,6 +228,7 @@ mod tests {
                 usage: None,
                 stop_reason: None,
                 error_message: None,
+                raw_stop_reason: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,
@@ -567,6 +569,30 @@ mod tests {
             "Bearer auth-token"
         );
         assert!(req.headers.get("x-api-key").is_none());
+    }
+
+    #[tokio::test]
+    async fn openai_completions_preserves_raw_stop_reason() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("data: {\"choices\":[{\"delta\":{\"content\":\"x\"},\"finish_reason\":null}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"content_filter\"}]}\n\ndata: [DONE]\n\n"))
+            .mount(&server).await;
+        let mut model = get_model("openai", "gpt-5-mini").unwrap();
+        model.base_url = server.uri();
+        model.api_key = Some("k".into());
+        let c = ctx();
+        let opts = StreamOptions::default();
+        let mut stream = crate::provider::openai::stream_openai(&model, &c, &opts);
+        let mut message = None;
+        while let Some(event) = stream.next().await {
+            if let Event::Error { message: m, .. } = event {
+                message = m;
+            }
+        }
+        assert_eq!(
+            message.unwrap().raw_stop_reason.as_deref(),
+            Some("content_filter")
+        );
     }
 
     #[tokio::test]

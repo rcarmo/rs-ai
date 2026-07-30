@@ -503,6 +503,7 @@ impl CodexWsState {
             usage: None,
             stop_reason: None,
             error_message: None,
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -860,6 +861,7 @@ impl CodexWsState {
                     .pointer("/response/status")
                     .and_then(|v| v.as_str())
                     .unwrap_or("completed");
+                self.partial.raw_stop_reason = Some(status.to_string());
                 let mut reason = match status {
                     "incomplete" => StopReason::Length,
                     "failed" | "cancelled" => StopReason::Error,

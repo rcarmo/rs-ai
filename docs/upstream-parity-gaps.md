@@ -1,10 +1,24 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.82.1
+## Current parity audit: `@earendil-works/pi-ai` v0.83.0
 
-Authoritative package/tag: npm `@earendil-works/pi-ai@0.82.1`, package/tag SHA `b4f293684bba718d59cc1157679bcf6157b3a7f5` (`github.com/earendil-works/pi` tag `v0.82.1`). Pinned scope for this release-only audit is exactly `083e61621276bff9f6faefab87ce07fcd98734e2..b4f293684bba718d59cc1157679bcf6157b3a7f5`; do not chase newer main.
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.83.0`, package/tag SHA `845d6ff1f6643aba440341cce877ce1c43ebbc39` (`github.com/earendil-works/pi` tag `v0.83.0`). Pinned scope for this release-only audit is exactly `b4f293684bba718d59cc1157679bcf6157b3a7f5..845d6ff1f6643aba440341cce877ce1c43ebbc39`; do not chase newer main.
 
-Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`; prior deltas through v0.82.0 remain ported. v0.82.0→v0.82.1 changes **23** unique `packages/ai` paths; disposition matrix:
+Accepted baseline remains `0e6909f050eeb15e8f6c05185511f3788357ddb3`; prior deltas through v0.82.1 remain ported. v0.82.1→v0.83.0 changes **41** unique `packages/ai` paths; disposition matrix:
+
+| Upstream path group | Count | Disposition | rs-ai path / evidence |
+|---|---:|---|---|
+| Release docs/package metadata: `CHANGELOG.md`, `README.md`, `package.json` | 3 | N/A | package/docs metadata only; release disposition recorded here. |
+| Catalog/generator metadata: `scripts/generate-models.ts` and generated provider data | 1 | PORTED | regenerated `src/models_generated.rs` from v0.83.0 JSON shards; comparator `text=1153/1153`, `image=40/40`. |
+| Fetch/raw-stop/API runtime: `src/types.ts`, `src/api/{anthropic-messages,azure-openai-responses,bedrock-converse-stream,google-generative-ai,google-vertex,mistral-conversations,openai-codex-responses,openai-completions,openai-responses-shared,openai-responses,openrouter-images,pi-messages,simple-options}.ts` | 14 | PORTED / N/A where TS-only | `Message.raw_stop_reason` added and populated in OpenAI/Responses/Codex/Anthropic/Google/Mistral/Bedrock; fetch-option plumbing is N/A for reqwest Rust runtime. |
+| OpenRouter OAuth/auth cause/faux: `src/auth/oauth/openrouter.ts`, `src/auth/resolve.ts`, `src/providers/faux.ts` | 3 | PORTED / COVERED | OpenRouter OAuth helper/adapter and ModelsError cause preservation already ported; faux/raw message shape updated via shared `Message`. |
+| Deterministic tests: `test/{anthropic-sse-parsing,azure-openai-responses-reasoning-replay,bedrock-credentials,bedrock-raw-stop-reason,constrained-sampling,faux-provider,fetch-option,github-copilot-anthropic,google-raw-stop-reason,mistral-raw-stop-reason,models-runtime,oauth-auth,openai-completions-raw-stop-reason,openai-completions-tool-choice,openai-responses-partial-json-cleanup,openai-responses-terminal-event,openrouter-oauth,pi-messages,qwen-token-plan-models,validation}.test.ts` | 20 | PORTED / N/A where live/TS-only | raw-stop/fetch/model metadata expectations are covered in `src/v0830_release_test.rs` and existing provider tests; live/TS-only cases are N/A. |
+
+- **Model and image registries — PORTED.** Regenerated text catalog from upstream v0.83.0 hydrated JSON shards: **1153 text provider/id pairs across 37 providers**; image catalog remains **40/40**. Repro comparator evidence: `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0830-json scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0830 845d6ff1f6643aba440341cce877ce1c43ebbc39` => `text: upstream=1153 local=1153 missing=0 extra=0`; `image: upstream=40 local=40 missing=0 extra=0`.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.82.1
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.82.1`, package/tag SHA `b4f293684bba718d59cc1157679bcf6157b3a7f5` (`github.com/earendil-works/pi` tag `v0.82.1`). v0.82.1 changed **23** unique `packages/ai` paths and was fully ported before v0.83.0 superseded it.
 
 | Upstream path group | Count | Disposition | rs-ai path / evidence |
 |---|---:|---|---|

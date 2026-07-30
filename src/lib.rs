@@ -213,7 +213,7 @@ mod together_xiaomi_models_test;
 #[cfg(test)]
 mod tool_call_id_normalization_test;
 #[cfg(test)]
-mod v0821_release_test;
+mod v0830_release_test;
 #[cfg(test)]
 mod validation_upstream_test;
 #[cfg(test)]

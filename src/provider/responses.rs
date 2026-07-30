@@ -339,6 +339,7 @@ fn stream_responses_inner<'a>(
             usage: None,
             stop_reason: None,
             error_message: None,
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -620,6 +621,7 @@ fn stream_responses_inner<'a>(
                             }
                             // Map response.status, then upgrade to tool-use when tool calls are present.
                             let status = response.get("status").and_then(|v| v.as_str()).unwrap_or("completed");
+                            partial.raw_stop_reason = Some(status.to_string());
                             let mut reason = match status {
                                 "completed" | "in_progress" | "queued" => StopReason::Stop,
                                 "incomplete" => StopReason::Length,

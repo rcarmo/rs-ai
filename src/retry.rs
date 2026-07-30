@@ -178,6 +178,7 @@ mod tests {
             usage: None,
             stop_reason: Some(stop),
             error_message: err.map(str::to_string),
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: err.is_some(),

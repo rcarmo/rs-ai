@@ -211,6 +211,7 @@ pub fn stream_anthropic<'a>(
             usage: None,
             stop_reason: None,
             error_message: None,
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -424,6 +425,7 @@ pub fn stream_anthropic<'a>(
                         // empty-string stop_reason must not be mapped (which would otherwise
                         // surface as an "Unhandled stop reason" error).
                         if let Some(reason) = data.pointer("/delta/stop_reason").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+                            partial.raw_stop_reason = Some(reason.to_string());
                             let stop_details = data.pointer("/delta/stop_details");
                             partial.stop_reason = Some(match reason {
                                 "end_turn" => StopReason::Stop,

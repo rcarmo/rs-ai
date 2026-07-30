@@ -766,6 +766,7 @@ pub fn stream_bedrock<'a>(
             usage: None,
             stop_reason: None,
             error_message: None,
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -898,6 +899,7 @@ pub fn stream_bedrock<'a>(
                         ConverseStreamOutput::MessageStop(stop) => {
                             use aws_sdk_bedrockruntime::types::StopReason as BedrockStop;
                             let reason = stop.stop_reason();
+                            partial.raw_stop_reason = Some(reason.to_string());
                             partial.stop_reason = Some(match reason {
                                 BedrockStop::EndTurn | BedrockStop::StopSequence => StopReason::Stop,
                                 BedrockStop::MaxTokens | BedrockStop::ModelContextWindowExceeded => StopReason::Length,
@@ -1273,6 +1275,7 @@ mod tests {
                 usage: None,
                 stop_reason: None,
                 error_message: None,
+                raw_stop_reason: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,

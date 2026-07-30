@@ -31,6 +31,7 @@ pub fn compact_context(ctx: &Context, keep_recent: usize, summary: Option<&str>)
             usage: None,
             stop_reason: None,
             error_message: None,
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,

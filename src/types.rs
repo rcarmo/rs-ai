@@ -273,6 +273,8 @@ pub struct Message {
     pub stop_reason: Option<StopReason>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw_stop_reason: Option<String>,
 
     // Tool result fields
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -512,6 +514,7 @@ pub fn user_message(text: &str) -> Message {
         usage: None,
         stop_reason: None,
         error_message: None,
+        raw_stop_reason: None,
         tool_call_id: None,
         tool_name: None,
         is_error: false,

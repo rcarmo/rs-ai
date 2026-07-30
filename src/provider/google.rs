@@ -122,6 +122,7 @@ pub fn stream_google<'a>(
             usage: None,
             stop_reason: None,
             error_message: None,
+            raw_stop_reason: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -288,6 +289,7 @@ pub fn stream_google<'a>(
                             }
                         }
                         if let Some(reason) = candidate.get("finishReason").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+                            partial.raw_stop_reason = Some(reason.to_string());
                             // Finalize any open block before recording the stop reason.
                             match block_kind {
                                 1 => {
