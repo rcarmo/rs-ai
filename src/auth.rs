@@ -350,7 +350,10 @@ async fn resolve_stored_oauth(
     stored: OAuthCredential,
     min_validity_ms: Option<i64>,
 ) -> Result<Option<AuthResult>, ModelsError> {
-    let min_validity_ms = min_validity_ms.unwrap_or(5 * 60 * 1000).max(0);
+    const DEFAULT_MIN_OAUTH_VALIDITY_MS: i64 = 5 * 60 * 1000;
+    let min_validity_ms = min_validity_ms
+        .unwrap_or(0)
+        .max(DEFAULT_MIN_OAUTH_VALIDITY_MS);
     let mut credential = stored;
     if now_millis() + min_validity_ms >= credential.expires {
         let post = credentials
@@ -376,7 +379,17 @@ async fn resolve_stored_oauth(
             })
             .await?;
         match post {
-            Some(Credential::OAuth(c)) => credential = c,
+            Some(Credential::OAuth(c)) => {
+                if now_millis() + min_validity_ms >= c.expires {
+                    return Err(ModelsError::new(
+                        ModelsErrorCode::OAuth,
+                        format!(
+                            "OAuth refresh failed for {provider_id}: refreshed credential expires too soon"
+                        ),
+                    ));
+                }
+                credential = c
+            }
             // Logged out, or the lock re-check returned None (already-valid). Re-read.
             _ => match credentials.read(provider_id) {
                 Some(Credential::OAuth(c)) => credential = c,
@@ -726,6 +739,29 @@ mod tests {
         }
     }
 
+    struct DeltaOAuth {
+        refreshes: Arc<AtomicUsize>,
+        delta_ms: i64,
+    }
+    #[async_trait::async_trait]
+    impl OAuthAuth for DeltaOAuth {
+        async fn refresh(&self, _c: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+            self.refreshes.fetch_add(1, Ordering::SeqCst);
+            Ok(OAuthCredential {
+                access: format!("fresh-{}", self.delta_ms),
+                refresh: Some("r2".into()),
+                expires: now_millis() + self.delta_ms,
+                account_id: None,
+            })
+        }
+        async fn to_auth(&self, c: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+            Ok(ModelAuth {
+                api_key: Some(c.access.clone()),
+                ..Default::default()
+            })
+        }
+    }
+
     #[tokio::test]
     async fn resolve_oauth_refreshes_when_inside_min_validity_window_and_honors_override() {
         let store = InMemoryCredentialStore::new();
@@ -789,8 +825,84 @@ mod tests {
         .await
         .unwrap()
         .unwrap();
-        assert_eq!(r.auth.api_key.as_deref(), Some("soon2"));
-        assert_eq!(refreshes.load(Ordering::SeqCst), 1);
+        assert_eq!(r.auth.api_key.as_deref(), Some("fresh"));
+        assert_eq!(
+            refreshes.load(Ordering::SeqCst),
+            2,
+            "Some(0) is floored to the default 5 minute window"
+        );
+    }
+
+    #[tokio::test]
+    async fn resolve_oauth_post_refresh_must_satisfy_effective_min_validity() {
+        let store = InMemoryCredentialStore::new();
+        store
+            .modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "old".into(),
+                    refresh: Some("r".into()),
+                    expires: 0,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let refreshes = Arc::new(AtomicUsize::new(0));
+        let provider = ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(DeltaOAuth {
+                refreshes: refreshes.clone(),
+                delta_ms: 60_000,
+            })),
+        };
+        let ctx = EnvAuthContext::new();
+        let err = resolve_provider_auth(
+            "anthropic",
+            &provider,
+            &test_model("anthropic"),
+            &store,
+            &ctx,
+            None,
+        )
+        .await
+        .unwrap_err();
+        assert!(err.to_string().contains("expires too soon"));
+
+        store
+            .modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "old".into(),
+                    refresh: Some("r".into()),
+                    expires: 0,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let provider = ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(DeltaOAuth {
+                refreshes: refreshes.clone(),
+                delta_ms: 900_000,
+            })),
+        };
+        let overrides = AuthResolutionOverrides {
+            api_key: None,
+            env: None,
+            min_oauth_validity_ms: Some(600_000),
+        };
+        let ok = resolve_provider_auth(
+            "anthropic",
+            &provider,
+            &test_model("anthropic"),
+            &store,
+            &ctx,
+            Some(&overrides),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(ok.auth.api_key.as_deref(), Some("fresh-900000"));
     }
 
     #[tokio::test]

@@ -132,7 +132,7 @@ Existing v0.82.1 work remains active:
 
 ### v0.83 corrective runtime details
 
-- OAuth resolution now refreshes tokens early by default when less than 5 minutes of validity remain, with a per-call `min_oauth_validity_ms` override.
+- OAuth resolution now refreshes tokens early by default when less than 5 minutes of validity remain. `min_oauth_validity_ms` is floored to that upstream default 5-minute window, and refreshed credentials are rejected when they still do not satisfy the effective minimum validity.
 - OpenAI malformed/empty custom and grammar constrained-sampling request/stream behavior remains covered by v0.82/v0.83 release fixtures.
 - Provider raw stop reason tests cover OpenAI plus provider-specific raw/pending behavior through release and provider tests.
 - Bedrock profile/credential priority behavior remains covered by Bedrock provider tests; v0.83 metadata/profile catalog is regenerated.
@@ -172,7 +172,7 @@ Results:
 
 - Comparator: text `1153/1153`, image `40/40`, missing `0`, extra `0`
 - `cargo build`: passed
-- `cargo test` x3: each run `819 passed; 0 failed; 0 ignored`; doctest `1 passed; 0 failed`
+- `cargo test` x3: each run `820 passed; 0 failed; 0 ignored`; doctest `1 passed; 0 failed`
 - `cargo clippy --all-targets -- -D warnings`: passed
 
 ## Release-audit policy
