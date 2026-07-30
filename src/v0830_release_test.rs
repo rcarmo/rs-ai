@@ -572,6 +572,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn responses_pending_status_is_error_and_preserves_raw_stop_reason() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string("data: {\"type\":\"response.completed\",\"response\":{\"status\":\"queued\",\"usage\":{\"input_tokens\":1,\"output_tokens\":0,\"total_tokens\":1}}}\n\ndata: [DONE]\n\n"))
+            .mount(&server).await;
+        let mut model = get_model("openai", "gpt-5-mini").unwrap();
+        model.base_url = server.uri();
+        model.api_key = Some("k".into());
+        let c = ctx();
+        let opts = StreamOptions::default();
+        let mut stream = stream_responses(&model, &c, &opts);
+        let mut message = None;
+        while let Some(event) = stream.next().await {
+            if let Event::Error { message: m, .. } = event {
+                message = m;
+            }
+        }
+        let message = message.unwrap();
+        assert_eq!(message.stop_reason, Some(crate::types::StopReason::Error));
+        assert_eq!(message.raw_stop_reason.as_deref(), Some("queued"));
+    }
+
+    #[tokio::test]
     async fn openai_completions_preserves_raw_stop_reason() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

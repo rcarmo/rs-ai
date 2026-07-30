@@ -12,7 +12,8 @@
 mod tests {
     use crate::provider::bedrock::{
         bedrock_arn_region, bedrock_standard_endpoint_region, bedrock_use_explicit_endpoint,
-        resolve_bedrock_region,
+        bedrock_use_explicit_endpoint_with_profile, resolve_bedrock_region,
+        resolve_bedrock_region_with_profile,
     };
     use crate::registry::get_model;
     use crate::types::{Model, ModelCost};
@@ -82,6 +83,50 @@ mod tests {
             Some("eu-west-3")
         );
         assert_eq!(bedrock_arn_region("anthropic.claude-3-5-sonnet"), None);
+    }
+
+    #[test]
+    fn explicit_profile_suppresses_standard_endpoint_region_even_with_ambient_access_key() {
+        let _g = AWS_ENV_LOCK.lock().unwrap();
+        unsafe {
+            std::env::remove_var("AWS_REGION");
+            std::env::remove_var("AWS_DEFAULT_REGION");
+            std::env::set_var("AWS_ACCESS_KEY_ID", "ambient");
+            std::env::set_var("AWS_SECRET_ACCESS_KEY", "ambient-secret");
+        }
+        let standard = bedrock_model(
+            "https://bedrock-runtime.us-west-2.amazonaws.com",
+            "anthropic.claude",
+        );
+        assert_eq!(
+            resolve_bedrock_region_with_profile(&standard, Some("work")),
+            None
+        );
+        assert!(!bedrock_use_explicit_endpoint_with_profile(
+            &standard,
+            Some("work")
+        ));
+        assert_eq!(
+            resolve_bedrock_region_with_profile(&standard, None).as_deref(),
+            Some("us-west-2")
+        );
+        let arn = bedrock_model(
+            "https://bedrock-runtime.us-west-2.amazonaws.com",
+            "arn:aws:bedrock:eu-central-1:123:inference-profile/x",
+        );
+        assert_eq!(
+            resolve_bedrock_region_with_profile(&arn, Some("work")).as_deref(),
+            Some("eu-central-1")
+        );
+        let custom = bedrock_model("https://custom-bedrock.example.test", "anthropic.claude");
+        assert!(bedrock_use_explicit_endpoint_with_profile(
+            &custom,
+            Some("work")
+        ));
+        unsafe {
+            std::env::remove_var("AWS_ACCESS_KEY_ID");
+            std::env::remove_var("AWS_SECRET_ACCESS_KEY");
+        }
     }
 
     /// go-ai `TestShouldUseExplicitBedrockEndpoint`. rs-ai reads region/profile

@@ -462,6 +462,8 @@ pub struct StreamOptions {
     pub project: Option<String>,
     /// Google Vertex AI location (overrides GOOGLE_CLOUD_LOCATION).
     pub location: Option<String>,
+    /// Provider profile (currently AWS_PROFILE override for Bedrock).
+    pub profile: Option<String>,
 }
 
 impl std::fmt::Debug for StreamOptions {
@@ -493,6 +495,7 @@ impl std::fmt::Debug for StreamOptions {
             )
             .field("project", &self.project)
             .field("location", &self.location)
+            .field("profile", &self.profile)
             .finish()
     }
 }

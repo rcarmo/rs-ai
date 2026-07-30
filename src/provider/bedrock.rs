@@ -370,41 +370,58 @@ fn bedrock_configured_region() -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-fn bedrock_has_profile() -> bool {
-    std::env::var("AWS_PROFILE")
-        .map(|v| !v.is_empty())
-        .unwrap_or(false)
+pub(crate) fn bedrock_has_effective_profile(profile: Option<&str>) -> bool {
+    profile.is_some_and(|v| !v.is_empty())
+        || std::env::var("AWS_PROFILE")
+            .map(|v| !v.is_empty())
+            .unwrap_or(false)
 }
 
 /// Whether to pin the model base URL as an explicit endpoint (mirrors
 /// shouldUseExplicitBedrockEndpoint): always for custom URLs, and for standard
 /// runtime endpoints only when no region/profile is configured.
-pub(crate) fn bedrock_use_explicit_endpoint(model: &Model) -> bool {
+pub(crate) fn bedrock_use_explicit_endpoint_with_profile(
+    model: &Model,
+    profile: Option<&str>,
+) -> bool {
     match bedrock_standard_endpoint_region(&model.base_url) {
         None => true,
-        Some(_) => bedrock_configured_region().is_none() && !bedrock_has_profile(),
+        Some(_) => bedrock_configured_region().is_none() && !bedrock_has_effective_profile(profile),
     }
+}
+
+#[allow(dead_code)]
+pub(crate) fn bedrock_use_explicit_endpoint(model: &Model) -> bool {
+    bedrock_use_explicit_endpoint_with_profile(model, None)
 }
 
 /// Resolve the Bedrock region (mirrors the upstream priority: ARN-embedded >
 /// configured env > standard-endpoint region (when explicit) > us-east-1 unless a
 /// profile is configured, in which case the SDK chain resolves it).
-pub(crate) fn resolve_bedrock_region(model: &Model) -> Option<String> {
+pub(crate) fn resolve_bedrock_region_with_profile(
+    model: &Model,
+    profile: Option<&str>,
+) -> Option<String> {
     if let Some(r) = bedrock_arn_region(&model.id) {
         return Some(r);
     }
     if let Some(r) = bedrock_configured_region() {
         return Some(r);
     }
-    if bedrock_use_explicit_endpoint(model)
+    if bedrock_use_explicit_endpoint_with_profile(model, profile)
         && let Some(r) = bedrock_standard_endpoint_region(&model.base_url)
     {
         return Some(r);
     }
-    if !bedrock_has_profile() {
+    if !bedrock_has_effective_profile(profile) {
         return Some("us-east-1".to_string());
     }
     None
+}
+
+#[allow(dead_code)]
+pub(crate) fn resolve_bedrock_region(model: &Model) -> Option<String> {
+    resolve_bedrock_region_with_profile(model, None)
 }
 
 /// Whether the Bedrock target is GovCloud, where the Claude `thinking.display`
@@ -609,10 +626,10 @@ pub fn stream_bedrock<'a>(
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     Box::pin(async_stream::stream! {
         let mut loader = aws_config::defaults(BehaviorVersion::latest());
-        if let Some(region) = resolve_bedrock_region(model) {
+        if let Some(region) = resolve_bedrock_region_with_profile(model, opts.profile.as_deref()) {
             loader = loader.region(aws_config::Region::new(region));
         }
-        if bedrock_use_explicit_endpoint(model) && !model.base_url.is_empty() {
+        if bedrock_use_explicit_endpoint_with_profile(model, opts.profile.as_deref()) && !model.base_url.is_empty() {
             loader = loader.endpoint_url(model.base_url.clone());
         }
         let config = loader.load().await;
