@@ -3918,7 +3918,7 @@ mod tests {
         }
         assert_eq!(
             err.as_deref(),
-            Some("Anthropic stream ended before message_stop")
+            Some("Anthropic stream ended without a stop reason")
         );
         assert!(!saw_done);
     }

@@ -87,6 +87,7 @@ pub enum Role {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum StopReason {
+    Pending,
     Stop,
     Length,
     ToolUse,

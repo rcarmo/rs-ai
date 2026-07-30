@@ -501,7 +501,7 @@ impl CodexWsState {
             response_model: None,
             diagnostics: Vec::new(),
             usage: None,
-            stop_reason: None,
+            stop_reason: Some(StopReason::Pending),
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -942,7 +942,23 @@ impl CodexWsState {
         if matches!(self.partial.stop_reason, Some(StopReason::Error)) {
             return self.events;
         }
-        let reason = self.partial.stop_reason.clone().unwrap_or(StopReason::Stop);
+        let reason = self
+            .partial
+            .stop_reason
+            .clone()
+            .unwrap_or(StopReason::Pending);
+        if matches!(reason, StopReason::Pending) {
+            self.partial.stop_reason = Some(StopReason::Error);
+            self.partial.error_message = Some("Codex stream ended without a stop reason".into());
+            self.events.push(Event::Error {
+                reason: StopReason::Error,
+                error: std::sync::Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                    "Codex stream ended without a stop reason".to_string(),
+                )),
+                message: Some(self.partial),
+            });
+            return self.events;
+        }
         self.events.push(Event::Done {
             reason,
             message: self.partial.clone(),

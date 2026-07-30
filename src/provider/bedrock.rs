@@ -764,7 +764,7 @@ pub fn stream_bedrock<'a>(
             response_model: None,
             diagnostics: Vec::new(),
             usage: None,
-            stop_reason: None,
+            stop_reason: Some(StopReason::Pending),
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -950,6 +950,15 @@ pub fn stream_bedrock<'a>(
             crate::simple_options::finalize_usage(model, u);
         }
         match partial.stop_reason.clone() {
+            Some(StopReason::Pending) | None => {
+                partial.stop_reason = Some(StopReason::Error);
+                partial.error_message = Some("Bedrock stream ended without a stop reason".to_string());
+                yield Event::Error {
+                    reason: StopReason::Error,
+                    error: std::sync::Arc::from(Box::<dyn std::error::Error + Send + Sync>::from("Bedrock stream ended without a stop reason".to_string())),
+                    message: Some(partial),
+                };
+            }
             Some(StopReason::Error) => {
                 let msg = partial.error_message.clone().unwrap_or_else(|| "Provider returned an error stop reason".to_string());
                 yield Event::Error {
@@ -961,9 +970,7 @@ pub fn stream_bedrock<'a>(
             Some(reason) => {
                 yield Event::Done { reason, message: partial };
             }
-            None => {
-                yield Event::Done { reason: StopReason::Stop, message: partial };
-            }
+
         }
     })
 }

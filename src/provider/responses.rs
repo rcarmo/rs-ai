@@ -337,7 +337,7 @@ fn stream_responses_inner<'a>(
             response_model: None,
             diagnostics: Vec::new(),
             usage: None,
-            stop_reason: None,
+            stop_reason: Some(StopReason::Pending),
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -623,7 +623,8 @@ fn stream_responses_inner<'a>(
                             let status = response.get("status").and_then(|v| v.as_str()).unwrap_or("completed");
                             partial.raw_stop_reason = Some(status.to_string());
                             let mut reason = match status {
-                                "completed" | "in_progress" | "queued" => StopReason::Stop,
+                                "completed" => StopReason::Stop,
+                                "in_progress" | "queued" => StopReason::Pending,
                                 "incomplete" => StopReason::Length,
                                 "failed" | "cancelled" => StopReason::Error,
                                 other => {
@@ -638,6 +639,10 @@ fn stream_responses_inner<'a>(
                                     .or_else(|| response.pointer("/error/message").and_then(|v| v.as_str()))
                                     .unwrap_or(status);
                                 partial.error_message = Some(format!("response {}: {}", status, detail));
+                            }
+                            if reason == StopReason::Pending {
+                                partial.error_message = Some(format!("Response did not complete: {status}"));
+                                reason = StopReason::Error;
                             }
                             // Override to toolUse only when the status mapped to `stop`
                             // and tool calls are present (mirrors upstream's stopReason==="stop" guard).
@@ -716,10 +721,8 @@ fn stream_responses_inner<'a>(
                     message: Some(partial),
                 };
             }
-            Some(reason) => {
-                yield Event::Done { reason, message: partial };
-            }
-            None => {
+            Some(StopReason::Pending) | None => {
+                partial.stop_reason = Some(StopReason::Error);
                 // Upstream's decoder throws when the stream ends without a terminal response
                 // event (response.completed/incomplete/failed); surface that as an error.
                 yield Event::Error {
@@ -729,6 +732,9 @@ fn stream_responses_inner<'a>(
                     )),
                     message: Some(partial),
                 };
+            }
+            Some(reason) => {
+                yield Event::Done { reason, message: partial };
             }
         }
     })

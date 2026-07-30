@@ -121,7 +121,7 @@ pub fn stream_mistral<'a>(
             response_model: None,
             diagnostics: Vec::new(),
             usage: None,
-            stop_reason: None,
+            stop_reason: Some(StopReason::Pending),
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -334,6 +334,15 @@ pub fn stream_mistral<'a>(
             yield Event::ToolCallEnd { id, name, arguments: parsed };
         }
         match partial.stop_reason.clone() {
+            Some(StopReason::Pending) | None => {
+                partial.stop_reason = Some(StopReason::Error);
+                partial.error_message = Some("Mistral stream ended without a stop reason".to_string());
+                yield Event::Error {
+                    reason: StopReason::Error,
+                    error: std::sync::Arc::from(Box::<dyn std::error::Error + Send + Sync>::from("Mistral stream ended without a stop reason".to_string())),
+                    message: Some(partial),
+                };
+            }
             Some(StopReason::Error) => {
                 let msg = partial.error_message.clone().unwrap_or_else(|| "Provider returned an error stop reason".to_string());
                 yield Event::Error {
@@ -342,10 +351,7 @@ pub fn stream_mistral<'a>(
                     message: Some(partial),
                 };
             }
-            None => {
-                // Mistral defaults to a normal stop when no finish_reason is seen (mirrors createOutput).
-                yield Event::Done { reason: StopReason::Stop, message: partial };
-            }
+
             Some(reason) => {
                 yield Event::Done { reason, message: partial };
             }

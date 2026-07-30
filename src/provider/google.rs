@@ -120,7 +120,7 @@ pub fn stream_google<'a>(
             response_model: None,
             diagnostics: Vec::new(),
             usage: None,
-            stop_reason: None,
+            stop_reason: Some(StopReason::Pending),
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -381,7 +381,12 @@ pub fn stream_google<'a>(
         if let Some(ref mut u) = partial.usage {
             crate::simple_options::finalize_usage(model, u);
         }
-        let reason = partial.stop_reason.clone().unwrap_or(StopReason::Stop);
+        let reason = partial.stop_reason.clone().unwrap_or(StopReason::Pending);
+        if matches!(reason, StopReason::Pending) {
+            partial.stop_reason = Some(StopReason::Error);
+            partial.error_message = Some("Google stream ended without a stop reason".into());
+        }
+        let reason = partial.stop_reason.clone().unwrap_or(StopReason::Error);
         if matches!(reason, StopReason::Error | StopReason::Aborted) {
             let msg = partial.error_message.clone().unwrap_or_else(|| "An unknown error occurred".to_string());
             yield Event::Error {

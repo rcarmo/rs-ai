@@ -122,7 +122,7 @@ pub fn stream_openai<'a>(
             response_model: None,
             diagnostics: Vec::new(),
             usage: None,
-            stop_reason: None,
+            stop_reason: Some(StopReason::Pending),
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -413,7 +413,8 @@ pub fn stream_openai<'a>(
                     message: Some(partial),
                 };
             }
-            None => {
+            None | Some(StopReason::Pending) => {
+                partial.stop_reason = Some(StopReason::Error);
                 // Upstream treats a stream that ends without a finish_reason as an error.
                 yield Event::Error {
                     reason: StopReason::Error,
