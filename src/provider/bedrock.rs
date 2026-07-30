@@ -914,19 +914,8 @@ pub fn stream_bedrock<'a>(
                             }
                         }
                         ConverseStreamOutput::MessageStop(stop) => {
-                            use aws_sdk_bedrockruntime::types::StopReason as BedrockStop;
                             let reason = stop.stop_reason();
-                            partial.raw_stop_reason = Some(reason.to_string());
-                            partial.stop_reason = Some(match reason {
-                                BedrockStop::EndTurn | BedrockStop::StopSequence => StopReason::Stop,
-                                BedrockStop::MaxTokens | BedrockStop::ModelContextWindowExceeded => StopReason::Length,
-                                BedrockStop::ToolUse => StopReason::ToolUse,
-                                // content_filtered, guardrail_intervened, malformed_tool_use, etc.
-                                other => {
-                                    partial.error_message = Some(format!("Bedrock stop reason: {}", other));
-                                    StopReason::Error
-                                }
-                            });
+                            apply_bedrock_raw_stop_reason(&mut partial, reason.as_ref());
                         }
                         ConverseStreamOutput::Metadata(meta) => {
                             if let Some(u) = meta.usage() {
@@ -1033,6 +1022,19 @@ fn format_bedrock_sdk_error<R>(
         Some(p) => format!("{p}: {base}"),
         None => base,
     }
+}
+
+pub(crate) fn apply_bedrock_raw_stop_reason(partial: &mut Message, raw: &str) {
+    partial.raw_stop_reason = Some(raw.to_string());
+    partial.stop_reason = Some(match raw {
+        "end_turn" | "stop_sequence" => StopReason::Stop,
+        "max_tokens" | "model_context_window_exceeded" => StopReason::Length,
+        "tool_use" => StopReason::ToolUse,
+        other => {
+            partial.error_message = Some(format!("Provider stopped with: {other}"));
+            StopReason::Error
+        }
+    });
 }
 
 /// Format a mid-stream Bedrock error (ConverseStreamOutputError), prepending a prefix

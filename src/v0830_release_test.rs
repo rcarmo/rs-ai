@@ -540,6 +540,37 @@ mod tests {
         );
     }
 
+    #[test]
+    fn bedrock_raw_stop_reason_helper_errors_unknown_and_preserves_raw() {
+        let mut msg = Message {
+            role: Role::Assistant,
+            content: Vec::new(),
+            timestamp: 0,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(crate::types::StopReason::Pending),
+            error_message: None,
+            raw_stop_reason: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
+            added_tool_names: Vec::new(),
+        };
+        crate::provider::bedrock::apply_bedrock_raw_stop_reason(&mut msg, "guardrail_intervened");
+        assert_eq!(msg.raw_stop_reason.as_deref(), Some("guardrail_intervened"));
+        assert_eq!(msg.stop_reason, Some(crate::types::StopReason::Error));
+        assert_eq!(
+            msg.error_message.as_deref(),
+            Some("Provider stopped with: guardrail_intervened")
+        );
+    }
+
     #[tokio::test]
     async fn anthropic_auth_token_env_sends_bearer_not_x_api_key() {
         let server = MockServer::start().await;
