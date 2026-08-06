@@ -12,6 +12,7 @@
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
+use tokio::sync::watch;
 
 /// Provider-scoped environment/config values (e.g. Cloudflare account/gateway ids).
 pub type ProviderEnv = HashMap<String, String>;
@@ -24,6 +25,9 @@ pub struct ModelAuth {
     pub headers: Option<HashMap<String, String>>,
     pub base_url: Option<String>,
 }
+
+pub type ProviderHeaders = HashMap<String, String>;
+pub type ProviderHeaderOverrides = HashMap<String, Option<String>>;
 
 /// Stored api-key credential. `env` holds provider-scoped config.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -234,6 +238,28 @@ pub trait ApiKeyAuth: Send + Sync {
 pub trait OAuthAuth: Send + Sync {
     /// Exchange the refresh token. Network call; errors on failure.
     async fn refresh(&self, credential: &OAuthCredential) -> Result<OAuthCredential, ModelsError>;
+    /// Cancellation-aware refresh seam. Implementations can override this to thread
+    /// cancellation into provider network calls; the default checks before/after.
+    async fn refresh_with_cancel(
+        &self,
+        credential: &OAuthCredential,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
+            return Err(ModelsError::new(
+                ModelsErrorCode::OAuth,
+                "OAuth refresh aborted",
+            ));
+        }
+        let refreshed = self.refresh(credential).await?;
+        if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
+            return Err(ModelsError::new(
+                ModelsErrorCode::OAuth,
+                "OAuth refresh aborted",
+            ));
+        }
+        Ok(refreshed)
+    }
     /// Side-effect-free derivation of request auth from a valid credential.
     async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError>;
 }
@@ -251,6 +277,7 @@ pub struct AuthResolutionOverrides {
     pub api_key: Option<String>,
     pub env: Option<ProviderEnv>,
     pub min_oauth_validity_ms: Option<i64>,
+    pub cancel: Option<watch::Receiver<bool>>,
 }
 
 /// Resolve auth for a model (idiomatic port of upstream `resolveProviderAuth`).
@@ -266,6 +293,15 @@ pub async fn resolve_provider_auth(
     base_ctx: &dyn AuthContext,
     overrides: Option<&AuthResolutionOverrides>,
 ) -> Result<Option<AuthResult>, ModelsError> {
+    if overrides
+        .and_then(|o| o.cancel.as_ref())
+        .is_some_and(|rx| *rx.borrow())
+    {
+        return Err(ModelsError::new(
+            ModelsErrorCode::Auth,
+            "Auth resolution aborted",
+        ));
+    }
     // An env overlay (if any) wins over the ambient context for this request.
     let overlay_ctx = overrides
         .and_then(|o| o.env.clone())
@@ -298,6 +334,7 @@ pub async fn resolve_provider_auth(
                         oauth.as_ref(),
                         o,
                         overrides.and_then(|o| o.min_oauth_validity_ms),
+                        overrides.and_then(|o| o.cancel.clone()),
                     )
                     .await;
                 }
@@ -349,6 +386,7 @@ async fn resolve_stored_oauth(
     oauth: &dyn OAuthAuth,
     stored: OAuthCredential,
     min_validity_ms: Option<i64>,
+    cancel: Option<watch::Receiver<bool>>,
 ) -> Result<Option<AuthResult>, ModelsError> {
     const DEFAULT_MIN_OAUTH_VALIDITY_MS: i64 = 5 * 60 * 1000;
     let min_validity_ms = min_validity_ms
@@ -365,13 +403,16 @@ async fn resolve_stored_oauth(
                         if now_millis() + min_validity_ms < cur.expires {
                             return Ok(None);
                         }
-                        let refreshed = oauth.refresh(&cur).await.map_err(|e| {
-                            ModelsError::with_cause(
-                                ModelsErrorCode::OAuth,
-                                format!("OAuth refresh failed for {provider_id}"),
-                                e,
-                            )
-                        })?;
+                        let refreshed = oauth
+                            .refresh_with_cancel(&cur, cancel.clone())
+                            .await
+                            .map_err(|e| {
+                                ModelsError::with_cause(
+                                    ModelsErrorCode::OAuth,
+                                    format!("OAuth refresh failed for {provider_id}"),
+                                    e,
+                                )
+                            })?;
                         Ok(Some(Credential::OAuth(refreshed)))
                     }
                     _ => Ok(None),
@@ -413,6 +454,26 @@ async fn resolve_stored_oauth(
 
 fn now_millis() -> i64 {
     crate::utils::now_millis()
+}
+
+pub fn merge_provider_headers(
+    base: Option<&ProviderHeaders>,
+    overrides: Option<&ProviderHeaderOverrides>,
+) -> Option<ProviderHeaders> {
+    if base.is_none() && overrides.is_none() {
+        return None;
+    }
+    let mut merged = base.cloned().unwrap_or_default();
+    if let Some(overrides) = overrides {
+        for (name, value) in overrides {
+            let lower = name.to_ascii_lowercase();
+            merged.retain(|existing, _| existing.to_ascii_lowercase() != lower);
+            if let Some(value) = value {
+                merged.insert(name.clone(), value.clone());
+            }
+        }
+    }
+    Some(merged)
 }
 
 /// Merge a resolved `AuthResult` into the request: explicit options win per field,
@@ -572,7 +633,7 @@ mod tests {
     // --- resolve_provider_auth ---
 
     use crate::types::{Model, ModelCost};
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
     fn test_model(provider: &str) -> Model {
         Model {
@@ -638,6 +699,7 @@ mod tests {
             api_key: Some("ov-key".into()),
             env: None,
             min_oauth_validity_ms: None,
+            cancel: None,
         };
         let r = resolve_provider_auth(
             "openai",
@@ -740,6 +802,42 @@ mod tests {
         }
     }
 
+    struct CancelAwareOAuth {
+        saw_signal: Arc<AtomicBool>,
+    }
+    #[async_trait::async_trait]
+    impl OAuthAuth for CancelAwareOAuth {
+        async fn refresh(&self, _c: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+            panic!("refresh_with_cancel should be used")
+        }
+        async fn refresh_with_cancel(
+            &self,
+            _credential: &OAuthCredential,
+            cancel: Option<watch::Receiver<bool>>,
+        ) -> Result<OAuthCredential, ModelsError> {
+            self.saw_signal.store(cancel.is_some(), Ordering::SeqCst);
+            let cancelled = cancel.as_ref().is_some_and(|rx| *rx.borrow());
+            if cancelled {
+                return Err(ModelsError::new(
+                    ModelsErrorCode::OAuth,
+                    "cancelled refresh",
+                ));
+            }
+            Ok(OAuthCredential {
+                access: "fresh-cancel-aware".into(),
+                refresh: Some("r2".into()),
+                expires: now_millis() + 600_000,
+                account_id: None,
+            })
+        }
+        async fn to_auth(&self, c: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+            Ok(ModelAuth {
+                api_key: Some(c.access.clone()),
+                ..Default::default()
+            })
+        }
+    }
+
     struct DeltaOAuth {
         refreshes: Arc<AtomicUsize>,
         delta_ms: i64,
@@ -814,6 +912,7 @@ mod tests {
             api_key: None,
             env: None,
             min_oauth_validity_ms: Some(0),
+            cancel: None,
         };
         let r = resolve_provider_auth(
             "anthropic",
@@ -891,6 +990,7 @@ mod tests {
             api_key: None,
             env: None,
             min_oauth_validity_ms: Some(600_000),
+            cancel: None,
         };
         let ok = resolve_provider_auth(
             "anthropic",
@@ -904,6 +1004,79 @@ mod tests {
         .unwrap()
         .unwrap();
         assert_eq!(ok.auth.api_key.as_deref(), Some("fresh-900000"));
+    }
+
+    #[tokio::test]
+    async fn resolve_oauth_refresh_receives_cancellation_signal_and_persists_success() {
+        let store = InMemoryCredentialStore::new();
+        store
+            .modify::<_, _, std::convert::Infallible>("anthropic", |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "old".into(),
+                    refresh: Some("r".into()),
+                    expires: 0,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let saw_signal = Arc::new(AtomicBool::new(false));
+        let provider = ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(CancelAwareOAuth {
+                saw_signal: saw_signal.clone(),
+            })),
+        };
+        let (_tx, rx) = watch::channel(false);
+        let overrides = AuthResolutionOverrides {
+            api_key: None,
+            env: None,
+            min_oauth_validity_ms: None,
+            cancel: Some(rx),
+        };
+        let auth = resolve_provider_auth(
+            "anthropic",
+            &provider,
+            &test_model("anthropic"),
+            &store,
+            &EnvAuthContext::new(),
+            Some(&overrides),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(auth.auth.api_key.as_deref(), Some("fresh-cancel-aware"));
+        assert!(saw_signal.load(Ordering::SeqCst));
+        match store.read("anthropic") {
+            Some(Credential::OAuth(o)) => assert_eq!(o.access, "fresh-cancel-aware"),
+            other => panic!("unexpected: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn merge_provider_headers_supports_null_deletion_case_insensitively() {
+        let base = ProviderHeaders::from([
+            ("Authorization".to_string(), "Bearer provider".to_string()),
+            ("x-api-key".to_string(), "provider-key".to_string()),
+            ("X-Shared".to_string(), "provider".to_string()),
+        ]);
+        let overrides = ProviderHeaderOverrides::from([
+            ("authorization".to_string(), None),
+            ("X-API-Key".to_string(), None),
+            ("x-shared".to_string(), Some("request".to_string())),
+        ]);
+        let merged = merge_provider_headers(Some(&base), Some(&overrides)).unwrap();
+        assert!(
+            !merged
+                .keys()
+                .any(|key| key.eq_ignore_ascii_case("authorization"))
+        );
+        assert!(
+            !merged
+                .keys()
+                .any(|key| key.eq_ignore_ascii_case("x-api-key"))
+        );
+        assert_eq!(merged.get("x-shared").map(String::as_str), Some("request"));
     }
 
     #[tokio::test]

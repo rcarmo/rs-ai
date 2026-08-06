@@ -275,6 +275,7 @@ pub struct RefreshOptions {
     pub allow_network: bool,
     pub force: bool,
     pub cancel: Option<watch::Receiver<bool>>,
+    pub providers: Option<Vec<String>>,
 }
 
 pub struct RefreshResult {
@@ -364,11 +365,21 @@ impl ModelsRuntime {
         let (tx, rx) = watch::channel(false);
         let cancel = options.cancel.take().unwrap_or(rx);
         drop(tx);
+        let requested = options.providers.as_ref().map(|ids| {
+            ids.iter()
+                .cloned()
+                .collect::<std::collections::HashSet<_>>()
+        });
         let providers = self
             .providers
             .lock()
             .unwrap()
             .values()
+            .filter(|provider| {
+                requested
+                    .as_ref()
+                    .is_none_or(|ids| ids.contains(&provider.id))
+            })
             .cloned()
             .collect::<Vec<_>>();
         let futs = providers

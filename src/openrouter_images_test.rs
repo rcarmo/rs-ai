@@ -40,6 +40,7 @@ mod tests {
             timeout: None,
             max_retries: 0,
             max_retry_delay_ms: 0,
+            telemetry_context: None,
             on_payload: Some(Arc::new(move |p: Value, _m: &ImagesModel| {
                 *captured.lock().unwrap() = Some(p.clone());
                 Ok(p)

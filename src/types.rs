@@ -26,6 +26,9 @@ pub mod api {
 /// Provider identifier.
 pub type Provider = String;
 
+/// Opaque telemetry parent context carried through request options.
+pub type TelemetryContext = serde_json::Value;
+
 /// Known providers.
 pub mod provider_id {
     pub const OPENAI: &str = "openai";
@@ -471,6 +474,7 @@ pub struct StreamOptions {
     pub temperature: Option<f64>,
     /// Arbitrary sampling parameters merged last into OpenAI-compatible request bodies.
     pub sampling_params: Option<serde_json::Value>,
+    pub telemetry_context: Option<TelemetryContext>,
     pub max_tokens: Option<u32>,
     pub api_key: Option<String>,
     pub transport: Option<Transport>,
@@ -511,6 +515,7 @@ impl std::fmt::Debug for StreamOptions {
         f.debug_struct("StreamOptions")
             .field("temperature", &self.temperature)
             .field("sampling_params", &self.sampling_params)
+            .field("telemetry_context", &self.telemetry_context)
             .field("max_tokens", &self.max_tokens)
             .field("api_key", &self.api_key.as_ref().map(|_| "***"))
             .field("transport", &self.transport)

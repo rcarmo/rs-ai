@@ -456,6 +456,57 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn telemetry_context_flows_through_stream_and_deferred_fetch_options() {
+        let api = "faux-telemetry";
+        let provider = "faux-telemetry";
+        let faux = FauxProvider::new(api, provider);
+        registry::register_api(faux.clone() as Arc<dyn ApiProvider>);
+        let model = faux_registry_model(api, provider);
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![],
+            tools: vec![],
+        };
+        faux.set_responses(vec![assistant_text("ready", StopReason::Stop)]);
+        let submitted = terminal_message(registry::stream(
+            &model,
+            &ctx,
+            &StreamOptions {
+                telemetry_context: Some(serde_json::json!({"trace":"submit"})),
+                deferred: Some(DeferredRequest::default()),
+                ..Default::default()
+            },
+        ))
+        .await;
+        let handle = submitted.deferred.clone().expect("deferred handle");
+        let _ready = terminal_message(registry::fetch_deferred(
+            &model,
+            &handle,
+            &StreamOptions {
+                telemetry_context: Some(serde_json::json!({"trace":"fetch"})),
+                ..Default::default()
+            },
+        ))
+        .await;
+        assert_eq!(
+            faux.telemetry_contexts(),
+            vec![
+                Some(serde_json::json!({"trace":"submit"})),
+                Some(serde_json::json!({"trace":"fetch"})),
+            ]
+        );
+        let image_opts = crate::images::openrouter::ImagesOptions {
+            telemetry_context: Some(serde_json::json!({"trace":"image"})),
+            ..Default::default()
+        };
+        assert_eq!(
+            image_opts.telemetry_context,
+            Some(serde_json::json!({"trace":"image"}))
+        );
+        registry::unregister_api(api);
+    }
+
+    #[tokio::test]
     async fn unsupported_deferred_capability_reports_in_band_provider_errors() {
         let faux = FauxProvider::new("faux-no-deferred", "faux-no-deferred");
         let model = faux_registry_model("faux-no-deferred", "faux-no-deferred");

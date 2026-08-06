@@ -162,6 +162,7 @@ pub struct FauxProvider {
     deferred_fetch_count: AtomicUsize,
     default_pending_fetches: usize,
     default_poll_after_ms: Option<u64>,
+    telemetry_contexts: Mutex<Vec<Option<TelemetryContext>>>,
 }
 
 impl FauxProvider {
@@ -189,6 +190,7 @@ impl FauxProvider {
             deferred_fetch_count: AtomicUsize::new(0),
             default_pending_fetches: pending_fetches,
             default_poll_after_ms: poll_after_ms,
+            telemetry_contexts: Mutex::new(Vec::new()),
         })
     }
 
@@ -218,6 +220,10 @@ impl FauxProvider {
     pub fn cancelled_deferred(&self) -> Vec<DeferredHandle> {
         self.cancelled_deferred.lock().unwrap().clone()
     }
+
+    pub fn telemetry_contexts(&self) -> Vec<Option<TelemetryContext>> {
+        self.telemetry_contexts.lock().unwrap().clone()
+    }
 }
 
 impl crate::registry::ApiProvider for FauxProvider {
@@ -237,6 +243,10 @@ impl crate::registry::ApiProvider for FauxProvider {
         let step = self.responses.lock().unwrap().pop_front();
         let chunk_chars = self.chunk_chars;
         self.call_count.fetch_add(1, Ordering::SeqCst);
+        self.telemetry_contexts
+            .lock()
+            .unwrap()
+            .push(opts.telemetry_context.clone());
         let Some(resolved) = step else {
             let err = Event::Error {
                 reason: StopReason::Error,
@@ -287,6 +297,10 @@ impl crate::registry::ApiProvider for FauxProvider {
         opts: &'a StreamOptions,
     ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
         self.deferred_fetch_count.fetch_add(1, Ordering::SeqCst);
+        self.telemetry_contexts
+            .lock()
+            .unwrap()
+            .push(opts.telemetry_context.clone());
         let mut entries = self.deferred_entries.lock().unwrap();
         let Some(entry) = entries.get_mut(&handle.id) else {
             let text = format!("Unknown faux deferred response: {}", handle.id);

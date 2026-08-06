@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use super::types::*;
 use crate::env::get_env_api_key;
-use crate::types::{CostBreakdown, StopReason, Usage};
+use crate::types::{CostBreakdown, StopReason, TelemetryContext, Usage};
 
 /// Hook to inspect/modify the image request payload before sending (mirrors onPayload).
 pub type ImagesPayloadHook = Arc<
@@ -29,6 +29,7 @@ pub struct ImagesOptions {
     pub timeout: Option<Duration>,
     pub max_retries: u32,
     pub max_retry_delay_ms: u64,
+    pub telemetry_context: Option<TelemetryContext>,
     pub on_payload: Option<ImagesPayloadHook>,
     pub on_response: Option<ImagesResponseHook>,
 }
@@ -41,6 +42,7 @@ impl std::fmt::Debug for ImagesOptions {
             .field("timeout", &self.timeout)
             .field("max_retries", &self.max_retries)
             .field("max_retry_delay_ms", &self.max_retry_delay_ms)
+            .field("telemetry_context", &self.telemetry_context)
             .field("on_payload", &self.on_payload.as_ref().map(|_| "<hook>"))
             .field("on_response", &self.on_response.as_ref().map(|_| "<hook>"))
             .finish()

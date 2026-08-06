@@ -566,6 +566,7 @@ mod tests {
                 allow_network: true,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(result.errors.is_empty());

@@ -153,6 +153,38 @@ cargo clippy --all-targets -- -D warnings
 
 Results: targeted provider tests passed; full `cargo test` passed with `843 passed; 0 failed`; doctest `1 passed`; comparator remains text `1153/1153`, image `42/42`, missing `0`, extra `0`; build/fmt/clippy passed.
 
+### Committed slice 5: runtime auth/options/telemetry semantics
+
+Ported/adapted runtime/OAuth/telemetry v0.84.0 behavior:
+
+- Added `merge_provider_headers` with case-insensitive null/deletion semantics for provider-resolved headers, preserving Rust request headers as concrete strings while still testing the upstream `ProviderHeaders` deletion model.
+- Added cancellation-aware OAuth refresh seam (`refresh_with_cancel`) and `AuthResolutionOverrides.cancel`; refresh receives a cancellation receiver and preserves the rotated credential only after successful refresh.
+- Added `RefreshOptions.providers` filtering so selected refreshes skip unrequested dynamic providers and ignore unknown provider IDs.
+- Added `TelemetryContext` on `StreamOptions` and `ImagesOptions`, plus FauxProvider capture to prove telemetry metadata flows through normal stream and deferred fetch options; image options carry the same opaque telemetry context structurally.
+
+Named Rust evidence:
+
+- `auth::tests::merge_provider_headers_supports_null_deletion_case_insensitively`
+- `auth::tests::resolve_oauth_refresh_receives_cancellation_signal_and_persists_success`
+- `models_runtime_refresh_test::tests::refresh_provider_filter_skips_unrequested_dynamic_providers`
+- `providers_upstream_test::tests::telemetry_context_flows_through_stream_and_deferred_fetch_options`
+
+Slice verification:
+
+```bash
+cargo test providers_upstream_test -- --nocapture
+cargo test auth::tests::merge_provider_headers_supports_null_deletion_case_insensitively -- --nocapture
+cargo test auth::tests::resolve_oauth_refresh_receives_cancellation_signal_and_persists_success -- --nocapture
+cargo test models_runtime_refresh_test::tests::refresh_provider_filter_skips_unrequested_dynamic_providers -- --nocapture
+cargo fmt --check
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-release-json   python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256
+cargo build
+cargo test
+cargo clippy --all-targets -- -D warnings
+```
+
+Results: targeted runtime/OAuth/telemetry tests passed; full `cargo test` passed with `847 passed; 0 failed`; doctest `1 passed`; comparator remains text `1153/1153`, image `42/42`, missing `0`, extra `0`; build/fmt/clippy passed.
+
 ### Still pending for final v0.84.0 completion
 
 The remaining changed assertions/provider clusters from `docs/v0840-manifests.md` still need final disposition and executable evidence before declaring the v0.84.0 release complete, including Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callbacks, telemetry semantics across stream/deferred/images, ProviderHeaders null deletion over auth headers, refresh options/results, runtime API-key cancellation/refresh separation, Responses incomplete/raw details, Anthropic initial block content, Codex account-scoped WebSocket cache, and remaining provider-specific stream/tool/error/usage fixes.

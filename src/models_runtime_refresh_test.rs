@@ -129,6 +129,7 @@ mod tests {
                 allow_network: false,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(offline.errors.is_empty());
@@ -144,6 +145,7 @@ mod tests {
                 allow_network: true,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(online.errors.is_empty());
@@ -212,6 +214,7 @@ mod tests {
                     allow_network: true,
                     force: false,
                     cancel: None,
+                    providers: None,
                 })
                 .await
             },
@@ -220,6 +223,7 @@ mod tests {
                     allow_network: true,
                     force: false,
                     cancel: None,
+                    providers: None,
                 })
                 .await
             },
@@ -238,6 +242,39 @@ mod tests {
             runtime.get_model("bad", "cached").is_some(),
             "failure restores cached catalog"
         );
+    }
+
+    #[tokio::test]
+    async fn refresh_provider_filter_skips_unrequested_dynamic_providers() {
+        let runtime = ModelsRuntime::new();
+        let calls_a = Arc::new(AtomicUsize::new(0));
+        let calls_b = Arc::new(AtomicUsize::new(0));
+        for (id, calls) in [("a", calls_a.clone()), ("b", calls_b.clone())] {
+            runtime.set_provider(RuntimeProvider::dynamic(
+                id,
+                id,
+                ProviderAuth::default(),
+                vec![],
+                move |_ctx| {
+                    let calls = calls.clone();
+                    async move {
+                        calls.fetch_add(1, Ordering::SeqCst);
+                        Ok(vec![model("a", "fresh")])
+                    }
+                },
+            ));
+        }
+        let result = runtime
+            .refresh(RefreshOptions {
+                allow_network: true,
+                force: false,
+                cancel: None,
+                providers: Some(vec!["a".into(), "unknown".into()]),
+            })
+            .await;
+        assert!(result.errors.is_empty());
+        assert_eq!(calls_a.load(Ordering::SeqCst), 1);
+        assert_eq!(calls_b.load(Ordering::SeqCst), 0);
     }
 
     #[tokio::test]
@@ -269,6 +306,7 @@ mod tests {
                 allow_network: true,
                 force: false,
                 cancel: Some(rx),
+                providers: None,
             })
             .await;
         assert!(result.aborted);
@@ -322,6 +360,7 @@ mod tests {
                 allow_network: true,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(result.errors.is_empty());
@@ -357,6 +396,7 @@ mod tests {
                 allow_network: true,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(a.errors.is_empty());
@@ -365,6 +405,7 @@ mod tests {
                 allow_network: true,
                 force: true,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(b.errors.is_empty());
@@ -394,6 +435,7 @@ mod tests {
                 allow_network: true,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(first.errors.is_empty());
@@ -409,6 +451,7 @@ mod tests {
                 allow_network: true,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(second.errors.is_empty());
@@ -426,6 +469,7 @@ mod tests {
                 allow_network: true,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(failed.errors.contains_key("radius"));
@@ -439,6 +483,7 @@ mod tests {
                 allow_network: false,
                 force: false,
                 cancel: None,
+                providers: None,
             })
             .await;
         assert!(offline.errors.is_empty());

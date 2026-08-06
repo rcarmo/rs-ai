@@ -355,3 +355,6 @@ from canonical upstream** — rs-ai is ahead.
 
 
 Fourth committed v0.84.0 slice: provider stream/error regressions are **PORTED** for Anthropic initial content blocks, Responses incomplete raw reasons, Google Gemini 3 tool IDs and signed-empty blocks, and Bedrock structured failure diagnostics. Full `cargo test`: `843 passed`; doctest `1 passed`; comparator `1153/1153` and `42/42`; strict Clippy/build/fmt clean.
+
+
+Fifth committed v0.84.0 slice: runtime auth/options/telemetry semantics are **PORTED** for ProviderHeaders null deletion via a typed helper, OAuth refresh signal propagation, selected-provider refresh filtering, and telemetry context plumbing through stream/deferred/images. Full `cargo test`: `847 passed`; doctest `1 passed`; comparator `1153/1153` and `42/42`; strict Clippy/build/fmt clean.
