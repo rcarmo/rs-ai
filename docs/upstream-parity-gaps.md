@@ -35,7 +35,12 @@ Sixth committed v0.84.0 slice: runtime/OAuth/telemetry dispatch closure, Codex a
 
 Seventh committed v0.84.0 slice: Google shared retry is **PORTED** at the real `stream_google` request call site. Evidence: `src/google_shared_retry_test.rs` covers the three upstream cases (`429` retries once with `max_retries=1`, no retry when unset, no retry for `400`) plus retry delay cap and caller cancellation via Rust retry primitives.
 
-## Current parity audit: `@earendil-works/pi-ai` v0.83.0
+Explicit final rubric dispositions:
+
+- `message_update` delta-only JSON/RPC change — **N/A**. It belongs to coding-agent JSON/RPC transport serialization, not the `packages/ai` library/runtime surface rs-ai ports. rs-ai exposes typed in-process `Message`/`Event` values and does not implement a JSON/RPC message-delta transport.
+- `ModelsStreamTransforms` → `ModelsRequestTransforms` — **ADAPTED**. The Rust equivalent applies transforms across request surfaces: `merge_auth_into_request` for auth/header transforms into provider builders, `registry::stream_simple`, `registry::fetch_deferred`, and `registry::cancel_deferred` for text/deferred dispatch, plus image provider dispatch telemetry. Evidence: `src/models_runtime_auth_test.rs::provider_header_null_deletion_reaches_openai_request_builder` and `src/providers_upstream_test.rs::telemetry_context_flows_through_stream_simple_deferred_cancel_and_images`.
+
+## Historical prior parity audit: `@earendil-works/pi-ai` v0.83.0
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.83.0`, package/tag SHA `845d6ff1f6643aba440341cce877ce1c43ebbc39` (`github.com/earendil-works/pi` tag `v0.83.0`). Pinned scope for this release-only audit is exactly `b4f293684bba718d59cc1157679bcf6157b3a7f5..845d6ff1f6643aba440341cce877ce1c43ebbc39`; do not chase newer main.
 

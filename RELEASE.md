@@ -1,17 +1,22 @@
 # rs-ai upstream release parity
 
-## In-progress v0.84.0 release port — committed slice 1 (Baseten / sampling / vLLM budget)
+## Current accepted release: v0.84.0
 
+- Upstream package: `@earendil-works/pi-ai`
+- Current accepted release: `v0.84.0`
+- Upstream tag/commit: `a5f43bf8aff3c55752432655f7334e3dafd1e256`
 - Previous accepted upstream: `v0.83.0` / `845d6ff1f6643aba440341cce877ce1c43ebbc39`
-- Target upstream release: `v0.84.0` / `a5f43bf8aff3c55752432655f7334e3dafd1e256`
 - Audited range for manifests: `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`
-- Scope status: **in progress**. This is the first evidence-driven committed slice requested by the auditor, not the final v0.84.0 completion report.
+- Scope: `packages/ai` only; no newer-main chase.
+- Scope status: **complete for bounded deterministic v0.84.0 release parity**. Deterministic changed assertions are ported/adapted, covered by existing Rust tests, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces.
 
 ### Exact manifests generated
 
 - `docs/v0840-manifests.md` records the exact **101** changed `packages/ai` paths and **46** changed `packages/ai/test` files, with extracted upstream case/assertion/gate lines from the authoritative tag.
 
-### Ported/adapted in this slice
+### Slice 1: Baseten / sampling / vLLM budget
+
+Ported/adapted in this slice:
 
 - Regenerated text and image catalogs from the v0.84.0 tag JSON output.
 - Added Baseten provider catalog/auth parity:
@@ -230,12 +235,17 @@ Named Rust evidence:
 
 The deterministic changed assertions called out in `docs/v0840-manifests.md` are now either ported/adapted with named Rust evidence, covered by existing deterministic provider/runtime tests, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces. No stale pending runtime/OAuth/telemetry/Bedrock/Codex/Anthropic/Responses/Google retry entries remain for the bounded v0.84.0 release audit.
 
+Explicit rubric dispositions:
+
+- `message_update` delta-only JSON/RPC change — **N/A** for rs-ai. It is coding-agent transport/serialization outside the `packages/ai` API/runtime scope and outside rs-ai's typed in-process `Message`/`Event` API; there is no JSON/RPC delta transport surface to port without inventing a parallel protocol.
+- `ModelsStreamTransforms` → `ModelsRequestTransforms` — **ADAPTED**. rs-ai applies the equivalent request transforms across stream/simple/deferred fetch+cancel, not only streaming: auth/header transforms flow through `merge_auth_into_request` into provider request builders (`src/auth.rs`, `src/models_runtime_auth_test.rs::provider_header_null_deletion_reaches_openai_request_builder`), telemetry flows through `registry::stream_simple`, `registry::fetch_deferred`, `registry::cancel_deferred`, and image dispatch (`src/registry.rs`, `src/providers_upstream_test.rs::telemetry_context_flows_through_stream_simple_deferred_cancel_and_images`), and deferred public dispatch is represented by `ApiProvider::fetch_deferred` / `ApiProvider::cancel_deferred` plus the registry wrappers.
+
 This file is the release-audit ledger for `rs-ai`. It must be updated in the same commit as every future upstream `@earendil-works/pi-ai` release audit.
 
-## Current upstream baseline
+## Historical prior release: v0.83.0
 
 - Upstream package: `@earendil-works/pi-ai`
-- Current accepted release: `v0.83.0`
+- Historical accepted release: `v0.83.0`
 - Upstream tag/commit: `845d6ff1f6643aba440341cce877ce1c43ebbc39`
 - Previous accepted upstream baseline: `v0.82.1` / `b4f293684bba718d59cc1157679bcf6157b3a7f5`
 - Audited range: `b4f293684bba718d59cc1157679bcf6157b3a7f5..845d6ff1f6643aba440341cce877ce1c43ebbc39`
