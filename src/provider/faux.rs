@@ -3,6 +3,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::events::Event;
 use crate::types::*;
@@ -139,23 +140,55 @@ fn with_usage_estimate(
 
 /// A faux API provider that streams queued canned responses with simulated deltas
 /// (mirrors upstream registerFauxProvider).
+#[derive(Clone)]
+struct DeferredEntry {
+    handle: DeferredHandle,
+    response: Message,
+    context: Context,
+    options: StreamOptions,
+    pending_fetches: usize,
+    cancelled: bool,
+}
+
 pub struct FauxProvider {
     api: String,
     provider: String,
     responses: Mutex<VecDeque<Message>>,
     prompt_cache: Mutex<HashMap<String, String>>,
     chunk_chars: usize,
+    deferred_entries: Mutex<HashMap<String, DeferredEntry>>,
+    cancelled_deferred: Mutex<Vec<DeferredHandle>>,
+    call_count: AtomicUsize,
+    deferred_fetch_count: AtomicUsize,
+    default_pending_fetches: usize,
+    default_poll_after_ms: Option<u64>,
 }
 
 impl FauxProvider {
     /// Create a faux provider for the given api/provider name.
     pub fn new(api: impl Into<String>, provider: impl Into<String>) -> Arc<Self> {
+        Self::new_with_deferred(api, provider, 0, None)
+    }
+
+    /// Create a faux provider with deferred/background polling defaults.
+    pub fn new_with_deferred(
+        api: impl Into<String>,
+        provider: impl Into<String>,
+        pending_fetches: usize,
+        poll_after_ms: Option<u64>,
+    ) -> Arc<Self> {
         Arc::new(Self {
             api: api.into(),
             provider: provider.into(),
             responses: Mutex::new(VecDeque::new()),
             prompt_cache: Mutex::new(HashMap::new()),
             chunk_chars: 16,
+            deferred_entries: Mutex::new(HashMap::new()),
+            cancelled_deferred: Mutex::new(Vec::new()),
+            call_count: AtomicUsize::new(0),
+            deferred_fetch_count: AtomicUsize::new(0),
+            default_pending_fetches: pending_fetches,
+            default_poll_after_ms: poll_after_ms,
         })
     }
 
@@ -172,6 +205,18 @@ impl FauxProvider {
     /// Number of responses still queued.
     pub fn pending_response_count(&self) -> usize {
         self.responses.lock().unwrap().len()
+    }
+
+    pub fn call_count(&self) -> usize {
+        self.call_count.load(Ordering::SeqCst)
+    }
+
+    pub fn deferred_fetch_count(&self) -> usize {
+        self.deferred_fetch_count.load(Ordering::SeqCst)
+    }
+
+    pub fn cancelled_deferred(&self) -> Vec<DeferredHandle> {
+        self.cancelled_deferred.lock().unwrap().clone()
     }
 }
 
@@ -191,107 +236,304 @@ impl crate::registry::ApiProvider for FauxProvider {
         let model_id = model.id.clone();
         let step = self.responses.lock().unwrap().pop_front();
         let chunk_chars = self.chunk_chars;
-        let usage = step.as_ref().map(|m| {
-            with_usage_estimate(
-                &m.content,
-                context,
-                opts.session_id.as_deref(),
-                opts.cache_retention.as_ref(),
-                &self.prompt_cache,
-            )
-        });
-        Box::pin(async_stream::stream! {
-            let resolved = match step {
-                Some(m) => m,
-                None => {
-                    yield Event::Error {
-                        reason: StopReason::Error,
-                        error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                            "No more faux responses queued".to_string(),
-                        )),
-                        message: None,
-                    };
-                    return;
-                }
+        self.call_count.fetch_add(1, Ordering::SeqCst);
+        let Some(resolved) = step else {
+            let err = Event::Error {
+                reason: StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                    "No more faux responses queued".to_string(),
+                )),
+                message: None,
             };
-            let usage = usage.unwrap();
-            let stop = resolved.stop_reason.clone().unwrap_or(StopReason::Stop);
-            let mut partial = Message {
+            return Box::pin(tokio_stream::once(err));
+        };
+        if opts.deferred.is_some() {
+            let handle = DeferredHandle {
+                provider: model.provider.clone(),
+                model_id: model.id.clone(),
+                api: model.api.clone(),
+                id: format!("deferred-{}", crate::utils::now_millis()),
+                expires_at: None,
+                poll_after_ms: self.default_poll_after_ms,
+                data: None,
+            };
+            self.deferred_entries.lock().unwrap().insert(
+                handle.id.clone(),
+                DeferredEntry {
+                    handle: handle.clone(),
+                    response: resolved,
+                    context: context.clone(),
+                    options: opts.clone(),
+                    pending_fetches: self.default_pending_fetches,
+                    cancelled: false,
+                },
+            );
+            return stream_deferred_message(deferred_message(model, handle));
+        }
+        let usage = with_usage_estimate(
+            &resolved.content,
+            context,
+            opts.session_id.as_deref(),
+            opts.cache_retention.as_ref(),
+            &self.prompt_cache,
+        );
+        stream_message_owned(api, provider, model_id, resolved, usage, chunk_chars)
+    }
+
+    fn fetch_deferred<'a>(
+        &self,
+        model: &'a Model,
+        handle: &'a DeferredHandle,
+        opts: &'a StreamOptions,
+    ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+        self.deferred_fetch_count.fetch_add(1, Ordering::SeqCst);
+        let mut entries = self.deferred_entries.lock().unwrap();
+        let Some(entry) = entries.get_mut(&handle.id) else {
+            let text = format!("Unknown faux deferred response: {}", handle.id);
+            let msg = Message {
                 role: Role::Assistant,
                 content: Vec::new(),
                 timestamp: crate::utils::now_millis(),
-                api: Some(api.clone()),
-                provider: Some(provider.clone()),
-                model: Some(model_id.clone()),
-                response_id: resolved.response_id.clone(),
+                api: Some(model.api.clone()),
+                provider: Some(model.provider.clone()),
+                model: Some(model.id.clone()),
+                response_id: None,
                 response_model: None,
                 diagnostics: Vec::new(),
-                usage: Some(usage.clone()),
-                stop_reason: Some(StopReason::Pending),
-                error_message: resolved.error_message.clone(),
+                usage: Some(Usage::default()),
+                stop_reason: Some(StopReason::Error),
+                deferred: None,
+                error_message: Some(text.clone()),
                 raw_stop_reason: None,
-                tool_call_id: None, tool_name: None, is_error: false, details: None,
-            added_tool_names: Vec::new(),
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
+                added_tool_names: Vec::new(),
             };
-            yield Event::Start { partial: partial.clone() };
+            let err = Event::Error {
+                reason: StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(text)),
+                message: Some(msg),
+            };
+            return Box::pin(tokio_stream::once(err));
+        };
+        if entry.handle.provider != handle.provider
+            || entry.handle.model_id != handle.model_id
+            || entry.handle.api != handle.api
+        {
+            let text = format!("Unknown faux deferred response: {}", handle.id);
+            let msg = Message {
+                role: Role::Assistant,
+                content: Vec::new(),
+                timestamp: crate::utils::now_millis(),
+                api: Some(model.api.clone()),
+                provider: Some(model.provider.clone()),
+                model: Some(model.id.clone()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: Some(Usage::default()),
+                stop_reason: Some(StopReason::Error),
+                deferred: None,
+                error_message: Some(text.clone()),
+                raw_stop_reason: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
+                added_tool_names: Vec::new(),
+            };
+            let err = Event::Error {
+                reason: StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(text)),
+                message: Some(msg),
+            };
+            return Box::pin(tokio_stream::once(err));
+        }
+        if entry.cancelled {
+            let msg = Message {
+                role: Role::Assistant,
+                content: Vec::new(),
+                timestamp: crate::utils::now_millis(),
+                api: Some(model.api.clone()),
+                provider: Some(model.provider.clone()),
+                model: Some(model.id.clone()),
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: Some(Usage::default()),
+                stop_reason: Some(StopReason::Error),
+                deferred: None,
+                error_message: Some(format!(
+                    "Faux deferred response was cancelled: {}",
+                    handle.id
+                )),
+                raw_stop_reason: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
+                added_tool_names: Vec::new(),
+            };
+            let err = msg.error_message.clone().unwrap_or_default();
+            return Box::pin(tokio_stream::once(Event::Error {
+                reason: StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(err)),
+                message: Some(msg),
+            }));
+        }
+        if entry.pending_fetches > 0 {
+            entry.pending_fetches -= 1;
+            return stream_deferred_message(deferred_message(model, entry.handle.clone()));
+        }
+        let entry = entry.clone();
+        drop(entries);
+        let usage = with_usage_estimate(
+            &entry.response.content,
+            &entry.context,
+            opts.session_id
+                .as_deref()
+                .or(entry.options.session_id.as_deref()),
+            opts.cache_retention
+                .as_ref()
+                .or(entry.options.cache_retention.as_ref()),
+            &self.prompt_cache,
+        );
+        stream_message_owned(
+            self.api.clone(),
+            self.provider.clone(),
+            model.id.clone(),
+            entry.response,
+            usage,
+            self.chunk_chars,
+        )
+    }
 
-            for block in &resolved.content {
-                match block {
-                    ContentBlock::Thinking { thinking, thinking_signature, redacted } => {
-                        yield Event::ThinkingStart;
-                        for chunk in chunk_str(thinking, chunk_chars) {
-                            yield Event::ThinkingDelta { delta: chunk };
-                        }
-                        yield Event::ThinkingEnd;
-                        partial.content.push(ContentBlock::Thinking {
-                            thinking: thinking.clone(),
-                            thinking_signature: thinking_signature.clone(),
-                            redacted: *redacted,
-                        });
-                    }
-                    ContentBlock::Text { text, text_signature } => {
-                        yield Event::TextStart;
-                        for chunk in chunk_str(text, chunk_chars) {
-                            yield Event::TextDelta { delta: chunk };
-                        }
-                        yield Event::TextEnd;
-                        partial.content.push(ContentBlock::Text {
-                            text: text.clone(), text_signature: text_signature.clone(),
-                        });
-                    }
-                    ContentBlock::ToolCall { id, name, arguments, thought_signature } => {
-                        yield Event::ToolCallStart { id: id.clone(), name: name.clone() };
-                        let args_json = serde_json::to_string(arguments).unwrap_or_else(|_| "{}".to_string());
-                        for chunk in chunk_str(&args_json, chunk_chars) {
-                            yield Event::ToolCallDelta { delta: chunk };
-                        }
-                        yield Event::ToolCallEnd {
-                            id: id.clone(), name: name.clone(),
-                            arguments: serde_json::to_value(arguments).unwrap_or_else(|_| serde_json::json!({})),
-                        };
-                        partial.content.push(ContentBlock::ToolCall {
-                            id: id.clone(), name: name.clone(),
-                            arguments: arguments.clone(), thought_signature: thought_signature.clone(),
-                        });
-                    }
-                    other => partial.content.push(other.clone()),
-                }
+    fn cancel_deferred<'a>(
+        &'a self,
+        _model: &'a Model,
+        handle: &'a DeferredHandle,
+        _opts: &'a StreamOptions,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<(), Arc<dyn std::error::Error + Send + Sync>>>
+                + Send
+                + 'a,
+        >,
+    > {
+        Box::pin(async move {
+            self.cancelled_deferred.lock().unwrap().push(handle.clone());
+            if let Some(entry) = self.deferred_entries.lock().unwrap().get_mut(&handle.id) {
+                entry.cancelled = true;
             }
-
-            partial.stop_reason = Some(stop.clone());
-            if matches!(stop, StopReason::Error | StopReason::Aborted) {
-                yield Event::Error {
-                    reason: stop,
-                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                        partial.error_message.clone().unwrap_or_else(|| "Request was aborted".to_string()),
-                    )),
-                    message: Some(partial),
-                };
-            } else {
-                yield Event::Done { reason: stop, message: partial };
-            }
+            Ok(())
         })
     }
+}
+
+fn stream_message_owned(
+    api: String,
+    provider: String,
+    model_id: String,
+    resolved: Message,
+    usage: Usage,
+    chunk_chars: usize,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'static>> {
+    Box::pin(async_stream::stream! {
+        let stop = resolved.stop_reason.clone().unwrap_or(StopReason::Stop);
+        let mut partial = Message {
+            role: Role::Assistant,
+            content: Vec::new(),
+            timestamp: crate::utils::now_millis(),
+            api: Some(api),
+            provider: Some(provider),
+            model: Some(model_id),
+            response_id: resolved.response_id.clone(),
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: Some(usage),
+            stop_reason: Some(StopReason::Pending),
+            deferred: None,
+            error_message: resolved.error_message.clone(),
+            raw_stop_reason: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
+            added_tool_names: Vec::new(),
+        };
+        yield Event::Start { partial: partial.clone() };
+        for block in &resolved.content {
+            match block {
+                ContentBlock::Thinking { thinking, thinking_signature, redacted } => {
+                    yield Event::ThinkingStart;
+                    for chunk in chunk_str(thinking, chunk_chars) { yield Event::ThinkingDelta { delta: chunk }; }
+                    yield Event::ThinkingEnd;
+                    partial.content.push(ContentBlock::Thinking { thinking: thinking.clone(), thinking_signature: thinking_signature.clone(), redacted: *redacted });
+                }
+                ContentBlock::Text { text, text_signature } => {
+                    yield Event::TextStart;
+                    for chunk in chunk_str(text, chunk_chars) { yield Event::TextDelta { delta: chunk }; }
+                    yield Event::TextEnd;
+                    partial.content.push(ContentBlock::Text { text: text.clone(), text_signature: text_signature.clone() });
+                }
+                ContentBlock::ToolCall { id, name, arguments, thought_signature } => {
+                    yield Event::ToolCallStart { id: id.clone(), name: name.clone() };
+                    let args_json = serde_json::to_string(arguments).unwrap_or_else(|_| "{}".to_string());
+                    for chunk in chunk_str(&args_json, chunk_chars) { yield Event::ToolCallDelta { delta: chunk }; }
+                    yield Event::ToolCallEnd { id: id.clone(), name: name.clone(), arguments: serde_json::to_value(arguments).unwrap_or_else(|_| serde_json::json!({})) };
+                    partial.content.push(ContentBlock::ToolCall { id: id.clone(), name: name.clone(), arguments: arguments.clone(), thought_signature: thought_signature.clone() });
+                }
+                other => partial.content.push(other.clone()),
+            }
+        }
+        partial.stop_reason = Some(stop.clone());
+        if matches!(stop, StopReason::Error | StopReason::Aborted) {
+            yield Event::Error {
+                reason: stop,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(partial.error_message.clone().unwrap_or_else(|| "Request was aborted".to_string()))),
+                message: Some(partial),
+            };
+        } else {
+            yield Event::Done { reason: stop, message: partial };
+        }
+    })
+}
+
+fn deferred_message(model: &Model, handle: DeferredHandle) -> Message {
+    Message {
+        role: Role::Assistant,
+        content: Vec::new(),
+        timestamp: crate::utils::now_millis(),
+        api: Some(model.api.clone()),
+        provider: Some(model.provider.clone()),
+        model: Some(model.id.clone()),
+        response_id: None,
+        response_model: None,
+        diagnostics: Vec::new(),
+        usage: Some(Usage::default()),
+        stop_reason: Some(StopReason::Deferred),
+        deferred: Some(handle),
+        error_message: None,
+        raw_stop_reason: None,
+        tool_call_id: None,
+        tool_name: None,
+        is_error: false,
+        details: None,
+        added_tool_names: Vec::new(),
+    }
+}
+
+fn stream_deferred_message(
+    message: Message,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'static>> {
+    Box::pin(async_stream::stream! {
+        let mut partial = message.clone();
+        partial.stop_reason = Some(StopReason::Pending);
+        yield Event::Start { partial };
+        yield Event::Done { reason: StopReason::Deferred, message };
+    })
 }
 
 fn chunk_str(text: &str, chunk_chars: usize) -> Vec<String> {
@@ -330,6 +572,7 @@ pub fn stream_faux_text<'a>(
                 ..Default::default()
             }),
             stop_reason: Some(StopReason::Pending),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -352,6 +595,7 @@ pub fn stream_faux_text<'a>(
         let final_msg = Message {
             content: vec![ContentBlock::Text { text: text.clone(), text_signature: None }],
             stop_reason: Some(StopReason::Stop),
+            deferred: None,
             usage: partial.usage.clone(),
             ..partial
         };
@@ -394,6 +638,7 @@ mod tests {
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -481,6 +726,7 @@ mod tests {
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::ToolUse),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -545,6 +791,7 @@ mod tests {
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Stop),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,

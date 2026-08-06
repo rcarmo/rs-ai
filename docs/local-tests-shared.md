@@ -18,6 +18,9 @@ Generated audit manifests: `docs/v0840-manifests.md` (101 changed `packages/ai` 
 
 Slice gate results: comparator text `1212/1212`, image `42/42`; `cargo build`; `cargo test v0840_release_test`; strict Clippy.
 
+Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.
+
+
 Mirror of the cross-port requirement: adapt locally-authored regression/edge-case
 tests from the reference ports — primarily **@go-ai** (`/workspace/projects/go-ai`,
 `docs/local-tests-shared.md`, 188 local Go tests) — into idiomatic Rust. This file

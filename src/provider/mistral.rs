@@ -122,6 +122,7 @@ pub fn stream_mistral<'a>(
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,

@@ -177,6 +177,7 @@ mod tests {
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(stop),
+            deferred: None,
             error_message: err.map(str::to_string),
             raw_stop_reason: None,
             tool_call_id: None,

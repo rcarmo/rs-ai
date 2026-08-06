@@ -17,7 +17,10 @@ First committed slice status: **PARTIAL / IN PROGRESS**.
 | Streams without finish reasons: `OpenAICompletionsCompat.supportsFinishReason` | 1 | PORTED in slice 1 | `src/provider/openai.rs`; test `supports_finish_reason_false_infers_terminal_stop_or_tool_use` |
 | Catalog comparator | n/a | PORTED for slice catalog | `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256` => text `1212/1212`, image `42/42`, missing `0`, extra `0` |
 
-Remaining v0.84.0 audit clusters are still pending final disposition: Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callback semantics, telemetry/deferred/background support, OpenAI Responses incomplete/raw status fixes, Anthropic initial block content, Codex account-scoped WebSocket cache, and every other changed test assertion in `docs/v0840-manifests.md`.
+Remaining v0.84.0 audit clusters are still pending final disposition:
+
+Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.
+ Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callback semantics, telemetry/deferred/background support, OpenAI Responses incomplete/raw status fixes, Anthropic initial block content, Codex account-scoped WebSocket cache, and every other changed test assertion in `docs/v0840-manifests.md`.
 
 ## Current parity audit: `@earendil-works/pi-ai` v0.83.0
 

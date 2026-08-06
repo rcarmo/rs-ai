@@ -110,6 +110,7 @@ fn assistant_message(model: &Model) -> Message {
         diagnostics: Vec::new(),
         usage: Some(empty_usage()),
         stop_reason: Some(StopReason::Stop),
+        deferred: None,
         error_message: None,
         raw_stop_reason: None,
         tool_call_id: None,

@@ -4,10 +4,16 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use crate::events::Event;
-use crate::types::{Api, Context, Message, Model, StopReason, StreamOptions};
+use crate::types::{Api, Context, DeferredHandle, Message, Model, StopReason, StreamOptions};
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::{Arc, Once};
 
 use tokio_stream::Stream;
+
+pub type EventStream<'a> = Pin<Box<dyn Stream<Item = Event> + Send + 'a>>;
+pub type DeferredCancelFuture<'a> =
+    Pin<Box<dyn Future<Output = Result<(), Arc<dyn std::error::Error + Send + Sync>>> + Send + 'a>>;
 
 /// Trait that provider implementations must satisfy.
 pub trait ApiProvider: Send + Sync {
@@ -23,7 +29,40 @@ pub trait ApiProvider: Send + Sync {
         model: &'a Model,
         context: &'a Context,
         opts: &'a StreamOptions,
-    ) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>>;
+    ) -> EventStream<'a>;
+
+    /// Fetch a previously submitted deferred/background response.
+    fn fetch_deferred<'a>(
+        &self,
+        model: &'a Model,
+        _handle: &'a DeferredHandle,
+        _opts: &'a StreamOptions,
+    ) -> EventStream<'a> {
+        let provider = model.provider.clone();
+        let err = Event::Error {
+            reason: StopReason::Error,
+            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                "Provider {provider} does not support deferred responses"
+            ))),
+            message: None,
+        };
+        Box::pin(tokio_stream::once(err))
+    }
+
+    /// Cancel a previously submitted deferred/background response.
+    fn cancel_deferred<'a>(
+        &'a self,
+        model: &'a Model,
+        _handle: &'a DeferredHandle,
+        _opts: &'a StreamOptions,
+    ) -> DeferredCancelFuture<'a> {
+        let provider = model.provider.clone();
+        Box::pin(async move {
+            Err(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                format!("Provider {provider} does not support deferred responses"),
+            )))
+        })
+    }
 }
 
 // --- Global registries ---
@@ -155,7 +194,7 @@ pub fn stream<'a>(
     model: &'a Model,
     context: &'a Context,
     opts: &'a StreamOptions,
-) -> std::pin::Pin<Box<dyn Stream<Item = Event> + Send + 'a>> {
+) -> EventStream<'a> {
     ensure_builtins_registered();
     let provider = {
         let providers = API_PROVIDERS.read().unwrap();
@@ -174,6 +213,52 @@ pub fn stream<'a>(
             };
             Box::pin(tokio_stream::once(err))
         }
+    }
+}
+
+/// Fetch a deferred/background response handle.
+pub fn fetch_deferred<'a>(
+    model: &'a Model,
+    handle: &'a DeferredHandle,
+    opts: &'a StreamOptions,
+) -> EventStream<'a> {
+    ensure_builtins_registered();
+    let provider = {
+        let providers = API_PROVIDERS.read().unwrap();
+        providers.get(&model.api).cloned()
+    };
+    match provider {
+        Some(provider) => provider.fetch_deferred(model, handle, opts),
+        None => {
+            let err = Event::Error {
+                reason: StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format!(
+                    "No API provider registered for api: {}",
+                    model.api
+                ))),
+                message: None,
+            };
+            Box::pin(tokio_stream::once(err))
+        }
+    }
+}
+
+/// Cancel a deferred/background response handle.
+pub async fn cancel_deferred(
+    model: &Model,
+    handle: &DeferredHandle,
+    opts: &StreamOptions,
+) -> Result<(), Arc<dyn std::error::Error + Send + Sync>> {
+    ensure_builtins_registered();
+    let provider = {
+        let providers = API_PROVIDERS.read().unwrap();
+        providers.get(&model.api).cloned()
+    };
+    match provider {
+        Some(provider) => provider.cancel_deferred(model, handle, opts).await,
+        None => Err(Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+            format!("No API provider registered for api: {}", model.api),
+        ))),
     }
 }
 

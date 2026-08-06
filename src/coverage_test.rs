@@ -120,6 +120,7 @@ mod tests {
         // Length stop with output==0 and input filling the window is overflow.
         let msg = Message {
             stop_reason: Some(StopReason::Length),
+            deferred: None,
             usage: Some(Usage {
                 input: 100,
                 output: 0,
@@ -135,6 +136,7 @@ mod tests {
         let model = test_model_base();
         let msg = Message {
             stop_reason: Some(StopReason::Error),
+            deferred: None,
             error_message: Some("context_length_exceeded: reduce your input".into()),
             ..base_msg()
         };
@@ -150,6 +152,7 @@ mod tests {
         // Silent overflow: successful stop but input exceeds the context window.
         let msg = Message {
             stop_reason: Some(StopReason::Stop),
+            deferred: None,
             usage: Some(Usage {
                 input: 110,
                 output: 0,
@@ -166,6 +169,7 @@ mod tests {
         let model = test_model_base();
         let msg = Message {
             stop_reason: Some(StopReason::Stop),
+            deferred: None,
             ..base_msg()
         };
         assert!(!is_context_overflow(&msg, &model));
@@ -349,6 +353,7 @@ mod tests {
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: None,
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,

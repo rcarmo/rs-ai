@@ -126,6 +126,7 @@ mod tests {
                         ..Default::default()
                     }),
                     stop_reason: Some(StopReason::Stop),
+                    deferred: None,
                     error_message: None,
                     raw_stop_reason: None,
                     tool_call_id: None,
@@ -195,6 +196,7 @@ mod tests {
                 ..Default::default()
             }),
             stop_reason: Some(StopReason::Stop),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -228,6 +230,7 @@ mod tests {
                 ..Default::default()
             }),
             stop_reason: Some(StopReason::Length),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -254,6 +257,7 @@ mod tests {
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Error),
+            deferred: None,
             error_message: Some("This model's maximum context length is 4096 tokens".into()),
             raw_stop_reason: None,
             tool_call_id: None,

@@ -19,6 +19,7 @@ mod tests {
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: stop,
+            deferred: None,
             error_message: error.map(|s| s.to_string()),
             raw_stop_reason: None,
             tool_call_id: None,

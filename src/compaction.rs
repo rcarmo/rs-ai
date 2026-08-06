@@ -30,6 +30,7 @@ pub fn compact_context(ctx: &Context, keep_recent: usize, summary: Option<&str>)
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: None,
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,

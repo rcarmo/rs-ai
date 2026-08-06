@@ -63,6 +63,7 @@ mod tests {
                 ..Default::default()
             }),
             stop_reason: Some(StopReason::ToolUse),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,

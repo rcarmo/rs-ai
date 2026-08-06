@@ -57,9 +57,50 @@ Results:
 - `cargo test v0840_release_test -- --nocapture`: `5 passed; 0 failed`
 - `cargo clippy --all-targets -- -D warnings`: passed
 
+### Committed slice 2: public deferred/background response lifecycle
+
+Auditor priority correction: upstream commit `382aa641cc4c197dfa95ed684f187b5a39bc30ce` (`DRAFT: add openai background mode responses`) is public required behavior, not N/A and not deferred-tool-only.
+
+Ported/adapted in this slice:
+
+- Added public `DeferredHandle` and `DeferredRequest` Rust types.
+- Added `StopReason::Deferred` and `Message.deferred` serde-compatible state.
+- Added `StreamOptions.deferred` and `StreamOptions.wait` request fields.
+- Extended `ApiProvider` with public `fetch_deferred` and `cancel_deferred` capability methods.
+- Added top-level `registry::fetch_deferred` / `registry::cancel_deferred` dispatch.
+- Extended `FauxProvider` with deterministic deferred/background lifecycle state:
+  - submit with deferred option returns a handle and `StopReason::Deferred`
+  - first N polls can return pending/deferred
+  - ready poll streams the stored final assistant message
+  - cancellation records handles and turns later fetches into in-band error messages
+  - unknown handle fetches return in-band assistant errors.
+- Added type aliases for boxed event streams and async cancellation futures to keep the public trait Send/pin-safe and Clippy-clean.
+
+Named Rust evidence:
+
+- `providers_upstream_test::tests::faux_provider_submits_polls_and_redeems_deferred_responses`
+- `providers_upstream_test::tests::faux_provider_records_cancellation_and_fetches_cancelled_handle_as_error`
+- `providers_upstream_test::tests::unsupported_deferred_capability_reports_in_band_provider_errors`
+- Existing `provider::faux` stream tests remain active against the expanded provider.
+
+Slice 2 verification:
+
+```bash
+cargo test providers_upstream_test -- --nocapture
+cargo test provider::faux -- --nocapture
+cargo test v0840_release_test -- --nocapture
+cargo test
+cargo fmt --check
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-json   python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256
+cargo build
+cargo clippy --all-targets -- -D warnings
+```
+
+Results: provider/deferred targeted tests passed; full `cargo test` passed with `836 passed; 0 failed`; doctest `1 passed`; comparator remains text `1212/1212`, image `42/42`, missing `0`, extra `0`; build/fmt/clippy passed.
+
 ### Still pending for final v0.84.0 completion
 
-The remaining changed assertions/provider clusters from `docs/v0840-manifests.md` still need final disposition and executable evidence before declaring the v0.84.0 release complete, including Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callbacks, deferred/background/telemetry semantics, Responses incomplete/raw details, Anthropic initial block content, Codex account-scoped WebSocket cache, and remaining provider-specific stream/tool/error/usage fixes.
+The remaining changed assertions/provider clusters from `docs/v0840-manifests.md` still need final disposition and executable evidence before declaring the v0.84.0 release complete, including Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callbacks, telemetry semantics across stream/deferred/images, ProviderHeaders null deletion over auth headers, refresh options/results, runtime API-key cancellation/refresh separation, Responses incomplete/raw details, Anthropic initial block content, Codex account-scoped WebSocket cache, and remaining provider-specific stream/tool/error/usage fixes.
 
 This file is the release-audit ledger for `rs-ai`. It must be updated in the same commit as every future upstream `@earendil-works/pi-ai` release audit.
 

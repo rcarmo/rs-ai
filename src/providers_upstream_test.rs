@@ -19,6 +19,7 @@ mod tests {
     use crate::provider::faux::FauxProvider;
     use crate::registry::{self, ApiProvider};
     use crate::types::*;
+    use std::sync::Arc;
     use std::sync::Mutex;
     use tokio_stream::StreamExt;
 
@@ -185,6 +186,72 @@ mod tests {
 
     // ---- describe("fauxProvider") ------------------------------------------
 
+    fn assistant_text(text: &str, stop: StopReason) -> Message {
+        Message {
+            role: Role::Assistant,
+            content: vec![ContentBlock::Text {
+                text: text.into(),
+                text_signature: None,
+            }],
+            timestamp: 0,
+            api: None,
+            provider: None,
+            model: None,
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: Some(stop),
+            deferred: None,
+            error_message: None,
+            raw_stop_reason: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
+            added_tool_names: Vec::new(),
+        }
+    }
+
+    fn faux_registry_model(api: &str, provider: &str) -> Model {
+        Model {
+            id: "faux".into(),
+            name: "faux".into(),
+            api: api.into(),
+            provider: provider.into(),
+            base_url: "http://localhost:1".into(),
+            reasoning: false,
+            thinking_level_map: None,
+            input: vec!["text".into()],
+            cost: ModelCost::default(),
+            context_window: 10000,
+            max_tokens: 1000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: Default::default(),
+        }
+    }
+
+    async fn terminal_message(
+        mut stream: std::pin::Pin<
+            Box<dyn futures::Stream<Item = crate::events::Event> + Send + '_>,
+        >,
+    ) -> Message {
+        let mut terminal = None;
+        while let Some(evt) = stream.next().await {
+            match evt {
+                crate::events::Event::Done { message, .. } => terminal = Some(message),
+                crate::events::Event::Error { message, error, .. } => {
+                    terminal = message
+                        .or_else(|| Some(assistant_text(&error.to_string(), StopReason::Error)))
+                }
+                _ => {}
+            }
+        }
+        terminal.expect("terminal message")
+    }
+
     #[tokio::test]
     async fn faux_provider_streams_queued_responses() {
         let faux = FauxProvider::new("faux", "faux");
@@ -203,6 +270,7 @@ mod tests {
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Stop),
+            deferred: None,
             error_message: None,
             raw_stop_reason: None,
             tool_call_id: None,
@@ -213,23 +281,7 @@ mod tests {
         }]);
         assert_eq!(faux.pending_response_count(), 1);
 
-        let model = Model {
-            id: "faux".into(),
-            name: "faux".into(),
-            api: "faux".into(),
-            provider: "faux".into(),
-            base_url: "http://localhost:1".into(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: vec!["text".into()],
-            cost: ModelCost::default(),
-            context_window: 10000,
-            max_tokens: 1000,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: Default::default(),
-        };
+        let model = faux_registry_model("faux", "faux");
         let ctx = Context {
             system_prompt: None,
             messages: vec![Message {
@@ -247,6 +299,7 @@ mod tests {
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,
+                deferred: None,
                 error_message: None,
                 raw_stop_reason: None,
                 tool_call_id: None,
@@ -271,5 +324,169 @@ mod tests {
         assert_eq!(text, "hello from faux");
         assert_eq!(reason, Some(StopReason::Stop));
         assert_eq!(faux.pending_response_count(), 0);
+    }
+
+    #[tokio::test]
+    async fn faux_provider_submits_polls_and_redeems_deferred_responses() {
+        let api = "faux-deferred";
+        let provider = "faux-deferred";
+        let faux = FauxProvider::new_with_deferred(api, provider, 1, Some(25));
+        registry::register_api(faux.clone() as Arc<dyn ApiProvider>);
+        let model = faux_registry_model(api, provider);
+        faux.set_responses(vec![assistant_text("ready", StopReason::Stop)]);
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![Message {
+                role: Role::User,
+                content: vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    text_signature: None,
+                }],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                deferred: None,
+                error_message: None,
+                raw_stop_reason: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
+                added_tool_names: Vec::new(),
+            }],
+            tools: vec![],
+        };
+        let opts = StreamOptions {
+            deferred: Some(DeferredRequest {
+                window: Some("1h".into()),
+            }),
+            ..Default::default()
+        };
+        let submitted = terminal_message(registry::stream(&model, &ctx, &opts)).await;
+        assert_eq!(submitted.stop_reason, Some(StopReason::Deferred));
+        assert!(submitted.content.is_empty());
+        let handle = submitted.deferred.clone().expect("deferred handle");
+        assert_eq!(handle.provider, provider);
+        assert_eq!(handle.model_id, model.id);
+        assert_eq!(handle.api, api);
+        assert_eq!(handle.poll_after_ms, Some(25));
+
+        let pending = terminal_message(registry::fetch_deferred(
+            &model,
+            &handle,
+            &StreamOptions {
+                wait: Some(0),
+                ..Default::default()
+            },
+        ))
+        .await;
+        assert_eq!(pending.stop_reason, Some(StopReason::Deferred));
+        assert_eq!(pending.deferred, Some(handle.clone()));
+
+        let ready = terminal_message(registry::fetch_deferred(
+            &model,
+            &handle,
+            &StreamOptions {
+                wait: Some(0),
+                ..Default::default()
+            },
+        ))
+        .await;
+        assert_eq!(ready.stop_reason, Some(StopReason::Stop));
+        assert_eq!(content_to_plain_text(&ready.content), "ready");
+        assert!(
+            ready
+                .usage
+                .as_ref()
+                .is_some_and(|usage| usage.total_tokens > 0)
+        );
+        assert_eq!(faux.call_count(), 1);
+        assert_eq!(faux.deferred_fetch_count(), 2);
+        registry::unregister_api(api);
+    }
+
+    #[tokio::test]
+    async fn faux_provider_records_cancellation_and_fetches_cancelled_handle_as_error() {
+        let api = "faux-cancel";
+        let provider = "faux-cancel";
+        let faux = FauxProvider::new(api, provider);
+        registry::register_api(faux.clone() as Arc<dyn ApiProvider>);
+        let model = faux_registry_model(api, provider);
+        faux.set_responses(vec![assistant_text("cancelled", StopReason::Stop)]);
+        let ctx = Context {
+            system_prompt: None,
+            messages: vec![],
+            tools: vec![],
+        };
+        let submitted = terminal_message(registry::stream(
+            &model,
+            &ctx,
+            &StreamOptions {
+                deferred: Some(DeferredRequest::default()),
+                ..Default::default()
+            },
+        ))
+        .await;
+        let handle = submitted.deferred.clone().expect("deferred handle");
+        registry::cancel_deferred(&model, &handle, &StreamOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(faux.cancelled_deferred(), vec![handle.clone()]);
+        let cancelled = terminal_message(registry::fetch_deferred(
+            &model,
+            &handle,
+            &StreamOptions::default(),
+        ))
+        .await;
+        assert_eq!(cancelled.stop_reason, Some(StopReason::Error));
+        assert!(
+            cancelled
+                .error_message
+                .as_deref()
+                .unwrap_or_default()
+                .contains("was cancelled")
+        );
+        registry::unregister_api(api);
+    }
+
+    #[tokio::test]
+    async fn unsupported_deferred_capability_reports_in_band_provider_errors() {
+        let faux = FauxProvider::new("faux-no-deferred", "faux-no-deferred");
+        let model = faux_registry_model("faux-no-deferred", "faux-no-deferred");
+        let handle = DeferredHandle {
+            provider: model.provider.clone(),
+            model_id: model.id.clone(),
+            api: model.api.clone(),
+            id: "missing".into(),
+            expires_at: None,
+            poll_after_ms: None,
+            data: None,
+        };
+        let err =
+            terminal_message(faux.fetch_deferred(&model, &handle, &StreamOptions::default())).await;
+        assert_eq!(err.stop_reason, Some(StopReason::Error));
+        assert!(
+            err.error_message
+                .as_deref()
+                .unwrap_or_default()
+                .contains("Unknown faux deferred response")
+        );
+    }
+
+    fn content_to_plain_text(blocks: &[ContentBlock]) -> String {
+        blocks
+            .iter()
+            .filter_map(|block| match block {
+                ContentBlock::Text { text, .. } => Some(text.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("")
     }
 }

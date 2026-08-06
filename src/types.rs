@@ -93,6 +93,7 @@ pub enum StopReason {
     ToolUse,
     Error,
     Aborted,
+    Deferred,
 }
 
 /// Cache retention preference.
@@ -153,6 +154,29 @@ pub struct CostBreakdown {
     pub cache_read: f64,
     pub cache_write: f64,
     pub total: f64,
+}
+
+/// Token usage for a single request.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DeferredHandle {
+    pub provider: String,
+    pub model_id: String,
+    pub api: String,
+    pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub poll_after_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct DeferredRequest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub window: Option<String>,
 }
 
 /// Token usage for a single request.
@@ -272,6 +296,8 @@ pub struct Message {
     pub usage: Option<Usage>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop_reason: Option<StopReason>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deferred: Option<DeferredHandle>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -457,6 +483,8 @@ pub struct StreamOptions {
     pub metadata: Option<HashMap<String, serde_json::Value>>,
     pub timeout_ms: Option<u64>,
     pub max_retries: Option<u32>,
+    pub wait: Option<u64>,
+    pub deferred: Option<DeferredRequest>,
     pub reasoning: Option<ThinkingLevel>,
     pub reasoning_summary: Option<String>,
     pub thinking_budgets: Option<ThinkingBudgets>,
@@ -495,6 +523,8 @@ impl std::fmt::Debug for StreamOptions {
             .field("metadata", &self.metadata)
             .field("timeout_ms", &self.timeout_ms)
             .field("max_retries", &self.max_retries)
+            .field("wait", &self.wait)
+            .field("deferred", &self.deferred)
             .field("reasoning", &self.reasoning)
             .field("reasoning_summary", &self.reasoning_summary)
             .field("tool_choice", &self.tool_choice)
@@ -530,6 +560,7 @@ pub fn user_message(text: &str) -> Message {
         diagnostics: Vec::new(),
         usage: None,
         stop_reason: None,
+        deferred: None,
         error_message: None,
         raw_stop_reason: None,
         tool_call_id: None,
