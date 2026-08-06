@@ -35,7 +35,7 @@ Sixth committed v0.84.0 slice: runtime/OAuth/telemetry dispatch closure, Codex a
 
 Seventh committed v0.84.0 slice: Google shared retry is **PORTED** at the real `stream_google` request call site. Evidence: `src/google_shared_retry_test.rs` covers the three upstream cases (`429` retries once with `max_retries=1`, no retry when unset, no retry for `400`) plus retry delay cap and caller cancellation via Rust retry primitives.
 
-Whole-corpus hardening slice: the 8 previously absent upstream test filenames are now explicitly accounted. `cloudflare-stream`, `image-model-data`, `model-data-validation`, `openrouter-cache-control-models`, `provider-retry`, `reasoning-options`, and `uuid` are **ADAPTED** with named Rust tests; `xai-responses` is **COVERED** by the existing xAI Responses request-path and retired-model tests. See `docs/v0840-127-test-crosswalk.md`.
+Whole-corpus hardening slice: the 8 previously absent upstream test filenames are now explicitly accounted and **ADAPTED**. `image-model-data` and `reasoning-options` exercise production generator helpers (`scripts/generate_image_models.py::parse_openrouter_image_models`, `scripts/generate_models.py::get_effort_thinking_level_map`) rather than test-local copies; `model-data-validation` exercises `scripts/validate_release_model_data.py` over exact failure fixtures; `xai-responses` now covers low/medium/high-only thinking levels and full Responses request shape. See `docs/v0840-127-test-crosswalk.md`.
 
 Explicit final rubric dispositions:
 

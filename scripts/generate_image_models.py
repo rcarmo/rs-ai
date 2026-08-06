@@ -14,6 +14,49 @@ import datetime
 from pathlib import Path
 
 
+def parse_openrouter_image_models(payload, strict=True):
+    """Parse OpenRouter image models from a catalog response.
+
+    Strict mode rejects missing/empty catalogs and catalogs with no usable image models,
+    matching upstream `parseOpenRouterImageModels` policy.
+    """
+    data = payload.get("data") if isinstance(payload, dict) else None
+    if not isinstance(data, list) or not data:
+        raise ValueError("missing or empty image model list")
+    out = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        arch = item.get("architecture") if isinstance(item.get("architecture"), dict) else {}
+        input_modalities = arch.get("input_modalities") if isinstance(arch.get("input_modalities"), list) else []
+        output_modalities = arch.get("output_modalities") if isinstance(arch.get("output_modalities"), list) else []
+        if "image" not in output_modalities:
+            continue
+        if "text" not in input_modalities and "image" not in input_modalities:
+            continue
+        model_id = item.get("id")
+        if not isinstance(model_id, str) or not model_id:
+            continue
+        out.append({
+            "id": model_id,
+            "name": item.get("name") or model_id,
+            "api": "openrouter-images",
+            "provider": "openrouter",
+            "baseUrl": "https://openrouter.ai/api/v1",
+            "input": list(input_modalities),
+            "output": list(output_modalities),
+            "cost": {
+                "input": float(item.get("pricing", {}).get("prompt", 0) or 0) * 1_000_000,
+                "output": float(item.get("pricing", {}).get("completion", 0) or 0) * 1_000_000,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+            },
+        })
+    if strict and not out:
+        raise ValueError("no usable image models")
+    return out
+
+
 def rust_string(s):
     return json.dumps(s)
 

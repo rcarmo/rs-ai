@@ -6,7 +6,7 @@ Total upstream `packages/ai/test/*.test.ts` files: **127**.
 
 ## Disposition counts
 
-- **8 newly explicit absent-filename dispositions in this hardening slice**: 7 adapted with named executable Rust tests, 1 covered by existing xAI Responses test.
+- **8 newly explicit absent-filename dispositions in this hardening slice**: 8 adapted with named executable Rust tests or production-script/artifact validators.
 - **119 previously ported/adapted/covered/N/A dispositions**: tracked in `docs/upstream-parity-gaps.md` and `docs/v0840-manifests.md`; no new absence found in this pass.
 - **127/127 accounted** in the cumulative filename walk.
 
@@ -15,13 +15,13 @@ Total upstream `packages/ai/test/*.test.ts` files: **127**.
 | Upstream file | Disposition | rs-ai evidence | Notes |
 |---|---|---|---|
 | cloudflare-stream.test.ts | ADAPTED | `src/cloudflare_stream_test.rs` | Cloudflare placeholders resolve from env before normal `stream_openai` and `registry::stream_simple` dispatch; unresolved placeholders are preserved by `resolve_cloudflare_base_url`. |
-| image-model-data.test.ts | ADAPTED | `src/image_model_data_test.rs` | Deterministic OpenRouter image catalog parser validation: missing/empty strict catalog, no usable image models, valid image model parse. |
-| model-data-validation.test.ts | ADAPTED | `scripts/validate_release_model_data.py`, `src/model_data_validation_test.rs` | Executable offline release-shard validation: wrong API group, duplicate IDs across groups, stale hashes/missing IDs, incompatible schema, stale structure hash/generation stamp, invalid timestamp, missing shard. |
+| image-model-data.test.ts | ADAPTED | `scripts/generate_image_models.py::parse_openrouter_image_models`, `src/image_model_data_test.rs` | Production generator helper validation: missing/empty strict catalog, no usable image models, valid image model parse. |
+| model-data-validation.test.ts | ADAPTED | `scripts/validate_release_model_data.py`, `src/model_data_validation_test.rs` | Executable offline release-shard validation: missing data dir, wrong id, wrong provider, wrong API group, duplicate IDs across groups, stale hashes/missing IDs, incompatible schema, stale structure hash/generation stamp, invalid timestamp, missing shard. |
 | openrouter-cache-control-models.test.ts | ADAPTED | `src/openrouter_cache_control_models_test.rs` | All four `~anthropic/claude-*-latest` OpenRouter model IDs expose `compat.cache_control_format = anthropic`. |
 | provider-retry.test.ts | ADAPTED | `src/provider_retry_upstream_test.rs` | Provider retry helper behavior: retry-after-ms retry, x-should-retry=false no retry, excessive retry-after cap, cap disabled, cancellation during provider-requested delay. |
-| reasoning-options.test.ts | ADAPTED | `src/reasoning_options_test.rs` | Script-policy mapping for effort values: verified values only, `none` only with toggle, toggle/budget/unverified controls left to adapter-specific handling. |
+| reasoning-options.test.ts | ADAPTED | `scripts/generate_models.py::get_effort_thinking_level_map`, `src/reasoning_options_test.rs` | Production generator helper mapping for effort values: verified values only, `none` only with toggle, toggle/budget/unverified controls left to adapter-specific handling. |
 | uuid.test.ts | ADAPTED | `src/uuid_test.rs` | UUIDv7 RFC 9562 layout and monotonic ordering; earlier release invariant remains in `src/v0830_release_test.rs`. |
-| xai-responses.test.ts | COVERED | `src/xai_grok45_responses_test.rs`, `src/providers_upstream_test.rs::excludes_retired_xai_models_from_builtin_catalog` | xAI Grok 4.5 routes through OpenAI Responses with bearer auth and compatible request fields; retired xAI models excluded. |
+| xai-responses.test.ts | ADAPTED | `src/xai_grok45_responses_test.rs`, `src/providers_upstream_test.rs::excludes_retired_xai_models_from_builtin_catalog` | xAI Grok 4.5 routes through OpenAI Responses; low/medium/high-only thinking levels; bearer auth, `store:false`, session header + `prompt_cache_key`, no long retention, medium reasoning effort, encrypted-content include, developer system prompt; retired xAI models excluded. |
 
 ## Full upstream filename inventory
 

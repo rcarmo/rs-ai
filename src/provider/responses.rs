@@ -938,7 +938,10 @@ pub(crate) fn build_responses_payload(
 
     if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
         // Reasoning models use the developer role (matching upstream).
-        let role = if model.reasoning && compat.supports_developer_role != Some(false) {
+        let role = if model.reasoning
+            && (model.provider == crate::types::provider_id::XAI
+                || compat.supports_developer_role != Some(false))
+        {
             "developer"
         } else {
             "system"

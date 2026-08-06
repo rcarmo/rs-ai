@@ -70,12 +70,16 @@ def validate_model_data_directory(data_dir: Path) -> dict:
             raise ValueError(f"empty provider shard: {filename}")
         provider_structure: dict[str, str] = {}
         for api, values in grouped.items():
-            if not isinstance(api, str):
+            if not isinstance(api, str) or not isinstance(values, dict):
                 raise ValueError(f"invalid API group in {filename}")
-            for model in flatten(values):
+            for expected_id, model in values.items():
+                if not isinstance(model, dict):
+                    raise ValueError(f"invalid model entry in {filename}")
                 model_id = model.get("id")
                 model_provider = model.get("provider")
                 model_api = model.get("api")
+                if model_id != expected_id:
+                    raise ValueError(f"model entry has id {model_id}, expected {expected_id}")
                 if model_provider != provider:
                     raise ValueError(f"model {model_id} has provider {model_provider}, expected {provider}")
                 if model_api != api:

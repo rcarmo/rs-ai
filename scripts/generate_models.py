@@ -13,6 +13,39 @@ import sys
 import datetime
 from pathlib import Path
 
+VERIFIED_REASONING_EFFORTS = {"none", "low", "medium", "high", "xhigh", "max"}
+
+
+def get_effort_thinking_level_map(controls):
+    """Map model-dev reasoning controls to rs-ai/upstream thinkingLevelMap.
+
+    Mirrors `scripts/models-dev-reasoning-options.ts`: only verified effort values
+    produce a map; `none` disables thinking only when a toggle control is also present.
+    """
+    effort_values = None
+    has_toggle = False
+    for control in controls:
+        if control.get("type") == "toggle":
+            has_toggle = True
+        if control.get("type") == "effort":
+            effort_values = control.get("values")
+    if not isinstance(effort_values, list):
+        return None
+    normalized = [value for value in effort_values if isinstance(value, str)]
+    if len(normalized) != len(effort_values) or any(value not in VERIFIED_REASONING_EFFORTS for value in normalized):
+        return None
+    has = lambda value: value in normalized
+    return {
+        "off": "none" if has_toggle and has("none") else None,
+        "minimal": None,
+        "low": "low" if has("low") else None,
+        "medium": "medium" if has("medium") else None,
+        "high": "high" if has("high") else None,
+        "xhigh": "xhigh" if has("xhigh") else None,
+        "max": "max" if has("max") else None,
+    }
+
+
 def rust_string(s):
     return json.dumps(s)
 

@@ -1,11 +1,15 @@
-//! Verifies upstream `grok-4.5` xAI routing uses the OpenAI Responses request path.
+//! Verifies upstream `test/xai-responses.test.ts` behavior for xAI Responses routing.
 
 #[cfg(test)]
 mod tests {
     use crate::events::Event;
     use crate::provider::responses::stream_responses;
     use crate::registry::get_model;
-    use crate::types::{ContentBlock, Context, Message, Role, StreamOptions};
+    use crate::simple_options::get_supported_thinking_levels;
+    use crate::types::{
+        CacheRetention, ContentBlock, Context, Message, ModelThinkingLevel, Role, StreamOptions,
+        ThinkingLevel,
+    };
     use serde_json::Value;
     use tokio_stream::StreamExt;
     use wiremock::matchers::method;
@@ -13,12 +17,12 @@ mod tests {
 
     fn ctx() -> Context {
         Context {
-            system_prompt: None,
+            system_prompt: Some("You are a careful coding assistant.".into()),
             tools: Vec::new(),
             messages: vec![Message {
                 role: Role::User,
                 content: vec![ContentBlock::Text {
-                    text: "hi".into(),
+                    text: "hello".into(),
                     text_signature: None,
                 }],
                 timestamp: 0,
@@ -42,8 +46,25 @@ mod tests {
         }
     }
 
+    #[test]
+    fn xai_catalog_uses_responses_and_low_medium_high_only_for_grok_45() {
+        let grok_45 = get_model("xai", "grok-4.5").expect("xai/grok-4.5");
+        assert_eq!(grok_45.api, crate::types::api::OPENAI_RESPONSES);
+        assert_eq!(
+            get_supported_thinking_levels(&grok_45),
+            vec![
+                ModelThinkingLevel::Low,
+                ModelThinkingLevel::Medium,
+                ModelThinkingLevel::High,
+            ]
+        );
+        let grok_43 = get_model("xai", "grok-4.3").expect("xai/grok-4.3");
+        assert_eq!(grok_43.api, crate::types::api::OPENAI_COMPLETIONS);
+        assert!(grok_45.compat.supports_long_cache_retention == Some(false));
+    }
+
     #[tokio::test]
-    async fn xai_grok_45_sends_actual_responses_request() {
+    async fn xai_grok_45_sends_actual_responses_request_shape() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .respond_with(
@@ -54,11 +75,15 @@ mod tests {
             .mount(&server)
             .await;
         let mut model = get_model("xai", "grok-4.5").expect("xai/grok-4.5");
-        assert_eq!(model.api, crate::types::api::OPENAI_RESPONSES);
         model.base_url = server.uri();
         model.api_key = Some("xai-token".into());
         let c = ctx();
-        let opts = StreamOptions::default();
+        let opts = StreamOptions {
+            session_id: Some("pi-session-123".into()),
+            cache_retention: Some(CacheRetention::Long),
+            reasoning: Some(ThinkingLevel::Medium),
+            ..Default::default()
+        };
         let mut stream = stream_responses(&model, &c, &opts);
         while let Some(event) = stream.next().await {
             if let Event::Error { error, .. } = event {
@@ -77,8 +102,32 @@ mod tests {
                 .unwrap(),
             "Bearer xai-token"
         );
+        assert_eq!(
+            reqs[0].headers.get("session_id").unwrap().to_str().unwrap(),
+            "pi-session-123"
+        );
         let body: Value = serde_json::from_slice(&reqs[0].body).unwrap();
         assert_eq!(body["model"], "grok-4.5");
-        assert!(body.get("input").and_then(|v| v.as_array()).is_some());
+        assert_eq!(body["store"], false);
+        assert_eq!(body["stream"], true);
+        assert_eq!(body["prompt_cache_key"], "pi-session-123");
+        assert!(
+            body.get("prompt_cache_retention").is_none(),
+            "xAI does not support long retention"
+        );
+        assert_eq!(
+            body["reasoning"],
+            serde_json::json!({"effort":"medium","summary":"auto"})
+        );
+        assert_eq!(
+            body["include"],
+            serde_json::json!(["reasoning.encrypted_content"])
+        );
+        let input = body["input"].as_array().expect("input array");
+        assert!(input.iter().any(|item| {
+            item.get("role") == Some(&serde_json::json!("developer"))
+                && item.get("content")
+                    == Some(&serde_json::json!("You are a careful coding assistant."))
+        }));
     }
 }
