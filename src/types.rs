@@ -487,6 +487,8 @@ pub struct StreamOptions {
     pub metadata: Option<HashMap<String, serde_json::Value>>,
     pub timeout_ms: Option<u64>,
     pub max_retries: Option<u32>,
+    /// Optional caller-owned cancellation signal for retry backoff and provider request waits.
+    pub cancel: Option<tokio::sync::watch::Receiver<bool>>,
     pub wait: Option<u64>,
     pub deferred: Option<DeferredRequest>,
     pub reasoning: Option<ThinkingLevel>,
@@ -528,6 +530,7 @@ impl std::fmt::Debug for StreamOptions {
             .field("metadata", &self.metadata)
             .field("timeout_ms", &self.timeout_ms)
             .field("max_retries", &self.max_retries)
+            .field("cancel", &self.cancel.as_ref().map(|_| "..."))
             .field("wait", &self.wait)
             .field("deferred", &self.deferred)
             .field("reasoning", &self.reasoning)

@@ -1,12 +1,12 @@
 # Upstream parity gap analysis
 
-## In-progress parity audit: `@earendil-works/pi-ai` v0.84.0 — slice 1 committed
+## Completed parity audit: `@earendil-works/pi-ai` v0.84.0
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.0`, package/tag SHA `a5f43bf8aff3c55752432655f7334e3dafd1e256` (`github.com/earendil-works/pi` tag `v0.84.0`). Pinned scope is exactly `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`; do not chase newer main.
 
 Generated manifest evidence is in `docs/v0840-manifests.md`: **101** changed `packages/ai` paths and **46** changed `packages/ai/test` files with extracted upstream assertion/gate lines.
 
-First committed slice status: **PARTIAL / IN PROGRESS**.
+Status: **COMPLETED for bounded deterministic release parity**. The 46 changed upstream test files in `docs/v0840-manifests.md` are ported/adapted, covered, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces.
 
 | Upstream path group | Count | Current disposition | rs-ai path / evidence |
 |---|---:|---|---|
@@ -29,10 +29,11 @@ Fourth committed v0.84.0 slice: provider stream/error regressions are **PORTED**
 
 Fifth committed v0.84.0 slice: runtime auth/options/telemetry semantics are **PORTED** for ProviderHeaders null deletion via a typed helper, OAuth refresh signal propagation, selected-provider refresh filtering, and telemetry context plumbing through stream/deferred/images. Full `cargo test`: `847 passed`; doctest `1 passed`; comparator `1153/1153` and `42/42`; strict Clippy/build/fmt clean.
 
-Remaining v0.84.0 audit clusters are still pending final disposition:
-
 Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.
- Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callback semantics, telemetry/deferred/background support, OpenAI Responses incomplete/raw status fixes, Anthropic initial block content, Codex account-scoped WebSocket cache, and every other changed test assertion in `docs/v0840-manifests.md`.
+
+Sixth committed v0.84.0 slice: runtime/OAuth/telemetry dispatch closure, Codex account+session WebSocket fallback isolation, and Bedrock failure metadata are **PORTED**. Evidence includes concrete OAuth provider pre/mid-refresh cancellation tests, telemetry through stream_simple/deferred/images, ProviderHeaders deletion through the real OpenAI-compatible request builder, refresh cancellation/supersession, `codex_ws_account_cache_test`, and the 7-case Bedrock status/requestId/code/suppression matrix.
+
+Seventh committed v0.84.0 slice: Google shared retry is **PORTED** at the real `stream_google` request call site. Evidence: `src/google_shared_retry_test.rs` covers the three upstream cases (`429` retries once with `max_retries=1`, no retry when unset, no retry for `400`) plus retry delay cap and caller cancellation via Rust retry primitives.
 
 ## Current parity audit: `@earendil-works/pi-ai` v0.83.0
 

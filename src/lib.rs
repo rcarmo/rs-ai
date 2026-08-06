@@ -131,6 +131,8 @@ mod google_image_tool_result_routing_test;
 #[cfg(test)]
 mod google_shared_convert_tools_test;
 #[cfg(test)]
+mod google_shared_retry_test;
+#[cfg(test)]
 mod google_signed_empty_blocks_test;
 #[cfg(test)]
 mod google_thinking_signature_test;

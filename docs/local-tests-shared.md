@@ -1,10 +1,10 @@
 # Shared local-test adaptation tracker (rs-ai)
 
-## v0.84.0 committed slice 1 evidence
+## v0.84.0 completed bounded release evidence
 
 Source: upstream tag `a5f43bf8aff3c55752432655f7334e3dafd1e256` (`v0.84.0`), exact release-only delta `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`.
 
-Status: **PARTIAL / IN PROGRESS**. This first committed slice adds deterministic Rust evidence for Baseten, generic sampling params, vLLM `thinking_token_budget`, nullable union match-before-coerce validation, and OpenAI-compatible streams without finish reasons.
+Status: **ADAPTED / COMPLETED for deterministic release parity**. The v0.84.0 audit spans 101 changed `packages/ai` paths and 46 changed upstream test files; deterministic assertions are ported/adapted, covered, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces.
 
 Named tests in `src/v0840_release_test.rs`:
 
@@ -23,6 +23,8 @@ Slice gate results: comparator text `1153/1153`, image `42/42`; `cargo build`; `
 Catalog correction fixture: `src/v0840_release_test.rs::release_pinned_catalog_has_no_unpinned_batch_aliases` asserts the corrected official-release catalog counts: text pairs `1153`, providers `38`, APIs `9`, image pairs `42`, and no unpinned `:batch` aliases. The extractor `scripts/extract_release_model_shards.py` records npm provider-shard source hashes and rejects `:batch` drift.
 
 Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.
+
+Final v0.84.0 closure evidence now also includes provider stream/error regressions, runtime/OAuth/telemetry dispatch semantics, Codex account+session WebSocket fallback isolation, Bedrock status/requestId diagnostics, and Google shared retry at the real `stream_google` call site. Named final-gap evidence: `src/google_shared_retry_test.rs` (429 retry once with explicit budget, no retry when unset, no retry for 400, delay cap, caller cancellation).
 
 
 Mirror of the cross-port requirement: adapt locally-authored regression/edge-case

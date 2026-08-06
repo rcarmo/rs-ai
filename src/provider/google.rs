@@ -11,6 +11,31 @@ use crate::events::Event;
 use crate::transports::sse;
 use crate::types::*;
 
+/// v0.84 Google shared retry wrapper parity: no retries unless the caller sets
+/// `maxRetries`, and provider-style backoff starts at 500ms.
+pub(crate) fn google_retry_config_from_options(opts: &StreamOptions) -> crate::retry::RetryConfig {
+    let mut cfg = opts
+        .retry_config
+        .clone()
+        .unwrap_or(crate::retry::RetryConfig {
+            max_retries: 0,
+            initial_delay: std::time::Duration::from_millis(500),
+            max_delay: std::time::Duration::from_secs(8),
+            backoff_multiplier: 2.0,
+            jitter_fraction: 0.0,
+            max_retry_delay_ms: 60_000,
+        });
+    cfg.max_retries = opts.max_retries.unwrap_or(0);
+    cfg.initial_delay = std::time::Duration::from_millis(500);
+    cfg.backoff_multiplier = 2.0;
+    cfg.jitter_fraction = 0.0;
+    if let Some(max_retry_delay_ms) = opts.max_retry_delay_ms {
+        cfg.max_retry_delay_ms = max_retry_delay_ms;
+        cfg.max_delay = std::time::Duration::from_millis(max_retry_delay_ms);
+    }
+    cfg
+}
+
 /// Start a Google Generative AI stream.
 pub fn stream_google<'a>(
     model: &'a Model,
@@ -81,8 +106,13 @@ pub fn stream_google<'a>(
         let request = if let Some(ms) = opts.timeout_ms {
             request.timeout(std::time::Duration::from_millis(ms))
         } else { request };
-        let retry_cfg = crate::retry::retry_config_from_options(opts);
-        let resp = crate::retry::do_with_retry(&client, request, &retry_cfg).await;
+        let retry_cfg = google_retry_config_from_options(opts);
+        let resp = crate::retry::do_with_retry_cancel(
+            &client,
+            request,
+            &retry_cfg,
+            opts.cancel.clone(),
+        ).await;
 
         let resp = match resp {
             Ok(r) => r,

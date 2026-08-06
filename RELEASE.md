@@ -208,9 +208,27 @@ Named Rust evidence:
 - `codex_ws_account_cache_test::tests::websocket_fallback_is_scoped_by_account_and_session`
 - `bedrock_error_metadata_test::tests::*` (7-case status/requestId/code/suppression matrix)
 
-### Still pending for final v0.84.0 completion
+### Closure slice 7: Google shared retry final gap
 
-The remaining changed assertions/provider clusters from `docs/v0840-manifests.md` still need final disposition and executable evidence before declaring the v0.84.0 release complete, including Google retry changes and remaining provider-specific stream/tool/error/usage fixes not already closed by slices 4–6.
+This slice ports upstream `google-shared.ts` / `google-shared-retry.test.ts` onto rs-ai's real Google REST stream call site:
+
+- `stream_google` now uses a Google-specific provider retry config: no retries when `max_retries` is unset, explicit retry budget when set, and provider-style 500ms first backoff.
+- Retryable headers-less Google SDK status semantics are covered through actual HTTP responses with no retry headers.
+- `StreamOptions.cancel` is passed into the retry loop, so retry backoff honors caller cancellation using the existing Rust retry primitive.
+- `max_retry_delay_ms` and `retry-after-ms` delay caps are covered.
+
+Named Rust evidence:
+
+- `google_shared_retry_test::tests::retries_headers_less_google_status_429_once_when_max_retries_is_one`
+- `google_shared_retry_test::tests::does_not_retry_google_429_when_max_retries_is_unset`
+- `google_shared_retry_test::tests::does_not_retry_google_non_retryable_status_400_even_with_budget`
+- `google_shared_retry_test::tests::google_retry_config_defaults_to_500ms_backoff_and_honors_delay_cap`
+- `google_shared_retry_test::tests::google_retry_after_delay_cap_fails_without_second_attempt`
+- `google_shared_retry_test::tests::google_retry_backoff_honors_caller_cancellation`
+
+### Final v0.84.0 completion status
+
+The deterministic changed assertions called out in `docs/v0840-manifests.md` are now either ported/adapted with named Rust evidence, covered by existing deterministic provider/runtime tests, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces. No stale pending runtime/OAuth/telemetry/Bedrock/Codex/Anthropic/Responses/Google retry entries remain for the bounded v0.84.0 release audit.
 
 This file is the release-audit ledger for `rs-ai`. It must be updated in the same commit as every future upstream `@earendil-works/pi-ai` release audit.
 
