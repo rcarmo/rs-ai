@@ -189,6 +189,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn preserves_initial_text_and_thinking_from_content_block_start() {
+        let body = concat!(
+            "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_test\",\"usage\":{\"input_tokens\":12,\"output_tokens\":0}}}\n\n",
+            "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"thinking\",\"thinking\":\"seed-think\",\"signature\":\"sig0\"}}\n\n",
+            "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"thinking_delta\",\"thinking\":\"+delta\"}}\n\n",
+            "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":0}\n\n",
+            "event: content_block_start\ndata: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"text\",\"text\":\"seed-text\"}}\n\n",
+            "event: content_block_delta\ndata: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"text_delta\",\"text\":\"+delta\"}}\n\n",
+            "event: content_block_stop\ndata: {\"type\":\"content_block_stop\",\"index\":1}\n\n",
+            "event: message_delta\ndata: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"end_turn\"},\"usage\":{\"input_tokens\":12,\"output_tokens\":5}}\n\n",
+            "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n",
+        ).to_string();
+        let m = run(
+            anthropic("claude-haiku-4-5", "http://x"),
+            user_ctx("Say hello.", Vec::new()),
+            body,
+        )
+        .await;
+        assert_eq!(m.content.len(), 2);
+        assert!(
+            matches!(&m.content[0], ContentBlock::Thinking { thinking, thinking_signature, .. } if thinking == "seed-think+delta" && thinking_signature.as_deref() == Some("sig0"))
+        );
+        assert!(
+            matches!(&m.content[1], ContentBlock::Text { text, .. } if text == "seed-text+delta")
+        );
+    }
+
+    #[tokio::test]
     async fn captures_reasoning_tokens_from_message_delta() {
         let body = concat!(
             "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"msg_test\",\"usage\":{\"input_tokens\":12,\"output_tokens\":0}}}\n\n",

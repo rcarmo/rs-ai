@@ -84,6 +84,8 @@ mod bedrock_custom_headers_test;
 #[cfg(test)]
 mod bedrock_endpoint_test;
 #[cfg(test)]
+mod bedrock_error_metadata_test;
+#[cfg(test)]
 mod bedrock_images_models_test;
 #[cfg(test)]
 mod bedrock_thinking_payload_test;
@@ -126,6 +128,8 @@ mod google_gemini3_unsigned_tool_call_test;
 mod google_image_tool_result_routing_test;
 #[cfg(test)]
 mod google_shared_convert_tools_test;
+#[cfg(test)]
+mod google_signed_empty_blocks_test;
 #[cfg(test)]
 mod google_thinking_signature_test;
 #[cfg(test)]

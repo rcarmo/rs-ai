@@ -21,6 +21,10 @@ First committed slice status: **PARTIAL / IN PROGRESS**.
 
 Catalog correction (2026-08-06): the earlier `1212` comparator result is superseded. It was generated from fresh dynamic catalog fetches and included 59 OpenRouter `:batch` aliases absent from official tag/npm artifacts. Release-pinned catalog generation now uses `scripts/extract_release_model_shards.py` against `/workspace/tmp/pi-ai-0.84.0-package/package/dist/providers/data`, producing text `1153/1153` across 38 providers and 9 APIs, image `42/42`, and no `:batch` aliases.
 
+
+
+Fourth committed v0.84.0 slice: provider stream/error regressions are **PORTED** for Anthropic initial content blocks, Responses incomplete raw reasons, Google Gemini 3 tool IDs and signed-empty blocks, and Bedrock structured failure diagnostics. Full `cargo test`: `843 passed`; doctest `1 passed`; comparator `1153/1153` and `42/42`; strict Clippy/build/fmt clean.
+
 Remaining v0.84.0 audit clusters are still pending final disposition:
 
 Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.

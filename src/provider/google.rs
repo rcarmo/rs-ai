@@ -413,7 +413,9 @@ pub fn build_google_payload_public(
 /// Gemini models that require explicit tool-call ids on functionCall/functionResponse
 /// (mirrors requiresToolCallId).
 fn google_requires_tool_call_id(model_id: &str) -> bool {
-    model_id.starts_with("claude-") || model_id.starts_with("gpt-oss-")
+    model_id.starts_with("claude-")
+        || model_id.starts_with("gpt-oss-")
+        || gemini_major_version(model_id).is_some_and(|major| major >= 3)
 }
 
 /// Normalize a tool-call id for Gemini when required (alnum/_/- only, max 64 chars).
@@ -693,11 +695,13 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                         ContentBlock::Text {
                             text,
                             text_signature,
-                        } if !text.trim().is_empty() => {
+                        } => {
+                            let sig = resolve_thought_signature(is_same, text_signature.as_deref());
+                            if text.trim().is_empty() && sig.is_none() {
+                                return None;
+                            }
                             let mut p = json!({"text": text});
-                            if let Some(sig) =
-                                resolve_thought_signature(is_same, text_signature.as_deref())
-                            {
+                            if let Some(sig) = sig {
                                 p["thoughtSignature"] = json!(sig);
                             }
                             Some(p)
@@ -709,19 +713,27 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                             thinking,
                             thinking_signature,
                             ..
-                        } if !thinking.trim().is_empty() => {
+                        } => {
                             if is_same {
-                                let mut p = json!({"thought": true, "text": thinking});
-                                if let Some(sig) = resolve_thought_signature(
+                                let sig = resolve_thought_signature(
                                     is_same,
                                     thinking_signature.as_deref(),
-                                ) {
+                                );
+                                if thinking.trim().is_empty() && sig.is_none() {
+                                    return None;
+                                }
+                                let mut p = json!({"thought": true, "text": thinking});
+                                if let Some(sig) = sig {
                                     p["thoughtSignature"] = json!(sig);
                                 }
                                 Some(p)
                             } else {
-                                // Different model: downgrade thinking to plain text.
-                                Some(json!({"text": thinking}))
+                                // Different model: signature is unusable; empty blocks stay dropped.
+                                if thinking.trim().is_empty() {
+                                    None
+                                } else {
+                                    Some(json!({"text": thinking}))
+                                }
                             }
                         }
                         ContentBlock::ToolCall {
@@ -742,7 +754,6 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                             }
                             Some(p)
                         }
-                        _ => None,
                     })
                     .collect();
                 if parts.is_empty() {

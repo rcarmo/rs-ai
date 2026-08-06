@@ -168,13 +168,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn finalizes_incomplete_terminal_events_as_length_stops() {
+    async fn finalizes_incomplete_max_output_terminal_events_as_length_stops() {
         let body = concat!(
-            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_incomplete\",\"status\":\"incomplete\",\"usage\":{\"input_tokens\":30,\"output_tokens\":12,\"total_tokens\":42,\"input_tokens_details\":{\"cached_tokens\":5}}}}\n\n",
+            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_incomplete\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"max_output_tokens\"},\"usage\":{\"input_tokens\":30,\"output_tokens\":12,\"total_tokens\":42,\"input_tokens_details\":{\"cached_tokens\":5}}}}\n\n",
             "data: [DONE]\n\n",
         ).to_string();
         let (reason, _err, m) = run(body).await;
         assert!(matches!(reason, StopReason::Length));
+        assert_eq!(
+            m.raw_stop_reason.as_deref(),
+            Some("incomplete.max_output_tokens")
+        );
         assert_eq!(m.response_id.as_deref(), Some("resp_incomplete"));
         let u = m.usage.unwrap();
         assert_eq!(
@@ -187,6 +191,21 @@ mod tests {
             ),
             (25, 12, 5, 0, 42)
         );
+    }
+
+    #[tokio::test]
+    async fn incomplete_non_max_output_reason_is_error_with_raw_reason() {
+        let body = concat!(
+            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_filter\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"content_filter\"}}}\n\n",
+            "data: [DONE]\n\n",
+        ).to_string();
+        let (reason, err, m) = run(body).await;
+        assert!(matches!(reason, StopReason::Error));
+        assert_eq!(
+            m.raw_stop_reason.as_deref(),
+            Some("incomplete.content_filter")
+        );
+        assert_eq!(err.as_deref(), Some("Response incomplete: content_filter"));
     }
 
     #[tokio::test]

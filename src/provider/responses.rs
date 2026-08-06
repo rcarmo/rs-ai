@@ -620,13 +620,27 @@ fn stream_responses_inner<'a>(
                                 crate::simple_options::apply_service_tier_pricing(model, &mut parsed, tier);
                                 partial.usage = Some(parsed);
                             }
-                            // Map response.status, then upgrade to tool-use when tool calls are present.
+                            // Map response.status, retaining incomplete_details.reason in raw_stop_reason
+                            // so max-output truncation and content filtering remain distinguishable.
                             let status = response.get("status").and_then(|v| v.as_str()).unwrap_or("completed");
-                            partial.raw_stop_reason = Some(status.to_string());
+                            let incomplete_reason = response.pointer("/incomplete_details/reason").and_then(|v| v.as_str());
+                            partial.raw_stop_reason = Some(match incomplete_reason {
+                                Some(r) => format!("{status}.{r}"),
+                                None => status.to_string(),
+                            });
                             let mut reason = match status {
                                 "completed" => StopReason::Stop,
                                 "in_progress" | "queued" => StopReason::Pending,
-                                "incomplete" => StopReason::Length,
+                                "incomplete" => {
+                                    if incomplete_reason == Some("max_output_tokens") {
+                                        StopReason::Length
+                                    } else {
+                                        partial.error_message = Some(incomplete_reason
+                                            .map(|r| format!("Response incomplete: {r}"))
+                                            .unwrap_or_else(|| "Response incomplete without a provider reason".to_string()));
+                                        StopReason::Error
+                                    }
+                                }
                                 "failed" | "cancelled" => StopReason::Error,
                                 other => {
                                     // Upstream's responses mapStopReason throws on an unknown
@@ -636,7 +650,7 @@ fn stream_responses_inner<'a>(
                                 }
                             };
                             if reason == StopReason::Error && partial.error_message.is_none() {
-                                let detail = response.pointer("/incomplete_details/reason").and_then(|v| v.as_str())
+                                let detail = incomplete_reason
                                     .or_else(|| response.pointer("/error/message").and_then(|v| v.as_str()))
                                     .unwrap_or(status);
                                 partial.error_message = Some(format!("response {}: {}", status, detail));

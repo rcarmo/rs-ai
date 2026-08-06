@@ -293,12 +293,12 @@ pub fn stream_anthropic<'a>(
                         match block_type.as_str() {
                             "text" => {
                                 text_started = true;
-                                current_text.clear();
+                                current_text = data.pointer("/content_block/text").and_then(|v| v.as_str()).unwrap_or("").to_string();
                                 yield Event::TextStart;
                             }
                             "thinking" => {
-                                current_thinking.clear();
-                                current_thinking_signature = None;
+                                current_thinking = data.pointer("/content_block/thinking").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                                current_thinking_signature = data.pointer("/content_block/signature").and_then(|v| v.as_str()).map(|s| s.to_string());
                                 yield Event::ThinkingStart;
                             }
                             "redacted_thinking" => {

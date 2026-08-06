@@ -114,6 +114,45 @@ cargo clippy --all-targets -- -D warnings
 
 Results: provider/deferred targeted tests passed; full `cargo test` passed with `836 passed; 0 failed`; doctest `1 passed`; comparator remains text `1153/1153`, image `42/42`, missing `0`, extra `0`; build/fmt/clippy passed.
 
+### Committed slice 4: provider stream/error regressions
+
+Ported/adapted executable provider-specific v0.84.0 regressions:
+
+- Anthropic Messages preserves initial `content_block_start` text, thinking text, and thinking signature before later deltas.
+- OpenAI/Azure Responses terminal handling now records `incomplete_details.reason` in `raw_stop_reason` as `status.reason`, maps only `incomplete.max_output_tokens` to `length`, and surfaces other incomplete reasons as errors.
+- Google history conversion now requires tool-call IDs for Gemini 3+ models and preserves same-model signed empty text/thinking blocks instead of dropping the reasoning signatures.
+- Bedrock failures now attach structured `bedrock_response_failure` diagnostics with status/errorCode/requestId where available while preserving the retry-facing error message.
+
+Named Rust evidence:
+
+- `anthropic_sse_parsing_test::tests::preserves_initial_text_and_thinking_from_content_block_start`
+- `openai_responses_terminal_event_test::tests::finalizes_incomplete_max_output_terminal_events_as_length_stops`
+- `openai_responses_terminal_event_test::tests::incomplete_non_max_output_reason_is_error_with_raw_reason`
+- `google_gemini3_unsigned_tool_call_test::tests::no_skip_validator_for_unsigned_google_gen_ai_tool_calls` (updated to assert Gemini 3 IDs)
+- `google_signed_empty_blocks_test::tests::preserves_same_model_empty_text_and_thinking_blocks_when_signed`
+- `google_signed_empty_blocks_test::tests::drops_cross_model_empty_signed_thinking_because_signature_is_unusable`
+- `bedrock_error_metadata_test::tests::bedrock_failure_diagnostic_preserves_status_code_and_request_id_without_rewriting_error_message`
+- `bedrock_error_metadata_test::tests::bedrock_failure_diagnostic_drops_empty_or_overlong_values`
+
+Slice verification:
+
+```bash
+cargo test bedrock_error_metadata_test -- --nocapture
+cargo test anthropic_sse_parsing_test -- --nocapture
+cargo test openai_responses_terminal_event_test -- --nocapture
+cargo test google_gemini3_unsigned_tool_call_test -- --nocapture
+cargo test google_signed_empty_blocks_test -- --nocapture
+cargo test google_shared_convert_tools_test -- --nocapture
+cargo test google_thinking_signature_test -- --nocapture
+cargo fmt --check
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-release-json   python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256
+cargo build
+cargo test
+cargo clippy --all-targets -- -D warnings
+```
+
+Results: targeted provider tests passed; full `cargo test` passed with `843 passed; 0 failed`; doctest `1 passed`; comparator remains text `1153/1153`, image `42/42`, missing `0`, extra `0`; build/fmt/clippy passed.
+
 ### Still pending for final v0.84.0 completion
 
 The remaining changed assertions/provider clusters from `docs/v0840-manifests.md` still need final disposition and executable evidence before declaring the v0.84.0 release complete, including Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callbacks, telemetry semantics across stream/deferred/images, ProviderHeaders null deletion over auth headers, refresh options/results, runtime API-key cancellation/refresh separation, Responses incomplete/raw details, Anthropic initial block content, Codex account-scoped WebSocket cache, and remaining provider-specific stream/tool/error/usage fixes.

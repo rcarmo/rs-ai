@@ -758,10 +758,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_responses_toolcall_with_incomplete_stays_length() {
+    async fn test_responses_toolcall_with_incomplete_max_output_stays_length() {
         use crate::provider::responses::stream_responses;
-        // Upstream overrides to toolUse only when the status maps to `stop`. A tool call
-        // that hits `incomplete` must stay Length, not become ToolUse.
+        // Upstream v0.84 overrides to toolUse only when the status maps to `stop`. A tool call
+        // that hits `incomplete.max_output_tokens` must stay Length, not become ToolUse.
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/responses"))
@@ -770,7 +770,7 @@ mod tests {
                     "data: {\"type\":\"response.created\",\"response\":{\"id\":\"r\",\"model\":\"gpt-5\"}}\n\n\
                      data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"c1\",\"name\":\"s\",\"arguments\":\"\"}}\n\n\
                      data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"c1\",\"name\":\"s\",\"arguments\":\"{}\"}}\n\n\
-                     data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"incomplete\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
+                     data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"max_output_tokens\"},\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\n")
                 .insert_header("content-type", "text/event-stream"))
             .mount(&server)
             .await;

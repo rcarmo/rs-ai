@@ -115,6 +115,16 @@ mod tests {
             .expect("a model turn")
     }
 
+    fn function_call_ids(turn: &Value) -> Vec<Option<String>> {
+        turn["parts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|p| p.get("functionCall"))
+            .map(|fc| fc.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()))
+            .collect()
+    }
+
     fn function_call_sigs(turn: &Value) -> Vec<Option<String>> {
         turn["parts"]
             .as_array()
@@ -138,6 +148,10 @@ mod tests {
             &StreamOptions::default(),
         );
         let turn = model_turn(&p);
+        assert_eq!(
+            function_call_ids(&turn),
+            vec![Some("call_1".into()), Some("call_2".into())]
+        );
         let sigs = function_call_sigs(&turn);
         assert_eq!(sigs, vec![None, None]);
         assert!(

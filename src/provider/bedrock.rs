@@ -752,10 +752,18 @@ pub fn stream_bedrock<'a>(
         let output = match result {
             Ok(o) => o,
             Err(e) => {
+                let err_msg = format_bedrock_sdk_error(&e);
+                let mut message = bedrock_error_message(model, err_msg.clone());
+                append_bedrock_failure_diagnostic(
+                    &mut message,
+                    None,
+                    bedrock_converse_error_code(&e).as_deref(),
+                    None,
+                );
                 yield Event::Error {
                     reason: StopReason::Error,
-                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format_bedrock_sdk_error(&e))),
-                    message: None,
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(err_msg)),
+                    message: Some(message),
                 };
                 return;
             }
@@ -940,9 +948,18 @@ pub fn stream_bedrock<'a>(
                 }
                 Ok(None) => break,
                 Err(e) => {
+                    let err_msg = format_bedrock_stream_error(&e);
+                    partial.stop_reason = Some(StopReason::Error);
+                    partial.error_message = Some(err_msg.clone());
+                    append_bedrock_failure_diagnostic(
+                        &mut partial,
+                        None,
+                        bedrock_stream_error_code(&e).as_deref(),
+                        None,
+                    );
                     yield Event::Error {
                         reason: StopReason::Error,
-                        error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(format_bedrock_stream_error(&e))),
+                        error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(err_msg)),
                         message: Some(partial.clone()),
                     };
                     return;
@@ -986,6 +1003,30 @@ pub fn stream_bedrock<'a>(
 const BEDROCK_DATA_RETENTION_DOCS_URL: &str =
     "https://docs.aws.amazon.com/bedrock/latest/userguide/data-retention.html";
 
+fn bedrock_error_message(model: &Model, error_message: String) -> Message {
+    Message {
+        role: Role::Assistant,
+        content: Vec::new(),
+        timestamp: crate::utils::now_millis(),
+        api: Some(model.api.clone()),
+        provider: Some(model.provider.clone()),
+        model: Some(model.id.clone()),
+        response_id: None,
+        response_model: None,
+        diagnostics: Vec::new(),
+        usage: None,
+        stop_reason: Some(StopReason::Error),
+        deferred: None,
+        error_message: Some(error_message),
+        raw_stop_reason: None,
+        tool_call_id: None,
+        tool_name: None,
+        is_error: false,
+        details: None,
+        added_tool_names: Vec::new(),
+    }
+}
+
 /// Append a data-retention docs hint when the error references retention mode
 /// (mirrors upstream pi-ai formatBedrockError).
 pub(crate) fn format_bedrock_error(message: &str) -> String {
@@ -1025,6 +1066,47 @@ fn format_bedrock_sdk_error<R>(
     }
 }
 
+pub(crate) fn append_bedrock_failure_diagnostic(
+    output: &mut Message,
+    status: Option<u16>,
+    error_code: Option<&str>,
+    request_id: Option<&str>,
+) {
+    let mut details = std::collections::HashMap::new();
+    if let Some(status) = status {
+        details.insert("status".to_string(), serde_json::json!(status));
+    }
+    if let Some(code) = normalize_bedrock_diagnostic_value(error_code) {
+        details.insert("errorCode".to_string(), serde_json::json!(code));
+    }
+    if let Some(id) = normalize_bedrock_diagnostic_value(request_id) {
+        details.insert("requestId".to_string(), serde_json::json!(id));
+    }
+    if details.is_empty() {
+        return;
+    }
+    output.diagnostics.push(AssistantMessageDiagnostic {
+        diagnostic_type: "bedrock_response_failure".into(),
+        timestamp: crate::utils::now_millis(),
+        error: DiagnosticError {
+            name: error_code.map(str::to_string),
+            message: output.error_message.clone().unwrap_or_default(),
+            stack: None,
+            code: None,
+        },
+        details: Some(details),
+    });
+}
+
+fn normalize_bedrock_diagnostic_value(value: Option<&str>) -> Option<String> {
+    let trimmed = value?.trim();
+    if trimmed.is_empty() || trimmed.len() > 200 {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
 pub(crate) fn apply_bedrock_raw_stop_reason(partial: &mut Message, raw: &str) {
     partial.raw_stop_reason = Some(raw.to_string());
     partial.stop_reason = Some(match raw {
@@ -1040,6 +1122,40 @@ pub(crate) fn apply_bedrock_raw_stop_reason(partial: &mut Message, raw: &str) {
 
 /// Format a mid-stream Bedrock error (ConverseStreamOutputError), prepending a prefix
 /// for known exceptions (internalServer/modelStream/validation/throttling/serviceUnavailable).
+fn bedrock_converse_error_code<R>(
+    e: &aws_sdk_bedrockruntime::error::SdkError<
+        aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamError,
+        R,
+    >,
+) -> Option<String> {
+    use aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamError as Cse;
+    match e.as_service_error()? {
+        Cse::InternalServerException(_) => Some("InternalServerException".to_string()),
+        Cse::ModelStreamErrorException(_) => Some("ModelStreamErrorException".to_string()),
+        Cse::ValidationException(_) => Some("ValidationException".to_string()),
+        Cse::ThrottlingException(_) => Some("ThrottlingException".to_string()),
+        Cse::ServiceUnavailableException(_) => Some("ServiceUnavailableException".to_string()),
+        _ => None,
+    }
+}
+
+fn bedrock_stream_error_code<R>(
+    e: &aws_sdk_bedrockruntime::error::SdkError<
+        aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError,
+        R,
+    >,
+) -> Option<String> {
+    use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError as Cse;
+    match e.as_service_error()? {
+        Cse::InternalServerException(_) => Some("InternalServerException".to_string()),
+        Cse::ModelStreamErrorException(_) => Some("ModelStreamErrorException".to_string()),
+        Cse::ValidationException(_) => Some("ValidationException".to_string()),
+        Cse::ThrottlingException(_) => Some("ThrottlingException".to_string()),
+        Cse::ServiceUnavailableException(_) => Some("ServiceUnavailableException".to_string()),
+        _ => None,
+    }
+}
+
 fn format_bedrock_stream_error<R>(
     e: &aws_sdk_bedrockruntime::error::SdkError<
         aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError,

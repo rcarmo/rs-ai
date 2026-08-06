@@ -352,3 +352,6 @@ from canonical upstream** — rs-ai is ahead.
   (`provider_test.rs`). Debug-stats counters live in the documented WS-pooling gap.
 - `TestStreamViaWebSocketAutoUsesCachedDeltaAndDebugStats` — websocket-cached
   transport + debug stats (WS-pooling gap; N/A until pooling lands).
+
+
+Fourth committed v0.84.0 slice: provider stream/error regressions are **PORTED** for Anthropic initial content blocks, Responses incomplete raw reasons, Google Gemini 3 tool IDs and signed-empty blocks, and Bedrock structured failure diagnostics. Full `cargo test`: `843 passed`; doctest `1 passed`; comparator `1153/1153` and `42/42`; strict Clippy/build/fmt clean.
