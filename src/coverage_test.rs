@@ -240,18 +240,13 @@ mod tests {
         unsafe {
             std::env::remove_var("RS_AI_TEST_ACCT");
         }
-        // A missing/unset variable is an error (matches upstream throw).
-        let err = resolve_cloudflare_base_url(
+        // A missing/unset variable is preserved, matching upstream cloudflareStreams.
+        let unresolved = resolve_cloudflare_base_url(
             "https://x/{RS_AI_DEFINITELY_UNSET_VAR}/y",
             "cloudflare-workers-ai",
         )
-        .unwrap_err();
-        assert!(
-            err.contains(
-                "RS_AI_DEFINITELY_UNSET_VAR is required for provider cloudflare-workers-ai"
-            ),
-            "{err}"
-        );
+        .unwrap();
+        assert_eq!(unresolved, "https://x/{RS_AI_DEFINITELY_UNSET_VAR}/y");
     }
 
     #[test]

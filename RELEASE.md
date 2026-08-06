@@ -233,7 +233,7 @@ Named Rust evidence:
 
 ### Final v0.84.0 completion status
 
-The deterministic changed assertions called out in `docs/v0840-manifests.md` are now either ported/adapted with named Rust evidence, covered by existing deterministic provider/runtime tests, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces. No stale pending runtime/OAuth/telemetry/Bedrock/Codex/Anthropic/Responses/Google retry entries remain for the bounded v0.84.0 release audit.
+The deterministic changed assertions called out in `docs/v0840-manifests.md` are now either ported/adapted with named Rust evidence, covered by existing deterministic provider/runtime tests, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces. The whole-corpus `packages/ai/test/*.test.ts` crosswalk is recorded in `docs/v0840-127-test-crosswalk.md`: **127/127** upstream test filenames accounted, including the 8 previously absent filenames (`cloudflare-stream`, `image-model-data`, `model-data-validation`, `openrouter-cache-control-models`, `provider-retry`, `reasoning-options`, `uuid`, `xai-responses`). No stale pending runtime/OAuth/telemetry/Bedrock/Codex/Anthropic/Responses/Google retry entries remain for the bounded v0.84.0 release audit.
 
 Explicit rubric dispositions:
 

@@ -14,7 +14,7 @@ Named tests in `src/v0840_release_test.rs`:
 - `nullable_anyof_oneof_preserves_matching_null_before_coercion`
 - `supports_finish_reason_false_infers_terminal_stop_or_tool_use`
 
-Generated audit manifests: `docs/v0840-manifests.md` (101 changed `packages/ai` paths; 46 changed tests with assertion/gate extraction).
+Generated audit manifests: `docs/v0840-manifests.md` (101 changed `packages/ai` paths; 46 changed tests with assertion/gate extraction) and `docs/v0840-127-test-crosswalk.md` (127/127 upstream test filenames accounted, including the 8 newly explicit whole-corpus dispositions).
 
 Slice gate results: comparator text `1153/1153`, image `42/42`; `cargo build`; `cargo test v0840_release_test`; strict Clippy.
 
@@ -24,7 +24,7 @@ Catalog correction fixture: `src/v0840_release_test.rs::release_pinned_catalog_h
 
 Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.
 
-Final v0.84.0 closure evidence now also includes provider stream/error regressions, runtime/OAuth/telemetry dispatch semantics, Codex account+session WebSocket fallback isolation, Bedrock status/requestId diagnostics, and Google shared retry at the real `stream_google` call site. Named final-gap evidence: `src/google_shared_retry_test.rs` (429 retry once with explicit budget, no retry when unset, no retry for 400, delay cap, caller cancellation).
+Final v0.84.0 closure evidence now also includes provider stream/error regressions, runtime/OAuth/telemetry dispatch semantics, Codex account+session WebSocket fallback isolation, Bedrock status/requestId diagnostics, and Google shared retry at the real `stream_google` call site. Named final-gap evidence: `src/google_shared_retry_test.rs` (429 retry once with explicit budget, no retry when unset, no retry for 400, delay cap, caller cancellation). Whole-corpus hardening evidence adds `src/cloudflare_stream_test.rs`, `src/image_model_data_test.rs`, `src/model_data_validation_test.rs`, `src/openrouter_cache_control_models_test.rs`, `src/provider_retry_upstream_test.rs`, `src/reasoning_options_test.rs`, and `src/uuid_test.rs`, with `xai-responses` covered by `src/xai_grok45_responses_test.rs` and retired-model assertions.
 
 
 Mirror of the cross-port requirement: adapt locally-authored regression/edge-case

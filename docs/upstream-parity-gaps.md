@@ -4,9 +4,9 @@
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.0`, package/tag SHA `a5f43bf8aff3c55752432655f7334e3dafd1e256` (`github.com/earendil-works/pi` tag `v0.84.0`). Pinned scope is exactly `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`; do not chase newer main.
 
-Generated manifest evidence is in `docs/v0840-manifests.md`: **101** changed `packages/ai` paths and **46** changed `packages/ai/test` files with extracted upstream assertion/gate lines.
+Generated manifest evidence is in `docs/v0840-manifests.md`: **101** changed `packages/ai` paths and **46** changed `packages/ai/test` files with extracted upstream assertion/gate lines. Whole-corpus filename evidence is in `docs/v0840-127-test-crosswalk.md`: **127/127** upstream `packages/ai/test/*.test.ts` files accounted.
 
-Status: **COMPLETED for bounded deterministic release parity**. The 46 changed upstream test files in `docs/v0840-manifests.md` are ported/adapted, covered, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces.
+Status: **COMPLETED for bounded deterministic release parity**. The 46 changed upstream test files in `docs/v0840-manifests.md` plus the cumulative 127-file crosswalk are ported/adapted, covered, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces.
 
 | Upstream path group | Count | Current disposition | rs-ai path / evidence |
 |---|---:|---|---|
@@ -34,6 +34,8 @@ Second committed v0.84.0 slice: upstream `382aa641` deferred/background response
 Sixth committed v0.84.0 slice: runtime/OAuth/telemetry dispatch closure, Codex account+session WebSocket fallback isolation, and Bedrock failure metadata are **PORTED**. Evidence includes concrete OAuth provider pre/mid-refresh cancellation tests, telemetry through stream_simple/deferred/images, ProviderHeaders deletion through the real OpenAI-compatible request builder, refresh cancellation/supersession, `codex_ws_account_cache_test`, and the 7-case Bedrock status/requestId/code/suppression matrix.
 
 Seventh committed v0.84.0 slice: Google shared retry is **PORTED** at the real `stream_google` request call site. Evidence: `src/google_shared_retry_test.rs` covers the three upstream cases (`429` retries once with `max_retries=1`, no retry when unset, no retry for `400`) plus retry delay cap and caller cancellation via Rust retry primitives.
+
+Whole-corpus hardening slice: the 8 previously absent upstream test filenames are now explicitly accounted. `cloudflare-stream`, `image-model-data`, `model-data-validation`, `openrouter-cache-control-models`, `provider-retry`, `reasoning-options`, and `uuid` are **ADAPTED** with named Rust tests; `xai-responses` is **COVERED** by the existing xAI Responses request-path and retired-model tests. See `docs/v0840-127-test-crosswalk.md`.
 
 Explicit final rubric dispositions:
 

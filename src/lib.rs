@@ -90,6 +90,8 @@ mod bedrock_images_models_test;
 #[cfg(test)]
 mod bedrock_thinking_payload_test;
 #[cfg(test)]
+mod cloudflare_stream_test;
+#[cfg(test)]
 mod codex_request_shape_test;
 #[cfg(test)]
 mod codex_ws_account_cache_test;
@@ -143,11 +145,15 @@ mod harness_test;
 #[cfg(test)]
 mod http_proxy_test;
 #[cfg(test)]
+mod image_model_data_test;
+#[cfg(test)]
 mod integration_test;
 mod lax_message_content_test;
 mod max_thinking_test;
 #[cfg(test)]
 mod mistral_reasoning_mode_test;
+#[cfg(test)]
+mod model_data_validation_test;
 #[cfg(test)]
 mod models_runtime_auth_test;
 #[cfg(test)]
@@ -188,6 +194,8 @@ mod openai_responses_terminal_event_test;
 #[cfg(test)]
 mod openai_responses_tool_result_images_test;
 #[cfg(test)]
+mod openrouter_cache_control_models_test;
+#[cfg(test)]
 mod openrouter_images_test;
 #[cfg(test)]
 mod overflow_test;
@@ -196,11 +204,15 @@ mod pi_messages_test;
 #[cfg(test)]
 mod provider_retry_test;
 #[cfg(test)]
+mod provider_retry_upstream_test;
+#[cfg(test)]
 mod provider_test;
 #[cfg(test)]
 mod providers_upstream_test;
 #[cfg(test)]
 mod radius_oauth_test;
+#[cfg(test)]
+mod reasoning_options_test;
 #[cfg(test)]
 mod registration_test;
 #[cfg(test)]
@@ -220,6 +232,8 @@ mod supports_xhigh_test;
 mod together_xiaomi_models_test;
 #[cfg(test)]
 mod tool_call_id_normalization_test;
+#[cfg(test)]
+mod uuid_test;
 #[cfg(test)]
 mod v0830_release_test;
 #[cfg(test)]

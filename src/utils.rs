@@ -536,11 +536,10 @@ pub fn is_cloudflare_provider(provider: &str) -> bool {
 }
 
 /// Resolve a Cloudflare base URL, substituting `{ENV_VAR}` placeholders from the
-/// environment (mirrors upstream `resolveCloudflareBaseUrl`).
-/// Substitute `{VAR}` placeholders in a Cloudflare base URL from environment
-/// variables. Mirrors upstream `resolveCloudflareBaseUrl`: a referenced variable
-/// that is unset or empty is an error (the request can't be built).
-pub fn resolve_cloudflare_base_url(base_url: &str, provider: &str) -> Result<String, String> {
+/// environment (mirrors upstream `resolveCloudflareModel`). Unresolved placeholders
+/// are intentionally preserved so request dispatch can keep a model unchanged when
+/// provider env is absent.
+pub fn resolve_cloudflare_base_url(base_url: &str, _provider: &str) -> Result<String, String> {
     if !base_url.contains('{') {
         return Ok(base_url.to_string());
     }
@@ -564,9 +563,9 @@ pub fn resolve_cloudflare_base_url(base_url: &str, provider: &str) -> Result<Str
                 match std::env::var(name) {
                     Ok(value) if !value.is_empty() => out.push_str(&value),
                     _ => {
-                        return Err(format!(
-                            "{name} is required for provider {provider} but is not set."
-                        ));
+                        out.push('{');
+                        out.push_str(name);
+                        out.push('}');
                     }
                 }
                 i = i + 1 + end + 1;
