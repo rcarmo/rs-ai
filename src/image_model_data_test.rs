@@ -20,6 +20,8 @@ except Exception as e:
     raise SystemExit(1)
 "#;
         let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
             .arg("-c")
             .arg(code)
             .arg(payload.to_string())

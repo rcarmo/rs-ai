@@ -98,6 +98,8 @@ mod tests {
 
     fn run_validator(root: &Path) -> Result<String, String> {
         let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
             .arg("scripts/validate_release_model_data.py")
             .arg(root.join("data"))
             .current_dir(env!("CARGO_MANIFEST_DIR"))

@@ -16,6 +16,8 @@ result = mod.get_effort_thinking_level_map(json.loads(sys.argv[1]))
 print(json.dumps(result, sort_keys=True))
 "#;
         let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
             .arg("-c")
             .arg(code)
             .arg(controls_json)
