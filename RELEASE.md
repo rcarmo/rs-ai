@@ -44,7 +44,7 @@
 Executed from `/workspace/projects/rs-ai`:
 
 ```bash
-PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-json   python3 scripts/compare_upstream_registry_pairs.py   /workspace/tmp/pi-v0840   a5f43bf8aff3c55752432655f7334e3dafd1e256
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-release-json   python3 scripts/compare_upstream_registry_pairs.py   /workspace/tmp/pi-v0840   a5f43bf8aff3c55752432655f7334e3dafd1e256
 cargo build
 cargo test v0840_release_test -- --nocapture
 cargo clippy --all-targets -- -D warnings
@@ -52,10 +52,26 @@ cargo clippy --all-targets -- -D warnings
 
 Results:
 
-- Comparator: text `1212/1212`, image `42/42`, missing `0`, extra `0`
+- Comparator: text `1153/1153`, image `42/42`, missing `0`, extra `0`
 - `cargo build`: passed
 - `cargo test v0840_release_test -- --nocapture`: `5 passed; 0 failed`
 - `cargo clippy --all-targets -- -D warnings`: passed
+
+
+### Catalog correction: release-pinned provider shards supersede dynamic 1212 evidence
+
+Auditor correction accepted: the earlier `1212` text-pair evidence was generated from a fresh dynamic `models.dev`/OpenRouter aggregate and included 59 OpenRouter `:batch` aliases that are not present in either authoritative official-release artifact. It is superseded and must not be used as v0.84.0 parity evidence.
+
+Authoritative catalog source for this release audit is offline and release-pinned:
+
+- upstream tag worktree: `/workspace/tmp/pi-v0840` at `a5f43bf8aff3c55752432655f7334e3dafd1e256`
+- unpacked npm package: `/workspace/tmp/pi-ai-0.84.0-package/package`
+- provider shards: `/workspace/tmp/pi-ai-0.84.0-package/package/dist/providers/data/*.json`
+- provider manifest `schemaVersion=3`, `generatedAt=2026-08-06T11:03:30.465Z`, `structureHash=3ed4153a80db1d4458c5d275334d995f90f9a9c3d77970a0262c715df0e43e79`
+- extracted release JSON: `/workspace/tmp/pi-v0840-release-json/models.json`
+- extractor metadata: `/workspace/tmp/pi-v0840-release-json/source-metadata.json`
+
+Hardened extractor: `scripts/extract_release_model_shards.py` reads only local npm `dist/providers/data` shards, records package/shard/manifest hashes, verifies the tag worktree SHA when provided, and fails if any `:batch` aliases appear in the release shards. Current release-pinned text catalog is **1153 provider/id pairs across 38 providers and 9 APIs** with **0** `:batch` aliases; image catalog remains **42** pairs. Regression evidence is `release_pinned_catalog_has_no_unpinned_batch_aliases` in `src/v0840_release_test.rs`.
 
 ### Committed slice 2: public deferred/background response lifecycle
 
@@ -91,12 +107,12 @@ cargo test provider::faux -- --nocapture
 cargo test v0840_release_test -- --nocapture
 cargo test
 cargo fmt --check
-PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-json   python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-release-json   python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256
 cargo build
 cargo clippy --all-targets -- -D warnings
 ```
 
-Results: provider/deferred targeted tests passed; full `cargo test` passed with `836 passed; 0 failed`; doctest `1 passed`; comparator remains text `1212/1212`, image `42/42`, missing `0`, extra `0`; build/fmt/clippy passed.
+Results: provider/deferred targeted tests passed; full `cargo test` passed with `836 passed; 0 failed`; doctest `1 passed`; comparator remains text `1153/1153`, image `42/42`, missing `0`, extra `0`; build/fmt/clippy passed.
 
 ### Still pending for final v0.84.0 completion
 

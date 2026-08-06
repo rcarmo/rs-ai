@@ -16,7 +16,11 @@ Named tests in `src/v0840_release_test.rs`:
 
 Generated audit manifests: `docs/v0840-manifests.md` (101 changed `packages/ai` paths; 46 changed tests with assertion/gate extraction).
 
-Slice gate results: comparator text `1212/1212`, image `42/42`; `cargo build`; `cargo test v0840_release_test`; strict Clippy.
+Slice gate results: comparator text `1153/1153`, image `42/42`; `cargo build`; `cargo test v0840_release_test`; strict Clippy.
+
+
+
+Catalog correction fixture: `src/v0840_release_test.rs::release_pinned_catalog_has_no_unpinned_batch_aliases` asserts the corrected official-release catalog counts: text pairs `1153`, providers `38`, APIs `9`, image pairs `42`, and no unpinned `:batch` aliases. The extractor `scripts/extract_release_model_shards.py` records npm provider-shard source hashes and rejects `:batch` drift.
 
 Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.
 

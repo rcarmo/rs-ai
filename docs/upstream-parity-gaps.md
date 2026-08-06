@@ -15,7 +15,11 @@ First committed slice status: **PARTIAL / IN PROGRESS**.
 | vLLM `thinking_token_budget`: `src/api/openai-completions.ts`, `test/openai-completions-thinking-token-budget.test.ts` | 2 | PORTED in slice 1 | `supports_thinking_token_budget`, `MIN_ANSWER_TOKENS=1024` edge behavior; test `vllm_thinking_token_budget_edge_matrix` |
 | Nullable union validation: `test/validation.test.ts` assertions | 1 | PORTED in slice 1 | `src/validation.rs` match-before-coerce for `anyOf`/`oneOf`; test `nullable_anyof_oneof_preserves_matching_null_before_coercion` |
 | Streams without finish reasons: `OpenAICompletionsCompat.supportsFinishReason` | 1 | PORTED in slice 1 | `src/provider/openai.rs`; test `supports_finish_reason_false_infers_terminal_stop_or_tool_use` |
-| Catalog comparator | n/a | PORTED for slice catalog | `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256` => text `1212/1212`, image `42/42`, missing `0`, extra `0` |
+| Catalog comparator | n/a | PORTED for slice catalog | `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-release-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256` => text `1153/1153`, image `42/42`, missing `0`, extra `0` |
+
+
+
+Catalog correction (2026-08-06): the earlier `1212` comparator result is superseded. It was generated from fresh dynamic catalog fetches and included 59 OpenRouter `:batch` aliases absent from official tag/npm artifacts. Release-pinned catalog generation now uses `scripts/extract_release_model_shards.py` against `/workspace/tmp/pi-ai-0.84.0-package/package/dist/providers/data`, producing text `1153/1153` across 38 providers and 9 APIs, image `42/42`, and no `:batch` aliases.
 
 Remaining v0.84.0 audit clusters are still pending final disposition:
 
