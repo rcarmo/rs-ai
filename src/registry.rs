@@ -216,6 +216,18 @@ pub fn stream<'a>(
     }
 }
 
+/// Simple completion dispatch surface. rs-ai's provider adapters share the same
+/// streaming implementation for simple and full calls; this wrapper exists so
+/// option plumbing (including telemetry) is captured at the same public boundary
+/// as upstream `streamSimple`.
+pub fn stream_simple<'a>(
+    model: &'a Model,
+    context: &'a Context,
+    opts: &'a StreamOptions,
+) -> EventStream<'a> {
+    stream(model, context, opts)
+}
+
 /// Fetch a deferred/background response handle.
 pub fn fetch_deferred<'a>(
     model: &'a Model,

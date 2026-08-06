@@ -167,7 +167,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn concurrent_refresh_is_deduped_and_failures_restore_cache_without_poisoning_others() {
+    async fn concurrent_refreshes_and_failures_restore_cache_without_poisoning_others() {
         let store = Arc::new(InMemoryModelsStore::new());
         store
             .write(
@@ -229,10 +229,9 @@ mod tests {
             },
         );
         assert!(ra.errors.contains_key("bad") || rb.errors.contains_key("bad"));
-        assert_eq!(
-            calls.load(Ordering::SeqCst),
-            1,
-            "provider refresh is coalesced"
+        assert!(
+            calls.load(Ordering::SeqCst) >= 1,
+            "at least one provider refresh runs"
         );
         assert!(
             runtime.get_model("ok", "fresh").is_some(),
@@ -371,6 +370,121 @@ mod tests {
             &*captured.lock().unwrap(),
             Some(Credential::ApiKey(_))
         ));
+    }
+
+    #[tokio::test]
+    async fn refresh_abort_stops_waiting_on_non_cooperative_provider() {
+        let runtime = Arc::new(ModelsRuntime::new());
+        let calls = Arc::new(AtomicUsize::new(0));
+        let calls_cb = calls.clone();
+        let (started_tx, started_rx) = tokio::sync::oneshot::channel::<()>();
+        let started = Arc::new(Mutex::new(Some(started_tx)));
+        let started_cb = started.clone();
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dynamic",
+            "Dynamic",
+            ProviderAuth::default(),
+            vec![],
+            move |_ctx| {
+                let calls_cb = calls_cb.clone();
+                let started_cb = started_cb.clone();
+                async move {
+                    calls_cb.fetch_add(1, Ordering::SeqCst);
+                    if let Some(tx) = started_cb.lock().unwrap().take() {
+                        let _ = tx.send(());
+                    }
+                    std::future::pending::<Result<Vec<Model>, ModelsError>>().await
+                }
+            },
+        ));
+        let (tx, rx) = watch::channel(false);
+        let runtime_for_task = runtime.clone();
+        let pending = tokio::spawn(async move {
+            runtime_for_task
+                .refresh(RefreshOptions {
+                    allow_network: true,
+                    force: false,
+                    cancel: Some(rx),
+                    providers: Some(vec!["dynamic".into()]),
+                })
+                .await
+        });
+        started_rx.await.unwrap();
+        tx.send(true).unwrap();
+        let result = tokio::time::timeout(std::time::Duration::from_millis(250), pending)
+            .await
+            .expect("refresh should stop waiting after abort")
+            .unwrap();
+        assert!(result.aborted);
+        assert!(result.errors.is_empty());
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn late_refresh_publication_is_rejected_after_supersession() {
+        let store = Arc::new(InMemoryModelsStore::new());
+        let runtime = Arc::new(ModelsRuntime::with_models_store(store.clone()));
+        let calls = Arc::new(AtomicUsize::new(0));
+        let (first_started_tx, first_started_rx) = tokio::sync::oneshot::channel::<()>();
+        let first_started = Arc::new(Mutex::new(Some(first_started_tx)));
+        let (finish_first_tx, finish_first_rx) = tokio::sync::oneshot::channel::<()>();
+        let finish_first = Arc::new(Mutex::new(Some(finish_first_rx)));
+        let calls_cb = calls.clone();
+        let first_started_cb = first_started.clone();
+        let finish_first_cb = finish_first.clone();
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dynamic",
+            "Dynamic",
+            ProviderAuth::default(),
+            vec![],
+            move |_ctx| {
+                let calls_cb = calls_cb.clone();
+                let first_started_cb = first_started_cb.clone();
+                let finish_first_cb = finish_first_cb.clone();
+                async move {
+                    let current = calls_cb.fetch_add(1, Ordering::SeqCst) + 1;
+                    if current == 1 {
+                        if let Some(tx) = first_started_cb.lock().unwrap().take() {
+                            let _ = tx.send(());
+                        }
+                        let rx = finish_first_cb.lock().unwrap().take().unwrap();
+                        let _ = rx.await;
+                    }
+                    Ok(vec![model("dynamic", &format!("generation-{current}"))])
+                }
+            },
+        ));
+        let first_runtime = runtime.clone();
+        let first = tokio::spawn(async move {
+            first_runtime
+                .refresh(RefreshOptions {
+                    allow_network: true,
+                    force: false,
+                    cancel: None,
+                    providers: Some(vec!["dynamic".into()]),
+                })
+                .await
+        });
+        first_started_rx.await.unwrap();
+        let second = runtime
+            .refresh(RefreshOptions {
+                allow_network: true,
+                force: false,
+                cancel: None,
+                providers: Some(vec!["dynamic".into()]),
+            })
+            .await;
+        assert!(second.errors.is_empty());
+        assert!(runtime.get_model("dynamic", "generation-2").is_some());
+        finish_first_tx.send(()).unwrap();
+        let first_result = first.await.unwrap();
+        assert!(first_result.errors.is_empty());
+        assert!(runtime.get_model("dynamic", "generation-2").is_some());
+        assert!(runtime.get_model("dynamic", "generation-1").is_none());
+        assert_eq!(
+            store.read("dynamic").await.unwrap().unwrap().models[0].id,
+            "generation-2"
+        );
     }
 
     #[tokio::test]

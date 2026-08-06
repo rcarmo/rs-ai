@@ -64,6 +64,10 @@ static WS_FALLBACK_SESSIONS: std::sync::LazyLock<
     std::sync::Mutex<std::collections::HashSet<String>>,
 > = std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashSet::new()));
 
+#[cfg(test)]
+pub(crate) static WS_FALLBACK_TEST_LOCK: std::sync::LazyLock<tokio::sync::Mutex<()>> =
+    std::sync::LazyLock::new(|| tokio::sync::Mutex::new(()));
+
 /// Codex error code emitted when the server rejects a WebSocket because too many
 /// are already open (mirrors upstream WEBSOCKET_CONNECTION_LIMIT_REACHED_CODE).
 pub(crate) const WS_CONNECTION_LIMIT_CODE: &str = "websocket_connection_limit_reached";
@@ -75,8 +79,22 @@ pub(crate) fn is_ws_connection_limit_error(err: &str) -> bool {
     err.starts_with(WS_CONNECTION_LIMIT_CODE)
 }
 
-fn ws_fallback_active(session_id: Option<&str>) -> bool {
-    match session_id {
+fn codex_ws_cache_key(account_id: Option<&str>, session_id: Option<&str>) -> Option<String> {
+    let session = session_id.filter(|s| !s.is_empty())?;
+    Some(format!("{}\0{}", account_id.unwrap_or(""), session))
+}
+
+#[cfg(test)]
+#[allow(dead_code)]
+pub(crate) fn codex_ws_fallback_key_for_test(
+    account_id: Option<&str>,
+    session_id: Option<&str>,
+) -> Option<String> {
+    codex_ws_cache_key(account_id, session_id)
+}
+
+fn ws_fallback_active(cache_key: Option<&str>) -> bool {
+    match cache_key {
         Some(s) => WS_FALLBACK_SESSIONS
             .lock()
             .map(|set| set.contains(s))
@@ -85,8 +103,8 @@ fn ws_fallback_active(session_id: Option<&str>) -> bool {
     }
 }
 
-fn record_ws_fallback(session_id: Option<&str>) {
-    if let Some(s) = session_id
+fn record_ws_fallback(cache_key: Option<&str>) {
+    if let Some(s) = cache_key
         && let Ok(mut set) = WS_FALLBACK_SESSIONS.lock()
     {
         set.insert(s.to_string());
@@ -98,7 +116,11 @@ pub fn clear_ws_fallback(session_id: Option<&str>) {
     if let Ok(mut set) = WS_FALLBACK_SESSIONS.lock() {
         match session_id {
             Some(s) => {
-                set.remove(s);
+                set.retain(|key| {
+                    key.rsplit_once('\0')
+                        .map(|(_, sid)| sid != s)
+                        .unwrap_or(key != s)
+                });
             }
             None => set.clear(),
         }
@@ -152,7 +174,9 @@ pub fn stream_codex<'a>(
         // (mirrors upstream's sticky websocketSseFallbackSessions behavior). Also honor an
         // explicit `transport: "sse"` request to skip WebSocket entirely.
         let force_sse = opts.transport == Some(Transport::Sse);
-        let skip_ws = force_sse || ws_fallback_active(opts.session_id.as_deref());
+        let account_id = crate::oauth::codex_account_id(&api_key);
+        let ws_cache_key = codex_ws_cache_key(account_id.as_deref(), opts.session_id.as_deref());
+        let skip_ws = force_sse || ws_fallback_active(ws_cache_key.as_deref());
         let mut transport_diagnostic: Option<crate::types::AssistantMessageDiagnostic> = None;
         let mut do_sse = skip_ws;
         if !skip_ws {
@@ -175,7 +199,7 @@ pub fn stream_codex<'a>(
                     }
                     // WebSocket transport failed; remember the fallback for this session and
                     // record a diagnostic (mirrors recordWebSocketFailure + appendAssistantMessageDiagnostic).
-                    record_ws_fallback(opts.session_id.as_deref());
+                    record_ws_fallback(ws_cache_key.as_deref());
                     transport_diagnostic = Some(crate::types::AssistantMessageDiagnostic {
                         diagnostic_type: "provider_transport_failure".to_string(),
                         timestamp: crate::utils::now_millis(),
@@ -209,7 +233,6 @@ pub fn stream_codex<'a>(
         if do_sse {
                 // Fallback to SSE using the Codex request body and headers.
                 let url = format!("{}/responses", model.base_url.trim_end_matches('/'));
-                let account_id = crate::oauth::codex_account_id(&api_key);
                 let user_agent = codex_user_agent();
                 let client = crate::http_proxy::client_for_target(&url, None);
                 let mut req = client

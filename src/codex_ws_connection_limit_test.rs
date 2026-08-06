@@ -12,7 +12,8 @@
 mod tests {
     use crate::events::Event;
     use crate::provider::codex::{
-        WS_CONNECTION_LIMIT_CODE, clear_ws_fallback, is_ws_connection_limit_error, stream_codex,
+        WS_CONNECTION_LIMIT_CODE, WS_FALLBACK_TEST_LOCK, clear_ws_fallback,
+        is_ws_connection_limit_error, stream_codex,
     };
     use crate::types::{
         ContentBlock, Context, Message, Model, ModelCost, Role, StreamOptions, Transport,
@@ -86,6 +87,7 @@ mod tests {
 
     #[tokio::test]
     async fn retries_websocket_once_on_connection_limit_then_succeeds() {
+        let _guard = WS_FALLBACK_TEST_LOCK.lock().await;
         clear_ws_fallback(None);
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();

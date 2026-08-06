@@ -754,11 +754,13 @@ pub fn stream_bedrock<'a>(
             Err(e) => {
                 let err_msg = format_bedrock_sdk_error(&e);
                 let mut message = bedrock_error_message(model, err_msg.clone());
+                let status = bedrock_sdk_error_status(&e);
+                let request_id = bedrock_sdk_error_request_id(&e);
                 append_bedrock_failure_diagnostic(
                     &mut message,
-                    None,
+                    status,
                     bedrock_converse_error_code(&e).as_deref(),
-                    None,
+                    request_id.as_deref(),
                 );
                 yield Event::Error {
                     reason: StopReason::Error,
@@ -773,8 +775,12 @@ pub fn stream_bedrock<'a>(
         // onResponse({ status: $metadata.httpStatusCode, headers }). A successful
         // converse_stream is HTTP 200. (The AWS request id is not readily exposed on the
         // streaming output type, so the header map is left empty.)
+        let output_request_id = bedrock_output_request_id(&output);
         if let Some(ref hook) = opts.on_response {
-            let hdrs = std::collections::HashMap::new();
+            let mut hdrs = std::collections::HashMap::new();
+            if let Some(id) = output_request_id.as_deref() {
+                hdrs.insert("x-amzn-requestid".to_string(), id.to_string());
+            }
             hook(200, &hdrs, model);
         }
 
@@ -951,11 +957,13 @@ pub fn stream_bedrock<'a>(
                     let err_msg = format_bedrock_stream_error(&e);
                     partial.stop_reason = Some(StopReason::Error);
                     partial.error_message = Some(err_msg.clone());
+                    let request_id = bedrock_stream_error_request_id(&e)
+                        .or_else(|| output_request_id.clone());
                     append_bedrock_failure_diagnostic(
                         &mut partial,
                         None,
                         bedrock_stream_error_code(&e).as_deref(),
-                        None,
+                        request_id.as_deref(),
                     );
                     yield Event::Error {
                         reason: StopReason::Error,
@@ -1076,7 +1084,7 @@ pub(crate) fn append_bedrock_failure_diagnostic(
     if let Some(status) = status {
         details.insert("status".to_string(), serde_json::json!(status));
     }
-    if let Some(code) = normalize_bedrock_diagnostic_value(error_code) {
+    if let Some(code) = normalize_bedrock_error_code(error_code) {
         details.insert("errorCode".to_string(), serde_json::json!(code));
     }
     if let Some(id) = normalize_bedrock_diagnostic_value(request_id) {
@@ -1089,8 +1097,8 @@ pub(crate) fn append_bedrock_failure_diagnostic(
         diagnostic_type: "bedrock_response_failure".into(),
         timestamp: crate::utils::now_millis(),
         error: DiagnosticError {
-            name: error_code.map(str::to_string),
-            message: output.error_message.clone().unwrap_or_default(),
+            name: None,
+            message: String::new(),
             stack: None,
             code: None,
         },
@@ -1129,14 +1137,62 @@ fn bedrock_converse_error_code<R>(
     >,
 ) -> Option<String> {
     use aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamError as Cse;
+    use aws_smithy_types::error::metadata::ProvideErrorMetadata;
     match e.as_service_error()? {
         Cse::InternalServerException(_) => Some("InternalServerException".to_string()),
         Cse::ModelStreamErrorException(_) => Some("ModelStreamErrorException".to_string()),
         Cse::ValidationException(_) => Some("ValidationException".to_string()),
         Cse::ThrottlingException(_) => Some("ThrottlingException".to_string()),
         Cse::ServiceUnavailableException(_) => Some("ServiceUnavailableException".to_string()),
-        _ => None,
+        other => normalize_bedrock_error_code(other.code()),
     }
+}
+
+pub(crate) fn normalize_bedrock_error_code(code: Option<&str>) -> Option<String> {
+    let value = normalize_bedrock_diagnostic_value(code)?;
+    if value == "Unknown" || !value.ends_with("Exception") {
+        None
+    } else {
+        Some(value)
+    }
+}
+
+pub(crate) fn bedrock_sdk_error_status(
+    e: &aws_sdk_bedrockruntime::error::SdkError<
+        aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamError,
+        aws_smithy_runtime_api::client::orchestrator::HttpResponse,
+    >,
+) -> Option<u16> {
+    e.raw_response().map(|raw| raw.status().as_u16())
+}
+
+pub(crate) fn bedrock_sdk_error_request_id(
+    e: &aws_sdk_bedrockruntime::error::SdkError<
+        aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamError,
+        aws_smithy_runtime_api::client::orchestrator::HttpResponse,
+    >,
+) -> Option<String> {
+    use aws_sdk_bedrockruntime::operation::RequestId;
+    e.request_id().map(str::to_string)
+}
+
+fn bedrock_output_request_id(
+    output: &aws_sdk_bedrockruntime::operation::converse_stream::ConverseStreamOutput,
+) -> Option<String> {
+    use aws_sdk_bedrockruntime::operation::RequestId;
+    output.request_id().map(str::to_string)
+}
+
+fn bedrock_stream_error_request_id<R>(
+    e: &aws_sdk_bedrockruntime::error::SdkError<
+        aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError,
+        R,
+    >,
+) -> Option<String> {
+    use aws_sdk_bedrockruntime::operation::RequestId;
+    e.as_service_error()
+        .and_then(|err| err.meta().request_id())
+        .map(str::to_string)
 }
 
 fn bedrock_stream_error_code<R>(
@@ -1146,13 +1202,14 @@ fn bedrock_stream_error_code<R>(
     >,
 ) -> Option<String> {
     use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError as Cse;
+    use aws_smithy_types::error::metadata::ProvideErrorMetadata;
     match e.as_service_error()? {
         Cse::InternalServerException(_) => Some("InternalServerException".to_string()),
         Cse::ModelStreamErrorException(_) => Some("ModelStreamErrorException".to_string()),
         Cse::ValidationException(_) => Some("ValidationException".to_string()),
         Cse::ThrottlingException(_) => Some("ThrottlingException".to_string()),
         Cse::ServiceUnavailableException(_) => Some("ServiceUnavailableException".to_string()),
-        _ => None,
+        other => normalize_bedrock_error_code(other.code()),
     }
 }
 

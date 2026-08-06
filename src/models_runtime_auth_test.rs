@@ -231,7 +231,7 @@ mod tests {
 
     // --- merge resolved auth into request (explicit wins per field) ---
 
-    use crate::auth::{ModelAuth, merge_auth_into_request};
+    use crate::auth::{ModelAuth, ProviderHeaderOverrides, merge_auth_into_request};
     use std::collections::HashMap;
 
     #[test]
@@ -244,6 +244,7 @@ mod tests {
                     ("x-b".to_string(), "auth".to_string()),
                 ])),
                 base_url: Some("https://auth.test/v1".into()),
+                header_overrides: None,
             },
             env: None,
             source: None,
@@ -270,5 +271,51 @@ mod tests {
             o2.headers.unwrap().get("x-a").map(String::as_str),
             Some("auth")
         );
+    }
+
+    #[test]
+    fn provider_header_null_deletion_reaches_openai_request_builder() {
+        let auth = AuthResult {
+            auth: ModelAuth {
+                api_key: Some("provider-key".into()),
+                headers: Some(HashMap::from([
+                    ("Authorization".to_string(), "Bearer provider".to_string()),
+                    ("X-Api-Key".to_string(), "provider-secret".to_string()),
+                    ("X-Keep".to_string(), "provider".to_string()),
+                ])),
+                header_overrides: Some(ProviderHeaderOverrides::from([
+                    ("authorization".to_string(), None),
+                    ("x-api-key".to_string(), None),
+                    ("X-Added".to_string(), Some("added".to_string())),
+                ])),
+                base_url: None,
+            },
+            env: None,
+            source: None,
+        };
+        let request_model = model();
+        let (request_model, opts) =
+            merge_auth_into_request(&auth, request_model, crate::types::StreamOptions::default());
+        let compat = crate::compat::OpenAICompletionsCompat::default();
+        let (_url, headers) = crate::provider::openai::build_openai_request_parts(
+            &request_model,
+            &crate::types::Context {
+                system_prompt: None,
+                messages: Vec::new(),
+                tools: Vec::new(),
+            },
+            &opts,
+            &compat,
+            opts.api_key.as_deref().unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            headers.get("authorization").unwrap().to_str().unwrap(),
+            "Bearer provider-key",
+            "deleted provider Authorization must not override the request builder auth"
+        );
+        assert!(headers.get("x-api-key").is_none());
+        assert_eq!(headers.get("x-keep").unwrap(), "provider");
+        assert_eq!(headers.get("x-added").unwrap(), "added");
     }
 }

@@ -24,6 +24,10 @@ pub struct ModelAuth {
     pub api_key: Option<String>,
     pub headers: Option<HashMap<String, String>>,
     pub base_url: Option<String>,
+    /// Provider-owned header overrides. `Some(value)` sets/replaces a header, while
+    /// `None` deletes any matching header case-insensitively before provider request
+    /// builders see it (mirrors upstream ProviderHeaders null deletion semantics).
+    pub header_overrides: Option<ProviderHeaderOverrides>,
 }
 
 pub type ProviderHeaders = HashMap<String, String>;
@@ -246,17 +250,11 @@ pub trait OAuthAuth: Send + Sync {
         cancel: Option<watch::Receiver<bool>>,
     ) -> Result<OAuthCredential, ModelsError> {
         if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
-            return Err(ModelsError::new(
-                ModelsErrorCode::OAuth,
-                "OAuth refresh aborted",
-            ));
+            return Err(cancelled_oauth_error());
         }
         let refreshed = self.refresh(credential).await?;
         if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
-            return Err(ModelsError::new(
-                ModelsErrorCode::OAuth,
-                "OAuth refresh aborted",
-            ));
+            return Err(cancelled_oauth_error());
         }
         Ok(refreshed)
     }
@@ -293,14 +291,14 @@ pub async fn resolve_provider_auth(
     base_ctx: &dyn AuthContext,
     overrides: Option<&AuthResolutionOverrides>,
 ) -> Result<Option<AuthResult>, ModelsError> {
-    if overrides
+    let pre_cancelled = overrides
         .and_then(|o| o.cancel.as_ref())
-        .is_some_and(|rx| *rx.borrow())
-    {
-        return Err(ModelsError::new(
-            ModelsErrorCode::Auth,
-            "Auth resolution aborted",
-        ));
+        .is_some_and(|rx| *rx.borrow());
+    // Pre-cancelled OAuth credentials still flow into the provider refresh seam so
+    // concrete OAuth providers can receive the caller-owned signal. Non-OAuth auth
+    // resolution aborts immediately.
+    if pre_cancelled && !matches!(credentials.read(provider_id), Some(Credential::OAuth(_))) {
+        return Err(cancelled_auth_error());
     }
     // An env overlay (if any) wins over the ambient context for this request.
     let overlay_ctx = overrides
@@ -456,6 +454,14 @@ fn now_millis() -> i64 {
     crate::utils::now_millis()
 }
 
+fn cancelled_oauth_error() -> ModelsError {
+    ModelsError::new(ModelsErrorCode::OAuth, "AbortError: OAuth refresh aborted")
+}
+
+fn cancelled_auth_error() -> ModelsError {
+    ModelsError::new(ModelsErrorCode::Auth, "AbortError: Auth resolution aborted")
+}
+
 pub fn merge_provider_headers(
     base: Option<&ProviderHeaders>,
     overrides: Option<&ProviderHeaderOverrides>,
@@ -493,11 +499,17 @@ pub fn merge_auth_into_request(
     if let Some(base) = auth.auth.base_url.as_deref() {
         model.base_url = base.to_string();
     }
-    // headers: resolved first, then explicit overlaid per key (explicit wins).
-    if let Some(resolved_headers) = auth.auth.headers.as_ref() {
-        let mut merged = resolved_headers.clone();
+    // headers: resolved first, then ProviderHeaders null/deletion overrides, then
+    // explicit request headers overlaid per key (explicit wins).
+    let provider_headers = merge_provider_headers(
+        auth.auth.headers.as_ref(),
+        auth.auth.header_overrides.as_ref(),
+    );
+    if let Some(resolved_headers) = provider_headers {
+        let mut merged = resolved_headers;
         if let Some(explicit) = opts.headers.as_ref() {
             for (k, v) in explicit {
+                merged.retain(|existing, _| !existing.eq_ignore_ascii_case(k));
                 merged.insert(k.clone(), v.clone());
             }
         }

@@ -428,7 +428,7 @@ impl crate::registry::ApiProvider for FauxProvider {
         &'a self,
         _model: &'a Model,
         handle: &'a DeferredHandle,
-        _opts: &'a StreamOptions,
+        opts: &'a StreamOptions,
     ) -> std::pin::Pin<
         Box<
             dyn std::future::Future<Output = Result<(), Arc<dyn std::error::Error + Send + Sync>>>
@@ -436,6 +436,10 @@ impl crate::registry::ApiProvider for FauxProvider {
                 + 'a,
         >,
     > {
+        self.telemetry_contexts
+            .lock()
+            .unwrap()
+            .push(opts.telemetry_context.clone());
         Box::pin(async move {
             self.cancelled_deferred.lock().unwrap().push(handle.clone());
             if let Some(entry) = self.deferred_entries.lock().unwrap().get_mut(&handle.id) {

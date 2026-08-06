@@ -185,9 +185,32 @@ cargo clippy --all-targets -- -D warnings
 
 Results: targeted runtime/OAuth/telemetry tests passed; full `cargo test` passed with `847 passed; 0 failed`; doctest `1 passed`; comparator remains text `1153/1153`, image `42/42`, missing `0`, extra `0`; build/fmt/clippy passed.
 
+### Closure slice 6: runtime/OAuth/telemetry dispatch, Codex WS account cache, Bedrock metadata
+
+This slice closes the auditor-requested runtime/auth/telemetry cluster with executable provider/path coverage rather than helper-only assertions:
+
+- Caller-owned OAuth refresh cancellation is wired through concrete OAuth providers (`AnthropicOAuth`, `CodexOAuth`, `KimiCodeOAuth`, `XaiOAuth`, `RadiusOAuth`, `OpenRouterOAuth`) with pre-cancel and mid-refresh tests. Aborted refreshes return typed `AbortError`-bearing OAuth errors and do not persist rotated credentials.
+- `TelemetryContext` is captured through `registry::stream_simple`, deferred submit/fetch/cancel, and image provider dispatch.
+- `ProviderHeaders` null/deletion semantics now flow through `merge_auth_into_request` into the real OpenAI-compatible request builder; explicit request headers still win afterward.
+- `RefreshOptions.providers`, cancellation and supersession are covered through `ModelsRuntime::refresh`: aborted callers stop waiting on non-cooperative providers, and late first-generation refreshes cannot overwrite newer dynamic catalog state.
+- Codex sticky WebSocket fallback is keyed by ChatGPT account id plus session id; one account’s WS failure no longer poisons another account using the same session id, while the original account reuses SSE.
+- Bedrock failure diagnostics now extract SDK raw-response status and request id where available, suppress `Unknown`/transport names, keep retry-facing error messages untouched, and cover modeled/unmodeled send and stream diagnostic shapes.
+
+Named Rust evidence:
+
+- `auth_providers::tests::real_oauth_providers_pre_cancel_without_network_or_rotation`
+- `auth_providers::tests::real_oauth_providers_mid_refresh_cancel_without_rotation`
+- `auth_providers::tests::openrouter_oauth_honors_pre_cancel_without_mutation`
+- `providers_upstream_test::tests::telemetry_context_flows_through_stream_simple_deferred_cancel_and_images`
+- `models_runtime_auth_test::tests::provider_header_null_deletion_reaches_openai_request_builder`
+- `models_runtime_refresh_test::tests::refresh_abort_stops_waiting_on_non_cooperative_provider`
+- `models_runtime_refresh_test::tests::late_refresh_publication_is_rejected_after_supersession`
+- `codex_ws_account_cache_test::tests::websocket_fallback_is_scoped_by_account_and_session`
+- `bedrock_error_metadata_test::tests::*` (7-case status/requestId/code/suppression matrix)
+
 ### Still pending for final v0.84.0 completion
 
-The remaining changed assertions/provider clusters from `docs/v0840-manifests.md` still need final disposition and executable evidence before declaring the v0.84.0 release complete, including Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callbacks, telemetry semantics across stream/deferred/images, ProviderHeaders null deletion over auth headers, refresh options/results, runtime API-key cancellation/refresh separation, Responses incomplete/raw details, Anthropic initial block content, Codex account-scoped WebSocket cache, and remaining provider-specific stream/tool/error/usage fixes.
+The remaining changed assertions/provider clusters from `docs/v0840-manifests.md` still need final disposition and executable evidence before declaring the v0.84.0 release complete, including Google retry changes and remaining provider-specific stream/tool/error/usage fixes not already closed by slices 4–6.
 
 This file is the release-audit ledger for `rs-ai`. It must be updated in the same commit as every future upstream `@earendil-works/pi-ai` release audit.
 

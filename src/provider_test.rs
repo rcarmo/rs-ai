@@ -2952,7 +2952,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_codex_ws_fallback_is_sticky_per_session() {
-        use crate::provider::codex::{clear_ws_fallback, stream_codex};
+        use crate::provider::codex::{WS_FALLBACK_TEST_LOCK, clear_ws_fallback, stream_codex};
+        let _guard = WS_FALLBACK_TEST_LOCK.lock().await;
         clear_ws_fallback(Some("sess-sticky"));
         let server = MockServer::start().await;
         Mock::given(method("POST"))

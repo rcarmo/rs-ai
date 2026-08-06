@@ -8,9 +8,47 @@
 //! mock server in tests (production leaves it `None`).
 
 use crate::auth::{ModelAuth, ModelsError, ModelsErrorCode, OAuthAuth, OAuthCredential};
+use tokio::sync::watch;
 
 fn oauth_err(msg: impl Into<String>) -> ModelsError {
     ModelsError::new(ModelsErrorCode::OAuth, msg)
+}
+
+fn oauth_abort_err() -> ModelsError {
+    ModelsError::new(ModelsErrorCode::OAuth, "AbortError: OAuth refresh aborted")
+}
+
+async fn wait_cancelled(mut cancel: watch::Receiver<bool>) {
+    loop {
+        if *cancel.borrow() {
+            return;
+        }
+        if cancel.changed().await.is_err() {
+            std::future::pending::<()>().await;
+        }
+    }
+}
+
+async fn cancelable_oauth_call<T, Fut>(
+    future: Fut,
+    cancel: Option<watch::Receiver<bool>>,
+) -> Result<T, ModelsError>
+where
+    Fut: std::future::Future<Output = Result<T, String>> + Send,
+{
+    if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
+        return Err(oauth_abort_err());
+    }
+    match cancel {
+        Some(rx) => {
+            tokio::select! {
+                biased;
+                _ = wait_cancelled(rx) => Err(oauth_abort_err()),
+                result = future => result.map_err(oauth_err),
+            }
+        }
+        None => future.await.map_err(oauth_err),
+    }
 }
 
 /// OpenAI Codex (ChatGPT) OAuth. `to_auth` exposes the access token as the
@@ -50,6 +88,30 @@ impl OAuthAuth for CodexOAuth {
             expires: creds.expires_at_ms,
             account_id: Some(creds.account_id),
         })
+    }
+
+    async fn refresh_with_cancel(
+        &self,
+        credential: &OAuthCredential,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("codex credential is missing a refresh token"))?;
+        let call = async move {
+            match self.token_url.as_deref() {
+                Some(url) => crate::oauth::refresh_codex_token_at(url, refresh).await,
+                None => crate::oauth::refresh_codex_token(refresh).await,
+            }
+            .map(|creds| OAuthCredential {
+                access: creds.access,
+                refresh: creds.refresh,
+                expires: creds.expires_at_ms,
+                account_id: Some(creds.account_id),
+            })
+        };
+        cancelable_oauth_call(call, cancel).await
     }
 
     async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
@@ -97,6 +159,30 @@ impl OAuthAuth for AnthropicOAuth {
         })
     }
 
+    async fn refresh_with_cancel(
+        &self,
+        credential: &OAuthCredential,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("anthropic credential is missing a refresh token"))?;
+        let call = async move {
+            match self.token_url.as_deref() {
+                Some(url) => crate::oauth::refresh_anthropic_token_at(url, refresh).await,
+                None => crate::oauth::refresh_anthropic_token(refresh).await,
+            }
+            .map(|tok| OAuthCredential {
+                access: tok.access,
+                refresh: tok.refresh,
+                expires: tok.expires_at_ms,
+                account_id: None,
+            })
+        };
+        cancelable_oauth_call(call, cancel).await
+    }
+
     async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
         Ok(ModelAuth {
             api_key: Some(credential.access.clone()),
@@ -113,6 +199,16 @@ pub struct OpenRouterOAuth {
 #[async_trait::async_trait]
 impl OAuthAuth for OpenRouterOAuth {
     async fn refresh(&self, credential: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+        Ok(credential.clone())
+    }
+    async fn refresh_with_cancel(
+        &self,
+        credential: &OAuthCredential,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
+            return Err(oauth_abort_err());
+        }
         Ok(credential.clone())
     }
     async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
@@ -144,6 +240,26 @@ impl OAuthAuth for KimiCodeOAuth {
         .await
         .map_err(oauth_err)
     }
+    async fn refresh_with_cancel(
+        &self,
+        credential: &OAuthCredential,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("kimi credential is missing a refresh token"))?;
+        let host = self
+            .oauth_host
+            .as_deref()
+            .unwrap_or(crate::oauth::KIMI_CODE_OAUTH_HOST);
+        cancelable_oauth_call(
+            crate::oauth::refresh_kimi_code_token_at(host, refresh),
+            cancel,
+        )
+        .await
+    }
+
     async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
         Ok(ModelAuth {
             api_key: Some(credential.access.clone()),
@@ -181,6 +297,24 @@ impl OAuthAuth for XaiOAuth {
             None => crate::oauth::refresh_xai_token(refresh).await,
         }
         .map_err(oauth_err)
+    }
+
+    async fn refresh_with_cancel(
+        &self,
+        credential: &OAuthCredential,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("xai credential is missing a refresh token"))?;
+        let call = async move {
+            match self.token_url.as_deref() {
+                Some(url) => crate::oauth::refresh_xai_token_at(url, refresh).await,
+                None => crate::oauth::refresh_xai_token(refresh).await,
+            }
+        };
+        cancelable_oauth_call(call, cancel).await
     }
 
     async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
@@ -285,6 +419,28 @@ impl OAuthAuth for RadiusOAuth {
         })
     }
 
+    async fn refresh_with_cancel(
+        &self,
+        credential: &OAuthCredential,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        let refresh = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("radius credential is missing a refresh token"))?;
+        let call = async move {
+            let oauth = crate::oauth::load_radius_oauth_config(&self.gateway).await?;
+            let refreshed = crate::oauth::refresh_radius_token(&oauth, refresh).await?;
+            Ok(OAuthCredential {
+                access: refreshed.access,
+                refresh: refreshed.refresh,
+                expires: refreshed.expires,
+                account_id: None,
+            })
+        };
+        cancelable_oauth_call(call, cancel).await
+    }
+
     async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
         Ok(ModelAuth {
             api_key: Some(credential.access.clone()),
@@ -302,6 +458,7 @@ mod tests {
     };
     use crate::types::{Model, ModelCost};
     use crate::utils::now_millis;
+    use tokio::sync::watch;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -387,6 +544,280 @@ mod tests {
             }
             other => panic!("unexpected: {other:?}"),
         }
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    enum RealOAuthCase {
+        Anthropic,
+        Codex,
+        Kimi,
+        Xai,
+        Radius,
+    }
+
+    fn jwt(account_id: &str) -> String {
+        use base64::Engine;
+        let payload = serde_json::json!({
+            "https://api.openai.com/auth": {"chatgpt_account_id": account_id}
+        });
+        let payload_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(serde_json::to_vec(&payload).unwrap());
+        format!("h.{payload_b64}.s")
+    }
+
+    fn oauth_provider(case: RealOAuthCase, server: &MockServer) -> (String, ProviderAuth) {
+        let base = server.uri();
+        match case {
+            RealOAuthCase::Anthropic => (
+                "anthropic".into(),
+                ProviderAuth {
+                    api_key: None,
+                    oauth: Some(Box::new(AnthropicOAuth {
+                        token_url: Some(format!("{base}/oauth/token")),
+                    })),
+                },
+            ),
+            RealOAuthCase::Codex => (
+                "openai-codex".into(),
+                ProviderAuth {
+                    api_key: None,
+                    oauth: Some(Box::new(CodexOAuth {
+                        token_url: Some(format!("{base}/oauth/token")),
+                    })),
+                },
+            ),
+            RealOAuthCase::Kimi => (
+                "kimi-coding".into(),
+                ProviderAuth {
+                    api_key: None,
+                    oauth: Some(Box::new(KimiCodeOAuth {
+                        oauth_host: Some(base),
+                    })),
+                },
+            ),
+            RealOAuthCase::Xai => (
+                "xai".into(),
+                ProviderAuth {
+                    api_key: None,
+                    oauth: Some(Box::new(XaiOAuth {
+                        token_url: Some(format!("{base}/token")),
+                    })),
+                },
+            ),
+            RealOAuthCase::Radius => (
+                "radius".into(),
+                ProviderAuth {
+                    api_key: None,
+                    oauth: Some(Box::new(RadiusOAuth::new(base))),
+                },
+            ),
+        }
+    }
+
+    async fn mount_oauth_success(case: RealOAuthCase, server: &MockServer, delay_ms: u64) {
+        let delay = std::time::Duration::from_millis(delay_ms);
+        match case {
+            RealOAuthCase::Anthropic => {
+                Mock::given(method("POST"))
+                    .and(path("/oauth/token"))
+                    .respond_with(ResponseTemplate::new(200).set_delay(delay).set_body_json(
+                        serde_json::json!({
+                            "access_token":"fresh-anthropic",
+                            "refresh_token":"fresh-refresh",
+                            "expires_in":3600
+                        }),
+                    ))
+                    .mount(server)
+                    .await;
+            }
+            RealOAuthCase::Codex => {
+                Mock::given(method("POST"))
+                    .and(path("/oauth/token"))
+                    .respond_with(ResponseTemplate::new(200).set_delay(delay).set_body_json(
+                        serde_json::json!({
+                            "access_token": jwt("acc-real"),
+                            "refresh_token":"fresh-refresh",
+                            "expires_in":3600
+                        }),
+                    ))
+                    .mount(server)
+                    .await;
+            }
+            RealOAuthCase::Kimi => {
+                Mock::given(method("POST"))
+                    .and(path("/api/oauth/token"))
+                    .respond_with(ResponseTemplate::new(200).set_delay(delay).set_body_json(
+                        serde_json::json!({
+                            "access_token":"fresh-kimi",
+                            "refresh_token":"fresh-refresh",
+                            "expires_in":3600
+                        }),
+                    ))
+                    .mount(server)
+                    .await;
+            }
+            RealOAuthCase::Xai => {
+                Mock::given(method("POST"))
+                    .and(path("/token"))
+                    .respond_with(ResponseTemplate::new(200).set_delay(delay).set_body_json(
+                        serde_json::json!({
+                            "access_token":"fresh-xai",
+                            "refresh_token":"fresh-refresh",
+                            "expires_in":3600
+                        }),
+                    ))
+                    .mount(server)
+                    .await;
+            }
+            RealOAuthCase::Radius => {
+                Mock::given(method("GET"))
+                    .and(path("/v1/oauth"))
+                    .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                        "authorizationEndpoint": format!("{}/authorize", server.uri()),
+                        "tokenEndpoint": format!("{}/token", server.uri())
+                    })))
+                    .mount(server)
+                    .await;
+                Mock::given(method("POST"))
+                    .and(path("/token"))
+                    .respond_with(ResponseTemplate::new(200).set_delay(delay).set_body_json(
+                        serde_json::json!({
+                            "access_token":"fresh-radius",
+                            "refresh_token":"fresh-refresh",
+                            "expires_in":3600
+                        }),
+                    ))
+                    .mount(server)
+                    .await;
+            }
+        }
+    }
+
+    async fn seed_expired(store: &InMemoryCredentialStore, provider_id: &str) {
+        store
+            .modify::<_, _, std::convert::Infallible>(provider_id, |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "old-access".into(),
+                    refresh: Some("old-refresh".into()),
+                    expires: now_millis() - 1,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn real_oauth_providers_pre_cancel_without_network_or_rotation() {
+        for case in [
+            RealOAuthCase::Anthropic,
+            RealOAuthCase::Codex,
+            RealOAuthCase::Kimi,
+            RealOAuthCase::Xai,
+            RealOAuthCase::Radius,
+        ] {
+            let server = MockServer::start().await;
+            mount_oauth_success(case, &server, 1).await;
+            let (provider_id, provider) = oauth_provider(case, &server);
+            let store = InMemoryCredentialStore::new();
+            seed_expired(&store, &provider_id).await;
+            let (_tx, rx) = watch::channel(true);
+            let err = resolve_provider_auth(
+                &provider_id,
+                &provider,
+                &model(&provider_id),
+                &store,
+                &EnvAuthContext::new(),
+                Some(&crate::auth::AuthResolutionOverrides {
+                    cancel: Some(rx),
+                    ..Default::default()
+                }),
+            )
+            .await
+            .unwrap_err();
+            assert_eq!(err.code, ModelsErrorCode::OAuth, "case {case:?}: {err}");
+            assert!(err.message.contains("AbortError"), "case {case:?}: {err}");
+            assert!(
+                server.received_requests().await.unwrap().is_empty(),
+                "case {case:?}"
+            );
+            match store.read(&provider_id) {
+                Some(Credential::OAuth(o)) => assert_eq!(o.access, "old-access", "case {case:?}"),
+                other => panic!("case {case:?}: unexpected {other:?}"),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn real_oauth_providers_mid_refresh_cancel_without_rotation() {
+        for case in [
+            RealOAuthCase::Anthropic,
+            RealOAuthCase::Codex,
+            RealOAuthCase::Kimi,
+            RealOAuthCase::Xai,
+            RealOAuthCase::Radius,
+        ] {
+            let server = MockServer::start().await;
+            mount_oauth_success(case, &server, 250).await;
+            let (provider_id, provider) = oauth_provider(case, &server);
+            let store = InMemoryCredentialStore::new();
+            seed_expired(&store, &provider_id).await;
+            let (tx, rx) = watch::channel(false);
+            let request_model = model(&provider_id);
+            let env_ctx = EnvAuthContext::new();
+            let overrides = crate::auth::AuthResolutionOverrides {
+                cancel: Some(rx),
+                ..Default::default()
+            };
+            let fut = resolve_provider_auth(
+                &provider_id,
+                &provider,
+                &request_model,
+                &store,
+                &env_ctx,
+                Some(&overrides),
+            );
+            let err = tokio::time::timeout(std::time::Duration::from_millis(500), async {
+                tokio::pin!(fut);
+                tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+                tx.send(true).unwrap();
+                fut.await.unwrap_err()
+            })
+            .await
+            .expect("cancelled OAuth refresh must finish promptly");
+            assert_eq!(err.code, ModelsErrorCode::OAuth, "case {case:?}: {err}");
+            assert!(err.message.contains("AbortError"), "case {case:?}: {err}");
+            match store.read(&provider_id) {
+                Some(Credential::OAuth(o)) => assert_eq!(o.access, "old-access", "case {case:?}"),
+                other => panic!("case {case:?}: unexpected {other:?}"),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn openrouter_oauth_honors_pre_cancel_without_mutation() {
+        let provider = ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(OpenRouterOAuth { token_url: None })),
+        };
+        let store = InMemoryCredentialStore::new();
+        seed_expired(&store, "openrouter").await;
+        let (_tx, rx) = watch::channel(true);
+        let err = resolve_provider_auth(
+            "openrouter",
+            &provider,
+            &model("openrouter"),
+            &store,
+            &EnvAuthContext::new(),
+            Some(&crate::auth::AuthResolutionOverrides {
+                cancel: Some(rx),
+                ..Default::default()
+            }),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(err.code, ModelsErrorCode::OAuth);
+        assert!(err.message.contains("AbortError"));
     }
 
     #[tokio::test]

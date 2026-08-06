@@ -12,6 +12,7 @@ use futures::future::join_all;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
 
@@ -96,7 +97,7 @@ pub struct RuntimeProvider {
     baseline: Vec<Model>,
     dynamic: Mutex<Vec<Model>>,
     refresh: Option<RefreshFn>,
-    inflight: tokio::sync::Mutex<Option<std::sync::Weak<tokio::sync::Mutex<()>>>>,
+    generation: AtomicU64,
 }
 
 impl RuntimeProvider {
@@ -113,7 +114,7 @@ impl RuntimeProvider {
             baseline: models,
             dynamic: Mutex::new(Vec::new()),
             refresh: None,
-            inflight: tokio::sync::Mutex::new(None),
+            generation: AtomicU64::new(0),
         }
     }
 
@@ -135,7 +136,7 @@ impl RuntimeProvider {
             baseline,
             dynamic: Mutex::new(Vec::new()),
             refresh: Some(Arc::new(move |ctx| Box::pin(refresh(ctx)))),
-            inflight: tokio::sync::Mutex::new(None),
+            generation: AtomicU64::new(0),
         }
     }
 
@@ -227,21 +228,9 @@ impl RuntimeProvider {
         let Some(refresh_fn) = self.refresh.clone() else {
             return Ok(());
         };
-        // Coalesce concurrent refreshes per provider: late callers wait for the active guard.
-        let (guard_arc, owner) = {
-            let mut slot = self.inflight.lock().await;
-            if let Some(existing) = slot.as_ref().and_then(|w| w.upgrade()) {
-                (existing, false)
-            } else {
-                let arc = Arc::new(tokio::sync::Mutex::new(()));
-                *slot = Some(Arc::downgrade(&arc));
-                (arc, true)
-            }
-        };
-        let _guard = guard_arc.lock().await;
-        if !owner {
-            return Ok(());
-        }
+        // Mark this refresh as the newest attempt immediately so a later refresh can
+        // supersede a non-cooperative earlier one before it publishes.
+        let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
 
         if let Some(stored) = ctx.store.read().await? {
             let filtered = stored
@@ -254,8 +243,23 @@ impl RuntimeProvider {
         if !ctx.allow_network || *ctx.cancel.borrow() {
             return Ok(());
         }
-        let refreshed = refresh_fn(ctx.clone()).await?;
-        if *ctx.cancel.borrow() {
+        let mut refresh_task = tokio::spawn(refresh_fn(ctx.clone()));
+        let refreshed = tokio::select! {
+            biased;
+            _ = wait_for_cancel(ctx.cancel.clone()) => {
+                refresh_task.abort();
+                return Ok(());
+            }
+            joined = &mut refresh_task => match joined {
+                Ok(result) => result?,
+                Err(e) => return Err(ModelsError::with_cause(
+                    ModelsErrorCode::ModelSource,
+                    format!("Model refresh task failed for {}", self.id),
+                    e,
+                )),
+            },
+        };
+        if *ctx.cancel.borrow() || self.generation.load(Ordering::SeqCst) != generation {
             return Ok(());
         }
         *self.dynamic.lock().unwrap() = refreshed.clone();
@@ -267,6 +271,17 @@ impl RuntimeProvider {
                 etag: None,
             })
             .await
+    }
+}
+
+async fn wait_for_cancel(mut cancel: watch::Receiver<bool>) {
+    loop {
+        if *cancel.borrow() {
+            return;
+        }
+        if cancel.changed().await.is_err() {
+            std::future::pending::<()>().await;
+        }
     }
 }
 

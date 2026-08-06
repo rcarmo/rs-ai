@@ -456,7 +456,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn telemetry_context_flows_through_stream_and_deferred_fetch_options() {
+    async fn telemetry_context_flows_through_stream_simple_deferred_cancel_and_images() {
         let api = "faux-telemetry";
         let provider = "faux-telemetry";
         let faux = FauxProvider::new(api, provider);
@@ -467,7 +467,19 @@ mod tests {
             messages: vec![],
             tools: vec![],
         };
-        faux.set_responses(vec![assistant_text("ready", StopReason::Stop)]);
+        faux.set_responses(vec![
+            assistant_text("simple", StopReason::Stop),
+            assistant_text("ready", StopReason::Stop),
+        ]);
+        let _simple = terminal_message(registry::stream_simple(
+            &model,
+            &ctx,
+            &StreamOptions {
+                telemetry_context: Some(serde_json::json!({"trace":"simple"})),
+                ..Default::default()
+            },
+        ))
+        .await;
         let submitted = terminal_message(registry::stream(
             &model,
             &ctx,
@@ -488,21 +500,92 @@ mod tests {
             },
         ))
         .await;
+        registry::cancel_deferred(
+            &model,
+            &handle,
+            &StreamOptions {
+                telemetry_context: Some(serde_json::json!({"trace":"cancel"})),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
         assert_eq!(
             faux.telemetry_contexts(),
             vec![
+                Some(serde_json::json!({"trace":"simple"})),
                 Some(serde_json::json!({"trace":"submit"})),
                 Some(serde_json::json!({"trace":"fetch"})),
+                Some(serde_json::json!({"trace":"cancel"})),
             ]
         );
-        let image_opts = crate::images::openrouter::ImagesOptions {
-            telemetry_context: Some(serde_json::json!({"trace":"image"})),
-            ..Default::default()
+
+        struct CaptureImages {
+            seen: Arc<Mutex<Vec<Option<TelemetryContext>>>>,
+        }
+        impl crate::images::ImagesApiProvider for CaptureImages {
+            fn api(&self) -> &str {
+                "telemetry-images"
+            }
+            fn generate<'a>(
+                &self,
+                model: &'a crate::images::ImagesModel,
+                _context: &'a crate::images::ImagesContext,
+                opts: &'a crate::images::openrouter::ImagesOptions,
+            ) -> std::pin::Pin<
+                Box<dyn std::future::Future<Output = crate::images::AssistantImages> + Send + 'a>,
+            > {
+                let seen = self.seen.clone();
+                Box::pin(async move {
+                    seen.lock().unwrap().push(opts.telemetry_context.clone());
+                    crate::images::AssistantImages {
+                        api: model.api.clone(),
+                        provider: model.provider.clone(),
+                        model: model.id.clone(),
+                        output: Vec::new(),
+                        stop_reason: StopReason::Stop,
+                        timestamp: 0,
+                        response_id: None,
+                        usage: None,
+                        error_message: None,
+                    }
+                })
+            }
+        }
+        let image_seen = Arc::new(Mutex::new(Vec::new()));
+        crate::images::register_images_api_provider(Arc::new(CaptureImages {
+            seen: image_seen.clone(),
+        }));
+        let image_model = crate::images::ImagesModel {
+            id: "image-model".into(),
+            name: "Image model".into(),
+            api: "telemetry-images".into(),
+            provider: "telemetry-images-provider".into(),
+            base_url: "https://example.test".into(),
+            input: vec!["text".into()],
+            output: vec!["image".into()],
+            cost: ModelCost::default(),
         };
+        let images = crate::images::ImagesContext {
+            input: vec![crate::images::ImageInput::Text {
+                text: "circle".into(),
+            }],
+        };
+        let out = crate::images::generate_images(
+            &image_model,
+            &images,
+            &crate::images::openrouter::ImagesOptions {
+                telemetry_context: Some(serde_json::json!({"trace":"image"})),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert_eq!(out.stop_reason, StopReason::Stop);
         assert_eq!(
-            image_opts.telemetry_context,
-            Some(serde_json::json!({"trace":"image"}))
+            &*image_seen.lock().unwrap(),
+            &[Some(serde_json::json!({"trace":"image"}))]
         );
+        crate::images::unregister_images_api_provider("telemetry-images");
         registry::unregister_api(api);
     }
 
