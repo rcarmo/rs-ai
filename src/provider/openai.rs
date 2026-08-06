@@ -1,6 +1,6 @@
 //! OpenAI Chat Completions provider (also serves compatible APIs).
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use futures::stream::{self, StreamExt};
@@ -150,6 +150,7 @@ pub fn stream_openai<'a>(
         let mut tool_calls: std::collections::BTreeMap<usize, (String, String, String)> = std::collections::BTreeMap::new();
         // Captured encrypted reasoning details keyed by tool-call id (OpenRouter).
         let mut tool_call_signatures: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        let mut has_finish_reason = false;
 
         let mut got_done = false;
         while let Some(chunk_result) = stream.next().await {
@@ -314,6 +315,7 @@ pub fn stream_openai<'a>(
                         // Match upstream's truthy `if (choice.finish_reason)` check:
                         // null/absent/empty-string finish_reason is not a terminal signal.
                         if let Some(reason) = choice.get("finish_reason").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+                            has_finish_reason = true;
                             partial.raw_stop_reason = Some(reason.to_string());
                             if text_started {
                                 yield Event::TextEnd;
@@ -390,6 +392,18 @@ pub fn stream_openai<'a>(
                     thought_signature: tool_call_signatures.get(id).cloned(),
                 });
             }
+        }
+
+        if !has_finish_reason && compat.supports_finish_reason == Some(false) {
+            partial.stop_reason = Some(if partial
+                .content
+                .iter()
+                .any(|block| matches!(block, ContentBlock::ToolCall { .. }))
+            {
+                StopReason::ToolUse
+            } else {
+                StopReason::Stop
+            });
         }
 
         if let Some(evt) = parser.finish()
@@ -903,6 +917,20 @@ pub(crate) fn build_payload(
         payload["temperature"] = json!(temp);
     }
 
+    // Model-level sampling params are the base; per-request sampling params merge over them.
+    let mut sampling_params = model.sampling_params.clone();
+    if let Some(request_params) = opts.sampling_params.clone() {
+        sampling_params = Some(match (sampling_params, request_params) {
+            (Some(Value::Object(mut base)), Value::Object(request)) => {
+                for (key, value) in request {
+                    base.insert(key, value);
+                }
+                Value::Object(base)
+            }
+            (_, other) => other,
+        });
+    }
+
     // Reasoning/thinking (clamped to the model's supported levels).
     // Mirrors upstream buildParams thinking-format handling, gated on model.reasoning.
     let clamped_effort = opts
@@ -1010,8 +1038,32 @@ pub(crate) fn build_payload(
                 }
             }
             Some("chat-template") => {
-                if let Some(kwargs) = build_chat_template_kwargs(model, &clamped_effort, compat) {
+                if let Some(kwargs) = build_chat_template_values(
+                    model,
+                    &clamped_effort,
+                    compat.chat_template_kwargs.as_ref(),
+                ) {
                     payload["chat_template_kwargs"] = kwargs;
+                }
+            }
+            Some("baseten") => {
+                if let Some(args) = build_chat_template_values(
+                    model,
+                    &clamped_effort,
+                    compat.chat_template_args.as_ref(),
+                ) {
+                    payload["chat_template_args"] = args;
+                }
+                if compat.supports_reasoning_effort == Some(true) {
+                    if let Some(ref level) = clamped_effort {
+                        payload["reasoning_effort"] = json!(map_effort(level));
+                    } else if let Some(Some(off)) = model
+                        .thinking_level_map
+                        .as_ref()
+                        .map(|m| m.get("off").cloned().flatten())
+                    {
+                        payload["reasoning_effort"] = json!(off);
+                    }
                 }
             }
             _ => {
@@ -1027,6 +1079,42 @@ pub(crate) fn build_payload(
                     }
                 }
             }
+        }
+    }
+
+    // vLLM reasoning endpoints cap thinking with top-level thinking_token_budget.
+    if compat.supports_thinking_token_budget == Some(true)
+        && model.reasoning
+        && let Some(ref level) = clamped_effort
+    {
+        let mut budgets: HashMap<ThinkingLevel, u32> =
+            crate::simple_options::default_thinking_budgets();
+        if let Some(custom) = opts.thinking_budgets.as_ref() {
+            if let Some(v) = custom.minimal {
+                budgets.insert(ThinkingLevel::Minimal, v);
+            }
+            if let Some(v) = custom.low {
+                budgets.insert(ThinkingLevel::Low, v);
+            }
+            if let Some(v) = custom.medium {
+                budgets.insert(ThinkingLevel::Medium, v);
+            }
+            if let Some(v) = custom.high {
+                budgets.insert(ThinkingLevel::High, v);
+            }
+        }
+        let clamped = crate::simple_options::clamp_reasoning(level);
+        let requested_budget = budgets.get(&clamped).copied().unwrap_or(8192);
+        let ceiling = payload
+            .get("max_tokens")
+            .or_else(|| payload.get("max_completion_tokens"))
+            .and_then(|v| v.as_u64())
+            .and_then(|v| u32::try_from(v).ok())
+            .unwrap_or(model.max_tokens);
+        const MIN_ANSWER_TOKENS: u32 = 1024;
+        let budget = requested_budget.min(ceiling.saturating_sub(MIN_ANSWER_TOKENS));
+        if budget > 0 {
+            payload["thinking_token_budget"] = json!(budget);
         }
     }
 
@@ -1095,6 +1183,13 @@ pub(crate) fn build_payload(
             json!({"type": "ephemeral"})
         };
         apply_anthropic_cache_control(&mut payload, &cc);
+    }
+
+    // Last so arbitrary sampling keys override named request fields.
+    if let Some(Value::Object(params)) = sampling_params {
+        for (key, value) in params {
+            payload[&key] = value;
+        }
     }
 
     payload
@@ -1193,12 +1288,12 @@ fn converted_tools(tools: &[Tool], include_strict: bool, supports_grammar: bool)
 /// Build the `chat_template_kwargs` object for the `chat-template` thinking format
 /// (mirrors buildChatTemplateKwargs): resolve each configured value, dropping any
 /// that resolve to undefined; returns None when the result is empty.
-fn build_chat_template_kwargs(
+fn build_chat_template_values(
     model: &Model,
     clamped_effort: &Option<ThinkingLevel>,
-    compat: &crate::compat::OpenAICompletionsCompat,
+    template_value: Option<&Value>,
 ) -> Option<Value> {
-    let template = compat.chat_template_kwargs.as_ref()?.as_object()?;
+    let template = template_value?.as_object()?;
     let mut out = serde_json::Map::new();
     for (key, value) in template {
         if let Some(resolved) = resolve_chat_template_kwarg_value(model, clamped_effort, value) {

@@ -24,6 +24,7 @@ mod tests {
             cost: ModelCost::default(),
             context_window: 128000,
             max_tokens: 16384,
+            sampling_params: None,
             headers: None,
             api_key: None,
             compat: Default::default(),
@@ -83,6 +84,7 @@ mod tests {
             session_id: Some("session-1".into()),
             tool_choice: Some(json!("auto")),
             max_tokens: Some(100),
+            sampling_params: None,
             headers: Some(headers),
             ..Default::default()
         };

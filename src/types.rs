@@ -330,6 +330,9 @@ pub struct Model {
     pub cost: ModelCost,
     pub context_window: u32,
     pub max_tokens: u32,
+    /// Default arbitrary sampling parameters merged into OpenAI-compatible request bodies.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sampling_params: Option<serde_json::Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub headers: Option<HashMap<String, String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -386,11 +389,15 @@ pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_usage_in_streaming: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_finish_reason: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_strict_mode: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_openai_grammar_tools: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_temperature: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_thinking_token_budget: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_tool_references: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -402,6 +409,9 @@ pub struct ModelCompat {
     /// chat-template thinking format kwargs (object map; mirrors compat.chatTemplateKwargs).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chat_template_kwargs: Option<serde_json::Value>,
+    /// chat-template thinking format args (object map; mirrors compat.chatTemplateArgs for Baseten).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chat_template_args: Option<serde_json::Value>,
 }
 
 impl ModelCompat {
@@ -433,6 +443,8 @@ pub type ResponseHook = Arc<dyn Fn(u16, &HashMap<String, String>, &Model) + Send
 #[derive(Clone, Default)]
 pub struct StreamOptions {
     pub temperature: Option<f64>,
+    /// Arbitrary sampling parameters merged last into OpenAI-compatible request bodies.
+    pub sampling_params: Option<serde_json::Value>,
     pub max_tokens: Option<u32>,
     pub api_key: Option<String>,
     pub transport: Option<Transport>,
@@ -470,6 +482,7 @@ impl std::fmt::Debug for StreamOptions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("StreamOptions")
             .field("temperature", &self.temperature)
+            .field("sampling_params", &self.sampling_params)
             .field("max_tokens", &self.max_tokens)
             .field("api_key", &self.api_key.as_ref().map(|_| "***"))
             .field("transport", &self.transport)

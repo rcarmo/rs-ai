@@ -1155,6 +1155,18 @@ pub(crate) fn build_responses_payload(
     if let Some(temp) = opts.temperature {
         payload["temperature"] = json!(temp);
     }
+    let mut sampling_params = model.sampling_params.clone();
+    if let Some(request_params) = opts.sampling_params.clone() {
+        sampling_params = Some(match (sampling_params, request_params) {
+            (Some(Value::Object(mut base)), Value::Object(request)) => {
+                for (key, value) in request {
+                    base.insert(key, value);
+                }
+                Value::Object(base)
+            }
+            (_, other) => other,
+        });
+    }
     if let Some(ref service_tier) = opts.service_tier {
         payload["service_tier"] = json!(service_tier);
     }
@@ -1226,6 +1238,13 @@ pub(crate) fn build_responses_payload(
                 .collect();
         }
         payload["tools"] = json!(tools);
+    }
+
+    // Last so arbitrary sampling keys override named request fields.
+    if let Some(Value::Object(params)) = sampling_params {
+        for (key, value) in params {
+            payload[&key] = value;
+        }
     }
 
     payload

@@ -26,6 +26,7 @@ mod tests {
             cost: ModelCost::default(),
             context_window: 128000,
             max_tokens: 4096,
+            sampling_params: None,
             headers: None,
             api_key: Some("test-key".into()),
             compat: Default::default(),
@@ -4397,10 +4398,12 @@ mod tests {
         let ctx = test_context();
         let opts0 = StreamOptions {
             max_tokens: Some(0),
+            sampling_params: None,
             ..Default::default()
         };
         let opts5 = StreamOptions {
             max_tokens: Some(5),
+            sampling_params: None,
             ..Default::default()
         };
 
@@ -4657,6 +4660,7 @@ mod tests {
         let opts = StreamOptions {
             reasoning: Some(ThinkingLevel::Low),
             max_tokens: Some(4096),
+            sampling_params: None,
             ..Default::default()
         };
         let payload = build_anthropic_payload(&model, &ctx, &opts);
@@ -4667,6 +4671,7 @@ mod tests {
         let opts = StreamOptions {
             reasoning: Some(ThinkingLevel::Medium),
             max_tokens: Some(4096),
+            sampling_params: None,
             ..Default::default()
         };
         let payload = build_anthropic_payload(&model, &ctx, &opts);

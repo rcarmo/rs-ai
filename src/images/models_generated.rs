@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (40 image models, 1 provider)
-//! Generated: 2026-07-24T06:24:40.247070+00:00
+//! Source: image-models.generated.js (42 image models, 1 provider)
+//! Generated: 2026-08-06T14:41:06.625289+00:00
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
@@ -101,7 +101,7 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
                 input: 0.3_f64,
                 output: 2.5_f64,
                 cache_read: 0.03_f64,
-                cache_write: 0.08333333333333334_f64,
+                cache_write: 0.0833333333333333_f64,
                 tiers: vec![],
             },
         },
@@ -394,6 +394,38 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             },
         },
         ImagesModel {
+            id: "qwen/qwen-image-3".into(),
+            name: "Qwen: Qwen Image 3".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "qwen/qwen-image-3-pro".into(),
+            name: "Qwen: Qwen Image 3 Pro".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
             id: "recraft/recraft-v3".into(),
             name: "Recraft: Recraft V3".into(),
             api: "openrouter-images".into(),
@@ -635,7 +667,7 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         },
         ImagesModel {
             id: "x-ai/grok-imagine-image-quality".into(),
-            name: "xAI: Grok Imagine Image Quality".into(),
+            name: "SpaceXAI: Grok Imagine Image Quality".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),

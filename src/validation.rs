@@ -320,6 +320,12 @@ fn coerce_primitive_by_type(value: &Value, ty: &str) -> Value {
 }
 
 fn coerce_with_union(value: &Value, schemas: &[Value]) -> Value {
+    // v0.84.0: preserve a value that already matches a nullable anyOf/oneOf arm
+    // before trying coercions. Otherwise `null` can be coerced by a preceding
+    // number branch to `0`, changing a valid nullable union value.
+    if schemas.iter().any(|schema| check_schema(value, schema)) {
+        return value.clone();
+    }
     for schema in schemas {
         let coerced = coerce_with_json_schema(value.clone(), schema);
         if check_schema(&coerced, schema) {

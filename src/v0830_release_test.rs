@@ -20,13 +20,13 @@ mod tests {
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1153);
+        assert_eq!(pairs.len(), 1212);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
             .collect::<HashSet<_>>()
             .len();
-        assert_eq!(provider_count, 37);
+        assert_eq!(provider_count, 38);
         for model in &all {
             assert!(!model.id.is_empty(), "empty id: {model:?}");
             assert!(!model.provider.is_empty(), "empty provider: {model:?}");
@@ -94,7 +94,7 @@ mod tests {
             .into_iter()
             .map(|m| m.id)
             .collect::<HashSet<_>>();
-        assert_eq!(ids.len(), 40);
+        assert_eq!(ids.len(), 42);
         for id in [
             "krea/krea-2-large",
             "krea/krea-2-medium",
@@ -534,6 +534,7 @@ mod tests {
             cost: crate::types::ModelCost::default(),
             context_window: 10,
             max_tokens: 5,
+            sampling_params: None,
             headers: None,
             api_key: None,
             compat: Default::default(),
@@ -672,6 +673,7 @@ mod tests {
             cost: crate::types::ModelCost::default(),
             context_window: 128000,
             max_tokens: 4096,
+            sampling_params: None,
             headers: None,
             api_key: Some("k".into()),
             compat: Default::default(),

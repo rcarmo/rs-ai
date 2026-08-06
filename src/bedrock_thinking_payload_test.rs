@@ -64,6 +64,7 @@ mod tests {
         };
         let opts = StreamOptions {
             max_tokens: Some(2000),
+            sampling_params: None,
             ..Default::default()
         };
         // No thinking adjustment (reasoning not requested) -> caller cap is clamped.

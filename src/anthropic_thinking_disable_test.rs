@@ -141,6 +141,7 @@ mod tests {
         };
         let opts = StreamOptions {
             max_tokens: Some(2000),
+            sampling_params: None,
             ..Default::default()
         };
         let p = build_anthropic_payload(&model, &ctx, &opts);

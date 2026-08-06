@@ -99,6 +99,7 @@ mod tests {
             cost: ModelCost::default(),
             context_window: 4096,
             max_tokens: 1024,
+            sampling_params: None,
             headers: None,
             api_key: None,
             compat: Default::default(),

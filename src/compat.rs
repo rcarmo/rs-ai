@@ -9,6 +9,7 @@ pub struct OpenAICompletionsCompat {
     pub supports_developer_role: Option<bool>,
     pub supports_reasoning_effort: Option<bool>,
     pub supports_usage_in_streaming: Option<bool>,
+    pub supports_finish_reason: Option<bool>,
     pub supports_temperature: Option<bool>,
     pub max_tokens_field: Option<String>,
     pub requires_tool_result_name: Option<bool>,
@@ -20,12 +21,15 @@ pub struct OpenAICompletionsCompat {
     pub supports_openai_grammar_tools: Option<bool>,
     pub supports_long_cache_retention: Option<bool>,
     pub supports_session_affinity_headers: Option<bool>,
+    pub supports_thinking_token_budget: Option<bool>,
     pub zai_tool_stream: Option<bool>,
     pub cache_control_format: Option<String>,
     /// Provider-specific deferred tool serialization mode (currently `kimi`).
     pub deferred_tools_mode: Option<String>,
     /// chat-template thinking format kwargs (object map; see resolve_chat_template_kwarg_value).
     pub chat_template_kwargs: Option<serde_json::Value>,
+    /// chat-template thinking format args (object map; see resolve_chat_template_kwarg_value).
+    pub chat_template_args: Option<serde_json::Value>,
 }
 
 /// Auto-detect compatibility flags from a model's provider/URL, then overlay any
@@ -46,6 +50,7 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         supports_developer_role: mc.supports_developer_role,
         supports_reasoning_effort: mc.supports_reasoning_effort,
         supports_usage_in_streaming: mc.supports_usage_in_streaming,
+        supports_finish_reason: mc.supports_finish_reason,
         supports_temperature: mc.supports_temperature,
         max_tokens_field: mc.max_tokens_field.clone(),
         requires_tool_result_name: mc.requires_tool_result_name,
@@ -58,10 +63,12 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         supports_openai_grammar_tools: mc.supports_openai_grammar_tools,
         supports_long_cache_retention: mc.supports_long_cache_retention,
         supports_session_affinity_headers: mc.send_session_affinity_headers,
+        supports_thinking_token_budget: mc.supports_thinking_token_budget,
         zai_tool_stream: mc.zai_tool_stream,
         cache_control_format: mc.cache_control_format.clone(),
         deferred_tools_mode: mc.deferred_tools_mode.clone(),
         chat_template_kwargs: mc.chat_template_kwargs.clone(),
+        chat_template_args: mc.chat_template_args.clone(),
     })
 }
 
@@ -83,6 +90,9 @@ pub fn detect_compat_for_model(
         }
         if o.supports_usage_in_streaming.is_some() {
             c.supports_usage_in_streaming = o.supports_usage_in_streaming;
+        }
+        if o.supports_finish_reason.is_some() {
+            c.supports_finish_reason = o.supports_finish_reason;
         }
         if o.supports_temperature.is_some() {
             c.supports_temperature = o.supports_temperature;
@@ -118,6 +128,9 @@ pub fn detect_compat_for_model(
         if o.supports_session_affinity_headers.is_some() {
             c.supports_session_affinity_headers = o.supports_session_affinity_headers;
         }
+        if o.supports_thinking_token_budget.is_some() {
+            c.supports_thinking_token_budget = o.supports_thinking_token_budget;
+        }
         if o.zai_tool_stream.is_some() {
             c.zai_tool_stream = o.zai_tool_stream;
         }
@@ -129,6 +142,9 @@ pub fn detect_compat_for_model(
         }
         if o.chat_template_kwargs.is_some() {
             c.chat_template_kwargs = o.chat_template_kwargs.clone();
+        }
+        if o.chat_template_args.is_some() {
+            c.chat_template_args = o.chat_template_args.clone();
         }
     }
     c
@@ -212,6 +228,7 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
                 && !is_ant_ling,
         ),
         supports_usage_in_streaming: Some(true),
+        supports_finish_reason: Some(true),
         // supports_temperature is an rs-ai extension (not in upstream compat); default on.
         supports_temperature: Some(true),
         max_tokens_field: Some(

@@ -32,6 +32,7 @@ mod tests {
             cost: ModelCost::default(),
             context_window: 200000,
             max_tokens: 32000,
+            sampling_params: None,
             headers: None,
             api_key: Some("test-key".into()),
             compat,
@@ -226,6 +227,7 @@ mod tests {
             cost: ModelCost::default(),
             context_window: 1048576,
             max_tokens: 1024,
+            sampling_params: None,
             headers: None,
             api_key: None,
             compat: ModelCompat {

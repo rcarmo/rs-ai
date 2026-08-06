@@ -123,6 +123,7 @@ mod tests {
         };
         let opts = StreamOptions {
             max_tokens: Some(7000),
+            sampling_params: None,
             ..Default::default()
         };
         let p = clamp_payload(&ctx, &opts);
@@ -139,6 +140,7 @@ mod tests {
         };
         let opts = StreamOptions {
             max_tokens: Some(1234),
+            sampling_params: None,
             ..Default::default()
         };
         let p = payload(&ctx, &opts);

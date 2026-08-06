@@ -1,5 +1,66 @@
 # rs-ai upstream release parity
 
+## In-progress v0.84.0 release port — committed slice 1 (Baseten / sampling / vLLM budget)
+
+- Previous accepted upstream: `v0.83.0` / `845d6ff1f6643aba440341cce877ce1c43ebbc39`
+- Target upstream release: `v0.84.0` / `a5f43bf8aff3c55752432655f7334e3dafd1e256`
+- Audited range for manifests: `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`
+- Scope status: **in progress**. This is the first evidence-driven committed slice requested by the auditor, not the final v0.84.0 completion report.
+
+### Exact manifests generated
+
+- `docs/v0840-manifests.md` records the exact **101** changed `packages/ai` paths and **46** changed `packages/ai/test` files, with extracted upstream case/assertion/gate lines from the authoritative tag.
+
+### Ported/adapted in this slice
+
+- Regenerated text and image catalogs from the v0.84.0 tag JSON output.
+- Added Baseten provider catalog/auth parity:
+  - provider id `baseten`
+  - `BASETEN_API_KEY`
+  - `openai-completions` runtime path
+  - `zai-org/GLM-5.2`, `zai-org/GLM-5.2-Fast`, `moonshotai/Kimi-K2.6`, and related Baseten metadata from `scripts/generate-models.ts`.
+- Added `Model.sampling_params` / `StreamOptions.sampling_params` and OpenAI-compatible request merging:
+  - model defaults merge with request params
+  - request keys override model keys
+  - merged params are applied last in OpenAI Completions and OpenAI/Azure Responses payloads so arbitrary sampling keys can override named request fields.
+- Added Baseten `thinkingFormat: "baseten"` handling with configurable `chat_template_args` and optional `reasoning_effort`.
+- Added vLLM `thinking_token_budget` support for OpenAI-compatible Completions when `supportsThinkingTokenBudget` is set, including the upstream `MIN_ANSWER_TOKENS = 1024` edge behavior.
+- Added `supportsFinishReason: false` OpenAI-compatible stream inference so streams without provider finish reasons infer `stop` vs `toolUse` instead of failing.
+- Fixed validation union coercion to preserve values that already match nullable `anyOf`/`oneOf` arms before coercing through earlier primitive arms.
+- Changed generated text registry construction to append in small chunks, avoiding test-stack overflow with the larger v0.84.0 catalog.
+
+### Named Rust evidence in this slice
+
+`src/v0840_release_test.rs`:
+
+- `sampling_params_merge_and_override_openai_compatible_payloads`
+- `baseten_catalog_and_reasoning_payload_match_v0840`
+- `vllm_thinking_token_budget_edge_matrix`
+- `nullable_anyof_oneof_preserves_matching_null_before_coercion`
+- `supports_finish_reason_false_infers_terminal_stop_or_tool_use`
+
+### Slice verification
+
+Executed from `/workspace/projects/rs-ai`:
+
+```bash
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-json   python3 scripts/compare_upstream_registry_pairs.py   /workspace/tmp/pi-v0840   a5f43bf8aff3c55752432655f7334e3dafd1e256
+cargo build
+cargo test v0840_release_test -- --nocapture
+cargo clippy --all-targets -- -D warnings
+```
+
+Results:
+
+- Comparator: text `1212/1212`, image `42/42`, missing `0`, extra `0`
+- `cargo build`: passed
+- `cargo test v0840_release_test -- --nocapture`: `5 passed; 0 failed`
+- `cargo clippy --all-targets -- -D warnings`: passed
+
+### Still pending for final v0.84.0 completion
+
+The remaining changed assertions/provider clusters from `docs/v0840-manifests.md` still need final disposition and executable evidence before declaring the v0.84.0 release complete, including Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callbacks, deferred/background/telemetry semantics, Responses incomplete/raw details, Anthropic initial block content, Codex account-scoped WebSocket cache, and remaining provider-specific stream/tool/error/usage fixes.
+
 This file is the release-audit ledger for `rs-ai`. It must be updated in the same commit as every future upstream `@earendil-works/pi-ai` release audit.
 
 ## Current upstream baseline

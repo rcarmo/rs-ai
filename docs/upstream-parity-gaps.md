@@ -1,5 +1,24 @@
 # Upstream parity gap analysis
 
+## In-progress parity audit: `@earendil-works/pi-ai` v0.84.0 — slice 1 committed
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.0`, package/tag SHA `a5f43bf8aff3c55752432655f7334e3dafd1e256` (`github.com/earendil-works/pi` tag `v0.84.0`). Pinned scope is exactly `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`; do not chase newer main.
+
+Generated manifest evidence is in `docs/v0840-manifests.md`: **101** changed `packages/ai` paths and **46** changed `packages/ai/test` files with extracted upstream assertion/gate lines.
+
+First committed slice status: **PARTIAL / IN PROGRESS**.
+
+| Upstream path group | Count | Current disposition | rs-ai path / evidence |
+|---|---:|---|---|
+| Baseten provider/catalog/auth: `src/providers/baseten.ts`, `src/providers/baseten.models.ts`, `src/env-api-keys.ts`, `scripts/generate-models.ts`, `test/baseten-models.test.ts` | 5 | PORTED in slice 1 | `src/models_generated.rs`, `src/env.rs`, `src/provider/openai.rs`, `src/v0840_release_test.rs::baseten_catalog_and_reasoning_payload_match_v0840` |
+| Generic sampling params: `src/types.ts`, `src/api/simple-options.ts`, OpenAI-compatible adapters, `test/sampling-options.test.ts` | 6 | PORTED in slice 1 for Rust request surface | `Model.sampling_params`, `StreamOptions.sampling_params`, OpenAI Completions + Responses/Azure payload merge; test `sampling_params_merge_and_override_openai_compatible_payloads` |
+| vLLM `thinking_token_budget`: `src/api/openai-completions.ts`, `test/openai-completions-thinking-token-budget.test.ts` | 2 | PORTED in slice 1 | `supports_thinking_token_budget`, `MIN_ANSWER_TOKENS=1024` edge behavior; test `vllm_thinking_token_budget_edge_matrix` |
+| Nullable union validation: `test/validation.test.ts` assertions | 1 | PORTED in slice 1 | `src/validation.rs` match-before-coerce for `anyOf`/`oneOf`; test `nullable_anyof_oneof_preserves_matching_null_before_coercion` |
+| Streams without finish reasons: `OpenAICompletionsCompat.supportsFinishReason` | 1 | PORTED in slice 1 | `src/provider/openai.rs`; test `supports_finish_reason_false_infers_terminal_stop_or_tool_use` |
+| Catalog comparator | n/a | PORTED for slice catalog | `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0840-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0840 a5f43bf8aff3c55752432655f7334e3dafd1e256` => text `1212/1212`, image `42/42`, missing `0`, extra `0` |
+
+Remaining v0.84.0 audit clusters are still pending final disposition: Bedrock bounded failure metadata, Google retry/signed-empty/tool-call-id changes, OAuth caller cancellation/refresh callback semantics, telemetry/deferred/background support, OpenAI Responses incomplete/raw status fixes, Anthropic initial block content, Codex account-scoped WebSocket cache, and every other changed test assertion in `docs/v0840-manifests.md`.
+
 ## Current parity audit: `@earendil-works/pi-ai` v0.83.0
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.83.0`, package/tag SHA `845d6ff1f6643aba440341cce877ce1c43ebbc39` (`github.com/earendil-works/pi` tag `v0.83.0`). Pinned scope for this release-only audit is exactly `b4f293684bba718d59cc1157679bcf6157b3a7f5..845d6ff1f6643aba440341cce877ce1c43ebbc39`; do not chase newer main.

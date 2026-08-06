@@ -1,5 +1,23 @@
 # Shared local-test adaptation tracker (rs-ai)
 
+## v0.84.0 committed slice 1 evidence
+
+Source: upstream tag `a5f43bf8aff3c55752432655f7334e3dafd1e256` (`v0.84.0`), exact release-only delta `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`.
+
+Status: **PARTIAL / IN PROGRESS**. This first committed slice adds deterministic Rust evidence for Baseten, generic sampling params, vLLM `thinking_token_budget`, nullable union match-before-coerce validation, and OpenAI-compatible streams without finish reasons.
+
+Named tests in `src/v0840_release_test.rs`:
+
+- `sampling_params_merge_and_override_openai_compatible_payloads`
+- `baseten_catalog_and_reasoning_payload_match_v0840`
+- `vllm_thinking_token_budget_edge_matrix`
+- `nullable_anyof_oneof_preserves_matching_null_before_coercion`
+- `supports_finish_reason_false_infers_terminal_stop_or_tool_use`
+
+Generated audit manifests: `docs/v0840-manifests.md` (101 changed `packages/ai` paths; 46 changed tests with assertion/gate extraction).
+
+Slice gate results: comparator text `1212/1212`, image `42/42`; `cargo build`; `cargo test v0840_release_test`; strict Clippy.
+
 Mirror of the cross-port requirement: adapt locally-authored regression/edge-case
 tests from the reference ports — primarily **@go-ai** (`/workspace/projects/go-ai`,
 `docs/local-tests-shared.md`, 188 local Go tests) — into idiomatic Rust. This file

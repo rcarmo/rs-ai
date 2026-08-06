@@ -67,6 +67,11 @@ def gen_model(m) -> str:
     lines.append(f"            cost: ModelCost {{ input: {ci}_f64, output: {co}_f64, cache_read: {cr}_f64, cache_write: {cw}_f64, tiers: {tiers_str} }},")
     lines.append(f"            context_window: {m.get('contextWindow', 0)},")
     lines.append(f"            max_tokens: {m.get('maxTokens', 0)},")
+    sampling_params = m.get("samplingParams")
+    if sampling_params:
+        lines.append(f'            sampling_params: Some(serde_json::from_str({rust_string(json.dumps(sampling_params))}).unwrap()),')
+    else:
+        lines.append("            sampling_params: None,")
     
     headers = m.get("headers")
     if headers:
@@ -95,9 +100,11 @@ def gen_model(m) -> str:
         "supportsReasoningEffort": ("supports_reasoning_effort", "bool"),
         "supportsStore": ("supports_store", "bool"),
         "supportsUsageInStreaming": ("supports_usage_in_streaming", "bool"),
+        "supportsFinishReason": ("supports_finish_reason", "bool"),
         "supportsStrictMode": ("supports_strict_mode", "bool"),
         "supportsOpenAIGrammarTools": ("supports_openai_grammar_tools", "bool"),
         "supportsTemperature": ("supports_temperature", "bool"),
+        "supportsThinkingTokenBudget": ("supports_thinking_token_budget", "bool"),
         "thinkingFormat": ("thinking_format", "str"),
         "zaiToolStream": ("zai_tool_stream", "bool"),
     }
@@ -112,6 +119,9 @@ def gen_model(m) -> str:
     ctk = compat.get("chatTemplateKwargs")
     if ctk:
         compat_lines.append(f'                chat_template_kwargs: Some(serde_json::from_str({rust_string(json.dumps(ctk))}).unwrap()),')
+    cta = compat.get("chatTemplateArgs")
+    if cta:
+        compat_lines.append(f'                chat_template_args: Some(serde_json::from_str({rust_string(json.dumps(cta))}).unwrap()),')
     if compat_lines:
         lines.append("            compat: ModelCompat {")
         lines.extend(compat_lines)
@@ -150,14 +160,22 @@ def main():
     out.append("use std::collections::HashMap;")
     out.append("use crate::types::{Model, ModelCost, ModelCostTier, ModelCompat};")
     out.append("")
+    chunk_size = 50
+    for chunk_index, start in enumerate(range(0, total, chunk_size)):
+        out.append(f"fn append_builtin_models_{chunk_index}(models: &mut Vec<Model>) {{")
+        for m in all_models[start:start + chunk_size]:
+            out.append("    models.push(")
+            out.append(gen_model(m))
+            out.append("    );")
+        out.append("}")
+        out.append("")
+
     out.append("/// Returns all built-in models from the upstream pi-ai registry.")
     out.append("pub fn builtin_models() -> Vec<Model> {")
-    out.append("    vec![")
-    
-    for m in all_models:
-        out.append(gen_model(m) + ",")
-    
-    out.append("    ]")
+    out.append(f"    let mut models = Vec::with_capacity({total});")
+    for chunk_index, _ in enumerate(range(0, total, chunk_size)):
+        out.append(f"    append_builtin_models_{chunk_index}(&mut models);")
+    out.append("    models")
     out.append("}")
     
     output_path = Path(__file__).parent.parent / "src" / "models_generated.rs"

@@ -1,0 +1,3390 @@
+# v0.84.0 upstream manifest
+
+- Previous accepted upstream: `v0.83.0` / `845d6ff1f6643aba440341cce877ce1c43ebbc39`
+- New upstream: `v0.84.0` / `a5f43bf8aff3c55752432655f7334e3dafd1e256`
+- Range: `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`
+- Changed `packages/ai` paths: `101`
+- Changed `packages/ai/test` files: `46`
+
+## Exact changed `packages/ai` path manifest
+
+- `packages/ai/CHANGELOG.md`
+- `packages/ai/README.md`
+- `packages/ai/package.json`
+- `packages/ai/scripts/generate-models.ts`
+- `packages/ai/src/api/anthropic-messages.ts`
+- `packages/ai/src/api/azure-openai-responses.ts`
+- `packages/ai/src/api/bedrock-converse-stream.ts`
+- `packages/ai/src/api/google-generative-ai.ts`
+- `packages/ai/src/api/google-shared.ts`
+- `packages/ai/src/api/google-vertex.ts`
+- `packages/ai/src/api/lazy.ts`
+- `packages/ai/src/api/openai-codex-responses.ts`
+- `packages/ai/src/api/openai-completions.ts`
+- `packages/ai/src/api/openai-responses-shared.ts`
+- `packages/ai/src/api/openai-responses.ts`
+- `packages/ai/src/api/simple-options.ts`
+- `packages/ai/src/auth/credential-store.ts`
+- `packages/ai/src/auth/helpers.ts`
+- `packages/ai/src/auth/oauth/anthropic.ts`
+- `packages/ai/src/auth/oauth/device-code.ts`
+- `packages/ai/src/auth/oauth/github-copilot.ts`
+- `packages/ai/src/auth/oauth/kimi-coding.ts`
+- `packages/ai/src/auth/oauth/openai-codex.ts`
+- `packages/ai/src/auth/oauth/openrouter.ts`
+- `packages/ai/src/auth/oauth/radius.ts`
+- `packages/ai/src/auth/oauth/xai.ts`
+- `packages/ai/src/auth/resolve.ts`
+- `packages/ai/src/auth/types.ts`
+- `packages/ai/src/cli.ts`
+- `packages/ai/src/env-api-keys.ts`
+- `packages/ai/src/image-models.generated.ts`
+- `packages/ai/src/images-models.ts`
+- `packages/ai/src/models-store.ts`
+- `packages/ai/src/models.generated.ts`
+- `packages/ai/src/models.ts`
+- `packages/ai/src/providers/all.ts`
+- `packages/ai/src/providers/amazon-bedrock.ts`
+- `packages/ai/src/providers/anthropic.ts`
+- `packages/ai/src/providers/baseten.models.ts`
+- `packages/ai/src/providers/baseten.ts`
+- `packages/ai/src/providers/cloudflare-auth.ts`
+- `packages/ai/src/providers/faux.ts`
+- `packages/ai/src/providers/github-copilot.ts`
+- `packages/ai/src/providers/google-vertex.ts`
+- `packages/ai/src/providers/kimi-coding.ts`
+- `packages/ai/src/providers/openai-codex.ts`
+- `packages/ai/src/providers/opencode-go.ts`
+- `packages/ai/src/providers/radius.ts`
+- `packages/ai/src/providers/xai.ts`
+- `packages/ai/src/types.ts`
+- `packages/ai/src/utils/abort.ts`
+- `packages/ai/src/utils/error-body.ts`
+- `packages/ai/src/utils/overflow.ts`
+- `packages/ai/src/utils/validation.ts`
+- `packages/ai/test/abort.test.ts`
+- `packages/ai/test/anthropic-adaptive-thinking-models.test.ts`
+- `packages/ai/test/anthropic-auth-token.test.ts`
+- `packages/ai/test/anthropic-oauth.test.ts`
+- `packages/ai/test/anthropic-sse-parsing.test.ts`
+- `packages/ai/test/baseten-models.test.ts`
+- `packages/ai/test/bedrock-error-metadata.test.ts`
+- `packages/ai/test/context-overflow.test.ts`
+- `packages/ai/test/cross-provider-handoff.test.ts`
+- `packages/ai/test/deferred-tools.test.ts`
+- `packages/ai/test/empty.test.ts`
+- `packages/ai/test/error-body.test.ts`
+- `packages/ai/test/fireworks-models.test.ts`
+- `packages/ai/test/github-copilot-oauth.test.ts`
+- `packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts`
+- `packages/ai/test/google-shared-retry.test.ts`
+- `packages/ai/test/google-shared-signed-empty-blocks.test.ts`
+- `packages/ai/test/image-tool-result.test.ts`
+- `packages/ai/test/kimi-coding-oauth.test.ts`
+- `packages/ai/test/model-catalog-types.test.ts`
+- `packages/ai/test/models-runtime.test.ts`
+- `packages/ai/test/oauth-auth.test.ts`
+- `packages/ai/test/oauth-device-code.test.ts`
+- `packages/ai/test/oauth.ts`
+- `packages/ai/test/openai-codex-oauth.test.ts`
+- `packages/ai/test/openai-codex-stream.test.ts`
+- `packages/ai/test/openai-completions-prompt-cache.test.ts`
+- `packages/ai/test/openai-completions-thinking-as-text.test.ts`
+- `packages/ai/test/openai-completions-thinking-token-budget.test.ts`
+- `packages/ai/test/openai-completions-tool-choice.test.ts`
+- `packages/ai/test/openai-completions-tool-result-images.test.ts`
+- `packages/ai/test/openai-responses-terminal-event.test.ts`
+- `packages/ai/test/openrouter-oauth.test.ts`
+- `packages/ai/test/overflow.test.ts`
+- `packages/ai/test/providers.test.ts`
+- `packages/ai/test/qwen-token-plan-models.test.ts`
+- `packages/ai/test/radius-oauth.test.ts`
+- `packages/ai/test/sampling-options.test.ts`
+- `packages/ai/test/stream.test.ts`
+- `packages/ai/test/telemetry-options.test.ts`
+- `packages/ai/test/tokens.test.ts`
+- `packages/ai/test/tool-call-without-result.test.ts`
+- `packages/ai/test/total-tokens.test.ts`
+- `packages/ai/test/unicode-surrogate.test.ts`
+- `packages/ai/test/validation.test.ts`
+- `packages/ai/test/xai-oauth.test.ts`
+- `packages/ai/vitest.config.ts`
+
+## Changed-test assertion manifest
+
+Each entry is extracted from the authoritative v0.84.0 file at the tag. `case` lines are `describe`/`it`/`test` declarations; `assert` lines are `expect(...)`, `assert...`, or skip/live-gate declarations retained as audit signals.
+
+### `packages/ai/test/abort.test.ts`
+- cases: `59`; assertions/gates: `29`
+- case manifest:
+  - L100: `describe("AI Providers Abort Tests", () => {`
+  - L101: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider Abort", () => {`
+  - L104: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L108: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L113: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider Abort", () => {`
+  - L121: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L125: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L130: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider Abort", () => {`
+  - L133: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L137: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L142: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider Abort", () => {`
+  - L147: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L151: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L156: `describe.skipIf(!process.env.ANTHROPIC_OAUTH_TOKEN)("Anthropic Provider Abort", () => {`
+  - L159: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L163: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L168: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider Abort", () => {`
+  - L171: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L175: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L180: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider Abort", () => {`
+  - L183: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L187: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L192: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider Abort", () => {`
+  - L195: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L199: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L204: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider Abort", () => {`
+  - L207: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L211: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L216: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider Abort", () => {`
+  - L219: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L223: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L228: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN) Provider Abort", () => {`
+  - L231: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L235: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L240: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS) Provider Abort", () => {`
+  - L243: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L247: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L252: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP) Provider Abort", () => {`
+  - L255: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L259: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L264: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider Abort", () => {`
+  - L267: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L271: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L276: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider Abort", () => {`
+  - L279: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L283: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L288: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider Abort", () => {`
+  - L291: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L295: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L300: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider Abort", () => {`
+  - L303: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L307: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L312: `describe("OpenAI Codex Provider Abort", () => {`
+  - L313: `it.skipIf(!openaiCodexToken)("should abort mid-stream", { retry: 3 }, async () => {`
+  - L318: `it.skipIf(!openaiCodexToken)("should handle immediate abort", { retry: 3 }, async () => {`
+  - L324: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider Abort", () => {`
+  - L327: `it("should abort mid-stream", { retry: 3 }, async () => {`
+  - L331: `it("should handle immediate abort", { retry: 3 }, async () => {`
+  - L335: `it("should handle abort then new message", { retry: 3 }, async () => {`
+- assertion/gate manifest:
+  - L43: `expect(msg.stopReason).toBe("aborted");`
+  - L44: `expect(msg.content.length).toBeGreaterThan(0);`
+  - L54: `expect(followUp.stopReason).toBe("stop");`
+  - L55: `expect(followUp.content.length).toBeGreaterThan(0);`
+  - L68: `expect(response.stopReason).toBe("aborted");`
+  - L81: `expect(abortedResponse.stopReason).toBe("aborted");`
+  - L83: `expect(abortedResponse.content.length).toBe(0);`
+  - L96: `expect(followUp.stopReason).toBe("stop");`
+  - L97: `expect(followUp.content.length).toBeGreaterThan(0);`
+  - L101: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider Abort", () => {`
+  - L113: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider Abort", () => {`
+  - L130: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider Abort", () => {`
+  - L142: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider Abort", () => {`
+  - L156: `describe.skipIf(!process.env.ANTHROPIC_OAUTH_TOKEN)("Anthropic Provider Abort", () => {`
+  - L168: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider Abort", () => {`
+  - L180: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider Abort", () => {`
+  - L192: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider Abort", () => {`
+  - L204: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider Abort", () => {`
+  - L216: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider Abort", () => {`
+  - L228: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN) Provider Abort", () => {`
+  - L240: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS) Provider Abort", () => {`
+  - L252: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP) Provider Abort", () => {`
+  - L264: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider Abort", () => {`
+  - L276: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider Abort", () => {`
+  - L288: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider Abort", () => {`
+  - L300: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider Abort", () => {`
+  - L313: `it.skipIf(!openaiCodexToken)("should abort mid-stream", { retry: 3 }, async () => {`
+  - L318: `it.skipIf(!openaiCodexToken)("should handle immediate abort", { retry: 3 }, async () => {`
+  - L324: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider Abort", () => {`
+
+### `packages/ai/test/anthropic-adaptive-thinking-models.test.ts`
+- cases: `3`; assertions/gates: `2`
+- case manifest:
+  - L25: `describe("Anthropic adaptive thinking model metadata", () => {`
+  - L26: `it("marks built-in Anthropic Messages models that use adaptive thinking", () => {`
+  - L36: `/(opus[-.](4[-.][678]|5)|sonnet[-.]4[-.]6|sonnet[-.]5|fable[-.]5|kimi-coding\/)/.test(modelId),`
+- assertion/gate manifest:
+  - L33: `expect(flaggedModels).toEqual(expect.arrayContaining([...EXPECTED_CURRENT_ADAPTIVE_THINKING_MODELS].sort()));`
+  - L34: `expect(flaggedModels).toEqual(`
+
+### `packages/ai/test/anthropic-auth-token.test.ts`
+- cases: `7`; assertions/gates: `16`
+- case manifest:
+  - L79: `describe("Anthropic auth token env", () => {`
+  - L80: `it("resolves ANTHROPIC_AUTH_TOKEN as a bearer Authorization header", async () => {`
+  - L101: `it("preserves ANTHROPIC_OAUTH_TOKEN as OAuth-shaped API auth", async () => {`
+  - L121: `it("uses Authorization headers without OAuth-mode request shaping", async () => {`
+  - L135: `it("threads authContext ANTHROPIC_AUTH_TOKEN through request headers", async () => {`
+  - L154: `it("preserves OAuth request shaping for ANTHROPIC_OAUTH_TOKEN", async () => {`
+  - L171: `it("lets explicit request headers override ANTHROPIC_AUTH_TOKEN", async () => {`
+- assertion/gate manifest:
+  - L95: `expect(auth).toEqual({`
+  - L115: `expect(auth).toEqual({`
+  - L127: `expect(mockState.constructorOpts?.apiKey).toBeNull();`
+  - L128: `expect(mockState.constructorOpts?.authToken).toBeNull();`
+  - L130: `expect(headers.Authorization).toBe("Bearer gateway-token");`
+  - L131: `expect(headers["anthropic-beta"] ?? "").not.toContain("oauth-2025-04-20");`
+  - L132: `expect(mockState.createParams?.system).toEqual([expect.objectContaining({ text: "System prompt." })]);`
+  - L146: `expect(mockState.constructorOpts?.apiKey).toBeNull();`
+  - L147: `expect(mockState.constructorOpts?.authToken).toBeNull();`
+  - L149: `expect(headers.Authorization).toBe("Bearer ctx-token");`
+  - L150: `expect(headers["anthropic-beta"] ?? "").not.toContain("oauth-2025-04-20");`
+  - L151: `expect(mockState.createParams?.system).toEqual([expect.objectContaining({ text: "System prompt." })]);`
+  - L165: `expect(mockState.constructorOpts?.apiKey).toBeNull();`
+  - L166: `expect(mockState.constructorOpts?.authToken).toBe("sk-ant-oat-test");`
+  - L168: `expect(headers["anthropic-beta"]).toContain("oauth-2025-04-20");`
+  - L185: `expect(headers.Authorization).toBe("Bearer explicit-token");`
+
+### `packages/ai/test/anthropic-oauth.test.ts`
+- cases: `4`; assertions/gates: `22`
+- case manifest:
+  - L36: `describe.sequential("Anthropic OAuth", () => {`
+  - L41: `it("keeps the localhost redirect_uri for manual callback login", async () => {`
+  - L78: `it("omits scope from refresh token requests", async () => {`
+  - L110: `it("anthropicOAuth.login resolves through the manual_code prompt and aborts it after settling", async () => {`
+- assertion/gate manifest:
+  - L44: `expect(getUrl(input)).toBe("https://platform.claude.com/v1/oauth/token");`
+  - L45: `expect(init?.method).toBe("POST");`
+  - L47: `expect(body.grant_type).toBe("authorization_code");`
+  - L48: `expect(body.code).toBe("manual-code");`
+  - L49: `expect(body.redirect_uri).toBe("http://localhost:53692/callback");`
+  - L73: `expect(credentials.access).toBe("access-token");`
+  - L74: `expect(credentials.refresh).toBe("refresh-token");`
+  - L75: `expect(fetchMock).toHaveBeenCalledOnce();`
+  - L80: `expect(getUrl(input)).toBe("https://platform.claude.com/v1/oauth/token");`
+  - L81: `expect(init?.method).toBe("POST");`
+  - L83: `expect(body.grant_type).toBe("refresh_token");`
+  - L84: `expect(body.client_id).toBeTruthy();`
+  - L85: `expect(body.refresh_token).toBe("refresh-token");`
+  - L86: `expect(body).not.toHaveProperty("scope");`
+  - L105: `expect(credentials.access).toBe("new-access-token");`
+  - L106: `expect(credentials.refresh).toBe("new-refresh-token");`
+  - L107: `expect(fetchMock).toHaveBeenCalledOnce();`
+  - L137: `expect(credential.type).toBe("oauth");`
+  - L138: `expect(credential.access).toBe("access");`
+  - L139: `expect(events.some((e) => e.type === "auth_url")).toBe(true);`
+  - L140: `expect(prompts.some((p) => p.type === "manual_code")).toBe(true);`
+  - L142: `expect(manualSignal?.aborted).toBe(true);`
+
+### `packages/ai/test/anthropic-sse-parsing.test.ts`
+- cases: `7`; assertions/gates: `19`
+- case manifest:
+  - L81: `describe("Anthropic raw SSE parsing", () => {`
+  - L82: `it("repairs malformed SSE JSON and malformed streamed tool JSON", async () => {`
+  - L169: `it("preserves content from content_block_start events", async () => {`
+  - L267: `it("preserves refusal stop details from message_delta", async () => {`
+  - L326: `it("preserves sensitive stop reasons with a descriptive error message", async () => {`
+  - L376: `it("treats message_delta without usage as a no-op for usage accumulation", async () => {`
+  - L404: `it("ignores unknown SSE events after message_stop", async () => {`
+- assertion/gate manifest:
+  - L158: `expect(result.stopReason).toBe("toolUse");`
+  - L159: `expect(result.errorMessage).toBeUndefined();`
+  - L162: `expect(toolCall).toBeDefined();`
+  - L163: `expect(toolCall?.arguments).toEqual({`
+  - L257: `expect(result.content).toEqual([`
+  - L321: `expect(result.stopReason).toBe("error");`
+  - L322: `expect(result.rawStopReason).toBe("refusal");`
+  - L323: `expect(result.errorMessage).toBe(explanation);`
+  - L371: `expect(result.stopReason).toBe("error");`
+  - L372: `expect(result.rawStopReason).toBe("sensitive");`
+  - L373: `expect(result.errorMessage).toBe("Provider stopped with: sensitive");`
+  - L397: `expect(result.stopReason).toBe("stop");`
+  - L398: `expect(result.errorMessage).toBeUndefined();`
+  - L399: `expect(result.content).toEqual([{ type: "text", text: "Hello" }]);`
+  - L400: `expect(result.usage.input).toBe(12);`
+  - L401: `expect(result.usage.totalTokens).toBe(12);`
+  - L420: `expect(result.stopReason).toBe("stop");`
+  - L421: `expect(result.errorMessage).toBeUndefined();`
+  - L422: `expect(result.content).toEqual([{ type: "text", text: "Hello" }]);`
+
+### `packages/ai/test/baseten-models.test.ts`
+- cases: `6`; assertions/gates: `12`
+- case manifest:
+  - L16: `describe("Baseten models", () => {`
+  - L17: `it("registers GLM 5.2 as the default OpenAI-compatible reasoning model", () => {`
+  - L57: `it("models Kimi K2.6 reasoning as an explicit off/on toggle", async () => {`
+  - L94: `it("sends Baseten chat_template_args with reasoning effort", async () => {`
+  - L115: `it("disables Baseten opt-in reasoning when thinking is off", async () => {`
+  - L135: `it("resolves BASETEN_API_KEY from the environment", () => {`
+- assertion/gate manifest:
+  - L20: `expect(model).toMatchObject({`
+  - L61: `expect(model.thinkingLevelMap).toEqual({`
+  - L70: `expect(model.compat).toMatchObject({`
+  - L75: `expect(getSupportedThinkingLevels(model)).toEqual(["off", "high"]);`
+  - L90: `expect(payload?.chat_template_args).toEqual({ enable_thinking: true });`
+  - L91: `expect(payload?.reasoning_effort).toBeUndefined();`
+  - L111: `expect(payload?.chat_template_args).toEqual({ enable_thinking: true });`
+  - L112: `expect(payload?.reasoning_effort).toBe("high");`
+  - L131: `expect(payload?.chat_template_args).toEqual({ enable_thinking: false });`
+  - L132: `expect(payload?.reasoning_effort).toBe("none");`
+  - L138: `expect(findEnvKeys("baseten")).toEqual(["BASETEN_API_KEY"]);`
+  - L139: `expect(getEnvApiKey("baseten")).toBe("test-baseten-key");`
+
+### `packages/ai/test/bedrock-error-metadata.test.ts`
+- cases: `10`; assertions/gates: `16`
+- case manifest:
+  - L102: `describe("bedrock failure diagnostics", () => {`
+  - L103: `it("records status, error code and request id for a non-2xx from client.send()", async () => {`
+  - L120: `it("leaves errorMessage untouched so retry classification is unaffected", async () => {`
+  - L132: `it("reports only the request id for a modeled mid-stream exception", async () => {`
+  - L142: `it("captures the error code for an unmodeled mid-stream error", async () => {`
+  - L154: `it("does not report a transport failure name as a provider error code", async () => {`
+  - L163: `it("emits no diagnostic when the failure carries no provider metadata", async () => {`
+  - L173: `it("emits no diagnostic for an aborted turn", async () => {`
+  - L189: `it("drops header-derived values that exceed the length bound", async () => {`
+  - L200: `it("omits the SDK's Unknown placeholder instead of reporting it as a code", async () => {`
+- assertion/gate manifest:
+  - L114: `expect(message.stopReason).toBe("error");`
+  - L115: `expect(diagnostic?.details).toEqual({ status: 400, errorCode: "ValidationException", requestId: REQUEST_ID });`
+  - L116: `expect(diagnostic?.error).toBeUndefined();`
+  - L117: `expect(Object.keys(diagnostic ?? {}).sort()).toEqual(["details", "timestamp", "type"]);`
+  - L129: `expect((await runBedrock()).errorMessage).toBe(`Validation error: ${VALIDATION_MESSAGE}`);`
+  - L138: `expect(message.stopReason).toBe("error");`
+  - L139: `expect(findDiagnostic(message)?.details).toEqual({ requestId: REQUEST_ID });`
+  - L148: `expect(findDiagnostic(await runBedrock())?.details).toEqual({`
+  - L160: `expect(findDiagnostic(await runBedrock())?.details).toEqual({ requestId: REQUEST_ID });`
+  - L168: `expect(message.stopReason).toBe("error");`
+  - L169: `expect(message.errorMessage).toBe("socket hang up");`
+  - L170: `expect(findDiagnostic(message)).toBeUndefined();`
+  - L185: `expect(message.stopReason).toBe("aborted");`
+  - L186: `expect(findDiagnostic(message)).toBeUndefined();`
+  - L197: `expect(findDiagnostic(await runBedrock())?.details).toEqual({ status: 400 });`
+  - L207: `expect(findDiagnostic(await runBedrock())?.details).toEqual({`
+
+### `packages/ai/test/context-overflow.test.ts`
+- cases: `64`; assertions/gates: `120`
+- case manifest:
+  - L95: `describe("Context overflow error handling", () => {`
+  - L96: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic (API Key)", () => {`
+  - L97: `it("claude-haiku-4-5 - should detect overflow via isContextOverflow", async () => {`
+  - L108: `describe.skipIf(!process.env.ANTHROPIC_OAUTH_TOKEN)("Anthropic (OAuth)", () => {`
+  - L109: `it("claude-sonnet-4 - should detect overflow via isContextOverflow", async () => {`
+  - L125: `describe("GitHub Copilot (OAuth)", () => {`
+  - L127: `it.skipIf(!githubCopilotToken)(`
+  - L143: `it.skipIf(!githubCopilotToken)(`
+  - L163: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions", () => {`
+  - L164: `it("gpt-4o-mini - should detect overflow via isContextOverflow", async () => {`
+  - L176: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses", () => {`
+  - L177: `it("gpt-4o - should detect overflow via isContextOverflow", async () => {`
+  - L188: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses", () => {`
+  - L189: `it("gpt-4o-mini - should detect overflow via isContextOverflow", async () => {`
+  - L205: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google", () => {`
+  - L206: `it("gemini-2.0-flash - should detect overflow via isContextOverflow", async () => {`
+  - L229: `describe("OpenAI Codex (OAuth)", () => {`
+  - L230: `it.skipIf(!openaiCodexToken)(`
+  - L249: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock", () => {`
+  - L250: `it("claude-sonnet-4-5 - should detect overflow via isContextOverflow", async () => {`
+  - L265: `describe.skipIf(!process.env.XAI_API_KEY)("xAI", () => {`
+  - L266: `it("grok-4.3 - should detect overflow via isContextOverflow", async () => {`
+  - L282: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq", () => {`
+  - L283: `it("llama-3.3-70b-versatile - should detect overflow via isContextOverflow", async () => {`
+  - L299: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras", () => {`
+  - L300: `it("available model - should detect overflow via isContextOverflow", async () => {`
+  - L324: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face", () => {`
+  - L325: `it("Kimi-K2.5 - should detect overflow via isContextOverflow", async () => {`
+  - L340: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI", () => {`
+  - L341: `it("Kimi-K2.6 - should detect overflow via isContextOverflow", async () => {`
+  - L357: `describe.skipIf(!process.env.ZAI_API_KEY)("z.ai", () => {`
+  - L358: `it("glm-5.2 - should detect overflow via isContextOverflow when z.ai reports it", async () => {`
+  - L387: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral", () => {`
+  - L388: `it("devstral-medium-latest - should detect overflow via isContextOverflow", async () => {`
+  - L404: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax", () => {`
+  - L405: `it("MiniMax-M2.7 - should detect overflow via isContextOverflow", async () => {`
+  - L419: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing)", () => {`
+  - L423: `it("mimo-v2.5-pro - should detect overflow via isContextOverflow", async () => {`
+  - L434: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN)", () => {`
+  - L435: `it("mimo-v2.5-pro - should detect overflow via isContextOverflow", async () => {`
+  - L446: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS)", () => {`
+  - L447: `it("mimo-v2.5-pro - should detect overflow via isContextOverflow", async () => {`
+  - L458: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP)", () => {`
+  - L459: `it("mimo-v2.5-pro - should detect overflow via isContextOverflow", async () => {`
+  - L470: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan", () => {`
+  - L471: `it("qwen3.7-max - should detect overflow via isContextOverflow", async () => {`
+  - L482: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN)", () => {`
+  - L483: `it("qwen3.7-max - should detect overflow via isContextOverflow", async () => {`
+  - L498: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding", () => {`
+  - L499: `it("kimi-for-coding - should detect overflow via isContextOverflow", async () => {`
+  - L513: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway", () => {`
+  - L514: `it("google/gemini-2.5-flash via AI Gateway - should detect overflow via isContextOverflow", async () => {`
+  - L529: `describe.skipIf(!process.env.OPENROUTER_API_KEY)("OpenRouter", () => {`
+  - L531: `it("anthropic/claude-sonnet-4 via OpenRouter - should detect overflow via isContextOverflow", async () => {`
+  - L542: `it("deepseek/deepseek-v3.2 via OpenRouter - should detect overflow via isContextOverflow", async () => {`
+  - L553: `it("mistralai/mistral-large-2512 via OpenRouter - should detect overflow via isContextOverflow", async () => {`
+  - L564: `it("google/gemini-2.5-flash via OpenRouter - should detect overflow via isContextOverflow", async () => {`
+  - L575: `it("meta-llama/llama-4-scout via OpenRouter - should detect overflow via isContextOverflow", async () => {`
+  - L601: `describe.skipIf(!ollamaInstalled)("Ollama (local)", () => {`
+  - L663: `it("gpt-oss:20b - should detect overflow via isContextOverflow (ollama silently truncates)", async () => {`
+  - L695: `describe.skipIf(!lmStudioRunning)("LM Studio (local)", () => {`
+  - L696: `it("should detect overflow via isContextOverflow", async () => {`
+  - L736: `describe.skipIf(!llamaCppRunning)("llama.cpp (local)", () => {`
+  - L737: `it("should detect overflow via isContextOverflow", async () => {`
+- assertion/gate manifest:
+  - L96: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic (API Key)", () => {`
+  - L102: `expect(result.stopReason).toBe("error");`
+  - L103: `expect(result.errorMessage).toMatch(/prompt is too long/i);`
+  - L104: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L108: `describe.skipIf(!process.env.ANTHROPIC_OAUTH_TOKEN)("Anthropic (OAuth)", () => {`
+  - L114: `expect(result.stopReason).toBe("error");`
+  - L115: `expect(result.errorMessage).toMatch(/prompt is too long/i);`
+  - L116: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L127: `it.skipIf(!githubCopilotToken)(`
+  - L135: `expect(result.stopReason).toBe("error");`
+  - L136: `expect(result.errorMessage).toMatch(/exceeds the limit of \d+/i);`
+  - L137: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L143: `it.skipIf(!githubCopilotToken)(`
+  - L150: `expect(result.stopReason).toBe("error");`
+  - L151: `expect(result.errorMessage).toMatch(/exceeds the limit of \d+|input is too long/i);`
+  - L152: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L163: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions", () => {`
+  - L170: `expect(result.stopReason).toBe("error");`
+  - L171: `expect(result.errorMessage).toMatch(/maximum context length/i);`
+  - L172: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L176: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses", () => {`
+  - L182: `expect(result.stopReason).toBe("error");`
+  - L183: `expect(result.errorMessage).toMatch(/exceeds the context window/i);`
+  - L184: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L188: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses", () => {`
+  - L194: `expect(result.stopReason).toBe("error");`
+  - L195: `expect(result.errorMessage).toMatch(/context|maximum/i);`
+  - L196: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L205: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google", () => {`
+  - L211: `expect(result.stopReason).toBe("error");`
+  - L212: `expect(result.errorMessage).toMatch(/input token count.*exceeds the maximum/i);`
+  - L213: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L230: `it.skipIf(!openaiCodexToken)(`
+  - L237: `expect(result.stopReason).toBe("error");`
+  - L238: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L249: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock", () => {`
+  - L255: `expect(result.stopReason).toBe("error");`
+  - L256: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L265: `describe.skipIf(!process.env.XAI_API_KEY)("xAI", () => {`
+  - L271: `expect(result.stopReason).toBe("error");`
+  - L272: `expect(result.errorMessage).toMatch(/maximum prompt length is \d+/i);`
+  - L273: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L282: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq", () => {`
+  - L288: `expect(result.stopReason).toBe("error");`
+  - L289: `expect(result.errorMessage).toMatch(/reduce the length of the messages/i);`
+  - L290: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L299: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras", () => {`
+  - L312: `expect(result.stopReason).toBe("error");`
+  - L314: `expect(result.errorMessage).toMatch(/4(00|13|29).*\(no body\)/i);`
+  - L315: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L324: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face", () => {`
+  - L330: `expect(result.stopReason).toBe("error");`
+  - L331: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L340: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI", () => {`
+  - L346: `expect(result.stopReason).toBe("error");`
+  - L347: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L357: `describe.skipIf(!process.env.ZAI_API_KEY)("z.ai", () => {`
+  - L369: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L375: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L387: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral", () => {`
+  - L393: `expect(result.stopReason).toBe("error");`
+  - L394: `expect(result.errorMessage).toMatch(/too large for model with \d+ maximum context length/i);`
+  - L395: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L404: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax", () => {`
+  - L410: `expect(result.stopReason).toBe("error");`
+  - L411: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L419: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing)", () => {`
+  - L428: `expect(result.stopReason).toBe("length");`
+  - L429: `expect(result.usage.output).toBe(0);`
+  - L430: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L434: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN)", () => {`
+  - L440: `expect(result.stopReason).toBe("length");`
+  - L441: `expect(result.usage.output).toBe(0);`
+  - L442: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L446: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS)", () => {`
+  - L452: `expect(result.stopReason).toBe("length");`
+  - L453: `expect(result.usage.output).toBe(0);`
+  - L454: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L458: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP)", () => {`
+  - L464: `expect(result.stopReason).toBe("length");`
+  - L465: `expect(result.usage.output).toBe(0);`
+  - L466: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L470: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan", () => {`
+  - L476: `expect(result.stopReason).toBe("error");`
+  - L477: `expect(result.errorMessage).toMatch(/input length/i);`
+  - L478: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L482: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN)", () => {`
+  - L488: `expect(result.stopReason).toBe("error");`
+  - L489: `expect(result.errorMessage).toMatch(/input length/i);`
+  - L490: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L498: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding", () => {`
+  - L504: `expect(result.stopReason).toBe("error");`
+  - L505: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L513: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway", () => {`
+  - L519: `expect(result.stopReason).toBe("error");`
+  - L520: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L529: `describe.skipIf(!process.env.OPENROUTER_API_KEY)("OpenRouter", () => {`
+  - L536: `expect(result.stopReason).toBe("error");`
+  - L537: `expect(result.errorMessage).toMatch(/maximum context length is \d+ tokens/i);`
+  - L538: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L547: `expect(result.stopReason).toBe("error");`
+  - L548: `expect(result.errorMessage).toMatch(/maximum context length is \d+ tokens/i);`
+  - L549: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L558: `expect(result.stopReason).toBe("error");`
+  - L559: `expect(result.errorMessage).toMatch(/maximum context length is \d+ tokens/i);`
+  - L560: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L569: `expect(result.stopReason).toBe("error");`
+  - L570: `expect(result.errorMessage).toMatch(/maximum context length is \d+ tokens/i);`
+  - L571: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L580: `expect(result.stopReason).toBe("error");`
+  - L581: `expect(result.errorMessage).toMatch(/maximum context length is \d+ tokens/i);`
+  - L582: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L601: `describe.skipIf(!ollamaInstalled)("Ollama (local)", () => {`
+  - L676: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L695: `describe.skipIf(!lmStudioRunning)("LM Studio (local)", () => {`
+  - L713: `expect(result.stopReason).toBe("error");`
+  - L714: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+  - L736: `describe.skipIf(!llamaCppRunning)("llama.cpp (local)", () => {`
+  - L755: `expect(result.stopReason).toBe("error");`
+  - L756: `expect(isContextOverflow(result.response, model.contextWindow)).toBe(true);`
+
+### `packages/ai/test/cross-provider-handoff.test.ts`
+- cases: `3`; assertions/gates: `5`
+- case manifest:
+  - L335: `describe.skipIf(!hasAnyApiKey())("Cross-Provider Handoff", () => {`
+  - L375: `it.skipIf(!hasAnyApiKey())("should have at least 2 fixtures to test handoffs", () => {`
+  - L379: `it.skipIf(!hasAnyApiKey())(`
+- assertion/gate manifest:
+  - L335: `describe.skipIf(!hasAnyApiKey())("Cross-Provider Handoff", () => {`
+  - L375: `it.skipIf(!hasAnyApiKey())("should have at least 2 fixtures to test handoffs", () => {`
+  - L376: `expect(Object.keys(contexts).length).toBeGreaterThanOrEqual(2);`
+  - L379: `it.skipIf(!hasAnyApiKey())(`
+  - L503: `expect(failures.length).toBe(0);`
+
+### `packages/ai/test/deferred-tools.test.ts`
+- cases: `21`; assertions/gates: `44`
+- case manifest:
+  - L179: `describe("deferred tools", () => {`
+  - L180: `it("loads an Anthropic tool at its tool-result marker", async () => {`
+  - L188: `it("preserves tool output as sibling content after emitting references", async () => {`
+  - L223: `it("loads a tool introduced by OpenAI history after switching to Anthropic", async () => {`
+  - L236: `it("does not resurrect a marked tool missing from Context.tools", async () => {`
+  - L245: `it("keeps a tool immediate when it was used before its marker", async () => {`
+  - L255: `it("normalizes OAuth names before checking prior tool usage", async () => {`
+  - L271: `it("matches OAuth-canonicalized markers to active tools", async () => {`
+  - L287: `it("deduplicates active tools after OAuth canonicalization", async () => {`
+  - L301: `it("uses the normal tool list when Anthropic tool references are unsupported", async () => {`
+  - L315: `it("keeps one immediate Anthropic tool when every current tool is marked", async () => {`
+  - L325: `it("supports explicit Anthropic compatibility overrides", async () => {`
+  - L337: `it("serializes Kimi deferred tools as system tool definitions", async () => {`
+  - L349: `it("emits Kimi deferred schemas after all tool results in a batch", () => {`
+  - L389: `it("leaves OpenAI Completions tools unchanged without Kimi mode", async () => {`
+  - L397: `it("loads an OpenAI Responses tool through client tool search", async () => {`
+  - L411: `it.each(["gpt-5.2", "gpt-5.4-nano", "gpt-5.5-pro"] as const)(`
+  - L422: `it("uses the normal tool list when OpenAI tool search is explicitly disabled", async () => {`
+  - L435: `it("uses tool search only for supported Codex models", async () => {`
+  - L454: `it("leaves providers without deferred loading unchanged", async () => {`
+  - L460: `it("counts definitions marked after the latest usage checkpoint", () => {`
+- assertion/gate manifest:
+  - L184: `expect(payload.tools).toMatchObject([{ name: "base_tool" }, { name: "late_tool", defer_loading: true }]);`
+  - L185: `expect(findAnthropicToolResult(payload).content).toEqual([{ type: "tool_reference", tool_name: "late_tool" }]);`
+  - L208: `expect(findAnthropicToolResultContent(payload)).toMatchObject([`
+  - L232: `expect(payload.tools).toMatchObject([{ name: "base_tool" }, { name: "late_tool", defer_loading: true }]);`
+  - L233: `expect(findAnthropicToolResult(payload).content).toEqual([{ type: "tool_reference", tool_name: "late_tool" }]);`
+  - L240: `expect(payload.tools?.map((tool) => tool.name)).toEqual(["base_tool"]);`
+  - L242: `expect(Array.isArray(content) && content.some((block) => block.type === "tool_reference")).toBe(false);`
+  - L251: `expect(payload.tools?.map((tool) => tool.name)).toEqual(["base_tool", "late_tool"]);`
+  - L252: `expect(payload.tools?.every((tool) => !tool.defer_loading)).toBe(true);`
+  - L265: `expect(payload.tools?.map((tool) => tool.name)).toEqual(["base_tool", "Read"]);`
+  - L266: `expect(payload.tools?.every((tool) => !tool.defer_loading)).toBe(true);`
+  - L268: `expect(Array.isArray(content) && content.some((block) => block.type === "tool_reference")).toBe(false);`
+  - L279: `expect(payload.tools).toMatchObject([{ name: "base_tool" }, { name: "Read", defer_loading: true }]);`
+  - L281: `expect(`
+  - L298: `expect(payload.tools).toMatchObject([{ name: "Read", description: "Canonical definition" }]);`
+  - L310: `expect(payload.tools?.map((tool) => tool.name)).toEqual(["base_tool", "late_tool"]);`
+  - L311: `expect(payload.tools?.every((tool) => !tool.defer_loading)).toBe(true);`
+  - L319: `expect(payload.tools).toMatchObject([{ name: "late_tool" }]);`
+  - L320: `expect(payload.tools?.[0]?.defer_loading).toBeUndefined();`
+  - L322: `expect(Array.isArray(content) && content.some((block) => block.type === "tool_reference")).toBe(false);`
+  - L334: `expect(payload.tools?.find((tool) => tool.name === "late_tool")?.defer_loading).toBe(true);`
+  - L341: `expect(payload.tools?.map((tool) => tool.function.name)).toEqual(["base_tool"]);`
+  - L344: `expect(toolResultIndex).toBeGreaterThanOrEqual(0);`
+  - L345: `expect(systemToolIndex).toBeGreaterThan(toolResultIndex);`
+  - L346: `expect(payload.messages[systemToolIndex]?.tools?.map((tool) => tool.function.name)).toEqual(["late_tool"]);`
+  - L382: `expect(messages.map((message) => message.role)).toEqual(["user", "assistant", "tool", "tool", "system", "user"]);`
+  - L383: `expect((messages[4] as { tools?: KimiTool[] }).tools?.map((tool) => tool.function.name)).toEqual([`
+  - L393: `expect(payload.tools?.map((tool) => tool.function.name)).toEqual(["base_tool", "late_tool"]);`
+  - L394: `expect(payload.messages.some((message) => message.tools !== undefined)).toBe(false);`
+  - L405: `expect(openAIToolNames(payload)).toEqual(["base_tool"]);`
+  - L406: `expect(searchCall).toMatchObject({ execution: "client", status: "completed" });`
+  - L407: `expect(searchOutput?.call_id).toBe(searchCall?.call_id);`
+  - L408: `expect(searchOutput?.tools).toMatchObject([{ type: "function", name: "late_tool", defer_loading: true }]);`
+  - L417: `expect(openAIToolNames(payload)).toEqual(["base_tool", "late_tool"]);`
+  - L418: `expect(payload.input?.some((item) => item.type === "tool_search_output")).toBe(false);`
+  - L431: `expect(openAIToolNames(payload)).toEqual(["base_tool", "late_tool"]);`
+  - L432: `expect(payload.input?.some((item) => item.type === "tool_search_output")).toBe(false);`
+  - L448: `expect(openAIToolNames(supported)).toEqual(["base_tool"]);`
+  - L449: `expect(supported.input?.some((item) => item.type === "tool_search_output")).toBe(true);`
+  - L450: `expect(openAIToolNames(unsupported)).toEqual(["base_tool", "late_tool"]);`
+  - L451: `expect(unsupported.input?.some((item) => item.type === "tool_search_output")).toBe(false);`
+  - L457: `expect(openAIToolNames(payload)).toEqual(["base_tool", "late_tool"]);`
+  - L481: `expect(marked.tokens).toBeGreaterThan(plain.tokens + 500);`
+  - L482: `expect(marked.trailingTokens).toBeGreaterThan(plain.trailingTokens + 500);`
+
+### `packages/ai/test/empty.test.ts`
+- cases: `145`; assertions/gates: `58`
+- case manifest:
+  - L146: `describe("AI Providers Empty Message Tests", () => {`
+  - L147: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider Empty Messages", () => {`
+  - L150: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L154: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L158: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L162: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L167: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider Empty Messages", () => {`
+  - L170: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L174: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L178: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L182: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L187: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider Empty Messages", () => {`
+  - L190: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L194: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L198: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L202: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L207: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider Empty Messages", () => {`
+  - L212: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L216: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L220: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L224: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L229: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider Empty Messages", () => {`
+  - L232: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L236: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L240: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L244: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L249: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider Empty Messages", () => {`
+  - L252: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L256: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L260: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L264: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L269: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider Empty Messages", () => {`
+  - L272: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L276: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L280: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L284: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L289: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider Empty Messages", () => {`
+  - L292: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L296: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L300: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L304: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L309: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI Provider Empty Messages", () => {`
+  - L312: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L316: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L320: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L324: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L329: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway Provider Empty Messages", () => {`
+  - L332: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L336: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L340: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L344: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L349: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider Empty Messages", () => {`
+  - L352: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L356: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L360: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L364: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L369: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider Empty Messages", () => {`
+  - L372: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L376: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L380: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L384: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L389: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider Empty Messages", () => {`
+  - L393: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L397: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L401: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L405: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L410: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider Empty Messages", () => {`
+  - L413: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L417: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L421: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L425: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L430: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider Empty Messages", () => {`
+  - L433: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L437: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L441: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L445: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L450: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider Empty Messages", () => {`
+  - L453: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L457: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L461: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L465: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L470: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider Empty Messages", () => {`
+  - L473: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L477: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L481: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L485: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L490: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)(`
+  - L495: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L499: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L503: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L507: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L513: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)(`
+  - L518: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L522: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L526: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L530: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L536: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)(`
+  - L541: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L545: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L549: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L553: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L559: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider Empty Messages", () => {`
+  - L562: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L566: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L570: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L574: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L579: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider Empty Messages", () => {`
+  - L582: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L586: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L590: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L594: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L599: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider Empty Messages", () => {`
+  - L602: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L606: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L610: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L614: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L619: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider Empty Messages", () => {`
+  - L622: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L626: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L630: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L634: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L639: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider Empty Messages", () => {`
+  - L642: `it("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L646: `it("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L650: `it("should handle whitespace-only content", { retry: 3, timeout: 30000 }, async () => {`
+  - L654: `it("should handle empty assistant message in conversation", { retry: 3, timeout: 30000 }, async () => {`
+  - L663: `describe("Anthropic OAuth Provider Empty Messages", () => {`
+  - L666: `it.skipIf(!anthropicOAuthToken)("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L670: `it.skipIf(!anthropicOAuthToken)("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L674: `it.skipIf(!anthropicOAuthToken)(`
+  - L682: `it.skipIf(!anthropicOAuthToken)(`
+  - L691: `describe("GitHub Copilot Provider Empty Messages", () => {`
+  - L692: `it.skipIf(!githubCopilotToken)(`
+  - L701: `it.skipIf(!githubCopilotToken)(`
+  - L710: `it.skipIf(!githubCopilotToken)(`
+  - L719: `it.skipIf(!githubCopilotToken)(`
+  - L728: `it.skipIf(!githubCopilotToken)(`
+  - L737: `it.skipIf(!githubCopilotToken)(`
+  - L746: `it.skipIf(!githubCopilotToken)(`
+  - L755: `it.skipIf(!githubCopilotToken)(`
+  - L765: `describe("OpenAI Codex Provider Empty Messages", () => {`
+  - L766: `it.skipIf(!openaiCodexToken)(`
+  - L775: `it.skipIf(!openaiCodexToken)(`
+  - L784: `it.skipIf(!openaiCodexToken)(`
+  - L793: `it.skipIf(!openaiCodexToken)(`
+- assertion/gate manifest:
+  - L35: `expect(response).toBeDefined();`
+  - L36: `expect(response.role).toBe("assistant");`
+  - L39: `expect(response.errorMessage).toBeDefined();`
+  - L41: `expect(response.content).toBeDefined();`
+  - L59: `expect(response).toBeDefined();`
+  - L60: `expect(response.role).toBe("assistant");`
+  - L64: `expect(response.errorMessage).toBeDefined();`
+  - L66: `expect(response.content).toBeDefined();`
+  - L84: `expect(response).toBeDefined();`
+  - L85: `expect(response.role).toBe("assistant");`
+  - L89: `expect(response.errorMessage).toBeDefined();`
+  - L91: `expect(response.content).toBeDefined();`
+  - L134: `expect(response).toBeDefined();`
+  - L135: `expect(response.role).toBe("assistant");`
+  - L139: `expect(response.errorMessage).toBeDefined();`
+  - L141: `expect(response.content).toBeDefined();`
+  - L142: `expect(response.content.length).toBeGreaterThan(0);`
+  - L147: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider Empty Messages", () => {`
+  - L167: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider Empty Messages", () => {`
+  - L187: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider Empty Messages", () => {`
+  - L207: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider Empty Messages", () => {`
+  - L229: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider Empty Messages", () => {`
+  - L249: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider Empty Messages", () => {`
+  - L269: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider Empty Messages", () => {`
+  - L289: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider Empty Messages", () => {`
+  - L309: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI Provider Empty Messages", () => {`
+  - L329: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway Provider Empty Messages", () => {`
+  - L349: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider Empty Messages", () => {`
+  - L369: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider Empty Messages", () => {`
+  - L389: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider Empty Messages", () => {`
+  - L410: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider Empty Messages", () => {`
+  - L430: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider Empty Messages", () => {`
+  - L450: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider Empty Messages", () => {`
+  - L470: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider Empty Messages", () => {`
+  - L490: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)(`
+  - L513: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)(`
+  - L536: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)(`
+  - L559: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider Empty Messages", () => {`
+  - L579: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider Empty Messages", () => {`
+  - L599: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider Empty Messages", () => {`
+  - L619: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider Empty Messages", () => {`
+  - L639: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider Empty Messages", () => {`
+  - L666: `it.skipIf(!anthropicOAuthToken)("should handle empty content array", { retry: 3, timeout: 30000 }, async () => {`
+  - L670: `it.skipIf(!anthropicOAuthToken)("should handle empty string content", { retry: 3, timeout: 30000 }, async () => {`
+  - L674: `it.skipIf(!anthropicOAuthToken)(`
+  - L682: `it.skipIf(!anthropicOAuthToken)(`
+  - L692: `it.skipIf(!githubCopilotToken)(`
+  - L701: `it.skipIf(!githubCopilotToken)(`
+  - L710: `it.skipIf(!githubCopilotToken)(`
+  - L719: `it.skipIf(!githubCopilotToken)(`
+  - L728: `it.skipIf(!githubCopilotToken)(`
+  - L737: `it.skipIf(!githubCopilotToken)(`
+  - L746: `it.skipIf(!githubCopilotToken)(`
+  - L755: `it.skipIf(!githubCopilotToken)(`
+  - L766: `it.skipIf(!openaiCodexToken)(`
+  - L775: `it.skipIf(!openaiCodexToken)(`
+  - L784: `it.skipIf(!openaiCodexToken)(`
+  - L793: `it.skipIf(!openaiCodexToken)(`
+
+### `packages/ai/test/error-body.test.ts`
+- cases: `18`; assertions/gates: `40`
+- case manifest:
+  - L11: `describe("normalizeProviderError", () => {`
+  - L12: `it("extracts status and body from a Mistral-shaped error", () => {`
+  - L25: `it("reads the parsed body off an openai APIError when the message is opaque", () => {`
+  - L40: `it("preserves the message when @google/genai already folds the body into it", () => {`
+  - L53: `it("extracts status and body from a Bedrock-shaped ServiceException", () => {`
+  - L67: `it("ignores a Bedrock response stream instead of serializing its internals", () => {`
+  - L88: `it("ignores a class-instance response body without a pipe method instead of serializing it", () => {`
+  - L110: `it("ignores a class-instance `error` field instead of serializing it", () => {`
+  - L127: `it("still surfaces a plain parsed JSON body object", () => {`
+  - L139: `it("JSON-stringifies a non-Error thrown value", () => {`
+  - L148: `it("treats an empty parsed body object as no body", () => {`
+  - L160: `it("truncates the body at the cap", () => {`
+  - L173: `it("sets messageCarriesBody when the message already contains the extracted body", () => {`
+  - L185: `describe("formatProviderError", () => {`
+  - L186: `it("surfaces status and body without a prefix", () => {`
+  - L201: `it("applies a provider prefix with status and body", () => {`
+  - L214: `it("preserves the message (with prefix + status) when it already carries the body", () => {`
+  - L221: `it("returns the bare message for a non-Error value", () => {`
+- assertion/gate manifest:
+  - L20: `expect(norm.status).toBe(403);`
+  - L21: `expect(norm.body).toBe('{"error":"blocked by gateway WAF"}');`
+  - L22: `expect(norm.messageCarriesBody).toBe(false);`
+  - L35: `expect(norm.status).toBe(403);`
+  - L36: `expect(norm.body).toBe('{"error":"blocked by gateway WAF"}');`
+  - L37: `expect(norm.messageCarriesBody).toBe(false);`
+  - L48: `expect(norm.status).toBe(403);`
+  - L49: `expect(norm.messageCarriesBody).toBe(true);`
+  - L50: `expect(norm.message).toBe(JSON.stringify(body));`
+  - L62: `expect(norm.status).toBe(403);`
+  - L63: `expect(norm.body).toBe('{"message":"blocked by gateway WAF"}');`
+  - L64: `expect(norm.messageCarriesBody).toBe(false);`
+  - L82: `expect(norm.status).toBe(400);`
+  - L83: `expect(norm.body).toBeUndefined();`
+  - L84: `expect(norm.message).toContain("on-demand throughput isn't supported");`
+  - L85: `expect(norm.messageCarriesBody).toBe(true);`
+  - L104: `expect(norm.status).toBe(400);`
+  - L105: `expect(norm.body).toBeUndefined();`
+  - L106: `expect(norm.message).toContain("Input is too long");`
+  - L107: `expect(norm.messageCarriesBody).toBe(true);`
+  - L122: `expect(norm.body).toBeUndefined();`
+  - L123: `expect(norm.message).toBe("TLS handshake failed");`
+  - L124: `expect(norm.messageCarriesBody).toBe(true);`
+  - L135: `expect(norm.body).toBe('{"message":"schema validation failed","field":"tools[0]"}');`
+  - L136: `expect(norm.messageCarriesBody).toBe(false);`
+  - L142: `expect(norm.status).toBeUndefined();`
+  - L143: `expect(norm.body).toBeUndefined();`
+  - L144: `expect(norm.message).toBe('{"reason":"boom"}');`
+  - L145: `expect(norm.messageCarriesBody).toBe(false);`
+  - L156: `expect(norm.body).toBeUndefined();`
+  - L157: `expect(norm.messageCarriesBody).toBe(true);`
+  - L169: `expect(norm.body).toContain("... [truncated 50 chars]");`
+  - L170: `expect(norm.body?.length).toBeLessThan(longBody.length);`
+  - L181: `expect(norm.messageCarriesBody).toBe(true);`
+  - L196: `expect(formatted).toContain("403");`
+  - L197: `expect(formatted).toContain("blocked by gateway WAF");`
+  - L198: `expect(formatted).not.toBe("403 status code (no body)");`
+  - L209: `expect(formatProviderError(norm, "OpenAI API error")).toBe(`
+  - L218: `expect(formatProviderError(norm, "OpenAI API error")).toBe(`OpenAI API error (403): ${body}`);`
+  - L224: `expect(formatProviderError(norm)).toBe('{"reason":"boom"}');`
+
+### `packages/ai/test/fireworks-models.test.ts`
+- cases: `16`; assertions/gates: `43`
+- case manifest:
+  - L20: `describe("Fireworks models", () => {`
+  - L21: `it("registers the default Kimi K2.6 model via Anthropic-compatible Messages API", () => {`
+  - L40: `it("registers the Fire Pass turbo router model", () => {`
+  - L51: `it("aligns GLM 5.2 Fast with GLM 5.2's OpenAI-compatible config", () => {`
+  - L61: `it.each(["accounts/fireworks/models/glm-5p2", "accounts/fireworks/routers/glm-5p2-fast"] as const)(`
+  - L86: `it("routes Kimi K3 through the OpenAI-compatible API with native effort controls", async () => {`
+  - L135: `it("resolves FIREWORKS_API_KEY from the environment", () => {`
+  - L142: `it("sets Fireworks-specific compat for session affinity and unsupported tool fields", () => {`
+  - L277: `describe("Fireworks Anthropic session affinity and tool compat", () => {`
+  - L278: `it("sends x-session-affinity header for Fireworks models", async () => {`
+  - L288: `it("omits x-session-affinity header for native Anthropic models", async () => {`
+  - L297: `it("omits x-session-affinity header when cacheRetention is none", async () => {`
+  - L307: `it("omits cache_control on tools for Fireworks models", async () => {`
+  - L316: `it("omits eager_input_streaming on tools for Fireworks models", async () => {`
+  - L326: `it("sends cache_control on tools for native Anthropic models", async () => {`
+  - L336: `it("sends eager_input_streaming on tools for native Anthropic models", async () => {`
+- assertion/gate manifest:
+  - L24: `expect(model).toBeDefined();`
+  - L25: `expect(model.api).toBe("anthropic-messages");`
+  - L26: `expect(model.provider).toBe("fireworks");`
+  - L27: `expect(model.baseUrl).toBe("https://api.fireworks.ai/inference");`
+  - L28: `expect(model.reasoning).toBe(true);`
+  - L29: `expect(model.input).toEqual(["text", "image"]);`
+  - L30: `expect(model.contextWindow).toBe(262000);`
+  - L31: `expect(model.maxTokens).toBe(262000);`
+  - L32: `expect(model.cost).toEqual({`
+  - L45: `expect(model).toBeDefined();`
+  - L46: `expect(model?.api).toBe("anthropic-messages");`
+  - L47: `expect(model?.baseUrl).toBe("https://api.fireworks.ai/inference");`
+  - L48: `expect(model?.input).toEqual(["text", "image"]);`
+  - L55: `expect(fast.api).toBe(base.api);`
+  - L56: `expect(fast.baseUrl).toBe(base.baseUrl);`
+  - L57: `expect(fast.compat).toEqual(base.compat);`
+  - L58: `expect(fast.thinkingLevelMap).toEqual(base.thinkingLevelMap);`
+  - L81: `expect(payload).toBeDefined();`
+  - L82: `expect(payload?.prompt_cache_retention).toBeUndefined();`
+  - L108: `expect(base.api).toBe("openai-completions");`
+  - L109: `expect(base.baseUrl).toBe("https://api.fireworks.ai/inference/v1");`
+  - L110: `expect(base.compat).toEqual(compat);`
+  - L111: `expect(base.thinkingLevelMap).toEqual(thinkingLevelMap);`
+  - L112: `expect(fast.api).toBe(base.api);`
+  - L113: `expect(fast.baseUrl).toBe(base.baseUrl);`
+  - L114: `expect(fast.compat).toEqual(compat);`
+  - L115: `expect(fast.thinkingLevelMap).toEqual(thinkingLevelMap);`
+  - L132: `expect(payload?.reasoning_effort).toBe("max");`
+  - L138: `expect(findEnvKeys("fireworks")).toEqual(["FIREWORKS_API_KEY"]);`
+  - L139: `expect(getEnvApiKey("fireworks")).toBe("test-fireworks-key");`
+  - L145: `expect(model.compat).toBeDefined();`
+  - L146: `expect(model.compat?.sendSessionAffinityHeaders).toBe(true);`
+  - L147: `expect(model.compat?.supportsEagerToolInputStreaming).toBe(false);`
+  - L148: `expect(model.compat?.supportsCacheControlOnTools).toBe(false);`
+  - L149: `expect(model.compat?.supportsLongCacheRetention).toBe(false);`
+  - L285: `expect(request.headers["x-session-affinity"]).toBe("fireworks-session-1");`
+  - L294: `expect(request.headers["x-session-affinity"]).toBeUndefined();`
+  - L304: `expect(request.headers["x-session-affinity"]).toBeUndefined();`
+  - L313: `expect(lastTool.cache_control).toBeUndefined();`
+  - L322: `expect(t.eager_input_streaming).toBeUndefined();`
+  - L332: `expect(lastTool.cache_control).toBeDefined();`
+  - L333: `expect((lastTool.cache_control as { type: string }).type).toBe("ephemeral");`
+  - L341: `expect(tools[0].eager_input_streaming).toBe(true);`
+
+### `packages/ai/test/github-copilot-oauth.test.ts`
+- cases: `9`; assertions/gates: `35`
+- case manifest:
+  - L96: `describe("GitHub Copilot OAuth device flow", () => {`
+  - L102: `it("filters models to the authenticated account picker catalog", async () => {`
+  - L131: `it("falls back to explicitly enabled policy models when the picker catalog is empty", async () => {`
+  - L167: `it("does not fall back to policy models for non-Individual accounts", async () => {`
+  - L183: `it("reports device-code details through onDeviceCode", async () => {`
+  - L242: `it("rejects a non-http(s) verification_uri before it reaches onDeviceCode", async () => {`
+  - L272: `it("normalizes verification_uri before it reaches onDeviceCode", async () => {`
+  - L337: `it("waits before polling and increases the interval after slow_down", async () => {`
+  - L441: `it("times out after repeated slow_down responses", async () => {`
+- assertion/gate manifest:
+  - L75: `expect(init?.headers).toMatchObject({`
+  - L122: `expect(credentials.availableModelIds).toEqual(["gpt-4.1"]);`
+  - L128: `expect((await models.getAvailable("github-copilot")).map((model) => model.id)).toEqual(["gpt-4.1"]);`
+  - L158: `expect(credentials.availableModelIds).toEqual(["gpt-4.1"]);`
+  - L164: `expect((await models.getAvailable("github-copilot")).map((model) => model.id)).toEqual(["gpt-4.1"]);`
+  - L180: `expect(credentials.availableModelIds).toEqual([]);`
+  - L232: `expect(onDeviceCode).toHaveBeenCalledWith({`
+  - L263: `await expect(`
+  - L269: `expect(onDeviceCode).not.toHaveBeenCalled();`
+  - L278: `expect(normalizedVerificationUri).not.toBe(rawVerificationUri);`
+  - L325: `expect(onDeviceCode).toHaveBeenCalledWith({`
+  - L331: `expect(onDeviceCode).not.toHaveBeenCalledWith(expect.objectContaining({ verificationUri: rawVerificationUri }));`
+  - L353: `expect(init?.method).toBe("POST");`
+  - L354: `expect(init?.headers).toMatchObject({`
+  - L358: `expect(String(init?.body)).toContain("client_id=");`
+  - L359: `expect(String(init?.body)).toContain("scope=read%3Auser");`
+  - L371: `expect(init?.method).toBe("POST");`
+  - L372: `expect(init?.headers).toMatchObject({`
+  - L376: `expect(String(init?.body)).toContain("client_id=");`
+  - L377: `expect(String(init?.body)).toContain("device_code=device-code");`
+  - L378: `expect(String(init?.body)).toContain("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Adevice_code");`
+  - L413: `expect(accessTokenPollTimes).toHaveLength(0);`
+  - L416: `expect(accessTokenPollTimes).toHaveLength(0);`
+  - L419: `expect(accessTokenPollTimes).toHaveLength(1);`
+  - L422: `expect(accessTokenPollTimes).toHaveLength(1);`
+  - L425: `expect(accessTokenPollTimes).toHaveLength(2);`
+  - L429: `expect(accessTokenPollTimes).toHaveLength(2);`
+  - L434: `expect(accessTokenPollTimes).toEqual([`
+  - L484: `const rejection = expect(loginPromise).rejects.toThrow(`
+  - L489: `expect(accessTokenPollTimes).toEqual([]);`
+  - L492: `expect(accessTokenPollTimes).toEqual([startTime.getTime() + 5000]);`
+  - L495: `expect(accessTokenPollTimes).toEqual([startTime.getTime() + 5000]);`
+  - L498: `expect(accessTokenPollTimes).toEqual([startTime.getTime() + 5000, startTime.getTime() + 15000]);`
+  - L501: `expect(accessTokenPollTimes).toEqual([startTime.getTime() + 5000, startTime.getTime() + 15000]);`
+  - L506: `expect(accessTokenPollTimes).toEqual([startTime.getTime() + 5000, startTime.getTime() + 15000]);`
+
+### `packages/ai/test/google-shared-gemini3-unsigned-tool-call.test.ts`
+- cases: `8`; assertions/gates: `21`
+- case manifest:
+  - L80: `describe("google-shared convertMessages — Gemini 3 unsigned tool calls", () => {`
+  - L81: `it.each([`
+  - L99: `it("does not add skip_thought_signature_validator for unsigned Google Gen AI tool calls", () => {`
+  - L117: `it("does not add skip_thought_signature_validator for unsigned Vertex tool calls", () => {`
+  - L129: `it("preserves valid thoughtSignature when present for the same provider and model", () => {`
+  - L141: `it("does not add a thoughtSignature for non-Gemini-3 models", () => {`
+  - L158: `describe("requiresToolCallId", () => {`
+  - L159: `it.each([`
+- assertion/gate manifest:
+  - L95: `expect(functionCallIds).toEqual(["call_1", "call_2"]);`
+  - L96: `expect(functionResponseIds).toEqual(["call_1", "call_2"]);`
+  - L104: `expect(modelTurn).toBeTruthy();`
+  - L107: `expect(functionCallParts).toHaveLength(2);`
+  - L108: `expect(functionCallParts[0]?.thoughtSignature).toBeUndefined();`
+  - L109: `expect(functionCallParts[1]?.thoughtSignature).toBeUndefined();`
+  - L110: `expect(JSON.stringify(modelTurn)).not.toContain("skip_thought_signature_validator");`
+  - L114: `expect(historicalText).toHaveLength(0);`
+  - L123: `expect(functionCallParts).toHaveLength(2);`
+  - L124: `expect(functionCallParts[0]?.thoughtSignature).toBeUndefined();`
+  - L125: `expect(functionCallParts[1]?.thoughtSignature).toBeUndefined();`
+  - L126: `expect(JSON.stringify(modelTurn)).not.toContain("skip_thought_signature_validator");`
+  - L136: `expect(functionCallParts).toHaveLength(2);`
+  - L137: `expect(functionCallParts[0]?.thoughtSignature).toBe(validSig);`
+  - L138: `expect(functionCallParts[1]?.thoughtSignature).toBeUndefined();`
+  - L150: `expect(functionCallParts).toHaveLength(2);`
+  - L151: `expect(functionCallParts.every((part) => part.functionCall?.id === undefined)).toBe(true);`
+  - L152: `expect(functionCallParts.every((part) => part.thoughtSignature === undefined)).toBe(true);`
+  - L153: `expect(functionResponseParts).toHaveLength(2);`
+  - L154: `expect(functionResponseParts.every((part) => part.functionResponse?.id === undefined)).toBe(true);`
+  - L165: `expect(requiresToolCallId(modelId)).toBe(expected);`
+
+### `packages/ai/test/google-shared-retry.test.ts`
+- cases: `4`; assertions/gates: `6`
+- case manifest:
+  - L9: `describe("google request retries", () => {`
+  - L14: `it("retries a headers-less SDK error with a retryable status", async () => {`
+  - L25: `it("does not retry when maxRetries is unset", async () => {`
+  - L33: `it("does not retry a non-retryable status", async () => {`
+- assertion/gate manifest:
+  - L21: `await expect(result).resolves.toBe("ok");`
+  - L22: `expect(request).toHaveBeenCalledTimes(2);`
+  - L29: `await expect(retryGoogleRequest(request)).rejects.toBe(error);`
+  - L30: `expect(request).toHaveBeenCalledTimes(1);`
+  - L37: `await expect(retryGoogleRequest(request, { maxRetries: 2 })).rejects.toBe(error);`
+  - L38: `expect(request).toHaveBeenCalledTimes(1);`
+
+### `packages/ai/test/google-shared-signed-empty-blocks.test.ts`
+- cases: `5`; assertions/gates: `8`
+- case manifest:
+  - L57: `describe("google-shared convertMessages — signed empty blocks", () => {`
+  - L58: `it("keeps a signed empty thinking block so its signature is echoed back", () => {`
+  - L73: `it("keeps a signed empty text block the same way", () => {`
+  - L87: `it("still drops unsigned empty blocks", () => {`
+  - L102: `it("still drops signed empty blocks from a different provider/model (signature unusable)", () => {`
+- assertion/gate manifest:
+  - L69: `expect(signed).toHaveLength(1);`
+  - L70: `expect(signed[0]?.thought).toBe(true);`
+  - L84: `expect(signed).toHaveLength(1);`
+  - L98: `expect(modelTurn?.parts).toHaveLength(1);`
+  - L99: `expect(modelTurn?.parts?.[0]?.functionCall).toBeTruthy();`
+  - L113: `expect(modelTurn?.parts).toHaveLength(1);`
+  - L114: `expect(modelTurn?.parts?.[0]?.functionCall).toBeTruthy();`
+  - L115: `expect(JSON.stringify(modelTurn)).not.toContain(VALID_SIG);`
+
+### `packages/ai/test/image-tool-result.test.ts`
+- cases: `66`; assertions/gates: `43`
+- case manifest:
+  - L209: `describe("Tool Results with Images", () => {`
+  - L210: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider (gemini-2.5-flash)", () => {`
+  - L213: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L217: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L222: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider (gpt-4o-mini)", () => {`
+  - L230: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L234: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L239: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider (gpt-5-mini)", () => {`
+  - L242: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L246: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L251: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider (gpt-4o-mini)", () => {`
+  - L256: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L260: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L265: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider (claude-haiku-4-5)", () => {`
+  - L268: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L272: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L277: `describe.skipIf(!process.env.OPENROUTER_API_KEY)("OpenRouter Provider (glm-4.5v)", () => {`
+  - L280: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L284: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L289: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider (pixtral-12b)", () => {`
+  - L292: `it("should handle tool result with only image", { retry: 5, timeout: 30000 }, async () => {`
+  - L296: `it("should handle tool result with text and image", { retry: 5, timeout: 30000 }, async () => {`
+  - L301: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider (Kimi-K2.6)", () => {`
+  - L305: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L309: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L314: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider (Kimi-K2.6)", () => {`
+  - L318: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L322: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L327: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider (mimo-v2.5-pro)", () => {`
+  - L330: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L341: `it.skip("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L346: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)(`
+  - L351: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L357: `it.skip("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L363: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)(`
+  - L368: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L374: `it.skip("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L380: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)(`
+  - L385: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L391: `it.skip("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L397: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider (qwen3.7-max)", () => {`
+  - L400: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L404: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L409: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider (qwen3.7-max)", () => {`
+  - L412: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L416: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L421: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider (kimi-for-coding)", () => {`
+  - L424: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L428: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L433: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider (google/gemini-2.5-flash)", () => {`
+  - L436: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L440: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L445: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider (claude-sonnet-4-5)", () => {`
+  - L448: `it("should handle tool result with only image", { retry: 3, timeout: 30000 }, async () => {`
+  - L452: `it("should handle tool result with text and image", { retry: 3, timeout: 30000 }, async () => {`
+  - L461: `describe("Anthropic OAuth Provider (claude-sonnet-4-5)", () => {`
+  - L464: `it.skipIf(!anthropicOAuthToken)(`
+  - L472: `it.skipIf(!anthropicOAuthToken)(`
+  - L481: `describe("GitHub Copilot Provider", () => {`
+  - L482: `it.skipIf(!githubCopilotToken)(`
+  - L491: `it.skipIf(!githubCopilotToken)(`
+  - L500: `it.skipIf(!githubCopilotToken)(`
+  - L509: `it.skipIf(!githubCopilotToken)(`
+  - L519: `describe("OpenAI Codex Provider", () => {`
+  - L520: `it.skipIf(!openaiCodexToken)(`
+  - L529: `it.skipIf(!openaiCodexToken)(`
+- assertion/gate manifest:
+  - L64: `expect(firstResponse.stopReason).toBe("toolUse");`
+  - L68: `expect(toolCall).toBeTruthy();`
+  - L72: `expect(toolCall.name).toBe("get_circle");`
+  - L97: `expect(secondResponse.stopReason).toBe("stop");`
+  - L98: `expect(secondResponse.errorMessage).toBeFalsy();`
+  - L102: `expect(textContent).toBeTruthy();`
+  - L106: `expect(lowerContent).toContain("red");`
+  - L107: `expect(lowerContent).toContain("circle");`
+  - L156: `expect(firstResponse.stopReason).toBe("toolUse");`
+  - L160: `expect(toolCall).toBeTruthy();`
+  - L164: `expect(toolCall.name).toBe("get_circle_with_description");`
+  - L193: `expect(secondResponse.stopReason).toBe("stop");`
+  - L194: `expect(secondResponse.errorMessage).toBeFalsy();`
+  - L198: `expect(textContent).toBeTruthy();`
+  - L202: `expect(lowerContent.match(/diameter|100|pixel/)).toBeTruthy();`
+  - L204: `expect(lowerContent).toContain("red");`
+  - L205: `expect(lowerContent).toContain("circle");`
+  - L210: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider (gemini-2.5-flash)", () => {`
+  - L222: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider (gpt-4o-mini)", () => {`
+  - L239: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider (gpt-5-mini)", () => {`
+  - L251: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider (gpt-4o-mini)", () => {`
+  - L265: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider (claude-haiku-4-5)", () => {`
+  - L277: `describe.skipIf(!process.env.OPENROUTER_API_KEY)("OpenRouter Provider (glm-4.5v)", () => {`
+  - L289: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider (pixtral-12b)", () => {`
+  - L301: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider (Kimi-K2.6)", () => {`
+  - L314: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider (Kimi-K2.6)", () => {`
+  - L327: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider (mimo-v2.5-pro)", () => {`
+  - L346: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)(`
+  - L363: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)(`
+  - L380: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)(`
+  - L397: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider (qwen3.7-max)", () => {`
+  - L409: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider (qwen3.7-max)", () => {`
+  - L421: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider (kimi-for-coding)", () => {`
+  - L433: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider (google/gemini-2.5-flash)", () => {`
+  - L445: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider (claude-sonnet-4-5)", () => {`
+  - L464: `it.skipIf(!anthropicOAuthToken)(`
+  - L472: `it.skipIf(!anthropicOAuthToken)(`
+  - L482: `it.skipIf(!githubCopilotToken)(`
+  - L491: `it.skipIf(!githubCopilotToken)(`
+  - L500: `it.skipIf(!githubCopilotToken)(`
+  - L509: `it.skipIf(!githubCopilotToken)(`
+  - L520: `it.skipIf(!openaiCodexToken)(`
+  - L529: `it.skipIf(!openaiCodexToken)(`
+
+### `packages/ai/test/kimi-coding-oauth.test.ts`
+- cases: `7`; assertions/gates: `25`
+- case manifest:
+  - L44: `describe("Kimi Code OAuth", () => {`
+  - L52: `it("logs in with the device authorization flow", async () => {`
+  - L121: `it("fails when the device code expires", async () => {`
+  - L143: `it("fails when the user denies the login", async () => {`
+  - L165: `it("honors the KIMI_CODE_OAUTH_HOST override", async () => {`
+  - L194: `it("refreshes tokens and returns a Bearer header for requests", async () => {`
+  - L231: `it("retries refresh on 429 and fails unauthorized on invalid_grant", async () => {`
+- assertion/gate manifest:
+  - L69: `expect(init?.method).toBe("POST");`
+  - L70: `expect(init?.headers).toMatchObject({`
+  - L74: `expect(new URLSearchParams(String(init?.body)).get("client_id")).toBe(CLIENT_ID);`
+  - L80: `expect(params.get("grant_type")).toBe("urn:ietf:params:oauth:grant-type:device_code");`
+  - L81: `expect(params.get("client_id")).toBe(CLIENT_ID);`
+  - L82: `expect(params.get("device_code")).toBe("device-code-123");`
+  - L95: `expect(events).toEqual([`
+  - L107: `expect(pollTimes).toEqual([]);`
+  - L109: `expect(pollTimes).toEqual([startTime.getTime() + 5000]);`
+  - L112: `await expect(credentialPromise).resolves.toEqual({`
+  - L118: `expect(pollTimes).toEqual([startTime.getTime() + 5000, startTime.getTime() + 10000]);`
+  - L138: `const assertion = expect(credentialPromise).rejects.toThrow("expired");`
+  - L160: `const assertion = expect(credentialPromise).rejects.toThrow("denied");`
+  - L187: `await expect(credentialPromise).resolves.toMatchObject({ access: "a", refresh: "r" });`
+  - L188: `expect(urls).toEqual([`
+  - L199: `expect(url).toBe(`${OAUTH_HOST}/api/oauth/token`);`
+  - L201: `expect(params.get("grant_type")).toBe("refresh_token");`
+  - L202: `expect(params.get("refresh_token")).toBe("old-refresh");`
+  - L203: `expect(params.get("client_id")).toBe(CLIENT_ID);`
+  - L218: `expect(credential).toEqual({`
+  - L224: `expect(credential.expires).toBeGreaterThanOrEqual(before + 3600 * 1000);`
+  - L226: `await expect(kimiCodingOAuth.toAuth(credential)).resolves.toEqual({`
+  - L255: `await expect(refreshPromise).resolves.toMatchObject({ access: "a" });`
+  - L256: `expect(calls).toBe(2);`
+  - L263: `await expect(`
+
+### `packages/ai/test/model-catalog-types.test.ts`
+- cases: `2`; assertions/gates: `1`
+- case manifest:
+  - L5: `it("derives model API, ID, and provider literals from grouped model data", () => {`
+  - L12: `it("routes GitHub Copilot Grok 4.5 through the Responses API", () => {`
+- assertion/gate manifest:
+  - L14: `expect(GITHUB_COPILOT_MODELS["grok-4.5"].api).toBe("openai-responses");`
+
+### `packages/ai/test/models-runtime.test.ts`
+- cases: `40`; assertions/gates: `126`
+- case manifest:
+  - L109: `describe("Models runtime", () => {`
+  - L110: `it("enumerates credential metadata without exposing secrets", async () => {`
+  - L126: `it("applies request-wide pricing tiers above the configured input threshold", () => {`
+  - L162: `it("registers, replaces, and deletes providers", () => {`
+  - L180: `it("lists and finds models per provider", async () => {`
+  - L201: `it("swallows provider source failures for both all-provider and single-provider listing", () => {`
+  - L219: `it("refresh() updates every configured dynamic provider and reports failures", async () => {`
+  - L260: `it("restricts refresh work to selected providers", async () => {`
+  - L280: `it("restores cached models before waiting for network auth", async () => {`
+  - L324: `it("lets providers choose persistent deletion and ephemeral publication atomically", async () => {`
+  - L365: `it("persists dynamic catalogs and restores them without network access", async () => {`
+  - L396: `it("passes effective API-key credentials and refresh options while skipping unconfigured providers", async () => {`
+  - L428: `it("refreshes expired OAuth before refreshing models", async () => {`
+  - L462: `it("always gives providers a concrete signal", async () => {`
+  - L480: `it("binds model-store waits to the provider refresh signal", async () => {`
+  - L515: `it("returns aborted state without reporting cancellation as a provider error", async () => {`
+  - L533: `it("stops waiting on abort when a provider ignores its signal", async () => {`
+  - L570: `it("rejects late publication from a superseded non-cooperative provider", async () => {`
+  - L617: `it("passes caller signals to provider auth callbacks", async () => {`
+  - L649: `it("stops waiting for non-cooperative auth callbacks", async () => {`
+  - L704: `it("cancels queued credential mutations without running them later", async () => {`
+  - L735: `it("passes cancellation to OAuth refresh and preserves the previous credential", async () => {`
+  - L777: `it("resolves auth: stored credential owns the provider, ambient only when nothing stored", async () => {`
+  - L806: `it("checks provider auth without refreshing OAuth and filters available models", async () => {`
+  - L840: `it("runs provider login and logout through the credential store", async () => {`
+  - L858: `it("a stored credential without a matching handler blocks ambient fallback", async () => {`
+  - L868: `it("refreshes expired oauth credentials and persists the rotated credential", async () => {`
+  - L887: `it("refreshes oauth credentials with less than five minutes remaining", async () => {`
+  - L907: `it("honors a caller's longer OAuth minimum validity", async () => {`
+  - L927: `it("rejects with code oauth when refresh fails, preserving the stored credential", async () => {`
+  - L943: `it("serializes concurrent OAuth refreshes through store.modify (no double refresh)", async () => {`
+  - L965: `it("valid oauth tokens resolve without touching modify", async () => {`
+  - L990: `it("wraps credential store failures in ModelsError", async () => {`
+  - L1018: `it("keeps the underlying reason in wrapped oauth refresh errors", async () => {`
+  - L1040: `it("wraps api-key auth failures in ModelsError", async () => {`
+  - L1052: `it("uses explicit request api key and env during provider auth resolution", async () => {`
+  - L1076: `it("merges resolved auth into stream options; explicit options win per field", async () => {`
+  - L1108: `it("adds model headers only for model auth and transforms assembled headers once", async () => {`
+  - L1138: `it("produces an error stream for unknown providers instead of throwing", async () => {`
+  - L1145: `it("streams through the provider", async () => {`
+- assertion/gate manifest:
+  - L120: `expect(await credentials.list()).toEqual([`
+  - L153: `expect(short).toMatchObject({ input: 1, output: 3, cacheRead: 0.036, cacheWrite: 0 });`
+  - L156: `expect(long.input).toBe(2);`
+  - L157: `expect(long.output).toBe(4.5);`
+  - L158: `expect(long.cacheRead).toBe(0.072);`
+  - L159: `expect(long.cacheWrite).toBe(0.0000125);`
+  - L166: `expect(models.getProviders().map((p) => p.id)).toEqual(["p1", "p2"]);`
+  - L170: `expect(models.getProvider("p1")).toBe(replacement);`
+  - L171: `expect(models.getProviders()).toHaveLength(2);`
+  - L174: `expect(models.getProvider("p1")).toBeUndefined();`
+  - L177: `expect(models.getProviders()).toHaveLength(0);`
+  - L185: `expect(models.getModels().map((m) => m.id)).toEqual(["m1", "m2", "m3"]);`
+  - L186: `expect(models.getModels("p1").map((m) => m.id)).toEqual(["m1", "m2"]);`
+  - L187: `expect(models.getModels("nope").length).toBe(0);`
+  - L188: `expect(models.getModel("p2", "m3")?.id).toBe("m3");`
+  - L189: `expect(models.getModel("p2", "missing")).toBeUndefined();`
+  - L193: `expect(found && hasApi(found, "openai-completions")).toBe(false);`
+  - L194: `expect(found && hasApi(found, "test-api")).toBe(true);`
+  - L197: `expect(_typed.id).toBe("m3");`
+  - L213: `expect(models.getModels().map((m) => m.id)).toEqual(["m1"]);`
+  - L214: `expect(models.getModels("broken")).toEqual([]);`
+  - L216: `expect(() => models.getProvider("broken")?.getModels()).toThrow("boom");`
+  - L240: `expect(models.getModel("dyn", "before")).toBeDefined();`
+  - L242: `expect(first.errors.size).toBe(0);`
+  - L243: `expect(refreshes).toBe(1);`
+  - L244: `expect(models.getModel("dyn", "after")).toBeDefined();`
+  - L245: `expect(models.getModel("dyn", "before")).toBeUndefined();`
+  - L256: `expect(refreshes).toBe(2);`
+  - L257: `expect(second.errors.get("flaky")?.message).toBe("fetch failed");`
+  - L276: `expect(result.errors.size).toBe(0);`
+  - L277: `expect(calls).toEqual(["two:cache", "two:network"]);`
+  - L318: `expect(models.getModel("dynamic", "cached")).toBeDefined();`
+  - L320: `expect(await pending).toMatchObject({ aborted: true });`
+  - L341: `expect(context.stored?.models[0]?.id).toBe("stored");`
+  - L345: `expect(entry).toBeUndefined();`
+  - L360: `expect(result.errors.size).toBe(0);`
+  - L361: `expect(entry).toBeUndefined();`
+  - L362: `expect(state).toBe("ephemeral");`
+  - L383: `expect((await online.refresh()).errors.size).toBe(0);`
+  - L384: `expect(online.getModel("dynamic", "fetched")).toBeDefined();`
+  - L392: `expect((await offline.refresh({ allowNetwork: false })).errors.size).toBe(0);`
+  - L393: `expect(offline.getModel("dynamic", "fetched")).toBeDefined();`
+  - L423: `expect(effectiveCredential).toEqual({ type: "api_key", key: "ambient-key", env: undefined });`
+  - L424: `expect(forceRefresh).toBe(true);`
+  - L425: `expect(unconfiguredRefreshes).toBe(0);`
+  - L457: `expect((await models.refresh()).errors.size).toBe(0);`
+  - L458: `expect(modelRefreshCredential).toMatchObject({ type: "oauth", access: "fresh", refresh: "rotated" });`
+  - L459: `expect(await credentials.read("oauth-dynamic")).toMatchObject({ access: "fresh", refresh: "rotated" });`
+  - L475: `expect(result.aborted).toBe(false);`
+  - L476: `expect(receivedSignal).toBeInstanceOf(AbortSignal);`
+  - L477: `expect(receivedSignal?.aborted).toBe(false);`
+  - L510: `expect(result.errors.size).toBe(0);`
+  - L511: `expect(storageSignals).toHaveLength(3);`
+  - L512: `expect(storageSignals.every((signal) => signal === providerSignal)).toBe(true);`
+  - L529: `expect(result.aborted).toBe(true);`
+  - L530: `expect(result.errors.size).toBe(0);`
+  - L562: `expect(result.aborted).toBe(true);`
+  - L563: `expect(result.errors.size).toBe(0);`
+  - L567: `expect(result.errors.size).toBe(0);`
+  - L613: `expect(state).toBe("generation-2");`
+  - L614: `expect((await store.read("dynamic"))?.models[0]?.id).toBe("generation-2");`
+  - L646: `expect(received).toEqual([controller.signal, controller.signal, controller.signal]);`
+  - L692: `await expect(available).rejects.toMatchObject({ name: "AbortError" });`
+  - L698: `await expect(auth).rejects.toMatchObject({ name: "AbortError" });`
+  - L726: `await expect(second).rejects.toMatchObject({ name: "AbortError" });`
+  - L731: `expect(secondRan).toBe(false);`
+  - L732: `expect(await credentials.read("p1")).toEqual({ type: "api_key", key: "first" });`
+  - L768: `await expect(auth).rejects.toMatchObject({ name: "AbortError" });`
+  - L769: `expect(receivedSignal).toBeInstanceOf(AbortSignal);`
+  - L770: `expect(receivedSignal?.aborted).toBe(true);`
+  - L771: `expect(receivedSignal?.reason).toBe(controller.signal.reason);`
+  - L774: `expect(await credentials.read("p1")).toEqual(previous);`
+  - L784: `expect((await models.getAuth(model))?.auth.apiKey).toBe("env-key");`
+  - L785: `expect((await models.getAuth(model.provider))?.auth.apiKey).toBe("env-key");`
+  - L786: `expect((await models.getAuth(model, { apiKey: "explicit-key" }))?.auth.apiKey).toBe("explicit-key");`
+  - L796: `expect(resolution?.auth.apiKey).toBe("oauth-token");`
+  - L797: `expect(resolution?.source).toBe("OAuth");`
+  - L802: `expect(apiKeyResolution?.auth.apiKey).toBe("stored-key");`
+  - L803: `expect(apiKeyResolution?.source).toBe("stored");`
+  - L832: `expect(await models.checkAuth("ambient")).toEqual({ source: "env", type: "api_key" });`
+  - L833: `expect(await models.checkAuth("missing")).toBeUndefined();`
+  - L834: `expect(await models.checkAuth("oauth")).toEqual({ source: "OAuth", type: "oauth" });`
+  - L835: `expect(refreshes).toBe(0);`
+  - L836: `expect((await models.getAvailable()).map((model) => model.provider)).toEqual(["ambient", "oauth"]);`
+  - L837: `expect((await models.getAvailable("ambient")).map((model) => model.provider)).toEqual(["ambient"]);`
+  - L851: `expect(credential).toEqual({ type: "api_key", key: "logged-in" });`
+  - L852: `expect(await credentials.read("p1")).toEqual(credential);`
+  - L855: `expect(await credentials.read("p1")).toBeUndefined();`
+  - L865: `expect(await models.getAuth("p1")).toBeUndefined();`
+  - L883: `expect(resolution?.auth.apiKey).toBe("new-token");`
+  - L884: `expect(((await credentials.read("p1")) as { access: string }).access).toBe("new-token");`
+  - L903: `expect((await models.getAuth("p1"))?.auth.apiKey).toBe("new-token");`
+  - L904: `expect(refresh).toHaveBeenCalledOnce();`
+  - L923: `expect((await models.getAuth("p1", { minOAuthValidityMs: 30 * 60_000 }))?.auth.apiKey).toBe("new-token");`
+  - L924: `expect(refresh).toHaveBeenCalledOnce();`
+  - L938: `await expect(models.getAuth("p1")).rejects.toMatchObject({ code: "oauth" });`
+  - L940: `expect(((await credentials.read("p1")) as { access: string }).access).toBe("old");`
+  - L960: `expect(refreshes).toBe(1);`
+  - L961: `expect(a?.auth.apiKey).toBe("new-1");`
+  - L962: `expect(b?.auth.apiKey).toBe("new-1");`
+  - L986: `expect((await models.getAuth("p1"))?.auth.apiKey).toBe("valid");`
+  - L987: `expect(modifies).toBe(0);`
+  - L1002: `await expect(models.getAuth("p1")).rejects.toMatchObject({ code: "auth" });`
+  - L1015: `await expect(oauthModels.getAuth("p1")).rejects.toMatchObject({ code: "auth" });`
+  - L1035: `await expect(models.getAuth("p1")).rejects.toThrow(`
+  - L1049: `await expect(models.getAuth("p1")).rejects.toMatchObject({ code: "auth" });`
+  - L1071: `expect(calls[0].model.baseUrl).toBe("https://example.test/acct");`
+  - L1072: `expect(calls[0].options?.apiKey).toBe("explicit-key");`
+  - L1073: `expect(calls[0].options?.env).toEqual({ ACCOUNT_ID: "acct" });`
+  - L1096: `expect(result.stopReason).toBe("stop");`
+  - L1097: `expect(calls).toHaveLength(1);`
+  - L1098: `expect(calls[0].options?.apiKey).toBe("explicit-key");`
+  - L1099: `expect(calls[0].options?.headers).toEqual({ authorization: "Explicit token", "x-a": "auth", "x-b": "explicit" });`
+  - L1100: `expect(calls[0].model.baseUrl).toBe("https://auth.test/v1");`
+  - L1104: `expect(result2.stopReason).toBe("stop");`
+  - L1105: `expect(calls[1].options?.apiKey).toBe("resolved-key");`
+  - L1115: `expect((await models.getAuth("p1"))?.auth.headers).toBeUndefined();`
+  - L1116: `expect((await models.getAuth(model))?.auth.headers).toEqual({ "x-model": "model", "x-shared": "model" });`
+  - L1123: `expect(headers).toEqual({ "x-model": "model", "x-explicit": "explicit", "X-Shared": "explicit" });`
+  - L1128: `expect(transforms).toBe(1);`
+  - L1129: `expect(calls[0].options?.headers).toEqual({`
+  - L1135: `expect(calls[0].options).not.toHaveProperty("transformHeaders");`
+  - L1141: `expect(result.stopReason).toBe("error");`
+  - L1142: `expect(result.errorMessage).toContain("Unknown provider: ghost");`
+  - L1155: `expect(events).toEqual(["start", "done"]);`
+  - L1157: `expect(message.stopReason).toBe("stop");`
+
+### `packages/ai/test/oauth-auth.test.ts`
+- cases: `14`; assertions/gates: `23`
+- case manifest:
+  - L20: `describe.sequential("OAuthAuth adapters", () => {`
+  - L21: `it("keeps the extension OAuth barrel free of built-in flow implementations", () => {`
+  - L30: `it("identifies only subscription-backed OAuth flows as subscriptions", () => {`
+  - L37: `it("anthropic toAuth derives the api key from the access token", async () => {`
+  - L42: `it("openai-codex toAuth derives the api key from the access token", async () => {`
+  - L47: `it("openrouter derives the api key and keeps the permanent credential on refresh", async () => {`
+  - L53: `it("xAI toAuth derives the api key from the access token", async () => {`
+  - L58: `it("github-copilot toAuth derives baseUrl from the token proxy endpoint", async () => {`
+  - L64: `it("github-copilot toAuth falls back to the enterprise domain, then the individual endpoint", async () => {`
+  - L83: `it("anthropic refresh exchanges the refresh token and returns a typed credential", async () => {`
+  - L101: `it("github-copilot refresh preserves the enterprise domain", async () => {`
+  - L129: `describe("OAuth through Models.getAuth (lazy load chain)", () => {`
+  - L130: `it("resolves stored anthropic oauth credentials via the lazy flow import", async () => {`
+  - L148: `it("resolves stored github-copilot oauth credentials including per-credential baseUrl", async () => {`
+- assertion/gate manifest:
+  - L22: `expect(extensionOAuthCompatibility).not.toHaveProperty("loginAnthropic");`
+  - L23: `expect(extensionOAuthCompatibility).not.toHaveProperty("anthropicOAuth");`
+  - L32: `expect(oauth.isSubscription).toBe(true);`
+  - L34: `expect(openRouterOAuth.isSubscription).not.toBe(true);`
+  - L39: `expect(auth).toEqual({ apiKey: "token" });`
+  - L44: `expect(auth).toEqual({ apiKey: "token" });`
+  - L49: `expect(await openRouterOAuth.toAuth(credential)).toEqual({ apiKey: "token" });`
+  - L50: `expect(await openRouterOAuth.refresh(credential, neverAbortedSignal)).toBe(credential);`
+  - L55: `expect(auth).toEqual({ apiKey: "token" });`
+  - L61: `expect(auth).toEqual({ apiKey: access, baseUrl: "https://api.enterprise.example" });`
+  - L72: `expect(enterprise.baseUrl).toBe("https://copilot-api.company.ghe.com");`
+  - L80: `expect(individual.baseUrl).toBe("https://api.individual.githubcopilot.com");`
+  - L95: `expect(refreshed.type).toBe("oauth");`
+  - L96: `expect(refreshed.access).toBe("new-access");`
+  - L97: `expect(refreshed.refresh).toBe("new-refresh");`
+  - L98: `expect(refreshed.expires).toBeGreaterThan(Date.now());`
+  - L123: `expect(refreshed.access).toBe("new-token");`
+  - L124: `expect(refreshed.enterpriseUrl).toBe("company.ghe.com");`
+  - L125: `expect(fetchedUrls[0]).toContain("api.company.ghe.com");`
+  - L144: `expect(result?.auth.apiKey).toBe("oauth-access-token");`
+  - L145: `expect(result?.source).toBe("OAuth");`
+  - L163: `expect(result?.auth.apiKey).toBe(access);`
+  - L164: `expect(result?.auth.baseUrl).toBe("https://api.business.githubcopilot.com");`
+
+### `packages/ai/test/oauth-device-code.test.ts`
+- cases: `6`; assertions/gates: `16`
+- case manifest:
+  - L6: `describe("OAuth device-code polling", () => {`
+  - L11: `it("polls immediately and returns the completed value", async () => {`
+  - L44: `it("can wait before the first poll", async () => {`
+  - L68: `it("increases the interval by 5 seconds after slow_down without a server interval", async () => {`
+  - L98: `it("honors a server-provided slow_down interval", async () => {`
+  - L131: `it("cancels an in-flight wait", async () => {`
+- assertion/gate manifest:
+  - L31: `expect(pollTimes).toEqual([new Date("2026-03-09T00:00:00Z").getTime()]);`
+  - L34: `expect(pollTimes).toEqual([new Date("2026-03-09T00:00:00Z").getTime()]);`
+  - L37: `await expect(resultPromise).resolves.toBe("token");`
+  - L38: `expect(pollTimes).toEqual([`
+  - L61: `expect(pollTimes).toEqual([]);`
+  - L64: `await expect(resultPromise).resolves.toBe("token");`
+  - L65: `expect(pollTimes).toEqual([new Date("2026-03-09T00:00:02Z").getTime()]);`
+  - L88: `expect(pollTimes).toEqual([startTime]);`
+  - L91: `expect(pollTimes).toEqual([startTime]);`
+  - L94: `await expect(resultPromise).resolves.toBe("token");`
+  - L95: `expect(pollTimes).toEqual([startTime, startTime + 7000]);`
+  - L121: `expect(pollTimes).toEqual([startTime]);`
+  - L124: `expect(pollTimes).toEqual([startTime]);`
+  - L127: `await expect(resultPromise).resolves.toBe("token");`
+  - L128: `expect(pollTimes).toEqual([startTime, startTime + 30000]);`
+  - L143: `await expect(resultPromise).rejects.toThrow("Login cancelled");`
+
+### `packages/ai/test/oauth.ts`
+- cases: `0`; assertions/gates: `0`
+
+### `packages/ai/test/openai-codex-oauth.test.ts`
+- cases: `9`; assertions/gates: `36`
+- case manifest:
+  - L70: `describe("OpenAI Codex OAuth", () => {`
+  - L77: `it("logs in with the OpenAI Codex device code flow", async () => {`
+  - L180: `it("offers browser login first and uses the selected OpenAI Codex device code flow", async () => {`
+  - L266: `it("cancels when OpenAI Codex login method selection is cancelled", async () => {`
+  - L278: `it("cancels the OpenAI Codex device code flow while waiting", async () => {`
+  - L323: `it("times out the OpenAI Codex device code flow after 15 minutes", async () => {`
+  - L366: `it("treats OpenAI Codex device auth 403 and 404 responses as pending", async () => {`
+  - L428: `it("includes the response body in OpenAI Codex device auth poll failures", async () => {`
+  - L456: `it("does not write token refresh failures to stderr", async () => {`
+- assertion/gate manifest:
+  - L104: `expect(init?.method).toBe("POST");`
+  - L105: `expect(init?.headers).toMatchObject({ "Content-Type": "application/json" });`
+  - L106: `expect(JSON.parse(String(init?.body))).toEqual({ client_id: "app_EMoamEEZ73f0CkXaXp7hrann" });`
+  - L116: `expect(init?.method).toBe("POST");`
+  - L117: `expect(init?.headers).toMatchObject({ "Content-Type": "application/json" });`
+  - L118: `expect(JSON.parse(String(init?.body))).toEqual({`
+  - L130: `expect(init?.method).toBe("POST");`
+  - L131: `expect(init?.headers).toMatchObject({ "Content-Type": "application/x-www-form-urlencoded" });`
+  - L133: `expect(params.get("grant_type")).toBe("authorization_code");`
+  - L134: `expect(params.get("client_id")).toBe("app_EMoamEEZ73f0CkXaXp7hrann");`
+  - L135: `expect(params.get("code")).toBe("oauth-code");`
+  - L136: `expect(params.get("redirect_uri")).toBe("https://auth.openai.com/deviceauth/callback");`
+  - L137: `expect(params.get("code_verifier")).toBe("device-code-verifier");`
+  - L157: `expect(deviceInfos).toEqual([`
+  - L165: `expect(pollTimes).toEqual([startTime.getTime()]);`
+  - L168: `expect(pollTimes).toEqual([startTime.getTime()]);`
+  - L171: `await expect(credentialsPromise).resolves.toMatchObject({`
+  - L177: `expect(pollTimes).toEqual([startTime.getTime(), startTime.getTime() + 5000]);`
+  - L198: `expect(JSON.parse(String(init?.body))).toEqual({ client_id: "app_EMoamEEZ73f0CkXaXp7hrann" });`
+  - L223: `await expect(`
+  - L246: `expect(selectPrompts).toEqual([`
+  - L256: `expect(deviceInfos).toEqual([`
+  - L267: `await expect(`
+  - L288: `expect(JSON.parse(String(init?.body))).toEqual({ client_id: "app_EMoamEEZ73f0CkXaXp7hrann" });`
+  - L315: `expect(pollTimes).toHaveLength(1);`
+  - L319: `expect(rejection).toBeInstanceOf(Error);`
+  - L320: `expect((rejection as Error).message).toBe("Login cancelled");`
+  - L332: `expect(JSON.parse(String(init?.body))).toEqual({ client_id: "app_EMoamEEZ73f0CkXaXp7hrann" });`
+  - L358: `expect(pollTimes).toHaveLength(1);`
+  - L362: `expect(rejection).toBeInstanceOf(Error);`
+  - L363: `expect((rejection as Error).message).toBe("Device flow timed out");`
+  - L420: `await expect(credentialsPromise).resolves.toMatchObject({`
+  - L425: `expect(pollTimes).toHaveLength(3);`
+  - L447: `await expect(`
+  - L473: `await expect(`
+  - L484: `expect(consoleError).not.toHaveBeenCalled();`
+
+### `packages/ai/test/openai-codex-stream.test.ts`
+- cases: `30`; assertions/gates: `111`
+- case manifest:
+  - L96: `describe("openai-codex streaming", () => {`
+  - L97: `it("streams SSE responses into AssistantMessageEventStream", async () => {`
+  - L208: `it("completes after response.completed even when the SSE body stays open", async () => {`
+  - L268: `it("maps response.incomplete to stopReason length even when the SSE body stays open", async () => {`
+  - L328: `it("aborts SSE fetch after the configured HTTP timeout when response headers do not arrive", async () => {`
+  - L384: `it("aborts SSE body reads after response headers arrive", async () => {`
+  - L492: `it("sets session-id/x-client-request-id headers and prompt_cache_key when sessionId is provided", async () => {`
+  - L593: `it("omits SSE cache affinity when cacheRetention is none", async () => {`
+  - L644: `it("clamps prompt_cache_key to OpenAI's 64-character limit", async () => {`
+  - L694: `it("clamps Codex session-id header to 64 characters", async () => {`
+  - L742: `it("preserves gpt-5.5 xhigh reasoning effort from simple options", async () => {`
+  - L803: `it("forwards required tool choice", async () => {`
+  - L858: `it("sets Codex strict mode explicitly and honors constrained sampling", async () => {`
+  - L927: `it.each(["gpt-5.3-codex", "gpt-5.4", "gpt-5.5"])("clamps %s minimal reasoning effort to low", async (modelId) => {`
+  - L1027: `it.each([`
+  - L1126: `it("does not set session-id/x-client-request-id headers when sessionId is not provided", async () => {`
+  - L1222: `it("forwards auto transport from streamSimple options and uses cached websocket context", async () => {`
+  - L1337: `it("scopes cached websockets to the authenticated account", async () => {`
+  - L1428: `it("closes one-shot websockets when cacheRetention is none", async () => {`
+  - L1522: `it("falls back to SSE when websocket connect does not open before the connect timeout", async () => {`
+  - L1609: `it("reconnects once when the websocket connection limit is reached before output starts", async () => {`
+  - L1671: `it("falls back to SSE when a websocket is idle before the first event", async () => {`
+  - L1773: `it("errors when a websocket is idle after the stream started", async () => {`
+  - L1858: `it("opens a fresh cached websocket before the backend connection age limit", async () => {`
+  - L1963: `it("sends only response input deltas in websocket-cached mode", async () => {`
+  - L2135: `it.each(["websocket", "sse"] as const)(`
+  - L2353: `it.each([`
+  - L2427: `it.each([429, 503])("fails immediately when a %i retry delay exceeds the limit", async (status) => {`
+  - L2467: `it("zstd-compresses SSE request bodies", async () => {`
+  - L2540: `it("uses exponential backoff across repeated SSE retries without retry headers", async () => {`
+- assertion/gate manifest:
+  - L156: `expect(headers?.get("Authorization")).toBe(`Bearer ${token}`);`
+  - L157: `expect(headers?.get("chatgpt-account-id")).toBe("acc_test");`
+  - L158: `expect(headers?.get("OpenAI-Beta")).toBe("responses=experimental");`
+  - L159: `expect(headers?.get("originator")).toBe("pi");`
+  - L160: `expect(headers?.get("accept")).toBe("text/event-stream");`
+  - L161: `expect(headers?.has("x-api-key")).toBe(false);`
+  - L200: `expect(event.message.content.find((c) => c.type === "text")?.text).toBe("Hello");`
+  - L204: `expect(sawTextDelta).toBe(true);`
+  - L205: `expect(sawDone).toBe(true);`
+  - L264: `expect(result.content.find((c) => c.type === "text")?.text).toBe("Hello");`
+  - L265: `expect(result.stopReason).toBe("stop");`
+  - L324: `expect(result.content.find((c) => c.type === "text")?.text).toBe("Hello");`
+  - L325: `expect(result.stopReason).toBe("length");`
+  - L379: `expect(fetchMock).toHaveBeenCalledTimes(1);`
+  - L380: `expect(result.stopReason).toBe("error");`
+  - L381: `expect(result.errorMessage).toBe("Codex SSE response headers timed out after 10ms");`
+  - L485: `expect(result.stopReason).toBe("aborted");`
+  - L486: `expect(result.errorMessage).toBe("Request was aborted");`
+  - L487: `expect(events).toContain("text_delta:one");`
+  - L488: `expect(events).not.toContain("text_delta:two");`
+  - L489: `expect(cancelled).toBe(true);`
+  - L553: `expect(headers?.get("session-id")).toBe(sessionId);`
+  - L554: `expect(headers?.has("session_id")).toBe(false);`
+  - L555: `expect(headers?.get("x-client-request-id")).toBe(sessionId);`
+  - L559: `expect(body?.prompt_cache_key).toBe(sessionId);`
+  - L639: `expect(capturedHeaders?.has("session-id")).toBe(false);`
+  - L640: `expect(capturedHeaders?.has("x-client-request-id")).toBe(false);`
+  - L641: `expect(capturedBody).not.toHaveProperty("prompt_cache_key");`
+  - L691: `expect(capturedPayload?.prompt_cache_key).toBe("x".repeat(64));`
+  - L738: `expect(capturedHeaders?.get("session-id")).toBe("x".repeat(64));`
+  - L739: `expect(capturedHeaders?.get("x-client-request-id")).toBe("x".repeat(64));`
+  - L800: `expect(requestedReasoning).toEqual({ effort: "xhigh", summary: "auto" });`
+  - L855: `expect(requestedToolChoice).toBe("required");`
+  - L921: `expect(requestedTools).toMatchObject([`
+  - L1024: `expect(requestedReasoning).toEqual({ effort: "low", summary: "auto" });`
+  - L1120: `expect(result.usage.cost.input).toBe(1 * multiplier);`
+  - L1121: `expect(result.usage.cost.output).toBe(2 * multiplier);`
+  - L1122: `expect(result.usage.cost.total).toBe(3 * multiplier);`
+  - L1186: `expect(headers?.has("session-id")).toBe(false);`
+  - L1187: `expect(headers?.has("session_id")).toBe(false);`
+  - L1188: `expect(headers?.has("x-client-request-id")).toBe(false);`
+  - L1326: `expect(sentBodies).toHaveLength(1);`
+  - L1327: `expect(capturedWebSocketHeaders?.["session-id"]).toBe("session-auto");`
+  - L1328: `expect(capturedWebSocketHeaders?.session_id).toBeUndefined();`
+  - L1329: `expect(capturedWebSocketHeaders?.["x-client-request-id"]).toBe("session-auto");`
+  - L1330: `expect(global.fetch).not.toHaveBeenCalled();`
+  - L1331: `expect(getOpenAICodexWebSocketDebugStats("session-auto")).toMatchObject({`
+  - L1416: `expect(connectedHeaders.map((headers) => headers["chatgpt-account-id"])).toEqual(["account-a", "account-b"]);`
+  - L1417: `expect(connectedHeaders.map((headers) => headers.authorization)).toEqual([`
+  - L1421: `expect(global.fetch).not.toHaveBeenCalled();`
+  - L1422: `expect(getOpenAICodexWebSocketDebugStats("shared-session")).toMatchObject({`
+  - L1514: `expect(connections).toBe(2);`
+  - L1515: `expect(closedConnections).toBe(2);`
+  - L1516: `expect(sentBodies).toHaveLength(2);`
+  - L1517: `expect(sentBodies.every((body) => body.prompt_cache_key === undefined)).toBe(true);`
+  - L1518: `expect(getOpenAICodexWebSocketDebugStats("one-off-summary")).toBeUndefined();`
+  - L1519: `expect(global.fetch).not.toHaveBeenCalled();`
+  - L1599: `expect(result.content.find((content) => content.type === "text")?.text).toBe("Hello");`
+  - L1600: `expect(fetchMock).toHaveBeenCalledTimes(1);`
+  - L1601: `expect(getOpenAICodexWebSocketDebugStats("ws-connect-timeout")).toMatchObject({`
+  - L1666: `expect(result.stopReason).toBe("stop");`
+  - L1667: `expect(connections).toBe(2);`
+  - L1668: `expect(fetchMock).not.toHaveBeenCalled();`
+  - L1760: `expect(sentBodies).toHaveLength(1);`
+  - L1764: `expect(result.content.find((content) => content.type === "text")?.text).toBe("Hello");`
+  - L1765: `expect(fetchMock).toHaveBeenCalledTimes(1);`
+  - L1766: `expect(getOpenAICodexWebSocketDebugStats("ws-idle-before-start")).toMatchObject({`
+  - L1853: `expect(result.stopReason).toBe("error");`
+  - L1854: `expect(result.errorMessage).toBe("WebSocket idle timeout after 50ms");`
+  - L1855: `expect(fetchMock).not.toHaveBeenCalled();`
+  - L1955: `expect(connections).toBe(2);`
+  - L1956: `expect(sentConnectionIds).toEqual([1, 2]);`
+  - L1957: `expect(getOpenAICodexWebSocketDebugStats(sessionId)).toMatchObject({`
+  - L2110: `expect(sentBodies).toHaveLength(2);`
+  - L2113: `expect(firstBody.store).toBe(false);`
+  - L2114: `expect(firstBody.previous_response_id).toBeUndefined();`
+  - L2115: `expect(firstBody.input).toEqual([{ role: "user", content: [{ type: "input_text", text: "Use the tool" }] }]);`
+  - L2116: `expect(secondBody.store).toBe(false);`
+  - L2117: `expect(secondBody.previous_response_id).toBe("resp_1");`
+  - L2118: `expect(secondBody.input).toEqual([`
+  - L2122: `expect(getOpenAICodexWebSocketDebugStats("session-1")).toMatchObject({`
+  - L2323: `expect(second.stopReason).toBe("stop");`
+  - L2324: `expect(second.content.find((content) => content.type === "text")?.text).toBe(`
+  - L2327: `expect(eventTypes.filter((type) => type === "start")).toHaveLength(1);`
+  - L2328: `expect(eventTypes).not.toContain("error");`
+  - L2329: `expect(connections).toBe(2);`
+  - L2330: `expect(sentBodies).toHaveLength(3);`
+  - L2331: `expect(sentBodies.map((body) => body.connectionId)).toEqual([1, 1, 2]);`
+  - L2332: `expect(sentBodies[1].previous_response_id).toBe("resp_1");`
+  - L2333: `expect(sentBodies[1].input).toEqual([{ role: "user", content: [{ type: "input_text", text: "Now finish" }] }]);`
+  - L2334: `expect(sentBodies[2].previous_response_id).toBeUndefined();`
+  - L2335: `expect(sentBodies[2].input).toHaveLength(3);`
+  - L2336: `expect(sentBodies[2].input.at(-1)).toEqual({`
+  - L2340: `expect(fetchMock).toHaveBeenCalledTimes(recoveryTransport === "sse" ? 1 : 0);`
+  - L2341: `expect(getOpenAICodexWebSocketDebugStats(sessionId)).toMatchObject({`
+  - L2419: `expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), expectedDelay);`
+  - L2423: `expect(result.content.find((content) => content.type === "text")?.text).toBe("Hello");`
+  - L2424: `expect(codexRequests).toBe(2);`
+  - L2462: `expect(result.stopReason).toBe("error");`
+  - L2463: `expect(result.errorMessage).toBe("Server requested 2s retry delay (max: 1s)");`
+  - L2464: `expect(fetchMock).toHaveBeenCalledTimes(1);`
+  - L2518: `expect(capturedEncoding).toBe("zstd");`
+  - L2519: `expect(capturedBody).toBeInstanceOf(Uint8Array);`
+  - L2523: `expect(decoded.input[0].content[0].text).toBe(largeText);`
+  - L2536: `expect(capturedEncoding).toBe("zstd");`
+  - L2537: `expect(capturedBody).toBeInstanceOf(Uint8Array);`
+  - L2603: `expect(retryTimeoutDelays()).toEqual([1000]);`
+  - L2606: `expect(retryTimeoutDelays()).toEqual([1000, 2000]);`
+  - L2609: `expect(retryTimeoutDelays()).toEqual([1000, 2000, 4000]);`
+  - L2613: `expect(result.content.find((content) => content.type === "text")?.text).toBe("Hello");`
+  - L2614: `expect(codexRequests).toBe(4);`
+
+### `packages/ai/test/openai-completions-prompt-cache.test.ts`
+- cases: `15`; assertions/gates: `42`
+- case manifest:
+  - L66: `describe("openai-completions prompt caching", () => {`
+  - L115: `it("sets prompt_cache_key for direct OpenAI requests when caching is enabled", async () => {`
+  - L122: `it("sets prompt_cache_retention to 24h for direct OpenAI requests when cacheRetention is long", async () => {`
+  - L129: `it("clamps prompt_cache_key to OpenAI's 64-character limit", async () => {`
+  - L136: `it("omits prompt cache fields when cacheRetention is none", async () => {`
+  - L143: `it("omits prompt cache fields for non-OpenAI base URLs without compatible long retention", async () => {`
+  - L154: `it("uses PI_CACHE_RETENTION for direct OpenAI requests", async () => {`
+  - L162: `it("sends known session-affinity headers when compat.sendSessionAffinityHeaders is enabled", async () => {`
+  - L174: `it.each(["accounts/fireworks/models/glm-5p2", "accounts/fireworks/routers/glm-5p2-fast"] as const)(`
+  - L184: `it("uses OpenAI no-session format when configured", async () => {`
+  - L198: `it("uses OpenRouter session-affinity header when configured", async () => {`
+  - L213: `it("auto-detects OpenRouter session-affinity header for OpenRouter endpoints", async () => {`
+  - L229: `it("omits OpenRouter session-affinity data when disabled", async () => {`
+  - L241: `it("omits session-affinity headers when cacheRetention is none", async () => {`
+  - L253: `it("lets explicit headers override generated session-affinity headers", async () => {`
+- assertion/gate manifest:
+  - L118: `expect(payload?.prompt_cache_key).toBe("session-123");`
+  - L119: `expect(payload?.prompt_cache_retention).toBeUndefined();`
+  - L125: `expect(payload?.prompt_cache_key).toBe("session-456");`
+  - L126: `expect(payload?.prompt_cache_retention).toBe("24h");`
+  - L133: `expect(payload?.prompt_cache_key).toBe("x".repeat(64));`
+  - L139: `expect(payload?.prompt_cache_key).toBeUndefined();`
+  - L140: `expect(payload?.prompt_cache_retention).toBeUndefined();`
+  - L150: `expect(payload?.prompt_cache_key).toBeUndefined();`
+  - L151: `expect(payload?.prompt_cache_retention).toBeUndefined();`
+  - L158: `expect(payload?.prompt_cache_key).toBe("session-env");`
+  - L159: `expect(payload?.prompt_cache_retention).toBe("24h");`
+  - L169: `expect(headers.session_id).toBe("session-affinity");`
+  - L170: `expect(headers["x-client-request-id"]).toBe("session-affinity");`
+  - L171: `expect(headers["x-session-affinity"]).toBe("session-affinity");`
+  - L180: `expect(headers["x-session-affinity"]).toBe("fireworks-session");`
+  - L190: `expect(payload?.session_id).toBeUndefined();`
+  - L191: `expect(payload?.prompt_cache_key).toBe("session-nosession");`
+  - L192: `expect(headers.session_id).toBeUndefined();`
+  - L193: `expect(headers["x-client-request-id"]).toBe("session-nosession");`
+  - L194: `expect(headers["x-session-affinity"]).toBe("session-nosession");`
+  - L195: `expect(headers["x-session-id"]).toBeUndefined();`
+  - L205: `expect(payload?.session_id).toBeUndefined();`
+  - L206: `expect(payload?.prompt_cache_key).toBeUndefined();`
+  - L207: `expect(headers["x-session-id"]).toBe("session-proxy");`
+  - L208: `expect(headers.session_id).toBeUndefined();`
+  - L209: `expect(headers["x-client-request-id"]).toBeUndefined();`
+  - L210: `expect(headers["x-session-affinity"]).toBeUndefined();`
+  - L221: `expect(payload?.session_id).toBeUndefined();`
+  - L222: `expect(payload?.prompt_cache_key).toBeUndefined();`
+  - L223: `expect(headers["x-session-id"]).toBe("session-openrouter");`
+  - L224: `expect(headers.session_id).toBeUndefined();`
+  - L225: `expect(headers["x-client-request-id"]).toBeUndefined();`
+  - L226: `expect(headers["x-session-affinity"]).toBeUndefined();`
+  - L236: `expect(payload?.session_id).toBeUndefined();`
+  - L237: `expect(payload?.prompt_cache_key).toBeUndefined();`
+  - L238: `expect(headers["x-session-id"]).toBeUndefined();`
+  - L248: `expect(headers.session_id).toBeUndefined();`
+  - L249: `expect(headers["x-client-request-id"]).toBeUndefined();`
+  - L250: `expect(headers["x-session-affinity"]).toBeUndefined();`
+  - L270: `expect(headers.session_id).toBe("override-session");`
+  - L271: `expect(headers["x-client-request-id"]).toBe("override-request");`
+  - L272: `expect(headers["x-session-affinity"]).toBe("override-affinity");`
+
+### `packages/ai/test/openai-completions-thinking-as-text.test.ts`
+- cases: `4`; assertions/gates: `5`
+- case manifest:
+  - L107: `describe("openai-completions thinking-as-text replay", () => {`
+  - L112: `it("serializes same-model thinking-plus-text replay as assistant text parts", () => {`
+  - L133: `it("serializes same-model thinking-only replay as assistant text parts", () => {`
+  - L146: `it("reaches the endpoint when replay contains both thinking and text", async () => {`
+- assertion/gate manifest:
+  - L124: `expect(messages[1]).toEqual({`
+  - L140: `expect(messages[1]).toEqual({`
+  - L206: `expect(requestBodies).toHaveLength(1);`
+  - L207: `expect(requestBodies[0]?.messages[1]).toEqual({`
+  - L216: `expect(terminalEvent?.type).toBe("done");`
+
+### `packages/ai/test/openai-completions-thinking-token-budget.test.ts`
+- cases: `7`; assertions/gates: `7`
+- case manifest:
+  - L86: `describe("openai-completions thinking_token_budget", () => {`
+  - L91: `it("sends the configured budget for the requested level", async () => {`
+  - L96: `it("omits the budget when the compat flag is not set", async () => {`
+  - L102: `it("omits the budget when thinking is off", async () => {`
+  - L107: `it("clamps xhigh and max to the high budget", async () => {`
+  - L114: `it("leaves room for the answer when the budget meets the response ceiling", async () => {`
+  - L120: `it("uses the caller max_tokens as the ceiling when it is lower than the model cap", async () => {`
+- assertion/gate manifest:
+  - L93: `expect(params.thinking_token_budget).toBe(4096);`
+  - L99: `expect(params.thinking_token_budget).toBeUndefined();`
+  - L104: `expect(params.thinking_token_budget).toBeUndefined();`
+  - L110: `expect(xhigh.thinking_token_budget).toBe(8192);`
+  - L111: `expect(max.thinking_token_budget).toBe(8192);`
+  - L117: `expect(params.thinking_token_budget).toBe(16384 - 1024);`
+  - L122: `expect(params.thinking_token_budget).toBe(4096 - 1024);`
+
+### `packages/ai/test/openai-completions-tool-choice.test.ts`
+- cases: `46`; assertions/gates: `156`
+- case manifest:
+  - L106: `describe("openai-completions tool_choice", () => {`
+  - L112: `it("forwards toolChoice from simple options to payload", async () => {`
+  - L153: `it("omits strict when compat disables strict mode", async () => {`
+  - L198: `it("maps Groq Qwen reasoning levels to default reasoning_effort", async () => {`
+  - L226: `it("keeps normal reasoning_effort for groq models without compat mapping", async () => {`
+  - L254: `it("enables tool_stream for supported z.ai models with tools", async () => {`
+  - L291: `it("stores z.ai tool_stream support in model compat metadata", () => {`
+  - L298: `it("stores z.ai GLM-5.2 effort metadata", () => {`
+  - L312: `it("maps z.ai GLM-5.2 thinking levels to reasoning_effort", async () => {`
+  - L350: `it("preserves z.ai thinking when replaying reasoning_content", async () => {`
+  - L410: `it("omits z.ai GLM-5.2 reasoning_effort when thinking is off", async () => {`
+  - L438: `it("respects explicit z.ai tool_stream compat override", async () => {`
+  - L482: `it("omits tool_stream when no tools are provided", async () => {`
+  - L509: `it("maps non-standard provider finish_reason values to stopReason error", async () => {`
+  - L544: `it("ignores null stream chunks from openai-compatible providers", async () => {`
+  - L586: `it("errors when a stream ends after only null finish_reason chunks", async () => {`
+  - L618: `it("accepts streams without finish_reason when compat disables it", async () => {`
+  - L645: `it("ignores empty custom objects on function tool call deltas", async () => {`
+  - L694: `it("coalesces tool call deltas by stable index when provider mutates ids mid-stream", async () => {`
+  - L805: `it("accumulates mixed content, reasoning, and parallel tool call deltas independently", async () => {`
+  - L1037: `it("uses system messages for non-OpenAI/Anthropic OpenRouter reasoning model instructions", async () => {`
+  - L1059: `it("keeps developer messages for OpenAI and Anthropic OpenRouter reasoning model instructions", async () => {`
+  - L1086: `it("keeps developer messages for OpenAI reasoning model instructions", async () => {`
+  - L1109: `it("stores OpenRouter Kimi K2.6 reasoning replay compat in built-in metadata", () => {`
+  - L1117: `it("stores Xiaomi MiMo reasoning replay compat in built-in metadata", () => {`
+  - L1129: `it("stores Qwen Token Plan reasoning replay compat in built-in metadata", () => {`
+  - L1141: `it("replays Xiaomi MiMo assistant tool calls with empty reasoning_content when thinking is missing", async () => {`
+  - L1199: `it("normalizes OpenCode Go reasoning deltas to reasoning_content for replay", async () => {`
+  - L1226: `it("keeps non-OpenCode Go reasoning deltas on the original reasoning field", async () => {`
+  - L1253: `it("replays OpenCode Go reasoning thinking blocks as reasoning_content", () => {`
+  - L1312: `it("sends thinking disabled for OpenCode Go Kimi K2.6 when thinking is off", async () => {`
+  - L1334: `it("sends thinking enabled for OpenCode Go Kimi K2.6 when thinking is enabled", async () => {`
+  - L1357: `it("omits disabled thinking for Moonshot Kimi K2.7 Code models", async () => {`
+  - L1383: `it("keeps disabled thinking for Moonshot Kimi K2.6 when thinking is off", async () => {`
+  - L1405: `it("sends max_tokens for OpenCode completions models", async () => {`
+  - L1432: `it("sends max_tokens for Z.AI completions models", async () => {`
+  - L1459: `it("omits reasoning effort for OpenCode Grok Build", async () => {`
+  - L1481: `it("does not double-count reasoning tokens in completion usage", async () => {`
+  - L1516: `it("preserves prompt_tokens_details cache read/write fields from chunk usage", async () => {`
+  - L1557: `it("preserves prompt_tokens_details cache read/write fields from choice usage fallback", async () => {`
+  - L1603: `it("uses OpenRouter reasoning object instead of reasoning_effort", async () => {`
+  - L1635: `it("uses configurable chat template boolean thinking kwargs", async () => {`
+  - L1659: `it("uses qwen chat template thinking kwargs", async () => {`
+  - L1684: `it("uses configurable chat template effort kwargs with static kwargs", async () => {`
+  - L1706: `it("uses Ant Ling compatibility metadata", async () => {`
+  - L1759: `it("omits Ant Ling reasoning for unmapped direct reasoning efforts and non-reasoning models", async () => {`
+- assertion/gate manifest:
+  - L148: `expect(params.tool_choice).toBe("required");`
+  - L149: `expect(Array.isArray(params.tools)).toBe(true);`
+  - L150: `expect(params.tools?.length ?? 0).toBeGreaterThan(0);`
+  - L193: `expect(tool).toBeTruthy();`
+  - L194: `expect(tool?.strict).toBeUndefined();`
+  - L195: `expect("strict" in (tool ?? {})).toBe(false);`
+  - L223: `expect(params.reasoning_effort).toBe("default");`
+  - L251: `expect(params.reasoning_effort).toBe("medium");`
+  - L288: `expect(params.tool_stream).toBe(true);`
+  - L292: `expect(getModel("zai", "glm-4.7")?.compat?.zaiToolStream).toBe(true);`
+  - L293: `expect(getModel("zai", "glm-4.7")?.compat?.zaiToolStream).toBe(true);`
+  - L294: `expect(getModel("zai", "glm-5-turbo")?.compat?.zaiToolStream).toBe(true);`
+  - L295: `expect(getModel("zai", "glm-5.2")?.compat?.zaiToolStream).toBe(true);`
+  - L301: `expect(model.compat?.supportsReasoningEffort).toBe(true);`
+  - L302: `expect(model.thinkingLevelMap).toEqual({`
+  - L345: `expect(params.thinking).toEqual({ type: "enabled", clear_thinking: false });`
+  - L346: `expect(params.reasoning_effort).toBe(testCase.effort);`
+  - L406: `expect(replayedAssistant).toMatchObject({ reasoning_content: "prior reasoning" });`
+  - L407: `expect(params.thinking).toEqual({ type: "enabled", clear_thinking: false });`
+  - L434: `expect(params.thinking).toEqual({ type: "disabled" });`
+  - L435: `expect(params.reasoning_effort).toBeUndefined();`
+  - L479: `expect(params.tool_stream).toBe(true);`
+  - L506: `expect(params.tool_stream).toBeUndefined();`
+  - L540: `expect(response.stopReason).toBe("error");`
+  - L541: `expect(response.errorMessage).toBe("Provider finish_reason: network_error");`
+  - L579: `expect(response.stopReason).toBe("stop");`
+  - L580: `expect(response.errorMessage).toBeUndefined();`
+  - L581: `expect(response.responseId).toBe("chatcmpl-test");`
+  - L582: `expect(response.usage.totalTokens).toBe(4);`
+  - L583: `expect(response.content).toEqual([{ type: "text", text: "OK" }]);`
+  - L614: `expect(response.stopReason).toBe("error");`
+  - L615: `expect(response.errorMessage).toBe("Stream ended without finish_reason");`
+  - L640: `expect(response.stopReason).toBe("stop");`
+  - L641: `expect(response.errorMessage).toBeUndefined();`
+  - L642: `expect(response.content).toEqual([{ type: "text", text: "complete answer" }]);`
+  - L684: `expect(response.content).toEqual([`
+  - L790: `expect(response.stopReason).toBe("toolUse");`
+  - L791: `expect(toolCallContentIndexes).toEqual([0, 0, 0, 0, 0]);`
+  - L792: `expect(response.content).toHaveLength(1);`
+  - L794: `expect(toolCall.type).toBe("toolCall");`
+  - L798: `expect(toolCall.id).toBe("functions.read:0");`
+  - L799: `expect(toolCall.name).toBe("read");`
+  - L800: `expect(toolCall.arguments).toEqual({ path: "README.md" });`
+  - L801: `expect(toolCall).not.toHaveProperty("streamIndex");`
+  - L802: `expect(toolCall).not.toHaveProperty("partialArgs");`
+  - L956: `expect(response.stopReason).toBe("toolUse");`
+  - L957: `expect(eventTypes.filter((type) => type === "text_start")).toHaveLength(1);`
+  - L958: `expect(eventTypes.filter((type) => type === "text_delta")).toHaveLength(3);`
+  - L959: `expect(eventTypes.filter((type) => type === "text_end")).toHaveLength(1);`
+  - L960: `expect(eventTypes.filter((type) => type === "thinking_start")).toHaveLength(1);`
+  - L961: `expect(eventTypes.filter((type) => type === "thinking_delta")).toHaveLength(2);`
+  - L962: `expect(eventTypes.filter((type) => type === "thinking_end")).toHaveLength(1);`
+  - L963: `expect(eventTypes.filter((type) => type === "toolcall_start")).toHaveLength(4);`
+  - L964: `expect(eventTypes.filter((type) => type === "toolcall_delta")).toHaveLength(9);`
+  - L965: `expect(eventTypes.filter((type) => type === "toolcall_end")).toHaveLength(4);`
+  - L966: `expect(toolEventsByContentIndex.get(2)).toEqual([`
+  - L972: `expect(toolEventsByContentIndex.get(3)).toEqual([`
+  - L979: `expect(toolEventsByContentIndex.get(4)).toEqual([`
+  - L985: `expect(toolEventsByContentIndex.get(5)).toEqual([`
+  - L992: `expect(response.content).toHaveLength(6);`
+  - L993: `expect(response.content[0]).toEqual({ type: "text", text: "answer 1 answer 2\n" });`
+  - L994: `expect(response.content[1]).toEqual({`
+  - L1003: `expect(readCall.type).toBe("toolCall");`
+  - L1004: `expect(grepCall.type).toBe("toolCall");`
+  - L1005: `expect(listCall.type).toBe("toolCall");`
+  - L1006: `expect(writeCall.type).toBe("toolCall");`
+  - L1015: `expect(readCall.id).toBe("tc_read_initial");`
+  - L1016: `expect(readCall.name).toBe("read");`
+  - L1017: `expect(readCall.arguments).toEqual({ path: "README.md" });`
+  - L1018: `expect(readCall).not.toHaveProperty("streamIndex");`
+  - L1019: `expect(readCall).not.toHaveProperty("partialArgs");`
+  - L1020: `expect(grepCall.id).toBe("tc_grep_initial");`
+  - L1021: `expect(grepCall.name).toBe("grep");`
+  - L1022: `expect(grepCall.arguments).toEqual({ pattern: "TODO", path: "src" });`
+  - L1023: `expect(grepCall).not.toHaveProperty("streamIndex");`
+  - L1024: `expect(grepCall).not.toHaveProperty("partialArgs");`
+  - L1025: `expect(listCall.id).toBe("tc_list_no_index");`
+  - L1026: `expect(listCall.name).toBe("list");`
+  - L1027: `expect(listCall.arguments).toEqual({ path: "packages/ai" });`
+  - L1028: `expect(listCall).not.toHaveProperty("streamIndex");`
+  - L1029: `expect(listCall).not.toHaveProperty("partialArgs");`
+  - L1030: `expect(writeCall.id).toBe("tc_write_no_index");`
+  - L1031: `expect(writeCall.name).toBe("write");`
+  - L1032: `expect(writeCall.arguments).toEqual({ path: "out.txt", content: "ok" });`
+  - L1033: `expect(writeCall).not.toHaveProperty("streamIndex");`
+  - L1034: `expect(writeCall).not.toHaveProperty("partialArgs");`
+  - L1056: `expect(params.messages?.[0]?.role).toBe("system");`
+  - L1064: `expect(model).toBeDefined();`
+  - L1082: `expect(params.messages?.[0]?.role).toBe("developer");`
+  - L1106: `expect(params.messages?.[0]?.role).toBe("developer");`
+  - L1113: `expect(model.compat?.supportsDeveloperRole).toBe(false);`
+  - L1114: `expect(model.compat?.requiresReasoningContentOnAssistantMessages).toBe(true);`
+  - L1122: `expect(model.compat?.requiresReasoningContentOnAssistantMessages).toBe(true);`
+  - L1123: `expect(model.compat?.thinkingFormat).toBe("deepseek");`
+  - L1124: `expect(model.compat?.maxTokensField).toBeUndefined();`
+  - L1125: `expect(model.compat?.supportsDeveloperRole).toBeUndefined();`
+  - L1134: `expect(model.compat?.thinkingFormat).toBe("qwen");`
+  - L1135: `expect(model.compat?.requiresReasoningContentOnAssistantMessages).toBeUndefined();`
+  - L1136: `expect(model.compat?.supportsDeveloperRole).toBe(false);`
+  - L1137: `expect(model.compat?.supportsStore).toBe(false);`
+  - L1194: `expect(replayedAssistant).toMatchObject({ role: "assistant", reasoning_content: "" });`
+  - L1195: `expect(params.thinking).toEqual({ type: "enabled" });`
+  - L1196: `expect(params.reasoning_effort).toBe("high");`
+  - L1217: `expect(response.content).toEqual([`
+  - L1244: `expect(response.content).toEqual([`
+  - L1308: `expect(messages[0]).toMatchObject({ role: "assistant", reasoning_content: "think" });`
+  - L1309: `expect(messages[0]).not.toHaveProperty("reasoning");`
+  - L1330: `expect(params.thinking).toEqual({ type: "disabled" });`
+  - L1331: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1353: `expect(params.thinking).toEqual({ type: "enabled" });`
+  - L1354: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1361: `expect(model).toBeDefined();`
+  - L1378: `expect(params.thinking).toBeUndefined();`
+  - L1379: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1401: `expect(params.thinking).toEqual({ type: "disabled" });`
+  - L1402: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1410: `expect(model.compat?.maxTokensField).toBe("max_tokens");`
+  - L1427: `expect(params.max_tokens).toBe(123);`
+  - L1428: `expect(params.max_completion_tokens).toBeUndefined();`
+  - L1436: `expect(model.compat?.maxTokensField).toBe("max_tokens");`
+  - L1454: `expect(params.max_tokens).toBe(123);`
+  - L1455: `expect(params.max_completion_tokens).toBeUndefined();`
+  - L1478: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1511: `expect(response.usage.input).toBe(10);`
+  - L1512: `expect(response.usage.output).toBe(33);`
+  - L1513: `expect(response.usage.totalTokens).toBe(43);`
+  - L1551: `expect(response.usage.input).toBe(20);`
+  - L1552: `expect(response.usage.cacheRead).toBe(50);`
+  - L1553: `expect(response.usage.cacheWrite).toBe(30);`
+  - L1554: `expect(response.usage.totalTokens).toBe(105);`
+  - L1597: `expect(response.usage.input).toBe(20);`
+  - L1598: `expect(response.usage.cacheRead).toBe(50);`
+  - L1599: `expect(response.usage.cacheWrite).toBe(30);`
+  - L1600: `expect(response.usage.totalTokens).toBe(105);`
+  - L1631: `expect(params.reasoning).toEqual({ effort: "high" });`
+  - L1632: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1653: `expect(params.chat_template_kwargs).toEqual({ thinking: testCase.expected });`
+  - L1654: `expect(params.thinking).toBeUndefined();`
+  - L1655: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1676: `expect(params.chat_template_kwargs).toEqual({`
+  - L1680: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1702: `expect(params.chat_template_kwargs).toEqual({ preserve_thinking: true, reasoning_effort: "max" });`
+  - L1703: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1710: `expect(model.compat).toMatchObject({`
+  - L1718: `expect(model.compat?.supportsStrictMode).toBeUndefined();`
+  - L1719: `expect(model.compat?.requiresReasoningContentOnAssistantMessages).toBeUndefined();`
+  - L1749: `expect(params.max_tokens).toBe(123);`
+  - L1750: `expect(params.max_completion_tokens).toBeUndefined();`
+  - L1751: `expect(params.messages?.[0]?.role).toBe("system");`
+  - L1752: `expect(params.reasoning).toEqual({ effort: "high" });`
+  - L1753: `expect(params.reasoning_effort).toBeUndefined();`
+  - L1754: `expect(params.store).toBeUndefined();`
+  - L1755: `expect(params.prompt_cache_key).toBeUndefined();`
+  - L1756: `expect(params.prompt_cache_retention).toBeUndefined();`
+  - L1777: `expect((payload ?? mockState.lastParams) as { reasoning?: unknown }).not.toHaveProperty("reasoning");`
+  - L1794: `expect((payload ?? mockState.lastParams) as { reasoning?: unknown }).not.toHaveProperty("reasoning");`
+
+### `packages/ai/test/openai-completions-tool-result-images.test.ts`
+- cases: `3`; assertions/gates: `7`
+- case manifest:
+  - L75: `describe("openai-completions convertMessages", () => {`
+  - L76: `it("batches tool-result images after consecutive tool results", () => {`
+  - L122: `it("uses '(no tool output)' placeholder for empty tool results without images", () => {`
+- assertion/gate manifest:
+  - L110: `expect(roles).toEqual(["user", "assistant", "tool", "tool", "user"]);`
+  - L113: `expect(imageMessage.role).toBe("user");`
+  - L114: `expect(Array.isArray(imageMessage.content)).toBe(true);`
+  - L119: `expect(imageParts.length).toBe(2);`
+  - L152: `expect(toolMessage).toBeTruthy();`
+  - L153: `expect(toolMessage?.content).toBe("(no tool output)");`
+  - L154: `expect(toolMessage?.content).not.toContain("see attached image");`
+
+### `packages/ai/test/openai-responses-terminal-event.test.ts`
+- cases: `10`; assertions/gates: `25`
+- case manifest:
+  - L206: `describe("OpenAI Responses terminal event handling", () => {`
+  - L207: `it("rejects streams that end before a terminal response event", async () => {`
+  - L217: `it("emits an error final result when the wrapper stream ends before a terminal response event", async () => {`
+  - L241: `it.each([`
+  - L262: `it("replaces a provisional final-answer stop with an incomplete terminal reason", async () => {`
+  - L284: `it("finalizes completed terminal events as stop", async () => {`
+  - L303: `it("finalizes incomplete terminal events as length stops", async () => {`
+  - L322: `it("finalizes content-filtered incomplete responses as non-retryable errors", async () => {`
+  - L334: `it("preserves unknown provider incomplete reasons as non-retryable errors", async () => {`
+  - L346: `it("rejects failed terminal events with the provider error", async () => {`
+- assertion/gate manifest:
+  - L212: `await expect(processResponsesStream(createEarlyEofEvents(), output, stream, model)).rejects.toThrow(`
+  - L235: `expect(initialStopReason).toBe("pending");`
+  - L236: `expect(lastEvent?.type).toBe("error");`
+  - L237: `expect(result.stopReason).toBe("error");`
+  - L238: `expect(result.errorMessage).toBe("OpenAI Responses stream ended before a terminal response event");`
+  - L258: `expect(observedStopReasons).toEqual(expected);`
+  - L259: `expect(output.stopReason).toBe("stop");`
+  - L280: `expect(observedStopReasons).toEqual(["stop", "stop"]);`
+  - L281: `expect(output.stopReason).toBe("length");`
+  - L291: `expect(output.responseId).toBe("resp_completed");`
+  - L292: `expect(output.stopReason).toBe("stop");`
+  - L293: `expect(output.rawStopReason).toBe("completed");`
+  - L294: `expect(output.usage).toMatchObject({`
+  - L310: `expect(output.responseId).toBe("resp_incomplete");`
+  - L311: `expect(output.stopReason).toBe("length");`
+  - L312: `expect(output.rawStopReason).toBe("incomplete.max_output_tokens");`
+  - L313: `expect(output.usage).toMatchObject({`
+  - L329: `expect(output.stopReason).toBe("error");`
+  - L330: `expect(output.rawStopReason).toBe("incomplete.content_filter");`
+  - L331: `expect(output.errorMessage).toBe("Response incomplete: content_filter");`
+  - L341: `expect(output.stopReason).toBe("error");`
+  - L342: `expect(output.rawStopReason).toBe("incomplete.max_time_limit");`
+  - L343: `expect(output.errorMessage).toBe("Response incomplete: max_time_limit");`
+  - L351: `await expect(processResponsesStream(createFailedEvents(), output, stream, model)).rejects.toThrow(`
+  - L354: `expect(output.rawStopReason).toBe("failed");`
+
+### `packages/ai/test/openrouter-oauth.test.ts`
+- cases: `14`; assertions/gates: `41`
+- case manifest:
+  - L23: `describe.sequential("OpenRouter OAuth", () => {`
+  - L29: `it("is exposed by both OpenRouter providers alongside API-key auth", () => {`
+  - L37: `it("resolves the same stored OAuth key for text and image providers", async () => {`
+  - L55: `it("runs PKCE on a one-shot loopback callback and exchanges the code for a permanent API key", async () => {`
+  - L110: `it("reports token exchange failures through both the callback page and login", async () => {`
+  - L132: `it("allows only one token exchange for a callback", async () => {`
+  - L167: `it("rejects a successful response that does not contain a key", async () => {`
+  - L189: `it("mints a key from a pasted redirect URL when the loopback callback never arrives", async () => {`
+  - L222: `it("accepts a bare authorization code from the manual prompt", async () => {`
+  - L242: `it("fails login when the manual prompt is cancelled", async () => {`
+  - L258: `it("rejects empty manual input without exchanging a code", async () => {`
+  - L272: `it("closes the pending callback when login is cancelled", async () => {`
+  - L290: `it("rejects before opening a callback server when login is already cancelled", async () => {`
+  - L305: `it("uses the configured OAuth callback host", async () => {`
+- assertion/gate manifest:
+  - L31: `expect(provider.auth.apiKey).toBeDefined();`
+  - L32: `expect(provider.auth.oauth).toBeDefined();`
+  - L33: `expect(provider.auth.oauth?.loginLabel).toBe("Sign in with OpenRouter");`
+  - L51: `expect((await textModels.getAuth("openrouter"))?.auth.apiKey).toBe("sk-or-stored");`
+  - L52: `expect((await imageModels.getAuth("openrouter"))?.auth.apiKey).toBe("sk-or-stored");`
+  - L83: `expect(credential).toEqual({`
+  - L89: `expect((await callbackResponse)?.status).toBe(200);`
+  - L90: `expect(manualSignal?.aborted).toBe(true);`
+  - L91: `expect(authorizeUrl?.origin).toBe("https://openrouter.ai");`
+  - L92: `expect(authorizeUrl?.pathname).toBe("/auth");`
+  - L93: `expect(authorizeUrl?.searchParams.get("code_challenge_method")).toBe("S256");`
+  - L96: `expect(callbackUrl.hostname).toBe("127.0.0.1");`
+  - L97: `expect(callbackUrl.pathname).toMatch(/^\/oauth\/callback\/[0-9a-f-]+$/);`
+  - L99: `expect(exchangeBody).toMatchObject({`
+  - L104: `expect(typeof verifier).toBe("string");`
+  - L106: `expect(authorizeUrl?.searchParams.get("code_challenge")).toBe(base64url(new Uint8Array(digest)));`
+  - L107: `expect(fetchMock).toHaveBeenCalledTimes(1);`
+  - L128: `await expect(login).rejects.toThrow("OpenRouter OAuth key exchange failed (HTTP 403): invalid code");`
+  - L129: `expect((await callbackResponse)?.status).toBe(502);`
+  - L157: `await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));`
+  - L159: `expect((await nativeFetch(callbackUrl)).status).toBe(409);`
+  - L160: `expect(fetchMock).toHaveBeenCalledTimes(1);`
+  - L163: `await expect(login).resolves.toMatchObject({ access: "sk-or-test" });`
+  - L164: `expect((await firstCallback)?.status).toBe(200);`
+  - L185: `await expect(login).rejects.toThrow('OpenRouter OAuth response carries no "key"');`
+  - L186: `expect((await callbackResponse)?.status).toBe(502);`
+  - L212: `expect(credential).toEqual({`
+  - L218: `expect(exchangeBody).toMatchObject({ code: "manual-code", code_challenge_method: "S256" });`
+  - L219: `expect(fetchMock).toHaveBeenCalledTimes(1);`
+  - L238: `expect(credential).toMatchObject({ access: "sk-or-manual" });`
+  - L239: `expect(exchangeBody).toMatchObject({ code: "manual-code" });`
+  - L246: `await expect(`
+  - L255: `expect(fetchMock).not.toHaveBeenCalled();`
+  - L262: `await expect(`
+  - L269: `expect(fetchMock).not.toHaveBeenCalled();`
+  - L285: `await expect(login).rejects.toThrow("Login cancelled");`
+  - L286: `expect(callbackUrl).toBeDefined();`
+  - L287: `await expect(nativeFetch(callbackUrl!)).rejects.toThrow();`
+  - L294: `await expect(`
+  - L319: `await expect(login).rejects.toThrow("Login cancelled");`
+  - L320: `expect(callbackUrl?.hostname).toBe("localhost");`
+
+### `packages/ai/test/overflow.test.ts`
+- cases: `18`; assertions/gates: `18`
+- case manifest:
+  - L32: `describe("isContextOverflow", () => {`
+  - L33: `it("detects explicit Ollama prompt-too-long errors", () => {`
+  - L38: `it("detects Together AI context length errors", () => {`
+  - L45: `it("detects LiteLLM-wrapped OpenAI maximum context length errors", () => {`
+  - L52: `it("detects OpenAI-compatible parenthesized maximum context length errors", () => {`
+  - L59: `it("detects OpenRouter Poolside maximum allowed input length errors", () => {`
+  - L66: `it("detects DS4 configured context size errors", () => {`
+  - L78: `it("does not treat generic non-overflow Ollama errors as overflow", () => {`
+  - L83: `it("does not treat Bedrock throttling 'Too many tokens' as overflow", () => {`
+  - L90: `it("does not treat Bedrock service unavailable as overflow", () => {`
+  - L95: `it("does not treat generic rate limit errors as overflow", () => {`
+  - L100: `it("does not treat HTTP 429 style errors as overflow", () => {`
+  - L134: `it("detects Xiaomi-style overflow (length stop with zero output and filled context)", () => {`
+  - L145: `it("treats a length stop below the desired output limit as recoverable", () => {`
+  - L158: `it("does not recover a length stop that reached the desired output limit", () => {`
+  - L163: `it("treats zero-output length stops as recoverable without context metadata", () => {`
+  - L168: `it("does not treat normal length stops with output as context overflow", () => {`
+  - L173: `it("does not treat zero-output length stops far below context as context overflow", () => {`
+- assertion/gate manifest:
+  - L35: `expect(isContextOverflow(message, 32768)).toBe(true);`
+  - L42: `expect(isContextOverflow(message, 262144)).toBe(true);`
+  - L49: `expect(isContextOverflow(message, 131072)).toBe(true);`
+  - L56: `expect(isContextOverflow(message, 262144)).toBe(true);`
+  - L63: `expect(isContextOverflow(message, 131072)).toBe(true);`
+  - L70: `expect(isContextOverflow(message, 256000)).toBe(true);`
+  - L75: `expect(isContextOverflow(commaMessage, 256000)).toBe(true);`
+  - L80: `expect(isContextOverflow(message, 32768)).toBe(false);`
+  - L87: `expect(isContextOverflow(message, 200000)).toBe(false);`
+  - L92: `expect(isContextOverflow(message, 200000)).toBe(false);`
+  - L97: `expect(isContextOverflow(message, 200000)).toBe(false);`
+  - L102: `expect(isContextOverflow(message, 200000)).toBe(false);`
+  - L142: `expect(isContextOverflow(message, 1048576)).toBe(true);`
+  - L155: `expect(isRecoverableLength(message, 128000)).toBe(true);`
+  - L160: `expect(isRecoverableLength(message, 1024)).toBe(false);`
+  - L165: `expect(isRecoverableLength(message, 128000)).toBe(true);`
+  - L170: `expect(isContextOverflow(message, 200000)).toBe(false);`
+  - L175: `expect(isContextOverflow(message, 200000)).toBe(false);`
+
+### `packages/ai/test/providers.test.ts`
+- cases: `27`; assertions/gates: `79`
+- case manifest:
+  - L36: `describe("builtin providers", () => {`
+  - L37: `it("builtinModels registers every builtin provider with models", async () => {`
+  - L58: `it("stores native constrained-sampling capabilities in model metadata", () => {`
+  - L69: `it("uses official Kimi K3 pricing for Moonshot providers", () => {`
+  - L81: `it("uses API-equivalent implied pricing for Kimi Coding subscription models", () => {`
+  - L93: `it("resolves Anthropic bearer auth from env with auth token precedence", async () => {`
+  - L109: `it("preserves Anthropic OAuth token precedence over the API key", async () => {`
+  - L120: `it("runs provider-owned Bedrock bearer token and AWS profile login flows", async () => {`
+  - L155: `it("reports bedrock as configured from ambient AWS credentials without an api key", async () => {`
+  - L169: `it("requires Cloudflare Workers AI account config and returns scoped env", async () => {`
+  - L184: `it("requires Cloudflare AI Gateway account and gateway config and returns scoped env headers", async () => {`
+  - L214: `it("runs provider-owned Vertex API key and ADC login flows", async () => {`
+  - L258: `it("resolves vertex via ADC file plus project and location", async () => {`
+  - L282: `describe("envApiKeyAuth", () => {`
+  - L283: `it("prefers the stored credential key and falls back through env vars in order", async () => {`
+  - L301: `it("login prompts for a secret and returns an api-key credential", async () => {`
+  - L315: `describe("createProvider", () => {`
+  - L344: `it("lazily exposes only declared deferred capabilities", async () => {`
+  - L369: `it("dispatches on model.api for mixed-API providers", async () => {`
+  - L385: `it("merges provider-resolved env into stream options", async () => {`
+  - L426: `it("applies resolved request options to deferred fetch and cancellation", async () => {`
+  - L501: `it("produces a stream error for a model whose api has no implementation", async () => {`
+  - L513: `it("lets a newer dynamic refresh bypass and supersede older network work", async () => {`
+  - L560: `describe("fauxProvider", () => {`
+  - L561: `it("streams queued responses through a Models collection", async () => {`
+  - L574: `it("submits, polls, and redeems deferred responses", async () => {`
+  - L607: `it("records cancellation and returns deferred fetch failures in-band", async () => {`
+- assertion/gate manifest:
+  - L40: `expect(providers.length).toBe(builtinProviders().length);`
+  - L41: `expect(providers.map((p) => p.id)).toContain("anthropic");`
+  - L44: `expect(anthropic?.api).toBe("anthropic-messages");`
+  - L47: `expect(all.length).toBeGreaterThan(500);`
+  - L52: `if (provider.id === "radius") expect(list).toEqual([]);`
+  - L53: `else expect(list.length).toBeGreaterThan(0);`
+  - L54: `expect(list.every((m) => m.provider === provider.id)).toBe(true);`
+  - L60: `expect(gpt4o.compat?.supportsStrictMode).toBe(true);`
+  - L61: `expect(gpt4o.compat?.supportsOpenAIGrammarTools).toBeUndefined();`
+  - L62: `expect(getBuiltinModel("openai", "gpt-5.4").compat).toMatchObject({`
+  - L66: `expect(getBuiltinModel("anthropic", "claude-haiku-4-5").compat?.supportsStrictTools).toBe(true);`
+  - L72: `expect(models.getModel(provider, "kimi-k3")?.cost).toEqual({`
+  - L89: `expect(models.getModel("kimi-coding", modelId)?.cost).toEqual(cost);`
+  - L103: `expect(await models.getAuth("anthropic")).toEqual({`
+  - L116: `expect(result?.auth.apiKey).toBe("oauth-token");`
+  - L117: `expect(result?.source).toBe("ANTHROPIC_OAUTH_TOKEN");`
+  - L123: `expect(`
+  - L133: `expect(`
+  - L140: `expect(events).toEqual([`
+  - L146: `expect(`
+  - L161: `expect(result?.auth).toEqual({});`
+  - L162: `expect(result?.source).toBe("AWS_PROFILE");`
+  - L166: `expect(await unconfigured.getAuth(model.provider)).toBeUndefined();`
+  - L173: `expect(await missingAccount.getAuth(model.provider)).toBeUndefined();`
+  - L180: `expect(result?.auth).toEqual({ apiKey: "cf-key" });`
+  - L181: `expect(result?.env).toEqual({ CLOUDFLARE_ACCOUNT_ID: "account-id" });`
+  - L190: `expect(await missingGateway.getAuth(model.provider)).toBeUndefined();`
+  - L201: `expect(result?.auth).toEqual({`
+  - L208: `expect(result?.env).toEqual({`
+  - L217: `expect(`
+  - L227: `expect(`
+  - L237: `expect(events).toEqual([`
+  - L243: `expect(`
+  - L267: `expect(result?.auth).toEqual({});`
+  - L268: `expect(result?.source).toContain("application default");`
+  - L273: `expect(await partial.getAuth(model.provider)).toBeUndefined();`
+  - L278: `expect((await keyed.getAuth(model.provider))?.auth.apiKey).toBe("vertex-key");`
+  - L291: `expect(stored?.auth.apiKey).toBe("stored");`
+  - L292: `expect(stored?.source).toBe("stored credential");`
+  - L295: `expect(second?.auth.apiKey).toBe("second");`
+  - L296: `expect(second?.source).toBe("SECOND_KEY");`
+  - L298: `expect(await auth.resolve({ ctx: fakeAuthContext({}), signal: neverAbortedSignal })).toBeUndefined();`
+  - L306: `expect(prompt.type).toBe("secret");`
+  - L311: `expect(credential).toEqual({ type: "api_key", key: "entered-key" });`
+  - L363: `expect(loads).toBe(0);`
+  - L364: `expect(api.cancelDeferred).toBeUndefined();`
+  - L365: `expect((await api.fetchDeferred!(model, handle).result()).stopReason).toBe("stop");`
+  - L366: `expect(loads).toBe(1);`
+  - L382: `expect(calls).toEqual(["a:model-a", "b:model-b"]);`
+  - L422: `expect(capturedApiKey).toBe("request-key");`
+  - L423: `expect(capturedEnv).toEqual({ PROVIDER_ONLY: "provider", REQUEST_ONLY: "request", SHARED: "request" });`
+  - L480: `expect(fetchedModel?.baseUrl).toBe("https://resolved.test/v1");`
+  - L481: `expect(fetchedOptions).toMatchObject({`
+  - L493: `expect(cancelledOptions).toMatchObject({`
+  - L509: `expect(result.stopReason).toBe("error");`
+  - L510: `expect(result.errorMessage).toContain("no API implementation");`
+  - L542: `expect(provider.getModels()).toEqual([]);`
+  - L547: `await expect(second).resolves.toMatchObject({ aborted: false });`
+  - L548: `await expect(first).resolves.toMatchObject({ aborted: false });`
+  - L549: `expect(fetches).toBe(2);`
+  - L550: `expect(provider.getModels().map((model) => model.id)).toEqual(["listed-2"]);`
+  - L551: `expect((await store.read("dynamic"))?.models.map((model) => model.id)).toEqual(["listed-2"]);`
+  - L555: `expect(provider.getModels().map((model) => model.id)).toEqual(["listed-2"]);`
+  - L556: `expect((await store.read("dynamic"))?.models.map((model) => model.id)).toEqual(["listed-2"]);`
+  - L569: `expect(result.stopReason).toBe("stop");`
+  - L570: `expect(result.content).toEqual([{ type: "text", text: "hello from faux" }]);`
+  - L571: `expect(faux.state.callCount).toBe(1);`
+  - L585: `expect(eventTypes).toEqual(["start", "done"]);`
+  - L586: `expect(deferred).toMatchObject({ stopReason: "deferred", content: [] });`
+  - L587: `expect(deferred.deferred).toEqual({`
+  - L597: `expect(pending.stopReason).toBe("deferred");`
+  - L598: `expect(pending.deferred).toEqual(deferred.deferred);`
+  - L601: `expect(ready.stopReason).toBe("stop");`
+  - L602: `expect(ready.content).toEqual([{ type: "text", text: "ready" }]);`
+  - L603: `expect(ready.usage.totalTokens).toBeGreaterThan(0);`
+  - L604: `expect(faux.state).toMatchObject({ callCount: 1, deferredFetchCount: 2 });`
+  - L617: `expect(failed).toMatchObject({ stopReason: "error", errorMessage: "deferred failed" });`
+  - L622: `expect(faux.state.cancelledDeferred).toEqual([cancelledSubmission.deferred]);`
+  - L624: `expect(cancelled).toMatchObject({`
+
+### `packages/ai/test/qwen-token-plan-models.test.ts`
+- cases: `9`; assertions/gates: `16`
+- case manifest:
+  - L88: `describe("Qwen Token Plan models", () => {`
+  - L89: `it.each(["qwen-token-plan", "qwen-token-plan-cn"] as const)("exposes all text models on %s", (provider) => {`
+  - L96: `it.each(["qwen-token-plan", "qwen-token-plan-cn"] as const)("omits image models from %s", (provider) => {`
+  - L104: `it.each(QWEN_THINKING_MODEL_CASES)(`
+  - L137: `it.each(QWEN_REASONING_EFFORT_MODEL_CASES)(`
+  - L155: `it.each(["qwen-token-plan", "qwen-token-plan-cn"] as const)(`
+  - L173: `it.each(["qwen-token-plan", "qwen-token-plan-cn"] as const)(`
+  - L181: `it.each(QWEN_REASONING_EFFORT_MODEL_CASES)(`
+  - L213: `it.each(["qwen-token-plan", "qwen-token-plan-cn"] as const)(`
+- assertion/gate manifest:
+  - L92: `expect(modelIds, `${provider} should include ${expected}`).toContain(expected);`
+  - L99: `expect(modelIds, `${provider} should not include ${excluded}`).not.toContain(excluded);`
+  - L108: `expect(model).toBeDefined();`
+  - L132: `expect(payload).toHaveProperty("enable_thinking", true);`
+  - L133: `expect(payload).not.toHaveProperty("thinking");`
+  - L141: `expect(model).toBeDefined();`
+  - L144: `expect(model.thinkingLevelMap).toMatchObject({`
+  - L159: `expect(model).toBeDefined();`
+  - L162: `expect(model.thinkingLevelMap).toMatchObject({`
+  - L177: `expect(modelIds).not.toContain("qwen3.8-max-preview");`
+  - L185: `expect(model).toBeDefined();`
+  - L209: `expect(payload).toHaveProperty("reasoning_effort", "high");`
+  - L217: `expect(model).toBeDefined();`
+  - L241: `expect(payload).toHaveProperty("enable_thinking", true);`
+  - L242: `expect(payload).toHaveProperty("reasoning_effort", "xhigh");`
+  - L243: `expect(payload).not.toHaveProperty("thinking");`
+
+### `packages/ai/test/radius-oauth.test.ts`
+- cases: `4`; assertions/gates: `17`
+- case manifest:
+  - L29: `describe("Radius OAuth", () => {`
+  - L36: `it("uses gateway endpoints directly for device login", async () => {`
+  - L93: `it("refreshes directly through the gateway without discovery", async () => {`
+  - L118: `it("discovers only the interactive browser authorization endpoint", async () => {`
+- assertion/gate manifest:
+  - L48: `expect(form.get("client_id")).toBe("pi-gateway");`
+  - L49: `expect(form.get("scope")).toBe("gateway offline_access");`
+  - L59: `expect(form.get("grant_type")).toBe("urn:ietf:params:oauth:grant-type:device_code");`
+  - L60: `expect(form.get("client_id")).toBe("pi-gateway");`
+  - L61: `expect(form.get("device_code")).toBe("device-code");`
+  - L74: `await expect(oauth.login(interaction("device-code", events))).resolves.toEqual({`
+  - L81: `expect(events).toEqual([`
+  - L90: `expect(urls).toEqual([`${GATEWAY}/v1/oauth/device`, `${GATEWAY}/v1/oauth/token`]);`
+  - L95: `expect(requestUrl(input)).toBe(`${GATEWAY}/v1/oauth/token`);`
+  - L97: `expect(form.get("grant_type")).toBe("refresh_token");`
+  - L98: `expect(form.get("client_id")).toBe("pi-gateway");`
+  - L99: `expect(form.get("refresh_token")).toBe("old-refresh");`
+  - L109: `await expect(`
+  - L115: `expect(fetchMock).toHaveBeenCalledOnce();`
+  - L120: `expect(requestUrl(input)).toBe(`${GATEWAY}/v1/oauth`);`
+  - L126: `await expect(oauth.login(interaction("browser"))).rejects.toThrow(`Invalid Radius OAuth config from ${GATEWAY}`);`
+  - L127: `expect(fetchMock).toHaveBeenCalledOnce();`
+
+### `packages/ai/test/sampling-options.test.ts`
+- cases: `7`; assertions/gates: `12`
+- case manifest:
+  - L77: `describe("sampling params", () => {`
+  - L78: `it("merges stream-option sampling params into the request body", async () => {`
+  - L88: `it("omits sampling params when neither options nor model set them", async () => {`
+  - L95: `it("applies model-level sampling params", async () => {`
+  - L102: `it("merges stream-option keys over model-level keys", async () => {`
+  - L111: `it("overrides named request fields", async () => {`
+  - L120: `it("is ignored by non-OpenAI-compatible APIs", async () => {`
+- assertion/gate manifest:
+  - L83: `expect(payload.top_p).toBe(0.95);`
+  - L84: `expect(payload.top_k).toBe(0);`
+  - L85: `expect(payload.min_p).toBe(0);`
+  - L91: `expect(payload.temperature).toBeUndefined();`
+  - L92: `expect(payload.top_p).toBeUndefined();`
+  - L98: `expect(payload.temperature).toBe(1);`
+  - L99: `expect(payload.top_p).toBe(0.95);`
+  - L107: `expect(payload.top_p).toBe(0.5);`
+  - L108: `expect(payload.min_p).toBe(0.05);`
+  - L117: `expect(payload.temperature).toBe(1);`
+  - L125: `expect(payload.top_p).toBeUndefined();`
+  - L126: `expect(payload.top_k).toBeUndefined();`
+
+### `packages/ai/test/stream.test.ts`
+- cases: `274`; assertions/gates: `152`
+- case manifest:
+  - L349: `describe("Generate E2E Tests", () => {`
+  - L350: `describe.skipIf(!process.env.GEMINI_API_KEY)("Gemini Provider (gemini-2.5-flash)", () => {`
+  - L353: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L357: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L361: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L365: `it("should handle thinking", { retry: 3 }, async () => {`
+  - L369: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L373: `it("should handle image input", { retry: 3 }, async () => {`
+  - L378: `describe("Google Vertex Provider (gemini-3-flash-preview)", () => {`
+  - L386: `it.skipIf(!isVertexConfigured)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L390: `it.skipIf(!vertexApiKey)("should complete basic text generation with Vertex API key", { retry: 3 }, async () => {`
+  - L394: `it.skipIf(!isVertexConfigured)("should handle tool calling", { retry: 3 }, async () => {`
+  - L398: `it.skipIf(!isVertexConfigured)("should handle thinking", { retry: 3 }, async () => {`
+  - L406: `it.skipIf(!isVertexConfigured)("should handle streaming", { retry: 3 }, async () => {`
+  - L410: `it.skipIf(!isVertexConfigured)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L418: `it.skipIf(!isVertexConfigured)("should handle image input", { retry: 3 }, async () => {`
+  - L423: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider (gpt-4o-mini)", () => {`
+  - L431: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L435: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L439: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L443: `it("should handle image input", { retry: 3 }, async () => {`
+  - L448: `describe.skipIf(!process.env.DEEPSEEK_API_KEY)(`
+  - L453: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L457: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L461: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L465: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L469: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L475: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider (gpt-5.4)", () => {`
+  - L478: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L482: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L486: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L490: `it("should handle thinking", { retry: 2 }, async () => {`
+  - L494: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L498: `it("should handle image input", { retry: 3 }, async () => {`
+  - L503: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider (claude-haiku-4-5)", () => {`
+  - L506: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L510: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L514: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L518: `it("should handle image input", { retry: 3 }, async () => {`
+  - L523: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider (gpt-4o-mini)", () => {`
+  - L528: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L532: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L536: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L540: `it("should handle image input", { retry: 3 }, async () => {`
+  - L545: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider (grok-4.3 via OpenAI Completions)", () => {`
+  - L548: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L552: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L556: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L560: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L564: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L569: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider (gpt-oss-20b via OpenAI Completions)", () => {`
+  - L572: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L576: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L580: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L584: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L588: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L593: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider (gpt-oss-120b via OpenAI Completions)", () => {`
+  - L596: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L600: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L604: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L608: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L612: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L617: `describe.skipIf(!hasCloudflareWorkersAICredentials())(`
+  - L622: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L626: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L630: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L634: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L638: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L644: `describe.skipIf(!hasCloudflareAiGatewayCredentials())(`
+  - L649: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L653: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L657: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L661: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L665: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L671: `describe.skipIf(!hasCloudflareAiGatewayCredentials() || !process.env.OPENAI_API_KEY)(`
+  - L682: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L686: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L690: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L694: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L698: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L704: `describe.skipIf(!hasCloudflareAiGatewayCredentials() || !process.env.ANTHROPIC_API_KEY)(`
+  - L715: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L719: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L723: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L727: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L731: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L737: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider (Kimi-K2.5 via OpenAI Completions)", () => {`
+  - L740: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L744: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L748: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L752: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L756: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L761: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider (Kimi-K2.6 via OpenAI Completions)", () => {`
+  - L764: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L768: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L772: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L776: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L780: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L784: `it("should handle image input", { retry: 3 }, async () => {`
+  - L789: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider (GLM 5.2 via OpenAI Completions)", () => {`
+  - L793: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L797: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L801: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L805: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L809: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L814: `describe.skipIf(!process.env.NVIDIA_API_KEY)("NVIDIA NIM Provider (Nemotron 3 Super via OpenAI Completions)", () => {`
+  - L817: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L821: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L825: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L829: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L833: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L838: `describe.skipIf(!process.env.OPENROUTER_API_KEY)("OpenRouter Provider (glm-4.5v via OpenAI Completions)", () => {`
+  - L841: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L845: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L849: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L853: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L857: `it("should handle multi-turn with thinking and tools", { retry: 2 }, async () => {`
+  - L861: `it("should handle image input", { retry: 3 }, async () => {`
+  - L866: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)(`
+  - L871: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L875: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L879: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L883: `it("should handle image input", { retry: 3 }, async () => {`
+  - L887: `it("should handle multi-turn with tools", { retry: 3 }, async () => {`
+  - L893: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)(`
+  - L898: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L902: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L906: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L910: `it("should handle image input", { retry: 3 }, async () => {`
+  - L914: `it("should handle multi-turn with tools", { retry: 3 }, async () => {`
+  - L920: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)(`
+  - L925: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L929: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L933: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L937: `it("should handle image input", { retry: 3 }, async () => {`
+  - L941: `it("should handle multi-turn with tools", { retry: 3 }, async () => {`
+  - L947: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider (glm-5.2 via OpenAI Completions)", () => {`
+  - L950: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L954: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L958: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L962: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L966: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L970: `it("should handle image input", { retry: 3 }, async () => {`
+  - L975: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider (devstral-medium-latest)", () => {`
+  - L978: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L982: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L986: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L990: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L995: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1001: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider (pixtral-12b with image support)", () => {`
+  - L1004: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1008: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1012: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1016: `it("should handle image input", { retry: 3 }, async () => {`
+  - L1021: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider (MiniMax-M2.7 via Anthropic Messages)", () => {`
+  - L1024: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1028: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1032: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1036: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1040: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1045: `describe.skipIf(!process.env.KIMI_API_KEY)(`
+  - L1050: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1054: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1058: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1062: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1066: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1072: `describe.skipIf(!process.env.XIAOMI_API_KEY)(`
+  - L1081: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1085: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1089: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1093: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1097: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1103: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)(`
+  - L1112: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1116: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1120: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1124: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1128: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1134: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)(`
+  - L1143: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1147: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1151: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1155: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1159: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1165: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)(`
+  - L1174: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1178: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1182: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1186: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1190: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1196: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)(`
+  - L1205: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1209: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1213: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1217: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1221: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1227: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan Provider (Qwen3.7-Max, CN region)", () => {`
+  - L1234: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1238: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1242: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1246: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1250: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1255: `describe.skipIf(!process.env.ANT_LING_API_KEY)("Ant Ling Provider (Ling 2.6 Flash via OpenAI Completions)", () => {`
+  - L1258: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1262: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1266: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1270: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1281: `describe("Anthropic OAuth Provider (claude-sonnet-4-6)", () => {`
+  - L1284: `it.skipIf(!anthropicOAuthToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1288: `it.skipIf(!anthropicOAuthToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1292: `it.skipIf(!anthropicOAuthToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1296: `it.skipIf(!anthropicOAuthToken)("should handle thinking", { retry: 3 }, async () => {`
+  - L1300: `it.skipIf(!anthropicOAuthToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1304: `it.skipIf(!anthropicOAuthToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1309: `describe("Anthropic OAuth Provider (claude-opus-4-6 with adaptive thinking)", () => {`
+  - L1312: `it.skipIf(!anthropicOAuthToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1316: `it.skipIf(!anthropicOAuthToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1320: `it.skipIf(!anthropicOAuthToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1324: `it.skipIf(!anthropicOAuthToken)("should handle adaptive thinking with effort high", { retry: 3 }, async () => {`
+  - L1328: `it.skipIf(!anthropicOAuthToken)("should handle adaptive thinking with effort medium", { retry: 3 }, async () => {`
+  - L1332: `it.skipIf(!anthropicOAuthToken)(`
+  - L1340: `it.skipIf(!anthropicOAuthToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1345: `describe("GitHub Copilot Provider (gpt-5.3-codex via OpenAI Completions)", () => {`
+  - L1348: `it.skipIf(!githubCopilotToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1352: `it.skipIf(!githubCopilotToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1356: `it.skipIf(!githubCopilotToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1360: `it.skipIf(!githubCopilotToken)("should handle thinking", { retry: 2 }, async () => {`
+  - L1365: `it.skipIf(!githubCopilotToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1370: `it.skipIf(!githubCopilotToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1375: `describe("GitHub Copilot Provider (claude-sonnet-4 via Anthropic Messages)", () => {`
+  - L1378: `it.skipIf(!githubCopilotToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1382: `it.skipIf(!githubCopilotToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1386: `it.skipIf(!githubCopilotToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1390: `it.skipIf(!githubCopilotToken)("should handle thinking", { retry: 2 }, async () => {`
+  - L1394: `it.skipIf(!githubCopilotToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1398: `it.skipIf(!githubCopilotToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1403: `describe("OpenAI Codex Provider (gpt-5.4)", () => {`
+  - L1406: `it.skipIf(!openaiCodexToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1410: `it.skipIf(!openaiCodexToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1414: `it.skipIf(!openaiCodexToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1418: `it.skipIf(!openaiCodexToken)("should handle thinking", { retry: 3 }, async () => {`
+  - L1422: `it.skipIf(!openaiCodexToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1426: `it.skipIf(!openaiCodexToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1431: `describe("OpenAI Codex Provider (gpt-5.5)", () => {`
+  - L1434: `it.skipIf(!openaiCodexToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1438: `it.skipIf(!openaiCodexToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1442: `it.skipIf(!openaiCodexToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1446: `it.skipIf(!openaiCodexToken)("should handle thinking with reasoningEffort xhigh", { retry: 3 }, async () => {`
+  - L1450: `it.skipIf(!openaiCodexToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1454: `it.skipIf(!openaiCodexToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1459: `describe("OpenAI Codex Provider (gpt-5.5 via WebSocket)", () => {`
+  - L1463: `it.skipIf(!openaiCodexToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1467: `it.skipIf(!openaiCodexToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1471: `it.skipIf(!openaiCodexToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1475: `it.skipIf(!openaiCodexToken)("should handle thinking with reasoningEffort xhigh", { retry: 3 }, async () => {`
+  - L1479: `it.skipIf(!openaiCodexToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1483: `it.skipIf(!openaiCodexToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1488: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider (claude-sonnet-4-5)", () => {`
+  - L1491: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1495: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1499: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1503: `it("should handle thinking", { retry: 3 }, async () => {`
+  - L1507: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1511: `it("should handle image input", { retry: 3 }, async () => {`
+  - L1516: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider (claude-opus-4-6 interleaved thinking)", () => {`
+  - L1519: `it("should use adaptive thinking without anthropic_beta", { retry: 3 }, async () => {`
+  - L1562: `it("should pass requestMetadata to the SDK payload", { retry: 3 }, async () => {`
+  - L1590: `it("should omit requestMetadata from payload when not provided", { retry: 3 }, async () => {`
+  - L1628: `describe.skipIf(!ollamaInstalled)("Ollama Provider (gpt-oss-20b via OpenAI Completions)", () => {`
+  - L1696: `it("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1700: `it("should handle tool calling", { retry: 3 }, async () => {`
+  - L1704: `it("should handle streaming", { retry: 3 }, async () => {`
+  - L1708: `it("should handle thinking mode", { retry: 3 }, async () => {`
+  - L1712: `it("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+- assertion/gate manifest:
+  - L53: `expect(response.role).toBe("assistant");`
+  - L54: `expect(response.content).toBeTruthy();`
+  - L55: `expect(response.usage.input + response.usage.cacheRead).toBeGreaterThan(0);`
+  - L56: `expect(response.usage.output).toBeGreaterThan(0);`
+  - L57: `expect(response.errorMessage).toBeFalsy();`
+  - L58: `expect(response.content.map((b) => (b.type === "text" ? b.text : "")).join("")).toContain("Hello test successful");`
+  - L65: `expect(secondResponse.role).toBe("assistant");`
+  - L66: `expect(secondResponse.content).toBeTruthy();`
+  - L67: `expect(secondResponse.usage.input + secondResponse.usage.cacheRead).toBeGreaterThan(0);`
+  - L68: `expect(secondResponse.usage.output).toBeGreaterThan(0);`
+  - L69: `expect(secondResponse.errorMessage).toBeFalsy();`
+  - L70: `expect(secondResponse.content.map((b) => (b.type === "text" ? b.text : "")).join("")).toContain(`
+  - L99: `expect(toolCall.type).toBe("toolCall");`
+  - L101: `expect(toolCall.name).toBe("math_operation");`
+  - L102: `expect(toolCall.id).toBeTruthy();`
+  - L108: `expect(event.contentIndex).toBe(index);`
+  - L109: `expect(toolCall.type).toBe("toolCall");`
+  - L111: `expect(toolCall.name).toBe("math_operation");`
+  - L114: `expect(toolCall.arguments).toBeDefined();`
+  - L115: `expect(typeof toolCall.arguments).toBe("object");`
+  - L118: `expect(toolCall.arguments).not.toBeNull();`
+  - L124: `expect(event.contentIndex).toBe(index);`
+  - L125: `expect(toolCall.type).toBe("toolCall");`
+  - L127: `expect(toolCall.name).toBe("math_operation");`
+  - L129: `expect(toolCall.arguments).not.toBeUndefined();`
+  - L130: `expect((toolCall.arguments as any).a).toBe(15);`
+  - L131: `expect((toolCall.arguments as any).b).toBe(27);`
+  - L132: `expect((toolCall.arguments as any).operation).oneOf(["add", "subtract", "multiply", "divide"]);`
+  - L137: `expect(hasToolStart).toBe(true);`
+  - L138: `expect(hasToolDelta).toBe(true);`
+  - L139: `expect(hasToolEnd).toBe(true);`
+  - L142: `expect(response.stopReason).toBe("toolUse");`
+  - L143: `expect(response.content.some((b) => b.type === "toolCall")).toBeTruthy();`
+  - L146: `expect(toolCall.name).toBe("math_operation");`
+  - L147: `expect(toolCall.id).toBeTruthy();`
+  - L177: `expect(textStarted).toBe(true);`
+  - L178: `expect(textChunks.length).toBeGreaterThan(0);`
+  - L179: `expect(textCompleted).toBe(true);`
+  - L180: `expect(response.content.some((b) => b.type === "text")).toBeTruthy();`
+  - L213: `expect(response.stopReason, `Error: ${response.errorMessage}`).toBe("stop");`
+  - L214: `expect(thinkingStarted).toBe(true);`
+  - L215: `expect(thinkingChunks.length).toBeGreaterThan(0);`
+  - L216: `expect(thinkingCompleted).toBe(true);`
+  - L217: `expect(response.content.some((b) => b.type === "thinking")).toBeTruthy();`
+  - L258: `expect(response.content.length > 0).toBeTruthy();`
+  - L262: `expect(lowerContent).toContain("red");`
+  - L263: `expect(lowerContent).toContain("circle");`
+  - L303: `expect(block.name).toBe("math_operation");`
+  - L304: `expect(block.id).toBeTruthy();`
+  - L305: `expect(block.arguments).toBeTruthy();`
+  - L334: `expect(response.stopReason, `Error: ${response.errorMessage}`).not.toBe("error");`
+  - L341: `expect(hasSeenThinking || hasSeenToolCalls).toBe(true);`
+  - L344: `expect(allTextContent).toBeTruthy();`
+  - L345: `expect(allTextContent.includes("714")).toBe(true);`
+  - L346: `expect(allTextContent.includes("887")).toBe(true);`
+  - L350: `describe.skipIf(!process.env.GEMINI_API_KEY)("Gemini Provider (gemini-2.5-flash)", () => {`
+  - L386: `it.skipIf(!isVertexConfigured)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L390: `it.skipIf(!vertexApiKey)("should complete basic text generation with Vertex API key", { retry: 3 }, async () => {`
+  - L394: `it.skipIf(!isVertexConfigured)("should handle tool calling", { retry: 3 }, async () => {`
+  - L398: `it.skipIf(!isVertexConfigured)("should handle thinking", { retry: 3 }, async () => {`
+  - L406: `it.skipIf(!isVertexConfigured)("should handle streaming", { retry: 3 }, async () => {`
+  - L410: `it.skipIf(!isVertexConfigured)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L418: `it.skipIf(!isVertexConfigured)("should handle image input", { retry: 3 }, async () => {`
+  - L423: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider (gpt-4o-mini)", () => {`
+  - L448: `describe.skipIf(!process.env.DEEPSEEK_API_KEY)(`
+  - L475: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider (gpt-5.4)", () => {`
+  - L503: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider (claude-haiku-4-5)", () => {`
+  - L523: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider (gpt-4o-mini)", () => {`
+  - L545: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider (grok-4.3 via OpenAI Completions)", () => {`
+  - L569: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider (gpt-oss-20b via OpenAI Completions)", () => {`
+  - L593: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider (gpt-oss-120b via OpenAI Completions)", () => {`
+  - L617: `describe.skipIf(!hasCloudflareWorkersAICredentials())(`
+  - L644: `describe.skipIf(!hasCloudflareAiGatewayCredentials())(`
+  - L671: `describe.skipIf(!hasCloudflareAiGatewayCredentials() || !process.env.OPENAI_API_KEY)(`
+  - L704: `describe.skipIf(!hasCloudflareAiGatewayCredentials() || !process.env.ANTHROPIC_API_KEY)(`
+  - L737: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider (Kimi-K2.5 via OpenAI Completions)", () => {`
+  - L761: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider (Kimi-K2.6 via OpenAI Completions)", () => {`
+  - L789: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider (GLM 5.2 via OpenAI Completions)", () => {`
+  - L814: `describe.skipIf(!process.env.NVIDIA_API_KEY)("NVIDIA NIM Provider (Nemotron 3 Super via OpenAI Completions)", () => {`
+  - L838: `describe.skipIf(!process.env.OPENROUTER_API_KEY)("OpenRouter Provider (glm-4.5v via OpenAI Completions)", () => {`
+  - L866: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)(`
+  - L893: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)(`
+  - L920: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)(`
+  - L947: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider (glm-5.2 via OpenAI Completions)", () => {`
+  - L975: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider (devstral-medium-latest)", () => {`
+  - L1001: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider (pixtral-12b with image support)", () => {`
+  - L1021: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider (MiniMax-M2.7 via Anthropic Messages)", () => {`
+  - L1045: `describe.skipIf(!process.env.KIMI_API_KEY)(`
+  - L1072: `describe.skipIf(!process.env.XIAOMI_API_KEY)(`
+  - L1103: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)(`
+  - L1134: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)(`
+  - L1165: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)(`
+  - L1196: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)(`
+  - L1227: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan Provider (Qwen3.7-Max, CN region)", () => {`
+  - L1255: `describe.skipIf(!process.env.ANT_LING_API_KEY)("Ant Ling Provider (Ling 2.6 Flash via OpenAI Completions)", () => {`
+  - L1284: `it.skipIf(!anthropicOAuthToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1288: `it.skipIf(!anthropicOAuthToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1292: `it.skipIf(!anthropicOAuthToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1296: `it.skipIf(!anthropicOAuthToken)("should handle thinking", { retry: 3 }, async () => {`
+  - L1300: `it.skipIf(!anthropicOAuthToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1304: `it.skipIf(!anthropicOAuthToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1312: `it.skipIf(!anthropicOAuthToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1316: `it.skipIf(!anthropicOAuthToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1320: `it.skipIf(!anthropicOAuthToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1324: `it.skipIf(!anthropicOAuthToken)("should handle adaptive thinking with effort high", { retry: 3 }, async () => {`
+  - L1328: `it.skipIf(!anthropicOAuthToken)("should handle adaptive thinking with effort medium", { retry: 3 }, async () => {`
+  - L1332: `it.skipIf(!anthropicOAuthToken)(`
+  - L1340: `it.skipIf(!anthropicOAuthToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1348: `it.skipIf(!githubCopilotToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1352: `it.skipIf(!githubCopilotToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1356: `it.skipIf(!githubCopilotToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1360: `it.skipIf(!githubCopilotToken)("should handle thinking", { retry: 2 }, async () => {`
+  - L1365: `it.skipIf(!githubCopilotToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1370: `it.skipIf(!githubCopilotToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1378: `it.skipIf(!githubCopilotToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1382: `it.skipIf(!githubCopilotToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1386: `it.skipIf(!githubCopilotToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1390: `it.skipIf(!githubCopilotToken)("should handle thinking", { retry: 2 }, async () => {`
+  - L1394: `it.skipIf(!githubCopilotToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1398: `it.skipIf(!githubCopilotToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1406: `it.skipIf(!openaiCodexToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1410: `it.skipIf(!openaiCodexToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1414: `it.skipIf(!openaiCodexToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1418: `it.skipIf(!openaiCodexToken)("should handle thinking", { retry: 3 }, async () => {`
+  - L1422: `it.skipIf(!openaiCodexToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1426: `it.skipIf(!openaiCodexToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1434: `it.skipIf(!openaiCodexToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1438: `it.skipIf(!openaiCodexToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1442: `it.skipIf(!openaiCodexToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1446: `it.skipIf(!openaiCodexToken)("should handle thinking with reasoningEffort xhigh", { retry: 3 }, async () => {`
+  - L1450: `it.skipIf(!openaiCodexToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1454: `it.skipIf(!openaiCodexToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1463: `it.skipIf(!openaiCodexToken)("should complete basic text generation", { retry: 3 }, async () => {`
+  - L1467: `it.skipIf(!openaiCodexToken)("should handle tool calling", { retry: 3 }, async () => {`
+  - L1471: `it.skipIf(!openaiCodexToken)("should handle streaming", { retry: 3 }, async () => {`
+  - L1475: `it.skipIf(!openaiCodexToken)("should handle thinking with reasoningEffort xhigh", { retry: 3 }, async () => {`
+  - L1479: `it.skipIf(!openaiCodexToken)("should handle multi-turn with thinking and tools", { retry: 3 }, async () => {`
+  - L1483: `it.skipIf(!openaiCodexToken)("should handle image input", { retry: 3 }, async () => {`
+  - L1488: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider (claude-sonnet-4-5)", () => {`
+  - L1516: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider (claude-opus-4-6 interleaved thinking)", () => {`
+  - L1543: `expect(response.stopReason, `Error: ${response.errorMessage}`).not.toBe("error");`
+  - L1544: `expect(capturedPayload).toBeTruthy();`
+  - L1554: `expect(payload.additionalModelRequestFields?.thinking).toEqual({`
+  - L1558: `expect(payload.additionalModelRequestFields?.output_config).toEqual({ effort: "max" });`
+  - L1559: `expect(payload.additionalModelRequestFields?.anthropic_beta).toBeUndefined();`
+  - L1585: `expect(response.stopReason, `Error: ${response.errorMessage}`).not.toBe("error");`
+  - L1586: `expect(capturedPayload).toBeTruthy();`
+  - L1587: `expect((capturedPayload as { requestMetadata?: unknown }).requestMetadata).toEqual(metadata);`
+  - L1611: `expect(response.stopReason, `Error: ${response.errorMessage}`).not.toBe("error");`
+  - L1612: `expect(capturedPayload).toBeTruthy();`
+  - L1613: `expect("requestMetadata" in (capturedPayload as object)).toBe(false);`
+  - L1628: `describe.skipIf(!ollamaInstalled)("Ollama Provider (gpt-oss-20b via OpenAI Completions)", () => {`
+
+### `packages/ai/test/telemetry-options.test.ts`
+- cases: `4`; assertions/gates: `5`
+- case manifest:
+  - L74: `describe("ProviderRequestOptions.telemetryContext", () => {`
+  - L75: `it("is inherited by every request option surface and simple-stream conversion", () => {`
+  - L81: `it("survives provider and Models stream/deferred dispatch", async () => {`
+  - L128: `it("survives direct and ImagesModels image dispatch", async () => {`
+- assertion/gate manifest:
+  - L77: `expect(options.telemetryContext).toBe(telemetryContext);`
+  - L78: `expect(buildBaseOptions(model, context, { telemetryContext }).telemetryContext).toBe(telemetryContext);`
+  - L124: `expect(observed).toHaveLength(8);`
+  - L125: `expect(observed.every((value) => value === telemetryContext)).toBe(true);`
+  - L169: `expect(observed).toEqual([telemetryContext, telemetryContext]);`
+
+### `packages/ai/test/tokens.test.ts`
+- cases: `58`; assertions/gates: `40`
+- case manifest:
+  - L86: `describe("Token Statistics on Abort", () => {`
+  - L87: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider", () => {`
+  - L90: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L95: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider", () => {`
+  - L103: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L108: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider", () => {`
+  - L111: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L116: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider", () => {`
+  - L121: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L126: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider", () => {`
+  - L129: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L134: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider", () => {`
+  - L137: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L142: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider", () => {`
+  - L145: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L150: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider", () => {`
+  - L155: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L164: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI Provider", () => {`
+  - L167: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L172: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway Provider", () => {`
+  - L175: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L180: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider", () => {`
+  - L183: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L188: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider", () => {`
+  - L191: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L196: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider", () => {`
+  - L199: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L204: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider", () => {`
+  - L207: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L212: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider", () => {`
+  - L215: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L220: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider", () => {`
+  - L223: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L228: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider", () => {`
+  - L231: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L236: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider", () => {`
+  - L239: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L244: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider", () => {`
+  - L252: `it.skip("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L257: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN) Provider", () => {`
+  - L262: `it.skip("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L267: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS) Provider", () => {`
+  - L272: `it.skip("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L277: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP) Provider", () => {`
+  - L282: `it.skip("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L287: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider", () => {`
+  - L290: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L295: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider", () => {`
+  - L298: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+  - L307: `describe("Anthropic OAuth Provider", () => {`
+  - L310: `it.skipIf(!anthropicOAuthToken)(`
+  - L319: `describe("GitHub Copilot Provider", () => {`
+  - L320: `it.skipIf(!githubCopilotToken)(`
+  - L329: `it.skipIf(!githubCopilotToken)(`
+  - L339: `describe("OpenAI Codex Provider", () => {`
+  - L340: `it.skipIf(!openaiCodexToken)(`
+  - L350: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider", () => {`
+  - L353: `it("should include token stats when aborted mid-stream", { retry: 3, timeout: 30000 }, async () => {`
+- assertion/gate manifest:
+  - L49: `expect(msg.stopReason).toBe("aborted");`
+  - L64: `expect(msg.usage.input).toBe(0);`
+  - L65: `expect(msg.usage.output).toBe(0);`
+  - L68: `expect(msg.usage.input).toBe(0);`
+  - L69: `expect(msg.usage.output).toBe(0);`
+  - L72: `expect(msg.usage.input).toBeGreaterThan(0);`
+  - L73: `expect(msg.usage.output).toBe(0);`
+  - L75: `expect(msg.usage.input).toBeGreaterThan(0);`
+  - L76: `expect(msg.usage.output).toBeGreaterThan(0);`
+  - L80: `expect(msg.usage.cost.input).toBeGreaterThan(0);`
+  - L81: `expect(msg.usage.cost.total).toBeGreaterThan(0);`
+  - L87: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider", () => {`
+  - L95: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider", () => {`
+  - L108: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider", () => {`
+  - L116: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider", () => {`
+  - L126: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider", () => {`
+  - L134: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider", () => {`
+  - L142: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider", () => {`
+  - L150: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider", () => {`
+  - L164: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI Provider", () => {`
+  - L172: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway Provider", () => {`
+  - L180: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider", () => {`
+  - L188: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider", () => {`
+  - L196: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider", () => {`
+  - L204: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider", () => {`
+  - L212: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider", () => {`
+  - L220: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider", () => {`
+  - L228: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider", () => {`
+  - L236: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider", () => {`
+  - L244: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider", () => {`
+  - L257: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN) Provider", () => {`
+  - L267: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS) Provider", () => {`
+  - L277: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP) Provider", () => {`
+  - L287: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider", () => {`
+  - L295: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider", () => {`
+  - L310: `it.skipIf(!anthropicOAuthToken)(`
+  - L320: `it.skipIf(!githubCopilotToken)(`
+  - L329: `it.skipIf(!githubCopilotToken)(`
+  - L340: `it.skipIf(!openaiCodexToken)(`
+  - L350: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider", () => {`
+
+### `packages/ai/test/tool-call-without-result.test.ts`
+- cases: `58`; assertions/gates: `34`
+- case manifest:
+  - L93: `describe("Tool Call Without Result Tests", () => {`
+  - L98: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider", () => {`
+  - L101: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L106: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider", () => {`
+  - L114: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L119: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider", () => {`
+  - L122: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L127: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider", () => {`
+  - L132: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L137: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider", () => {`
+  - L140: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L145: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider", () => {`
+  - L148: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L153: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider", () => {`
+  - L156: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L161: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider", () => {`
+  - L164: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L169: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI Provider", () => {`
+  - L172: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L177: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway Provider", () => {`
+  - L180: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L185: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider", () => {`
+  - L188: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L193: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider", () => {`
+  - L196: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L201: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider", () => {`
+  - L204: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L209: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider", () => {`
+  - L212: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L217: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider", () => {`
+  - L220: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L225: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider", () => {`
+  - L228: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L233: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider", () => {`
+  - L236: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L241: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN) Provider", () => {`
+  - L244: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L249: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS) Provider", () => {`
+  - L252: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L257: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP) Provider", () => {`
+  - L260: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L265: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider", () => {`
+  - L268: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L273: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider", () => {`
+  - L276: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L281: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider", () => {`
+  - L284: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L289: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider", () => {`
+  - L292: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L297: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider", () => {`
+  - L300: `it("should filter out tool calls without corresponding tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L309: `describe("Anthropic OAuth Provider", () => {`
+  - L312: `it.skipIf(!anthropicOAuthToken)(`
+  - L321: `describe("GitHub Copilot Provider", () => {`
+  - L322: `it.skipIf(!githubCopilotToken)(`
+  - L331: `it.skipIf(!githubCopilotToken)(`
+  - L341: `describe("OpenAI Codex Provider", () => {`
+  - L342: `it.skipIf(!openaiCodexToken)(`
+- assertion/gate manifest:
+  - L55: `expect(hasToolCall).toBe(true);`
+  - L74: `expect(secondResponse.stopReason).not.toBe("error");`
+  - L77: `expect(secondResponse.content.length).toBeGreaterThan(0);`
+  - L86: `expect(toolCalls || textContent.length).toBeGreaterThan(0);`
+  - L90: `expect(["stop", "toolUse"]).toContain(secondResponse.stopReason);`
+  - L98: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider", () => {`
+  - L106: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider", () => {`
+  - L119: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider", () => {`
+  - L127: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider", () => {`
+  - L137: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider", () => {`
+  - L145: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider", () => {`
+  - L153: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider", () => {`
+  - L161: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider", () => {`
+  - L169: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI Provider", () => {`
+  - L177: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway Provider", () => {`
+  - L185: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider", () => {`
+  - L193: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider", () => {`
+  - L201: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider", () => {`
+  - L209: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider", () => {`
+  - L217: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider", () => {`
+  - L225: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider", () => {`
+  - L233: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider", () => {`
+  - L241: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN) Provider", () => {`
+  - L249: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS) Provider", () => {`
+  - L257: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP) Provider", () => {`
+  - L265: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider", () => {`
+  - L273: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider", () => {`
+  - L281: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider", () => {`
+  - L289: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider", () => {`
+  - L297: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider", () => {`
+  - L312: `it.skipIf(!anthropicOAuthToken)(`
+  - L322: `it.skipIf(!githubCopilotToken)(`
+  - L331: `it.skipIf(!githubCopilotToken)(`
+  - L342: `it.skipIf(!openaiCodexToken)(`
+
+### `packages/ai/test/total-tokens.test.ts`
+- cases: `64`; assertions/gates: `104`
+- case manifest:
+  - L100: `describe("totalTokens field", () => {`
+  - L105: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic (API Key)", () => {`
+  - L106: `it(`
+  - L128: `describe("Anthropic (OAuth)", () => {`
+  - L129: `it.skipIf(!anthropicOAuthToken)(`
+  - L155: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions", () => {`
+  - L156: `it(`
+  - L179: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses", () => {`
+  - L180: `it(`
+  - L198: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses", () => {`
+  - L199: `it(`
+  - L223: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google", () => {`
+  - L224: `it(`
+  - L246: `describe.skipIf(!process.env.XAI_API_KEY)("xAI", () => {`
+  - L247: `it("grok-4.3 - should return totalTokens equal to sum of components", { retry: 3, timeout: 60000 }, async () => {`
+  - L265: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq", () => {`
+  - L266: `it(`
+  - L288: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras", () => {`
+  - L289: `it(`
+  - L311: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI", () => {`
+  - L312: `it(`
+  - L336: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway", () => {`
+  - L337: `it(`
+  - L361: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face", () => {`
+  - L362: `it("Kimi-K2.5 - should return totalTokens equal to sum of components", { retry: 3, timeout: 60000 }, async () => {`
+  - L380: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI", () => {`
+  - L381: `it("Kimi-K2.6 - should return totalTokens equal to sum of components", { retry: 3, timeout: 60000 }, async () => {`
+  - L402: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten", () => {`
+  - L403: `it("GLM 5.2 - should return totalTokens equal to sum of components", { retry: 3, timeout: 60000 }, async () => {`
+  - L424: `describe.skipIf(!process.env.ZAI_API_KEY)("z.ai", () => {`
+  - L425: `it("glm-5.2 - should return totalTokens equal to sum of components", { retry: 3, timeout: 60000 }, async () => {`
+  - L443: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral", () => {`
+  - L444: `it(`
+  - L466: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax", () => {`
+  - L467: `it(`
+  - L489: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing)", () => {`
+  - L490: `it(`
+  - L512: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN)", () => {`
+  - L513: `it(`
+  - L537: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS)", () => {`
+  - L538: `it(`
+  - L562: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP)", () => {`
+  - L563: `it(`
+  - L587: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan", () => {`
+  - L588: `it(`
+  - L612: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN)", () => {`
+  - L613: `it(`
+  - L637: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding", () => {`
+  - L638: `it(`
+  - L660: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway", () => {`
+  - L661: `it(`
+  - L683: `describe.skipIf(!process.env.OPENROUTER_API_KEY)("OpenRouter", () => {`
+  - L684: `it(`
+  - L701: `it(`
+  - L718: `it(`
+  - L735: `it(`
+  - L752: `it(`
+  - L774: `describe("GitHub Copilot (OAuth)", () => {`
+  - L775: `it.skipIf(!githubCopilotToken)(`
+  - L792: `it.skipIf(!githubCopilotToken)(`
+  - L816: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock", () => {`
+  - L817: `it(`
+  - L839: `describe("OpenAI Codex (OAuth)", () => {`
+  - L840: `it.skipIf(!openaiCodexToken)(`
+- assertion/gate manifest:
+  - L64: `expect(response1.stopReason).toBe("stop");`
+  - L81: `expect(response2.stopReason).toBe("stop");`
+  - L95: `function assertTotalTokensEqualsComponents(usage: Usage) {`
+  - L97: `expect(usage.totalTokens).toBe(computed);`
+  - L105: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic (API Key)", () => {`
+  - L118: `assertTotalTokensEqualsComponents(first);`
+  - L119: `assertTotalTokensEqualsComponents(second);`
+  - L123: `expect(hasCache).toBe(true);`
+  - L129: `it.skipIf(!anthropicOAuthToken)(`
+  - L141: `assertTotalTokensEqualsComponents(first);`
+  - L142: `assertTotalTokensEqualsComponents(second);`
+  - L146: `expect(hasCache).toBe(true);`
+  - L155: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions", () => {`
+  - L173: `assertTotalTokensEqualsComponents(first);`
+  - L174: `assertTotalTokensEqualsComponents(second);`
+  - L179: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses", () => {`
+  - L192: `assertTotalTokensEqualsComponents(first);`
+  - L193: `assertTotalTokensEqualsComponents(second);`
+  - L198: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses", () => {`
+  - L213: `assertTotalTokensEqualsComponents(first);`
+  - L214: `assertTotalTokensEqualsComponents(second);`
+  - L223: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google", () => {`
+  - L236: `assertTotalTokensEqualsComponents(first);`
+  - L237: `assertTotalTokensEqualsComponents(second);`
+  - L246: `describe.skipIf(!process.env.XAI_API_KEY)("xAI", () => {`
+  - L256: `assertTotalTokensEqualsComponents(first);`
+  - L257: `assertTotalTokensEqualsComponents(second);`
+  - L265: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq", () => {`
+  - L278: `assertTotalTokensEqualsComponents(first);`
+  - L279: `assertTotalTokensEqualsComponents(second);`
+  - L288: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras", () => {`
+  - L301: `assertTotalTokensEqualsComponents(first);`
+  - L302: `assertTotalTokensEqualsComponents(second);`
+  - L311: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI", () => {`
+  - L326: `assertTotalTokensEqualsComponents(first);`
+  - L327: `assertTotalTokensEqualsComponents(second);`
+  - L336: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway", () => {`
+  - L351: `assertTotalTokensEqualsComponents(first);`
+  - L352: `assertTotalTokensEqualsComponents(second);`
+  - L361: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face", () => {`
+  - L371: `assertTotalTokensEqualsComponents(first);`
+  - L372: `assertTotalTokensEqualsComponents(second);`
+  - L380: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI", () => {`
+  - L393: `assertTotalTokensEqualsComponents(first);`
+  - L394: `assertTotalTokensEqualsComponents(second);`
+  - L402: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten", () => {`
+  - L415: `assertTotalTokensEqualsComponents(first);`
+  - L416: `assertTotalTokensEqualsComponents(second);`
+  - L424: `describe.skipIf(!process.env.ZAI_API_KEY)("z.ai", () => {`
+  - L434: `assertTotalTokensEqualsComponents(first);`
+  - L435: `assertTotalTokensEqualsComponents(second);`
+  - L443: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral", () => {`
+  - L456: `assertTotalTokensEqualsComponents(first);`
+  - L457: `assertTotalTokensEqualsComponents(second);`
+  - L466: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax", () => {`
+  - L479: `assertTotalTokensEqualsComponents(first);`
+  - L480: `assertTotalTokensEqualsComponents(second);`
+  - L489: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing)", () => {`
+  - L502: `assertTotalTokensEqualsComponents(first);`
+  - L503: `assertTotalTokensEqualsComponents(second);`
+  - L512: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)("Xiaomi MiMo Token Plan (CN)", () => {`
+  - L527: `assertTotalTokensEqualsComponents(first);`
+  - L528: `assertTotalTokensEqualsComponents(second);`
+  - L537: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)("Xiaomi MiMo Token Plan (AMS)", () => {`
+  - L552: `assertTotalTokensEqualsComponents(first);`
+  - L553: `assertTotalTokensEqualsComponents(second);`
+  - L562: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)("Xiaomi MiMo Token Plan (SGP)", () => {`
+  - L577: `assertTotalTokensEqualsComponents(first);`
+  - L578: `assertTotalTokensEqualsComponents(second);`
+  - L587: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan", () => {`
+  - L602: `assertTotalTokensEqualsComponents(first);`
+  - L603: `assertTotalTokensEqualsComponents(second);`
+  - L612: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN)", () => {`
+  - L627: `assertTotalTokensEqualsComponents(first);`
+  - L628: `assertTotalTokensEqualsComponents(second);`
+  - L637: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding", () => {`
+  - L650: `assertTotalTokensEqualsComponents(first);`
+  - L651: `assertTotalTokensEqualsComponents(second);`
+  - L660: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway", () => {`
+  - L673: `assertTotalTokensEqualsComponents(first);`
+  - L674: `assertTotalTokensEqualsComponents(second);`
+  - L683: `describe.skipIf(!process.env.OPENROUTER_API_KEY)("OpenRouter", () => {`
+  - L696: `assertTotalTokensEqualsComponents(first);`
+  - L697: `assertTotalTokensEqualsComponents(second);`
+  - L713: `assertTotalTokensEqualsComponents(first);`
+  - L714: `assertTotalTokensEqualsComponents(second);`
+  - L730: `assertTotalTokensEqualsComponents(first);`
+  - L731: `assertTotalTokensEqualsComponents(second);`
+  - L747: `assertTotalTokensEqualsComponents(first);`
+  - L748: `assertTotalTokensEqualsComponents(second);`
+  - L764: `assertTotalTokensEqualsComponents(first);`
+  - L765: `assertTotalTokensEqualsComponents(second);`
+  - L775: `it.skipIf(!githubCopilotToken)(`
+  - L787: `assertTotalTokensEqualsComponents(first);`
+  - L788: `assertTotalTokensEqualsComponents(second);`
+  - L792: `it.skipIf(!githubCopilotToken)(`
+  - L804: `assertTotalTokensEqualsComponents(first);`
+  - L805: `assertTotalTokensEqualsComponents(second);`
+  - L816: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock", () => {`
+  - L829: `assertTotalTokensEqualsComponents(first);`
+  - L830: `assertTotalTokensEqualsComponents(second);`
+  - L840: `it.skipIf(!openaiCodexToken)(`
+  - L852: `assertTotalTokensEqualsComponents(first);`
+  - L853: `assertTotalTokensEqualsComponents(second);`
+
+### `packages/ai/test/unicode-surrogate.test.ts`
+- cases: `116`; assertions/gates: `46`
+- case manifest:
+  - L285: `describe("AI Providers Unicode Surrogate Pair Tests", () => {`
+  - L286: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider Unicode Handling", () => {`
+  - L289: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L293: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L297: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L302: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider Unicode Handling", () => {`
+  - L305: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L309: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L313: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L318: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider Unicode Handling", () => {`
+  - L321: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L325: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L329: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L334: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider Unicode Handling", () => {`
+  - L339: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L343: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L347: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L352: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider Unicode Handling", () => {`
+  - L355: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L359: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L363: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L372: `describe("Anthropic OAuth Provider Unicode Handling", () => {`
+  - L375: `it.skipIf(!anthropicOAuthToken)("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L379: `it.skipIf(!anthropicOAuthToken)(`
+  - L387: `it.skipIf(!anthropicOAuthToken)(`
+  - L396: `describe("GitHub Copilot Provider Unicode Handling", () => {`
+  - L397: `it.skipIf(!githubCopilotToken)(`
+  - L406: `it.skipIf(!githubCopilotToken)(`
+  - L415: `it.skipIf(!githubCopilotToken)(`
+  - L424: `it.skipIf(!githubCopilotToken)(`
+  - L433: `it.skipIf(!githubCopilotToken)(`
+  - L442: `it.skipIf(!githubCopilotToken)(`
+  - L452: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider Unicode Handling", () => {`
+  - L455: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L459: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L463: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L468: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider Unicode Handling", () => {`
+  - L471: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L475: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L479: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L484: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider Unicode Handling", () => {`
+  - L487: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L491: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L495: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L500: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI Provider Unicode Handling", () => {`
+  - L503: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L507: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L511: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L516: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway Provider Unicode Handling", () => {`
+  - L519: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L523: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L527: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L532: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider Unicode Handling", () => {`
+  - L535: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L539: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L543: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L548: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider Unicode Handling", () => {`
+  - L552: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L556: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L560: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L565: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider Unicode Handling", () => {`
+  - L569: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L573: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L577: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L582: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider Unicode Handling", () => {`
+  - L585: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L589: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L593: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L598: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider Unicode Handling", () => {`
+  - L601: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L605: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L609: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L614: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider Unicode Handling", () => {`
+  - L617: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L621: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L625: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L630: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider Unicode Handling", () => {`
+  - L633: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L637: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L641: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L646: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)(`
+  - L651: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L655: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L659: `it(`
+  - L669: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)(`
+  - L674: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L678: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L682: `it(`
+  - L692: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)(`
+  - L697: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L701: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L705: `it(`
+  - L715: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider Unicode Handling", () => {`
+  - L718: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L722: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L726: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L731: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider Unicode Handling", () => {`
+  - L734: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L738: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L742: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L747: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider Unicode Handling", () => {`
+  - L750: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L754: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L758: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L763: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider Unicode Handling", () => {`
+  - L766: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L770: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L774: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L779: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider Unicode Handling", () => {`
+  - L782: `it("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L786: `it("should handle real-world LinkedIn comment data with emoji", { retry: 3, timeout: 30000 }, async () => {`
+  - L790: `it("should handle unpaired high surrogate (0xD83D) in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L795: `describe("OpenAI Codex Provider Unicode Handling", () => {`
+  - L796: `it.skipIf(!openaiCodexToken)(`
+  - L805: `it.skipIf(!openaiCodexToken)(`
+  - L814: `it.skipIf(!openaiCodexToken)(`
+- assertion/gate manifest:
+  - L117: `expect(response.stopReason).not.toBe("error");`
+  - L118: `expect(response.errorMessage).toBeFalsy();`
+  - L119: `expect(response.content.length).toBeGreaterThan(0);`
+  - L206: `expect(response.stopReason).not.toBe("error");`
+  - L207: `expect(response.errorMessage).toBeFalsy();`
+  - L208: `expect(response.content.some((b) => b.type === "text")).toBe(true);`
+  - L280: `expect(response.stopReason).not.toBe("error");`
+  - L281: `expect(response.errorMessage).toBeFalsy();`
+  - L282: `expect(response.content.length).toBeGreaterThan(0);`
+  - L286: `describe.skipIf(!process.env.GEMINI_API_KEY)("Google Provider Unicode Handling", () => {`
+  - L302: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider Unicode Handling", () => {`
+  - L318: `describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider Unicode Handling", () => {`
+  - L334: `describe.skipIf(!hasAzureOpenAICredentials())("Azure OpenAI Responses Provider Unicode Handling", () => {`
+  - L352: `describe.skipIf(!process.env.ANTHROPIC_API_KEY)("Anthropic Provider Unicode Handling", () => {`
+  - L375: `it.skipIf(!anthropicOAuthToken)("should handle emoji in tool results", { retry: 3, timeout: 30000 }, async () => {`
+  - L379: `it.skipIf(!anthropicOAuthToken)(`
+  - L387: `it.skipIf(!anthropicOAuthToken)(`
+  - L397: `it.skipIf(!githubCopilotToken)(`
+  - L406: `it.skipIf(!githubCopilotToken)(`
+  - L415: `it.skipIf(!githubCopilotToken)(`
+  - L424: `it.skipIf(!githubCopilotToken)(`
+  - L433: `it.skipIf(!githubCopilotToken)(`
+  - L442: `it.skipIf(!githubCopilotToken)(`
+  - L452: `describe.skipIf(!process.env.XAI_API_KEY)("xAI Provider Unicode Handling", () => {`
+  - L468: `describe.skipIf(!process.env.GROQ_API_KEY)("Groq Provider Unicode Handling", () => {`
+  - L484: `describe.skipIf(!process.env.CEREBRAS_API_KEY)("Cerebras Provider Unicode Handling", () => {`
+  - L500: `describe.skipIf(!hasCloudflareWorkersAICredentials())("Cloudflare Workers AI Provider Unicode Handling", () => {`
+  - L516: `describe.skipIf(!hasCloudflareAiGatewayCredentials())("Cloudflare AI Gateway Provider Unicode Handling", () => {`
+  - L532: `describe.skipIf(!process.env.HF_TOKEN)("Hugging Face Provider Unicode Handling", () => {`
+  - L548: `describe.skipIf(!process.env.TOGETHER_API_KEY)("Together AI Provider Unicode Handling", () => {`
+  - L565: `describe.skipIf(!process.env.BASETEN_API_KEY)("Baseten Provider Unicode Handling", () => {`
+  - L582: `describe.skipIf(!process.env.ZAI_API_KEY)("zAI Provider Unicode Handling", () => {`
+  - L598: `describe.skipIf(!process.env.MISTRAL_API_KEY)("Mistral Provider Unicode Handling", () => {`
+  - L614: `describe.skipIf(!process.env.MINIMAX_API_KEY)("MiniMax Provider Unicode Handling", () => {`
+  - L630: `describe.skipIf(!process.env.XIAOMI_API_KEY)("Xiaomi MiMo (API billing) Provider Unicode Handling", () => {`
+  - L646: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_CN_API_KEY)(`
+  - L669: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_AMS_API_KEY)(`
+  - L692: `describe.skipIf(!process.env.XIAOMI_TOKEN_PLAN_SGP_API_KEY)(`
+  - L715: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_API_KEY)("Qwen Token Plan Provider Unicode Handling", () => {`
+  - L731: `describe.skipIf(!process.env.QWEN_TOKEN_PLAN_CN_API_KEY)("Qwen Token Plan (CN) Provider Unicode Handling", () => {`
+  - L747: `describe.skipIf(!process.env.KIMI_API_KEY)("Kimi For Coding Provider Unicode Handling", () => {`
+  - L763: `describe.skipIf(!process.env.AI_GATEWAY_API_KEY)("Vercel AI Gateway Provider Unicode Handling", () => {`
+  - L779: `describe.skipIf(!hasBedrockCredentials())("Amazon Bedrock Provider Unicode Handling", () => {`
+  - L796: `it.skipIf(!openaiCodexToken)(`
+  - L805: `it.skipIf(!openaiCodexToken)(`
+  - L814: `it.skipIf(!openaiCodexToken)(`
+
+### `packages/ai/test/validation.test.ts`
+- cases: `8`; assertions/gates: `8`
+- case manifest:
+  - L36: `describe("validateToolArguments", () => {`
+  - L37: `it("still validates when Function constructor is unavailable", () => {`
+  - L64: `it("coerces serialized plain JSON schemas with AJV-compatible primitive rules", () => {`
+  - L101: `it("preserves a value that already matches a nullable union arm", () => {`
+  - L119: `it("preserves a value that already matches a oneOf nullable union arm", () => {`
+  - L128: `it("still coerces nullable unions when the original value does not match any arm", () => {`
+  - L137: `it("accepts null for nullable array schemas with items", () => {`
+  - L149: `it("rejects invalid coercions for serialized plain JSON schemas", () => {`
+- assertion/gate manifest:
+  - L58: `expect(validateToolArguments(tool, toolCall)).toEqual({ count: 42 });`
+  - L97: `expect(validateToolArguments(tool, toolCall)).toEqual({ value: testCase.expected });`
+  - L116: `expect(validateToolArguments(tool, toolCall)).toEqual({ value: null });`
+  - L125: `expect(validateToolArguments(tool, toolCall)).toEqual({ value: null });`
+  - L134: `expect(validateToolArguments(tool, toolCall)).toEqual({ value: 42 });`
+  - L145: `expect(generatedCheck(toolCall.arguments)).toBe(true);`
+  - L146: `expect(validateToolArguments(tool, toolCall)).toEqual({ value: null });`
+  - L162: `expect(() => validateToolArguments(tool, toolCall)).toThrow("Validation failed");`
+
+### `packages/ai/test/xai-oauth.test.ts`
+- cases: `12`; assertions/gates: `34`
+- case manifest:
+  - L78: `describe("xAI OAuth device flow", () => {`
+  - L85: `it("uses the device grant, delays polling, and handles pending and slow_down", async () => {`
+  - L158: `it("falls back to the default poll interval when the response reports interval 0", async () => {`
+  - L181: `it("prefers verification_uri_complete when the server provides it", async () => {`
+  - L211: `it("rejects a non-https verification_uri_complete", async () => {`
+  - L226: `it.each(["http://accounts.x.ai/oauth2/device", "file:///etc/passwd", "not a url"])(`
+  - L238: `it.each(["access_denied", "authorization_denied"])(`
+  - L260: `it("cancels while waiting for the first token poll", async () => {`
+  - L275: `it("refreshes tokens and preserves an unrotated refresh token", async () => {`
+  - L303: `it("assumes a one-hour lifetime when expires_in is missing", async () => {`
+  - L316: `it("rejects token responses with missing fields", async () => {`
+  - L325: `it("surfaces the upstream error code and description on refresh failure", async () => {`
+- assertion/gate manifest:
+  - L101: `expect(form.get("client_id")).toBe("b1a00492-073a-47ea-816f-4c329264a828");`
+  - L102: `expect(form.get("scope")).toBe("openid profile email offline_access grok-cli:access api:access");`
+  - L103: `expect(form.get("referrer")).toBe("pi");`
+  - L110: `expect(form.get("grant_type")).toBe("urn:ietf:params:oauth:grant-type:device_code");`
+  - L111: `expect(form.get("client_id")).toBe("b1a00492-073a-47ea-816f-4c329264a828");`
+  - L112: `expect(form.get("device_code")).toBe("device-code");`
+  - L126: `expect(deviceCodes).toEqual([`
+  - L134: `expect(pollTimes).toEqual([]);`
+  - L137: `expect(pollTimes).toEqual([startTime.getTime() + 5000]);`
+  - L141: `expect(pollTimes).toEqual([startTime.getTime() + 5000, startTime.getTime() + 10_000]);`
+  - L145: `expect(pollTimes).toEqual([`
+  - L150: `expect(credentials).toEqual({`
+  - L178: `expect(pollTimes).toEqual([startTime.getTime() + 5000]);`
+  - L201: `expect(deviceCodes).toEqual([`
+  - L223: `await expect(loginXaiForTest({ onDeviceCode: () => {} })).rejects.toThrow("Untrusted verification URI");`
+  - L234: `await expect(loginXaiForTest({ onDeviceCode: () => {} })).rejects.toThrow("Untrusted verification URI");`
+  - L254: `const assertion = expect(loginPromise).rejects.toThrow("xAI device authorization was denied");`
+  - L271: `await expect(loginPromise).rejects.toThrow("Login cancelled");`
+  - L272: `expect(fetchMock).toHaveBeenCalledTimes(1);`
+  - L278: `expect(requestUrl(input)).toBe("https://auth.x.ai/oauth2/token");`
+  - L280: `expect(form.get("grant_type")).toBe("refresh_token");`
+  - L281: `expect(form.get("client_id")).toBe("b1a00492-073a-47ea-816f-4c329264a828");`
+  - L284: `expect(form.get("refresh_token")).toBe("old-refresh");`
+  - L287: `expect(form.get("refresh_token")).toBe("keep-refresh");`
+  - L294: `expect(rotated.type).toBe("oauth");`
+  - L295: `expect(rotated.refresh).toBe("new-refresh");`
+  - L296: `expect(rotated.access).toBe("new-access");`
+  - L297: `expect(preserved.refresh).toBe("keep-refresh");`
+  - L298: `expect(preserved.access).toBe("newer-access");`
+  - L299: `expect(xaiOAuth.name).toBe("xAI (Grok/X subscription)");`
+  - L300: `await expect(xaiOAuth.toAuth(preserved)).resolves.toEqual({ apiKey: "newer-access" });`
+  - L313: `expect(credentials.expires).toBe(startTime.getTime() + 3_600_000 - 300_000);`
+  - L322: `await expect(refreshXaiForTest("old-refresh")).rejects.toThrow("Invalid xAI OAuth response field: access_token");`
+  - L331: `await expect(refreshXaiForTest("old-refresh")).rejects.toThrow(`
+

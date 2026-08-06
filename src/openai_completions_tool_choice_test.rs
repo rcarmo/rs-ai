@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn maps_groq_qwen3_reasoning_levels_to_default_reasoning_effort() {
         let p = payload(
-            &cat("groq", "qwen/qwen3-32b"),
+            &cat("groq", "qwen/qwen3.6-27b"),
             &user_ctx(),
             &reasoning(ThinkingLevel::Medium),
         );
@@ -140,7 +140,7 @@ mod tests {
     fn enables_tool_stream_for_supported_zai_models_with_tools() {
         let mut ctx = user_ctx();
         ctx.tools = vec![ping_tool()];
-        let p = payload(&cat("zai", "glm-5.1"), &ctx, &StreamOptions::default());
+        let p = payload(&cat("zai", "glm-5.2"), &ctx, &StreamOptions::default());
         assert_eq!(p["tool_stream"], json!(true));
     }
 
@@ -148,14 +148,16 @@ mod tests {
     fn omits_tool_stream_for_unsupported_zai_models() {
         let mut ctx = user_ctx();
         ctx.tools = vec![ping_tool()];
-        let p = payload(&cat("zai", "glm-4.5-air"), &ctx, &StreamOptions::default());
+        let mut model = cat("zai", "glm-5.2");
+        model.compat.zai_tool_stream = None;
+        let p = payload(&model, &ctx, &StreamOptions::default());
         assert!(p.get("tool_stream").is_none());
     }
 
     #[test]
     fn omits_tool_stream_when_no_tools_are_provided() {
         let p = payload(
-            &cat("zai", "glm-5.1"),
+            &cat("zai", "glm-5.2"),
             &user_ctx(),
             &StreamOptions::default(),
         );
@@ -325,6 +327,7 @@ mod tests {
             assert_eq!(model.compat.max_tokens_field.as_deref(), Some("max_tokens"));
             let opts = StreamOptions {
                 max_tokens: Some(123),
+                sampling_params: None,
                 ..Default::default()
             };
             let p = payload(&model, &user_ctx(), &opts);
@@ -358,10 +361,9 @@ mod tests {
 
     #[test]
     fn stores_zai_tool_stream_support_in_model_compat_metadata() {
-        assert_eq!(cat("zai", "glm-5.1").compat.zai_tool_stream, Some(true));
         assert_eq!(cat("zai", "glm-4.7").compat.zai_tool_stream, Some(true));
         assert_eq!(cat("zai", "glm-5-turbo").compat.zai_tool_stream, Some(true));
-        assert_eq!(cat("zai", "glm-4.5-air").compat.zai_tool_stream, None);
+        assert_eq!(cat("zai", "glm-5.2").compat.zai_tool_stream, Some(true));
     }
 
     #[test]
@@ -513,6 +515,7 @@ mod tests {
             cost: crate::types::ModelCost::default(),
             context_window: 128000,
             max_tokens: 8192,
+            sampling_params: None,
             headers: None,
             api_key: None,
             compat,
@@ -720,7 +723,7 @@ mod tests {
 
     #[test]
     fn respects_explicit_zai_tool_stream_compat_override() {
-        let mut model = cat("zai", "glm-4.5-air");
+        let mut model = cat("zai", "glm-5.2");
         model.compat.zai_tool_stream = Some(true);
         let mut ctx = user_ctx();
         ctx.tools = vec![ping_tool()];
