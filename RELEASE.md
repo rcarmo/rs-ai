@@ -119,7 +119,7 @@ cargo test        # pass 3/3
 cargo clippy --all-targets -- -D warnings
 ```
 
-Results: build passed; full test suite passed three consecutive times (`887` tests plus doctest `1` before adding metadata verifier tests; `889` native tests afterward); strict Clippy passed. Final correction gates also include `cargo fmt --check`, clean metadata verifier, `cargo test release_metadata_verification_test -- --nocapture` (`2 passed`), and `cargo clippy --all-targets --all-features -- -D warnings`.
+Results: build passed; full test suite passed three consecutive times (`887` tests plus doctest `1` before adding metadata verifier tests; `890` native tests afterward); strict Clippy passed. Final correction gates also include `cargo fmt --check`, clean metadata verifier, `cargo test release_metadata_verification_test -- --nocapture` (`2 passed`), `cargo test`, `cargo clippy --all-targets -- -D warnings`, and `cargo clippy --all-targets --all-features -- -D warnings`. Hosted CI initially exposed a newer Clippy `useless-borrows-in-formatting` lint in `src/provider/codex.rs`; the redundant borrow was removed and native CI-equivalent Clippy is now clean.
 
 ## Historical prior release: v0.84.0
 

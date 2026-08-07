@@ -167,7 +167,7 @@ pub fn stream_codex<'a>(
         let ws_url = format!(
             "{}/responses?model={}&stream=true",
             model.base_url.trim_end_matches('/').replace("https://", "wss://").replace("http://", "ws://"),
-            &model.id
+            model.id
         );
 
         // Reuse the SSE transport for the rest of a session once its WebSocket has failed
