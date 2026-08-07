@@ -37,6 +37,14 @@ def run(cmd: list[str], cwd: Path | None = None, env: dict[str, str] | None = No
     return subprocess.check_output(cmd, cwd=cwd, env=merged_env, text=True, stderr=subprocess.STDOUT)
 
 
+def js_runtime() -> str:
+    for candidate in ("bun", "node"):
+        path = shutil.which(candidate)
+        if path:
+            return path
+    raise SystemExit("neither bun nor node is available to import package image metadata")
+
+
 def normalize_generated(text: str) -> str:
     return TIMESTAMP_RE.sub("//! Generated: <normalized>", text)
 
@@ -120,7 +128,7 @@ process.stdout.write(JSON.stringify(IMAGE_MODELS));
     script_path = out_path.with_suffix(".mjs")
     script_path.write_text(script)
     try:
-        out = run(["bun", str(script_path)], cwd=package_dir)
+        out = run([js_runtime(), str(script_path)], cwd=package_dir)
     finally:
         script_path.unlink(missing_ok=True)
     out_path.write_text(out)

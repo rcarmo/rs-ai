@@ -14,19 +14,19 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
-    fn generated_model_data_is_structurally_valid_and_v0830_counts_match() {
+    fn generated_model_data_is_structurally_valid_and_current_counts_match() {
         let all = crate::models_generated::builtin_models();
         let pairs = all
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1153);
+        assert_eq!(pairs.len(), 1220);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
             .collect::<HashSet<_>>()
             .len();
-        assert_eq!(provider_count, 38);
+        assert_eq!(provider_count, 39);
         for model in &all {
             assert!(!model.id.is_empty(), "empty id: {model:?}");
             assert!(!model.provider.is_empty(), "empty provider: {model:?}");
