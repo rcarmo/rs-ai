@@ -9,6 +9,36 @@ mod tests {
     use std::process::Command;
 
     #[test]
+    fn release_metadata_verifier_clean_run_succeeds_with_expected_counts() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/verify_release_model_metadata.py")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+
+        assert!(
+            output.status.success(),
+            "clean verifier failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(stdout.contains("text=1220"), "unexpected stdout: {stdout}");
+        assert!(
+            stdout.contains("providers=39"),
+            "unexpected stdout: {stdout}"
+        );
+        assert!(stdout.contains("apis=9"), "unexpected stdout: {stdout}");
+        assert!(
+            stdout.contains("batchAliases=59"),
+            "unexpected stdout: {stdout}"
+        );
+        assert!(stdout.contains("image=42"), "unexpected stdout: {stdout}");
+    }
+
+    #[test]
     fn release_metadata_verifier_detects_fault_injected_text_metadata() {
         let output = Command::new("python3")
             .env("PYTHONDONTWRITEBYTECODE", "1")

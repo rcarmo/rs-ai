@@ -14,6 +14,7 @@ source into a temporary project copy, and compares.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -26,6 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TIMESTAMP_RE = re.compile(r"//! Generated: .*", re.MULTILINE)
+DEFAULT_PACKAGE_SHA256 = "6ab689189e7cb3de5cdb126312a3e60e8ac35fe5ee5f1b63d00f711c8a430c73"
 
 
 def run(cmd: list[str], cwd: Path | None = None, env: dict[str, str] | None = None) -> str:
@@ -37,6 +39,28 @@ def run(cmd: list[str], cwd: Path | None = None, env: dict[str, str] | None = No
 
 def normalize_generated(text: str) -> str:
     return TIMESTAMP_RE.sub("//! Generated: <normalized>", text)
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def flatten_models(value) -> list[dict]:
+    out: list[dict] = []
+    if isinstance(value, list):
+        for item in value:
+            out.extend(flatten_models(item))
+    elif isinstance(value, dict):
+        if isinstance(value.get("provider"), str) and isinstance(value.get("id"), str):
+            out.append(value)
+        else:
+            for item in value.values():
+                out.extend(flatten_models(item))
+    return out
 
 
 def compare_file(label: str, expected: Path, actual: Path) -> list[str]:
@@ -61,7 +85,7 @@ def compare_file(label: str, expected: Path, actual: Path) -> list[str]:
     return [f"{label} metadata mismatch"]
 
 
-def extract_npm_package(package: str, work: Path) -> Path:
+def extract_npm_package(package: str, work: Path, expected_sha256: str) -> Path:
     pack_dir = work / "npm-pack"
     pack_dir.mkdir()
     out = run(["npm", "pack", "--silent", package], cwd=pack_dir).strip().splitlines()
@@ -70,6 +94,11 @@ def extract_npm_package(package: str, work: Path) -> Path:
     tarball = pack_dir / out[-1]
     if not tarball.exists():
         raise SystemExit(f"npm pack tarball missing: {tarball}")
+    actual_sha256 = sha256_file(tarball)
+    if expected_sha256 and actual_sha256 != expected_sha256:
+        raise SystemExit(
+            f"npm tarball sha256 mismatch for {package}: got {actual_sha256}, expected {expected_sha256}"
+        )
     package_dir = work / "npm-package"
     package_dir.mkdir()
     with tarfile.open(tarball, "r:gz") as tar:
@@ -80,7 +109,7 @@ def extract_npm_package(package: str, work: Path) -> Path:
     return unpacked
 
 
-def package_image_json(package_dir: Path, out_path: Path) -> None:
+def package_image_json(package_dir: Path, out_path: Path) -> int:
     module = (package_dir / "dist/image-models.generated.js").resolve()
     if not module.exists():
         raise SystemExit(f"package image model module missing: {module}")
@@ -95,6 +124,7 @@ process.stdout.write(JSON.stringify(IMAGE_MODELS));
     finally:
         script_path.unlink(missing_ok=True)
     out_path.write_text(out)
+    return len(flatten_models(json.loads(out)))
 
 
 def copy_project_for_generation(work: Path) -> Path:
@@ -123,6 +153,7 @@ def maybe_fault(path: Path, fault: str) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--package", default="@earendil-works/pi-ai@0.84.1")
+    ap.add_argument("--package-sha256", default=DEFAULT_PACKAGE_SHA256)
     ap.add_argument("--upstream", default="", help="ignored compatibility option; npm artifact is authoritative")
     ap.add_argument("--tag-sha", default="", help="ignored compatibility option; npm artifact is authoritative")
     ap.add_argument("--fault", default="", choices=["", "text-name", "image-name"], help="test-only metadata fault injection")
@@ -130,7 +161,7 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory(prefix="rs-ai-model-meta-") as tmp:
         work = Path(tmp)
-        package_dir = extract_npm_package(args.package, work)
+        package_dir = extract_npm_package(args.package, work, args.package_sha256)
         data_dir = package_dir / "dist/providers/data"
         run([sys.executable, "scripts/validate_release_model_data.py", str(data_dir)], cwd=ROOT)
         extracted = work / "release-json"
@@ -144,7 +175,7 @@ def main() -> int:
         generated_root = copy_project_for_generation(work)
         run([sys.executable, "scripts/generate_models.py", str(extracted / "models.json")], cwd=generated_root)
         image_json = work / "image-models.json"
-        package_image_json(package_dir, image_json)
+        image_count = package_image_json(package_dir, image_json)
         run([sys.executable, "scripts/generate_image_models.py", str(image_json)], cwd=generated_root)
 
         # rustfmt only the generated temp files; this normalizes generator formatting
@@ -165,7 +196,7 @@ def main() -> int:
         print(
             "metadata verified: "
             f"text={metadata['modelCount']} providers={metadata['providerCount']} apis={metadata['apiCount']} "
-            f"batchAliases={metadata['batchAliasCount']} image=42"
+            f"batchAliases={metadata['batchAliasCount']} image={image_count}"
         )
     return 0
 

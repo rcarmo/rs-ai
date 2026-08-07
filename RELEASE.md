@@ -56,13 +56,14 @@ Changed paths:
 - Preserved the exact seven Individual models: `deepseek-v4-flash-0731`, `deepseek-v4-pro`, `glm-5.2`, `qwen3.6-flash`, `qwen3.7-max`, `qwen3.7-plus`, `qwen3.8-max`; retired `qwen3.8-max-preview` remains omitted.
 - Fixed OpenAI-compatible `thinkingFormat = "qwen"` request building to emit `reasoning_effort` when `supportsReasoningEffort` is true while continuing to emit top-level `enable_thinking` and no `thinking` object.
 - Updated `scripts/extract_release_model_shards.py` for v0.84.1 release artifacts: official npm shards now include **59** OpenRouter `:batch` aliases. The extractor preserves only the exact audited allowlist, rejects any unexpected batch alias, records `batchAliasCount`, `batchAliases`, and `allowedBatchAliasPolicySha256`, and enforces the Qwen Individual model ID allowlist before creating output.
-- Added `scripts/verify_release_model_metadata.py`, a clean-run full metadata gate that downloads/unpacks the official npm package, validates/extracts shards, regenerates text and image Rust registries in a temporary project copy, rustfmt-formats the generated outputs, normalizes only generated timestamps, and compares all Rust-representable metadata byte-for-byte against committed files.
+- Added `scripts/verify_release_model_metadata.py`, a clean-run full metadata gate that downloads the official npm package, verifies tarball SHA-256 `6ab689189e7cb3de5cdb126312a3e60e8ac35fe5ee5f1b63d00f711c8a430c73` before extraction, validates/extracts shards, imports package image metadata, regenerates text and image Rust registries in a temporary project copy, rustfmt-formats the generated outputs, normalizes only generated timestamps, and compares all Rust-representable metadata byte-for-byte against committed files.
 - Added deterministic Rust evidence:
   - `src/v0841_release_test.rs::release_pinned_catalog_counts_include_individual_and_batch_aliases`
   - `src/v0841_release_test.rs::qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841`
   - `src/v0841_release_test.rs::qwen_token_plan_individual_reasoning_payloads_match_v0841`
   - `src/model_data_validation_test.rs::extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
   - `src/model_data_validation_test.rs::extractor_allows_only_audited_release_batch_aliases`
+  - `src/release_metadata_verification_test.rs::release_metadata_verifier_clean_run_succeeds_with_expected_counts`
   - `src/release_metadata_verification_test.rs::release_metadata_verifier_detects_fault_injected_text_metadata`
 
 ### v0.84.1 release-pinned artifact evidence
@@ -90,7 +91,7 @@ Results:
 - Validator: `{"models": 1220, "providers": 39, "structureHash": "24c74ac10bb8ed4df2c96bdadcfd94a417f3c823d5038875f59a261e3c84424b"}`
 - Extractor: `1220 models, 39 providers, 9 apis`, `batchAliasCount=59`, `allowedBatchAliasPolicySha256=f383057c43e309e6882645d1f294b5e539fa8521209c24d43e9390af0d7d8281`
 - Pair comparator: text `1220/1220`, image `42/42`, missing `0`, extra `0`
-- Full metadata verifier: `metadata verified: text=1220 providers=39 apis=9 batchAliases=59 image=42`
+- Full metadata verifier: verifies npm tarball SHA-256 `6ab689189e7cb3de5cdb126312a3e60e8ac35fe5ee5f1b63d00f711c8a430c73` before extraction and reports derived counts `metadata verified: text=1220 providers=39 apis=9 batchAliases=59 image=42`
 
 ### v0.84.1 verification
 
@@ -106,7 +107,7 @@ cargo test model_data_validation_test -- --nocapture
 cargo test release_metadata_verification_test -- --nocapture
 ```
 
-Results: format clean; validator/comparator clean; full metadata verifier clean; `v0841_release_test` `3 passed`; `model_data_validation_test` `3 passed`; fault-injection metadata verifier test `1 passed`.
+Results: format clean; validator/comparator clean; full metadata verifier clean with pinned tarball SHA and derived image count; `v0841_release_test` `3 passed`; `model_data_validation_test` `3 passed`; metadata verifier native tests `2 passed` (clean success + fault injection).
 
 Full gates from `/workspace/projects/rs-ai`:
 
@@ -118,7 +119,7 @@ cargo test        # pass 3/3
 cargo clippy --all-targets -- -D warnings
 ```
 
-Results: build passed; full test suite passed three consecutive times (`887` tests plus doctest `1` before adding the metadata fault-injection test; `888` native tests afterward); strict Clippy passed. Final correction gates also include `cargo fmt --check`, clean metadata verifier, `cargo test release_metadata_verification_test -- --nocapture`, and `cargo clippy --all-targets --all-features -- -D warnings`.
+Results: build passed; full test suite passed three consecutive times (`887` tests plus doctest `1` before adding metadata verifier tests; `889` native tests afterward); strict Clippy passed. Final correction gates also include `cargo fmt --check`, clean metadata verifier, `cargo test release_metadata_verification_test -- --nocapture` (`2 passed`), and `cargo clippy --all-targets --all-features -- -D warnings`.
 
 ## Historical prior release: v0.84.0
 
