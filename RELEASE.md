@@ -19,7 +19,7 @@ The official range changes **25** `packages/ai` paths:
 | Release/package/docs (`CHANGELOG.md`, `README.md`, `package.json`) | 3 | DOCUMENTED / N/A runtime; ledger updated, README env semantics mirrored. |
 | Generator/model-data scripts (`scripts/generate-models.ts`, `scripts/model-data.ts`) | 2 | ADAPTED via release-shard extractor strict allowlist checks and production validator tests. |
 | Runtime/provider/type/registry (`src/env-api-keys.ts`, `src/models.generated.ts`, `src/providers/all.ts`, `src/providers/qwen-token-plan-individual*.ts`, `src/types.ts`) | 6 | PORTED: new `qwen-token-plan-individual` provider, env mapping, generated catalog, provider/id pairs, and Qwen reasoning payload behavior. |
-| Tests | 14 | ADAPTED / COVERED. Correct accounting: **13 existing tests modified + 1 new `generate-models-strict.test.ts`**. Full 128-file corpus recorded in `docs/v0841-128-test-crosswalk.md`. |
+| Tests | 14 | ADAPTED / LIVE UNEXECUTED where credential-gated. Correct accounting: **13 existing tests modified + 1 new `generate-models-strict.test.ts`**; exact split is **10 credential-gated live-matrix additions + 2 deterministic provider/request rows + 2 generator-policy rows**. Full 128-file corpus recorded in `docs/v0841-128-test-crosswalk.md`. |
 
 Changed paths:
 
@@ -56,12 +56,14 @@ Changed paths:
 - Preserved the exact seven Individual models: `deepseek-v4-flash-0731`, `deepseek-v4-pro`, `glm-5.2`, `qwen3.6-flash`, `qwen3.7-max`, `qwen3.7-plus`, `qwen3.8-max`; retired `qwen3.8-max-preview` remains omitted.
 - Fixed OpenAI-compatible `thinkingFormat = "qwen"` request building to emit `reasoning_effort` when `supportsReasoningEffort` is true while continuing to emit top-level `enable_thinking` and no `thinking` object.
 - Updated `scripts/extract_release_model_shards.py` for v0.84.1 release artifacts: official npm shards now include **59** OpenRouter `:batch` aliases. The extractor preserves only the exact audited allowlist, rejects any unexpected batch alias, records `batchAliasCount`, `batchAliases`, and `allowedBatchAliasPolicySha256`, and enforces the Qwen Individual model ID allowlist before creating output.
+- Added `scripts/verify_release_model_metadata.py`, a clean-run full metadata gate that downloads/unpacks the official npm package, validates/extracts shards, regenerates text and image Rust registries in a temporary project copy, rustfmt-formats the generated outputs, normalizes only generated timestamps, and compares all Rust-representable metadata byte-for-byte against committed files.
 - Added deterministic Rust evidence:
   - `src/v0841_release_test.rs::release_pinned_catalog_counts_include_individual_and_batch_aliases`
   - `src/v0841_release_test.rs::qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841`
   - `src/v0841_release_test.rs::qwen_token_plan_individual_reasoning_payloads_match_v0841`
   - `src/model_data_validation_test.rs::extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
   - `src/model_data_validation_test.rs::extractor_allows_only_audited_release_batch_aliases`
+  - `src/release_metadata_verification_test.rs::release_metadata_verifier_detects_fault_injected_text_metadata`
 
 ### v0.84.1 release-pinned artifact evidence
 
@@ -80,13 +82,15 @@ Commands:
 python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0841-pkg/package/dist/providers/data
 python3 scripts/extract_release_model_shards.py /workspace/tmp/pi-ai-0841-pkg/package /workspace/tmp/pi-v0841-json --tag-worktree /workspace/tmp/pi-src --tag-sha 53fa77ccd8a279eb87e92294ef3687b03ff80112
 PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0841-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 53fa77ccd8a279eb87e92294ef3687b03ff80112
+python3 scripts/verify_release_model_metadata.py
 ```
 
 Results:
 
 - Validator: `{"models": 1220, "providers": 39, "structureHash": "24c74ac10bb8ed4df2c96bdadcfd94a417f3c823d5038875f59a261e3c84424b"}`
 - Extractor: `1220 models, 39 providers, 9 apis`, `batchAliasCount=59`, `allowedBatchAliasPolicySha256=f383057c43e309e6882645d1f294b5e539fa8521209c24d43e9390af0d7d8281`
-- Comparator: text `1220/1220`, image `42/42`, missing `0`, extra `0`
+- Pair comparator: text `1220/1220`, image `42/42`, missing `0`, extra `0`
+- Full metadata verifier: `metadata verified: text=1220 providers=39 apis=9 batchAliases=59 image=42`
 
 ### v0.84.1 verification
 
@@ -96,11 +100,13 @@ Focused evidence:
 cargo fmt --check
 python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0841-pkg/package/dist/providers/data
 PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0841-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 53fa77ccd8a279eb87e92294ef3687b03ff80112
+python3 scripts/verify_release_model_metadata.py
 cargo test v0841_release_test -- --nocapture
 cargo test model_data_validation_test -- --nocapture
+cargo test release_metadata_verification_test -- --nocapture
 ```
 
-Results: format clean; validator/comparator clean; `v0841_release_test` `3 passed`; `model_data_validation_test` `3 passed`.
+Results: format clean; validator/comparator clean; full metadata verifier clean; `v0841_release_test` `3 passed`; `model_data_validation_test` `3 passed`; fault-injection metadata verifier test `1 passed`.
 
 Full gates from `/workspace/projects/rs-ai`:
 
@@ -112,7 +118,7 @@ cargo test        # pass 3/3
 cargo clippy --all-targets -- -D warnings
 ```
 
-Results: build passed; full test suite passed three consecutive times (`887` tests plus doctest `1`); strict Clippy passed.
+Results: build passed; full test suite passed three consecutive times (`887` tests plus doctest `1` before adding the metadata fault-injection test; `888` native tests afterward); strict Clippy passed. Final correction gates also include `cargo fmt --check`, clean metadata verifier, `cargo test release_metadata_verification_test -- --nocapture`, and `cargo clippy --all-targets --all-features -- -D warnings`.
 
 ## Historical prior release: v0.84.0
 

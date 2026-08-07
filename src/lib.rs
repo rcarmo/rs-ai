@@ -218,6 +218,8 @@ mod registration_test;
 #[cfg(test)]
 mod registry_test;
 #[cfg(test)]
+mod release_metadata_verification_test;
+#[cfg(test)]
 mod responses_foreign_toolcall_id_test;
 #[cfg(test)]
 mod responses_message_id_test;

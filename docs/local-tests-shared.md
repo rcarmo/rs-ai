@@ -4,7 +4,7 @@
 
 Source: upstream tag `53fa77ccd8a279eb87e92294ef3687b03ff80112` (`v0.84.1`), exact release-only delta `a5f43bf8aff3c55752432655f7334e3dafd1e256..53fa77ccd8a279eb87e92294ef3687b03ff80112`.
 
-Status: **ADAPTED / under final gate verification**. The v0.84.1 audit spans 25 changed `packages/ai` paths and **14 changed test paths total**: 13 existing tests modified plus 1 new `generate-models-strict.test.ts`. The final upstream test corpus is **128 files**, recorded in `docs/v0841-128-test-crosswalk.md`.
+Status: **ADAPTED / under final evidence-correction verification**. The v0.84.1 audit spans 25 changed `packages/ai` paths and **14 changed test paths total**: 13 existing tests modified plus 1 new `generate-models-strict.test.ts`. Exact split: **10 credential-gated live-matrix additions**, **2 deterministic provider/request rows**, and **2 generator-policy rows**. The final upstream test corpus is **128 files**, recorded in `docs/v0841-128-test-crosswalk.md`.
 
 Named tests in `src/v0841_release_test.rs`:
 
@@ -12,10 +12,12 @@ Named tests in `src/v0841_release_test.rs`:
 - `qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841`
 - `qwen_token_plan_individual_reasoning_payloads_match_v0841`
 
-Model-data/extractor evidence in `src/model_data_validation_test.rs`:
+Model-data/extractor/metadata evidence:
 
-- `extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
-- `extractor_allows_only_audited_release_batch_aliases`
+- `src/model_data_validation_test.rs::extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
+- `src/model_data_validation_test.rs::extractor_allows_only_audited_release_batch_aliases`
+- `scripts/verify_release_model_metadata.py` full clean-run text/image metadata regeneration equality gate
+- `src/release_metadata_verification_test.rs::release_metadata_verifier_detects_fault_injected_text_metadata`
 
 Ported/adapted behavior:
 
@@ -24,7 +26,7 @@ Ported/adapted behavior:
 - Release-pinned catalog extraction now accepts only the exact 59 audited OpenRouter `:batch` aliases present in the official v0.84.1 npm shards and rejects any unaudited batch alias.
 - Strict Individual allowlist validation fails before writing output when the release-shard model IDs drift, mirroring upstream `generate-models-strict.test.ts` rollback intent.
 
-Catalog evidence: `python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0841-pkg/package/dist/providers/data` => `1220` models, `39` providers, structure hash `24c74ac10bb8ed4df2c96bdadcfd94a417f3c823d5038875f59a261e3c84424b`; `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0841-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 53fa77ccd8a279eb87e92294ef3687b03ff80112` => text `1220/1220`, image `42/42`, missing `0`, extra `0`.
+Catalog evidence: `python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0841-pkg/package/dist/providers/data` => `1220` models, `39` providers, structure hash `24c74ac10bb8ed4df2c96bdadcfd94a417f3c823d5038875f59a261e3c84424b`; `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0841-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 53fa77ccd8a279eb87e92294ef3687b03ff80112` => text `1220/1220`, image `42/42`, missing `0`, extra `0`; `python3 scripts/verify_release_model_metadata.py` => full regenerated text/image metadata equality after timestamp normalization and rustfmt (`metadata verified: text=1220 providers=39 apis=9 batchAliases=59 image=42`).
 
 ## v0.84.0 completed bounded release evidence
 
