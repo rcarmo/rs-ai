@@ -980,6 +980,20 @@ pub(crate) fn build_payload(
             }
             Some("qwen") => {
                 payload["enable_thinking"] = json!(clamped_effort.is_some());
+                if let Some(ref level) = clamped_effort
+                    && compat.supports_reasoning_effort == Some(true)
+                {
+                    let key = format!("{:?}", level).to_lowercase();
+                    match model.thinking_level_map.as_ref().and_then(|m| m.get(&key)) {
+                        None => {
+                            payload["reasoning_effort"] = json!(key);
+                        }
+                        Some(Some(s)) => {
+                            payload["reasoning_effort"] = json!(s);
+                        }
+                        Some(None) => {}
+                    }
+                }
             }
             Some("qwen-chat-template") => {
                 payload["chat_template_kwargs"] = json!({

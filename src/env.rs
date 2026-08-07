@@ -20,6 +20,10 @@ static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyL
         ),
         ("ant-ling", &["ANT_LING_API_KEY"][..]),
         ("qwen-token-plan", &["QWEN_TOKEN_PLAN_API_KEY"][..]),
+        (
+            "qwen-token-plan-individual",
+            &["QWEN_TOKEN_PLAN_API_KEY"][..],
+        ),
         ("qwen-token-plan-cn", &["QWEN_TOKEN_PLAN_CN_API_KEY"][..]),
         ("openai", &["OPENAI_API_KEY"][..]),
         ("azure-openai-responses", &["AZURE_OPENAI_API_KEY"][..]),

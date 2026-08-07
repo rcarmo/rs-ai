@@ -39,38 +39,6 @@ fn completions_model(provider: &str, id: &str) -> Model {
 }
 
 #[test]
-fn release_pinned_catalog_has_no_unpinned_batch_aliases() {
-    use std::collections::HashSet;
-
-    let all = crate::models_generated::builtin_models();
-    let pairs = all
-        .iter()
-        .map(|model| (model.provider.as_str(), model.id.as_str()))
-        .collect::<HashSet<_>>();
-    let providers = all
-        .iter()
-        .map(|model| model.provider.as_str())
-        .collect::<HashSet<_>>();
-    let apis = all
-        .iter()
-        .map(|model| model.api.as_str())
-        .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1153);
-    assert_eq!(providers.len(), 38);
-    assert_eq!(apis.len(), 9);
-    assert!(
-        all.iter().all(|model| !model.id.contains(":batch")),
-        "release-pinned v0.84 catalog must not include fresh OpenRouter :batch aliases"
-    );
-
-    let image_pairs = crate::images::list_image_models(None)
-        .into_iter()
-        .map(|model| (model.provider, model.id))
-        .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 42);
-}
-
-#[test]
 fn sampling_params_merge_and_override_openai_compatible_payloads() {
     let mut model = completions_model("custom-provider", "custom-model");
     model.sampling_params = Some(json!({"top_p": 0.95, "min_p": 0.05, "temperature": 0.25}));

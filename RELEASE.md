@@ -1,9 +1,123 @@
 # rs-ai upstream release parity
 
-## Current accepted release: v0.84.0
+## Current accepted release: v0.84.1
 
 - Upstream package: `@earendil-works/pi-ai`
-- Current accepted release: `v0.84.0`
+- Current accepted release: `v0.84.1`
+- Upstream tag/commit: `53fa77ccd8a279eb87e92294ef3687b03ff80112`
+- Previous accepted upstream: `v0.84.0` / `a5f43bf8aff3c55752432655f7334e3dafd1e256`
+- Audited range: `a5f43bf8aff3c55752432655f7334e3dafd1e256..53fa77ccd8a279eb87e92294ef3687b03ff80112`
+- Scope: `packages/ai` only; official tag only, no newer-main chase.
+- Scope status: **complete for bounded deterministic v0.84.1 release parity**.
+
+### v0.84.1 exact upstream path disposition
+
+The official range changes **25** `packages/ai` paths:
+
+| Path group | Count | Disposition |
+|---|---:|---|
+| Release/package/docs (`CHANGELOG.md`, `README.md`, `package.json`) | 3 | DOCUMENTED / N/A runtime; ledger updated, README env semantics mirrored. |
+| Generator/model-data scripts (`scripts/generate-models.ts`, `scripts/model-data.ts`) | 2 | ADAPTED via release-shard extractor strict allowlist checks and production validator tests. |
+| Runtime/provider/type/registry (`src/env-api-keys.ts`, `src/models.generated.ts`, `src/providers/all.ts`, `src/providers/qwen-token-plan-individual*.ts`, `src/types.ts`) | 6 | PORTED: new `qwen-token-plan-individual` provider, env mapping, generated catalog, provider/id pairs, and Qwen reasoning payload behavior. |
+| Tests | 14 | ADAPTED / COVERED. Correct accounting: **13 existing tests modified + 1 new `generate-models-strict.test.ts`**. Full 128-file corpus recorded in `docs/v0841-128-test-crosswalk.md`. |
+
+Changed paths:
+
+- M `packages/ai/CHANGELOG.md`
+- M `packages/ai/README.md`
+- M `packages/ai/package.json`
+- M `packages/ai/scripts/generate-models.ts`
+- M `packages/ai/scripts/model-data.ts`
+- M `packages/ai/src/env-api-keys.ts`
+- M `packages/ai/src/models.generated.ts`
+- M `packages/ai/src/providers/all.ts`
+- A `packages/ai/src/providers/qwen-token-plan-individual.models.ts`
+- A `packages/ai/src/providers/qwen-token-plan-individual.ts`
+- M `packages/ai/src/types.ts`
+- M `packages/ai/test/abort.test.ts`
+- M `packages/ai/test/context-overflow.test.ts`
+- M `packages/ai/test/cross-provider-handoff.test.ts`
+- M `packages/ai/test/empty.test.ts`
+- A `packages/ai/test/generate-models-strict.test.ts`
+- M `packages/ai/test/image-tool-result.test.ts`
+- M `packages/ai/test/model-data-validation.test.ts`
+- M `packages/ai/test/openai-completions-tool-choice.test.ts`
+- M `packages/ai/test/qwen-token-plan-models.test.ts`
+- M `packages/ai/test/stream.test.ts`
+- M `packages/ai/test/tokens.test.ts`
+- M `packages/ai/test/tool-call-without-result.test.ts`
+- M `packages/ai/test/total-tokens.test.ts`
+- M `packages/ai/test/unicode-surrogate.test.ts`
+
+### v0.84.1 implementation summary
+
+- Added/released `qwen-token-plan-individual` as a built-in text provider using the shared international endpoint `https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1` and shared env key `QWEN_TOKEN_PLAN_API_KEY`.
+- Regenerated the text catalog from official npm `dist/providers/data` shards: **1220 text provider/id pairs across 39 providers and 9 APIs**.
+- Preserved the exact seven Individual models: `deepseek-v4-flash-0731`, `deepseek-v4-pro`, `glm-5.2`, `qwen3.6-flash`, `qwen3.7-max`, `qwen3.7-plus`, `qwen3.8-max`; retired `qwen3.8-max-preview` remains omitted.
+- Fixed OpenAI-compatible `thinkingFormat = "qwen"` request building to emit `reasoning_effort` when `supportsReasoningEffort` is true while continuing to emit top-level `enable_thinking` and no `thinking` object.
+- Updated `scripts/extract_release_model_shards.py` for v0.84.1 release artifacts: official npm shards now include **59** OpenRouter `:batch` aliases. The extractor preserves only the exact audited allowlist, rejects any unexpected batch alias, records `batchAliasCount`, `batchAliases`, and `allowedBatchAliasPolicySha256`, and enforces the Qwen Individual model ID allowlist before creating output.
+- Added deterministic Rust evidence:
+  - `src/v0841_release_test.rs::release_pinned_catalog_counts_include_individual_and_batch_aliases`
+  - `src/v0841_release_test.rs::qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841`
+  - `src/v0841_release_test.rs::qwen_token_plan_individual_reasoning_payloads_match_v0841`
+  - `src/model_data_validation_test.rs::extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
+  - `src/model_data_validation_test.rs::extractor_allows_only_audited_release_batch_aliases`
+
+### v0.84.1 release-pinned artifact evidence
+
+Authoritative catalog source is offline and release-pinned:
+
+- upstream tag worktree: `/workspace/tmp/pi-src` at `53fa77ccd8a279eb87e92294ef3687b03ff80112`
+- unpacked npm package: `/workspace/tmp/pi-ai-0841-pkg/package`
+- provider shards: `/workspace/tmp/pi-ai-0841-pkg/package/dist/providers/data/*.json`
+- provider manifest `schemaVersion=3`, `generatedAt=2026-08-07T05:53:06.539Z`, `structureHash=24c74ac10bb8ed4df2c96bdadcfd94a417f3c823d5038875f59a261e3c84424b`
+- extracted release JSON: `/workspace/tmp/pi-v0841-json/models.json`
+- extractor metadata: `/workspace/tmp/pi-v0841-json/source-metadata.json`
+
+Commands:
+
+```bash
+python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0841-pkg/package/dist/providers/data
+python3 scripts/extract_release_model_shards.py /workspace/tmp/pi-ai-0841-pkg/package /workspace/tmp/pi-v0841-json --tag-worktree /workspace/tmp/pi-src --tag-sha 53fa77ccd8a279eb87e92294ef3687b03ff80112
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0841-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 53fa77ccd8a279eb87e92294ef3687b03ff80112
+```
+
+Results:
+
+- Validator: `{"models": 1220, "providers": 39, "structureHash": "24c74ac10bb8ed4df2c96bdadcfd94a417f3c823d5038875f59a261e3c84424b"}`
+- Extractor: `1220 models, 39 providers, 9 apis`, `batchAliasCount=59`, `allowedBatchAliasPolicySha256=f383057c43e309e6882645d1f294b5e539fa8521209c24d43e9390af0d7d8281`
+- Comparator: text `1220/1220`, image `42/42`, missing `0`, extra `0`
+
+### v0.84.1 verification
+
+Focused evidence:
+
+```bash
+cargo fmt --check
+python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0841-pkg/package/dist/providers/data
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0841-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 53fa77ccd8a279eb87e92294ef3687b03ff80112
+cargo test v0841_release_test -- --nocapture
+cargo test model_data_validation_test -- --nocapture
+```
+
+Results: format clean; validator/comparator clean; `v0841_release_test` `3 passed`; `model_data_validation_test` `3 passed`.
+
+Full gates from `/workspace/projects/rs-ai`:
+
+```bash
+cargo build
+cargo test        # pass 1/3
+cargo test        # pass 2/3
+cargo test        # pass 3/3
+cargo clippy --all-targets -- -D warnings
+```
+
+Results: build passed; full test suite passed three consecutive times (`887` tests plus doctest `1`); strict Clippy passed.
+
+## Historical prior release: v0.84.0
+
+- Upstream package: `@earendil-works/pi-ai`
+- Historical accepted release: `v0.84.0`
 - Upstream tag/commit: `a5f43bf8aff3c55752432655f7334e3dafd1e256`
 - Previous accepted upstream: `v0.83.0` / `845d6ff1f6643aba440341cce877ce1c43ebbc39`
 - Audited range for manifests: `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`

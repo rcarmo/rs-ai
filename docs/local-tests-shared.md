@@ -1,5 +1,31 @@
 # Shared local-test adaptation tracker (rs-ai)
 
+## v0.84.1 bounded release evidence
+
+Source: upstream tag `53fa77ccd8a279eb87e92294ef3687b03ff80112` (`v0.84.1`), exact release-only delta `a5f43bf8aff3c55752432655f7334e3dafd1e256..53fa77ccd8a279eb87e92294ef3687b03ff80112`.
+
+Status: **ADAPTED / under final gate verification**. The v0.84.1 audit spans 25 changed `packages/ai` paths and **14 changed test paths total**: 13 existing tests modified plus 1 new `generate-models-strict.test.ts`. The final upstream test corpus is **128 files**, recorded in `docs/v0841-128-test-crosswalk.md`.
+
+Named tests in `src/v0841_release_test.rs`:
+
+- `release_pinned_catalog_counts_include_individual_and_batch_aliases`
+- `qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841`
+- `qwen_token_plan_individual_reasoning_payloads_match_v0841`
+
+Model-data/extractor evidence in `src/model_data_validation_test.rs`:
+
+- `extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
+- `extractor_allows_only_audited_release_batch_aliases`
+
+Ported/adapted behavior:
+
+- Built-in `qwen-token-plan-individual` provider with shared `QWEN_TOKEN_PLAN_API_KEY`, shared international Token Plan endpoint, and exact 7-model Individual allowlist.
+- OpenAI-compatible Qwen request shape now emits `enable_thinking` plus supported `reasoning_effort` for `thinkingFormat = "qwen"`, with no top-level `thinking` object.
+- Release-pinned catalog extraction now accepts only the exact 59 audited OpenRouter `:batch` aliases present in the official v0.84.1 npm shards and rejects any unaudited batch alias.
+- Strict Individual allowlist validation fails before writing output when the release-shard model IDs drift, mirroring upstream `generate-models-strict.test.ts` rollback intent.
+
+Catalog evidence: `python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0841-pkg/package/dist/providers/data` => `1220` models, `39` providers, structure hash `24c74ac10bb8ed4df2c96bdadcfd94a417f3c823d5038875f59a261e3c84424b`; `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0841-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 53fa77ccd8a279eb87e92294ef3687b03ff80112` => text `1220/1220`, image `42/42`, missing `0`, extra `0`.
+
 ## v0.84.0 completed bounded release evidence
 
 Source: upstream tag `a5f43bf8aff3c55752432655f7334e3dafd1e256` (`v0.84.0`), exact release-only delta `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`.

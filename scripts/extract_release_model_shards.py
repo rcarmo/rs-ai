@@ -29,12 +29,100 @@ def flatten(value):
     return out
 
 
+# Official @earendil-works/pi-ai v0.84.1 provider shards include these
+# release-pinned OpenRouter batch aliases. Keep this list exact so fresh dynamic
+# models.dev/OpenRouter aliases still fail loudly during release audits.
+QWEN_TOKEN_PLAN_INDIVIDUAL_MODEL_IDS = {
+    "deepseek-v4-flash-0731",
+    "deepseek-v4-pro",
+    "glm-5.2",
+    "qwen3.6-flash",
+    "qwen3.7-max",
+    "qwen3.7-plus",
+    "qwen3.8-max",
+}
+
+ALLOWED_BATCH_ALIASES = {
+    "openrouter/anthropic/claude-fable-5:batch",
+    "openrouter/anthropic/claude-haiku-4.5:batch",
+    "openrouter/anthropic/claude-opus-4.1:batch",
+    "openrouter/anthropic/claude-opus-4.5:batch",
+    "openrouter/anthropic/claude-opus-4.6:batch",
+    "openrouter/anthropic/claude-opus-4.7:batch",
+    "openrouter/anthropic/claude-opus-4.8:batch",
+    "openrouter/anthropic/claude-opus-5:batch",
+    "openrouter/anthropic/claude-sonnet-4.5:batch",
+    "openrouter/anthropic/claude-sonnet-4.6:batch",
+    "openrouter/anthropic/claude-sonnet-5:batch",
+    "openrouter/google/gemini-2.5-flash-lite:batch",
+    "openrouter/google/gemini-2.5-flash:batch",
+    "openrouter/google/gemini-2.5-pro:batch",
+    "openrouter/google/gemini-3-flash-preview:batch",
+    "openrouter/google/gemini-3.1-flash-lite:batch",
+    "openrouter/google/gemini-3.1-pro-preview:batch",
+    "openrouter/google/gemini-3.5-flash-lite:batch",
+    "openrouter/google/gemini-3.5-flash:batch",
+    "openrouter/google/gemini-3.6-flash:batch",
+    "openrouter/minimax/minimax-m3:batch",
+    "openrouter/moonshotai/kimi-k2.7-code:batch",
+    "openrouter/nvidia/nemotron-3-ultra-550b-a55b:batch",
+    "openrouter/openai/gpt-3.5-turbo:batch",
+    "openrouter/openai/gpt-4-turbo:batch",
+    "openrouter/openai/gpt-4.1-mini:batch",
+    "openrouter/openai/gpt-4.1-nano:batch",
+    "openrouter/openai/gpt-4.1:batch",
+    "openrouter/openai/gpt-4o-mini:batch",
+    "openrouter/openai/gpt-4o:batch",
+    "openrouter/openai/gpt-5-codex:batch",
+    "openrouter/openai/gpt-5-mini:batch",
+    "openrouter/openai/gpt-5-nano:batch",
+    "openrouter/openai/gpt-5-pro:batch",
+    "openrouter/openai/gpt-5.1:batch",
+    "openrouter/openai/gpt-5.2-pro:batch",
+    "openrouter/openai/gpt-5.2:batch",
+    "openrouter/openai/gpt-5.4-mini:batch",
+    "openrouter/openai/gpt-5.4-nano:batch",
+    "openrouter/openai/gpt-5.4-pro:batch",
+    "openrouter/openai/gpt-5.4:batch",
+    "openrouter/openai/gpt-5.5-pro:batch",
+    "openrouter/openai/gpt-5.5:batch",
+    "openrouter/openai/gpt-5.6-luna-pro:batch",
+    "openrouter/openai/gpt-5.6-luna:batch",
+    "openrouter/openai/gpt-5.6-sol-pro:batch",
+    "openrouter/openai/gpt-5.6-sol:batch",
+    "openrouter/openai/gpt-5.6-terra-pro:batch",
+    "openrouter/openai/gpt-5.6-terra:batch",
+    "openrouter/openai/gpt-5:batch",
+    "openrouter/openai/o1:batch",
+    "openrouter/openai/o3-mini-high:batch",
+    "openrouter/openai/o3-mini:batch",
+    "openrouter/openai/o3-pro:batch",
+    "openrouter/openai/o3:batch",
+    "openrouter/openai/o4-mini-high:batch",
+    "openrouter/openai/o4-mini:batch",
+    "openrouter/thinkingmachines/inkling:batch",
+    "openrouter/z-ai/glm-5.2:batch",
+}
+
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def assert_exact_model_ids(label: str, expected: set[str], actual: set[str]) -> None:
+    missing = sorted(expected - actual)
+    extra = sorted(actual - expected)
+    if missing or extra:
+        parts = []
+        if missing:
+            parts.append("missing: " + ", ".join(missing))
+        if extra:
+            parts.append("extra: " + ", ".join(extra))
+        raise SystemExit(f"{label} model IDs do not match (" + "; ".join(parts) + ")")
 
 
 def git_rev_parse(repo: Path, ref: str) -> str | None:
@@ -57,7 +145,6 @@ def main() -> int:
     if not data_dir.is_dir():
         raise SystemExit(f"missing provider shard directory: {data_dir}")
     out_dir = Path(args.out_dir).resolve()
-    out_dir.mkdir(parents=True, exist_ok=True)
 
     manifest_path = data_dir / ".manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
@@ -76,12 +163,21 @@ def main() -> int:
                 batch_ids.append(f"{provider}/{model_id}")
         models[provider] = dict(sorted(entries.items()))
 
-    if batch_ids:
+    batch_ids = sorted(batch_ids)
+    unexpected_batch_ids = sorted(set(batch_ids) - ALLOWED_BATCH_ALIASES)
+    if unexpected_batch_ids:
         raise SystemExit(
-            "release provider shards contain :batch ids; update audit policy with exact artifact evidence first:\n"
-            + "\n".join(batch_ids[:100])
+            "release provider shards contain unaudited :batch ids; update audit policy with exact artifact evidence first:\n"
+            + "\n".join(unexpected_batch_ids[:100])
+        )
+    if "qwen-token-plan-individual" in models:
+        assert_exact_model_ids(
+            "qwen-token-plan-individual",
+            QWEN_TOKEN_PLAN_INDIVIDUAL_MODEL_IDS,
+            set(models["qwen-token-plan-individual"].keys()),
         )
 
+    out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "models.json").write_text(json.dumps(models, indent=2, sort_keys=True) + "\n")
     package_json = package_dir / "package.json"
     metadata = {
@@ -95,7 +191,12 @@ def main() -> int:
         "providerCount": len(models),
         "modelCount": sum(len(v) for v in models.values()),
         "apiCount": len({m["api"] for mods in models.values() for m in mods.values()}),
-        "batchAliasCount": 0,
+        "batchAliasCount": len(batch_ids),
+        "batchAliases": batch_ids,
+        "allowedBatchAliasPolicySha256": hashlib.sha256(
+            "\n".join(sorted(ALLOWED_BATCH_ALIASES)).encode()
+        ).hexdigest(),
+        "qwenTokenPlanIndividualModelIds": sorted(QWEN_TOKEN_PLAN_INDIVIDUAL_MODEL_IDS),
     }
     if args.tag_worktree:
         tag_worktree = Path(args.tag_worktree).resolve()

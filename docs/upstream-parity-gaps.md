@@ -1,6 +1,22 @@
 # Upstream parity gap analysis
 
-## Completed parity audit: `@earendil-works/pi-ai` v0.84.0
+## Current parity audit: `@earendil-works/pi-ai` v0.84.1
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.1`, package/tag SHA `53fa77ccd8a279eb87e92294ef3687b03ff80112` (`github.com/earendil-works/pi` tag `v0.84.1`). Pinned scope is exactly `a5f43bf8aff3c55752432655f7334e3dafd1e256..53fa77ccd8a279eb87e92294ef3687b03ff80112`; do not chase newer main.
+
+Status: **ADAPTED / under final gate verification**. The range changes **25** `packages/ai` paths. Test accounting correction: **14 changed test paths total = 13 modified existing tests + 1 new `generate-models-strict.test.ts`**. Whole-corpus filename evidence is in `docs/v0841-128-test-crosswalk.md`: **128/128** upstream `packages/ai/test/*.test.ts` files accounted.
+
+| Upstream path group | Count | Current disposition | rs-ai path / evidence |
+|---|---:|---|---|
+| Release docs/package metadata: `CHANGELOG.md`, `README.md`, `package.json` | 3 | DOCUMENTED / N/A runtime | `RELEASE.md`; README env semantics mirrored in `src/env.rs`. |
+| Generator/model-data strictness: `scripts/generate-models.ts`, `scripts/model-data.ts`, `test/generate-models-strict.test.ts`, `test/model-data-validation.test.ts` | 4 | ADAPTED | `scripts/extract_release_model_shards.py` exact Individual allowlist and audited batch alias policy; `src/model_data_validation_test.rs::{extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation,extractor_allows_only_audited_release_batch_aliases}`. |
+| Qwen Token Plan Individual provider/catalog/env/types: `src/env-api-keys.ts`, `src/models.generated.ts`, `src/providers/all.ts`, `src/providers/qwen-token-plan-individual*.ts`, `src/types.ts`, `test/qwen-token-plan-models.test.ts` | 7 | PORTED | `src/env.rs`, `src/models_generated.rs`, `src/provider/openai.rs`, `src/v0841_release_test.rs::{qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841,qwen_token_plan_individual_reasoning_payloads_match_v0841}`. |
+| Live/simple/provider test matrix additions for Individual provider: `test/{abort,context-overflow,cross-provider-handoff,empty,image-tool-result,openai-completions-tool-choice,stream,tokens,tool-call-without-result,total-tokens,unicode-surrogate}.test.ts` | 11 | COVERED deterministically | Individual provider request/catalog contract in `src/v0841_release_test.rs`; existing provider stream/tool/token/abort suites continue to cover shared OpenAI-compatible paths without live credentials. |
+| Catalog comparator | n/a | PORTED for release catalog | `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0841-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 53fa77ccd8a279eb87e92294ef3687b03ff80112` => text `1220/1220`, image `42/42`, missing `0`, extra `0`. |
+
+Catalog evidence: official v0.84.1 npm provider shards validate as **1220** text models, **39** providers, **9** APIs, structure hash `24c74ac10bb8ed4df2c96bdadcfd94a417f3c823d5038875f59a261e3c84424b`. Unlike v0.84.0, the official release-pinned artifact includes **59** OpenRouter `:batch` aliases; extractor policy now preserves exactly those audited aliases and rejects unexpected drift.
+
+## Historical completed parity audit: `@earendil-works/pi-ai` v0.84.0
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.0`, package/tag SHA `a5f43bf8aff3c55752432655f7334e3dafd1e256` (`github.com/earendil-works/pi` tag `v0.84.0`). Pinned scope is exactly `845d6ff1f6643aba440341cce877ce1c43ebbc39..a5f43bf8aff3c55752432655f7334e3dafd1e256`; do not chase newer main.
 
