@@ -1,18 +1,21 @@
 //! Test-for-test port (deterministic substance) of upstream
-//! `test/github-copilot-oauth.test.ts` (`@earendil-works/pi-ai` v0.80.2).
+//! `test/github-copilot-oauth.test.ts` (`@earendil-works/pi-ai` v0.84.2).
 //!
-//! The full interactive device-code login orchestration (slow_down interval
-//! increase, timeout, onDeviceCode callbacks) is part of the interactive-OAuth
-//! surface; rs-ai has the primitives (`start_github_device_flow`,
-//! `poll_github_device_token`, the generic `poll_oauth_device_code_flow`, and
-//! the untrusted-verification_uri rejection — see `oauth.rs` tests). The portable
-//! deterministic piece here is the model-picker catalog filter and the
-//! untrusted-uri guard.
+//! The full interactive browser login UI remains host-owned, but the portable
+//! OAuth/device-code primitives, model-picker parsing, Individual-account policy
+//! fallback, and bounded Copilot policy-enable batching are deterministic here.
 
 #[cfg(test)]
 mod tests {
-    use crate::oauth::{is_selectable_copilot_model, selectable_copilot_model_ids};
+    use crate::oauth::{
+        COPILOT_API_VERSION, COPILOT_POLICY_CONCURRENCY, enable_github_copilot_models_at,
+        fetch_available_github_copilot_model_ids_at, is_selectable_copilot_model,
+        selectable_copilot_model_ids, selectable_copilot_model_ids_with_policy_fallback,
+    };
     use serde_json::json;
+    use std::time::Duration;
+    use wiremock::matchers::{header, method, path, path_regex};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
     #[test]
     fn filters_models_to_the_authenticated_account_picker_catalog() {
@@ -45,5 +48,105 @@ mod tests {
         assert!(!is_selectable_copilot_model(
             &json!({"model_picker_enabled": true, "capabilities": {"supports": {"tool_calls": false}}})
         ));
+    }
+
+    #[test]
+    fn falls_back_to_policy_enabled_ids_only_for_individual_endpoint() {
+        let data = vec![
+            json!({"id": "claude-opus-4.7", "model_picker_enabled": false, "policy": {"state": "enabled"}, "capabilities": {"supports": {"tool_calls": true}}}),
+            json!({"id": "gpt-no-tools", "model_picker_enabled": false, "policy": {"state": "enabled"}, "capabilities": {"supports": {"tool_calls": false}}}),
+            json!({"id": "gpt-disabled", "model_picker_enabled": false, "policy": {"state": "disabled"}, "capabilities": {"supports": {"tool_calls": true}}}),
+        ];
+        assert_eq!(
+            selectable_copilot_model_ids_with_policy_fallback(&data, false),
+            Vec::<String>::new()
+        );
+        assert_eq!(
+            selectable_copilot_model_ids_with_policy_fallback(&data, true),
+            vec!["claude-opus-4.7".to_string()]
+        );
+    }
+
+    #[tokio::test]
+    async fn fetch_available_model_ids_uses_copilot_headers() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/models"))
+            .and(header("authorization", "Bearer token"))
+            .and(header("x-github-api-version", COPILOT_API_VERSION))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "data": [
+                    {"id": "gpt-4.1", "model_picker_enabled": true, "policy": {"state": "enabled"}}
+                ]
+            })))
+            .mount(&server)
+            .await;
+        let ids = fetch_available_github_copilot_model_ids_at(&server.uri(), "token")
+            .await
+            .unwrap();
+        assert_eq!(ids, vec!["gpt-4.1".to_string()]);
+    }
+
+    #[tokio::test]
+    async fn limits_concurrent_policy_updates_to_four_during_login() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path_regex(r"^/models/[^/]+/policy$"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "application/json")
+                    .set_body_json(json!({"ok": true}))
+                    .set_delay(Duration::from_millis(120)),
+            )
+            .mount(&server)
+            .await;
+
+        let ids = (0..10).map(|i| format!("model-{i}")).collect::<Vec<_>>();
+        let handle = tokio::spawn({
+            let base = server.uri();
+            let ids = ids.clone();
+            async move { enable_github_copilot_models_at(&base, "token", &ids).await }
+        });
+
+        let mut first_wave = 0;
+        for _ in 0..20 {
+            first_wave = server.received_requests().await.unwrap().len();
+            if first_wave > 0 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(first_wave, COPILOT_POLICY_CONCURRENCY);
+
+        tokio::time::sleep(Duration::from_millis(140)).await;
+        let second_wave = server.received_requests().await.unwrap().len();
+        assert!(
+            (COPILOT_POLICY_CONCURRENCY + 1..=COPILOT_POLICY_CONCURRENCY * 2)
+                .contains(&second_wave),
+            "second wave should be bounded: {second_wave}"
+        );
+
+        handle.await.unwrap().unwrap();
+        let requests = server.received_requests().await.unwrap();
+        assert_eq!(requests.len(), ids.len());
+        for request in requests {
+            assert_eq!(request.method.as_str(), "POST");
+            assert_eq!(
+                request.headers["authorization"].to_str().unwrap(),
+                "Bearer token"
+            );
+            assert_eq!(
+                request.headers["openai-intent"].to_str().unwrap(),
+                "chat-policy"
+            );
+            assert_eq!(
+                request.headers["x-interaction-type"].to_str().unwrap(),
+                "chat-policy"
+            );
+            assert_eq!(
+                request.body_json::<serde_json::Value>().unwrap(),
+                json!({"state":"enabled"})
+            );
+        }
     }
 }

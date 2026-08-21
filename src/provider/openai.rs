@@ -126,6 +126,7 @@ pub fn stream_openai<'a>(
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -344,6 +345,7 @@ pub fn stream_openai<'a>(
                                         name: name.clone(),
                                         arguments,
                                         thought_signature: tool_call_signatures.get(id).cloned(),
+                                    namespace: None,
                                     });
                                     yield Event::ToolCallEnd {
                                         id: id.clone(),
@@ -391,6 +393,7 @@ pub fn stream_openai<'a>(
                     name: name.clone(),
                     arguments,
                     thought_signature: tool_call_signatures.get(id).cloned(),
+                namespace: None,
                 });
             }
         }

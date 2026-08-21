@@ -101,11 +101,10 @@ mod tests {
     }
 
     #[test]
-    fn deepseek_v4_flash_off_high_max_on_deepseek() {
-        // v0.80.6: the deepseek/opencode-go catalogs map the top level to "max".
+    fn deepseek_v4_flash_off_low_high_max_on_deepseek() {
         assert_eq!(
             levels(&m("deepseek", "deepseek-v4-flash")),
-            vec!["off", "high", "max"]
+            vec!["off", "low", "high", "max"]
         );
     }
 

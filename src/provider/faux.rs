@@ -319,6 +319,7 @@ impl crate::registry::ApiProvider for FauxProvider {
                 deferred: None,
                 error_message: Some(text.clone()),
                 raw_stop_reason: None,
+                end_turn: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,
@@ -352,6 +353,7 @@ impl crate::registry::ApiProvider for FauxProvider {
                 deferred: None,
                 error_message: Some(text.clone()),
                 raw_stop_reason: None,
+                end_turn: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,
@@ -384,6 +386,7 @@ impl crate::registry::ApiProvider for FauxProvider {
                     handle.id
                 )),
                 raw_stop_reason: None,
+                end_turn: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,
@@ -475,6 +478,7 @@ fn stream_message_owned(
             deferred: None,
             error_message: resolved.error_message.clone(),
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -496,12 +500,12 @@ fn stream_message_owned(
                     yield Event::TextEnd;
                     partial.content.push(ContentBlock::Text { text: text.clone(), text_signature: text_signature.clone() });
                 }
-                ContentBlock::ToolCall { id, name, arguments, thought_signature } => {
+                ContentBlock::ToolCall { id, name, arguments, thought_signature, namespace } => {
                     yield Event::ToolCallStart { id: id.clone(), name: name.clone() };
                     let args_json = serde_json::to_string(arguments).unwrap_or_else(|_| "{}".to_string());
                     for chunk in chunk_str(&args_json, chunk_chars) { yield Event::ToolCallDelta { delta: chunk }; }
                     yield Event::ToolCallEnd { id: id.clone(), name: name.clone(), arguments: serde_json::to_value(arguments).unwrap_or_else(|_| serde_json::json!({})) };
-                    partial.content.push(ContentBlock::ToolCall { id: id.clone(), name: name.clone(), arguments: arguments.clone(), thought_signature: thought_signature.clone() });
+                    partial.content.push(ContentBlock::ToolCall { id: id.clone(), name: name.clone(), arguments: arguments.clone(), thought_signature: thought_signature.clone(), namespace: namespace.clone() });
                 }
                 other => partial.content.push(other.clone()),
             }
@@ -535,6 +539,7 @@ fn deferred_message(model: &Model, handle: DeferredHandle) -> Message {
         deferred: Some(handle),
         error_message: None,
         raw_stop_reason: None,
+        end_turn: None,
         tool_call_id: None,
         tool_name: None,
         is_error: false,
@@ -593,6 +598,7 @@ pub fn stream_faux_text<'a>(
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -659,6 +665,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -733,6 +740,7 @@ mod tests {
                         serde_json::json!(1),
                     )]),
                     thought_signature: None,
+                    namespace: None,
                 },
             ],
             timestamp: 0,
@@ -747,6 +755,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -812,6 +821,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,

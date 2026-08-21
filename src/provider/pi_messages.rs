@@ -113,6 +113,7 @@ fn assistant_message(model: &Model) -> Message {
         deferred: None,
         error_message: None,
         raw_stop_reason: None,
+        end_turn: None,
         tool_call_id: None,
         tool_name: None,
         is_error: false,
@@ -259,6 +260,7 @@ fn convert_event(
                     name: tool_name.clone(),
                     arguments: HashMap::new(),
                     thought_signature: None,
+                    namespace: None,
                 },
             );
             Event::ToolCallStart {

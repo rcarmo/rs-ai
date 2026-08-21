@@ -97,6 +97,8 @@ mod tests {
                 name,
                 arguments,
                 thought_signature,
+
+                namespace: None,
             } => {
                 assert_eq!(id, "call_1");
                 assert_eq!(name, "read");

@@ -83,7 +83,12 @@ pub fn stream_mistral<'a>(
             request.timeout(std::time::Duration::from_millis(ms))
         } else { request };
         let retry_cfg = crate::retry::retry_config_from_options(opts);
-        let resp = crate::retry::do_with_retry(&client, request, &retry_cfg).await;
+        let resp = crate::retry::do_with_retry_cancel(
+            &client,
+            request,
+            &retry_cfg,
+            opts.cancel.clone(),
+        ).await;
 
         let resp = match resp {
             Ok(r) => r,
@@ -103,11 +108,21 @@ pub fn stream_mistral<'a>(
             yield Event::Error {
                 reason: StopReason::Error,
                 error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                    format!("HTTP {}: {}", status, body),
+                    crate::error_body::format_provider_http_error(status, &body, Some("Mistral API error")),
                 )),
                 message: None,
             };
             return;
+        }
+
+        if let Some(ref hook) = opts.on_response {
+            let status = resp.status().as_u16();
+            let hdrs: std::collections::HashMap<String, String> = resp
+                .headers()
+                .iter()
+                .filter_map(|(k, v)| v.to_str().ok().map(|s| (k.to_string(), s.to_string())))
+                .collect();
+            hook(status, &hdrs, model);
         }
 
         let mut partial = Message {
@@ -125,6 +140,7 @@ pub fn stream_mistral<'a>(
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -136,6 +152,7 @@ pub fn stream_mistral<'a>(
 
         let mut parser = sse::SseParser::default();
         let mut byte_stream = resp.bytes_stream();
+        let mut cancel_rx = opts.cancel.clone();
 
         let mut text_started = false;
         let mut current_text = String::new();
@@ -144,14 +161,36 @@ pub fn stream_mistral<'a>(
         let mut tool_calls: std::collections::BTreeMap<usize, (String, String, String)> = std::collections::BTreeMap::new();
         let mut got_done = false;
 
-        while let Some(chunk_result) = byte_stream.next().await {
+        loop {
+            let next_chunk = if let Some(rx) = cancel_rx.as_mut() {
+                tokio::select! {
+                    changed = rx.changed() => {
+                        if changed.is_ok() && *rx.borrow() {
+                            partial.stop_reason = Some(StopReason::Aborted);
+                            partial.error_message = Some("Request aborted".to_string());
+                            break;
+                        }
+                        continue;
+                    }
+                    chunk = byte_stream.next() => chunk,
+                }
+            } else {
+                byte_stream.next().await
+            };
+            let Some(chunk_result) = next_chunk else {
+                break;
+            };
             let chunk_bytes = match chunk_result {
                 Ok(c) => c,
                 Err(e) => {
                     // Mid-stream network/body error: record it and break so the after-loop
                     // finalization assembles partial.content before the terminal Error event.
                     partial.stop_reason = Some(StopReason::Error);
-                    partial.error_message = Some(e.to_string());
+                    partial.error_message = Some(if e.is_timeout() {
+                        "Mistral stream timed out while awaiting chunk".to_string()
+                    } else {
+                        e.to_string()
+                    });
                     break;
                 }
             };
@@ -331,6 +370,7 @@ pub fn stream_mistral<'a>(
             };
             partial.content.push(ContentBlock::ToolCall {
                 id: id.clone(), name: name.clone(), arguments, thought_signature: None,
+            namespace: None,
             });
             yield Event::ToolCallEnd { id, name, arguments: parsed };
         }
@@ -344,10 +384,11 @@ pub fn stream_mistral<'a>(
                     message: Some(partial),
                 };
             }
-            Some(StopReason::Error) => {
+            Some(StopReason::Error) | Some(StopReason::Aborted) => {
+                let reason = partial.stop_reason.clone().unwrap_or(StopReason::Error);
                 let msg = partial.error_message.clone().unwrap_or_else(|| "Provider returned an error stop reason".to_string());
                 yield Event::Error {
-                    reason: StopReason::Error,
+                    reason,
                     error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(msg)),
                     message: Some(partial),
                 };

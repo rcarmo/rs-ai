@@ -27,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TIMESTAMP_RE = re.compile(r"//! Generated: .*", re.MULTILINE)
-DEFAULT_PACKAGE_SHA256 = "6ab689189e7cb3de5cdb126312a3e60e8ac35fe5ee5f1b63d00f711c8a430c73"
+DEFAULT_PACKAGE_SHA256 = "0262785a76b0eb2eec596cd8a7ab2ee23eef89d2ef1bb1211c4f0a1944dacf41"
 
 
 def run(cmd: list[str], cwd: Path | None = None, env: dict[str, str] | None = None) -> str:
@@ -149,8 +149,8 @@ def maybe_fault(path: Path, fault: str) -> None:
         old = 'name: "Qwen3.8 Max".into()'
         new = 'name: "Qwen3.8 Max FAULT".into()'
     elif fault == "image-name":
-        old = 'name: "DALL-E 3".into()'
-        new = 'name: "DALL-E 3 FAULT".into()'
+        old = 'name: "Black Forest Labs: FLUX.2 Flex".into()'
+        new = 'name: "Black Forest Labs: FLUX.2 Flex FAULT".into()'
     else:
         raise SystemExit(f"unknown fault mode: {fault}")
     if old not in target:
@@ -160,7 +160,7 @@ def maybe_fault(path: Path, fault: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--package", default="@earendil-works/pi-ai@0.84.1")
+    ap.add_argument("--package", default="@earendil-works/pi-ai@0.84.2")
     ap.add_argument("--package-sha256", default=DEFAULT_PACKAGE_SHA256)
     ap.add_argument("--upstream", default="", help="ignored compatibility option; npm artifact is authoritative")
     ap.add_argument("--tag-sha", default="", help="ignored compatibility option; npm artifact is authoritative")

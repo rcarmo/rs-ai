@@ -799,6 +799,7 @@ pub fn stream_bedrock<'a>(
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -900,6 +901,7 @@ pub fn stream_bedrock<'a>(
                                     name: current_tool_name.clone(),
                                     arguments,
                                     thought_signature: None,
+                                namespace: None,
                                 });
                                 yield Event::ToolCallEnd {
                                     id: std::mem::take(&mut current_tool_id),
@@ -1027,6 +1029,7 @@ fn bedrock_error_message(model: &Model, error_message: String) -> Message {
         deferred: None,
         error_message: Some(error_message),
         raw_stop_reason: None,
+        end_turn: None,
         tool_call_id: None,
         tool_name: None,
         is_error: false,
@@ -1480,6 +1483,7 @@ mod tests {
                 deferred: None,
                 error_message: None,
                 raw_stop_reason: None,
+                end_turn: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,

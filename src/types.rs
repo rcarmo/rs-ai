@@ -145,6 +145,8 @@ pub enum ContentBlock {
         arguments: HashMap<String, serde_json::Value>,
         #[serde(skip_serializing_if = "Option::is_none")]
         thought_signature: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        namespace: Option<String>,
     },
 }
 
@@ -305,6 +307,8 @@ pub struct Message {
     pub error_message: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw_stop_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub end_turn: Option<bool>,
 
     // Tool result fields
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -423,6 +427,8 @@ pub struct ModelCompat {
     pub supports_strict_mode: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_openai_grammar_tools: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_additional_tools: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_temperature: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -571,6 +577,7 @@ pub fn user_message(text: &str) -> Message {
         deferred: None,
         error_message: None,
         raw_stop_reason: None,
+        end_turn: None,
         tool_call_id: None,
         tool_name: None,
         is_error: false,

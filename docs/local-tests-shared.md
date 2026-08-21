@@ -1,5 +1,13 @@
 # Shared local-test adaptation tracker (rs-ai)
 
+## v0.84.2 bounded release evidence
+
+Source: upstream tag `914cf1472e715297caa30db4b9535d534a9eb718` (`v0.84.2`), exact release-only delta `53fa77ccd8a279eb87e92294ef3687b03ff80112..914cf1472e715297caa30db4b9535d534a9eb718`.
+
+Status: **ADAPTED / completed pending hosted CI confirmation**. The v0.84.2 audit spans 42 changed `packages/ai` paths and **21 changed test paths total**: 18 existing tests modified plus 3 new tests. The final upstream test corpus is **131 files**, recorded in `docs/v0842-131-test-crosswalk.md`.
+
+Named tests in `src/v0842_release_test.rs` cover v0.84.2 catalog counts, strict JSON-schema conversion, optional-null omission, DeepSeek detection/max_tokens, retry buffer exhaustion, Kimi/Codex user-agent helper, Responses additional_tools/namespace replay, and Mistral HTTP/SSE production-path behavior (delayed chunks, split UTF-8, cancellation/drop cleanup, timeout, bounded 403 body, retry replay, affinity, exact wire payload). `src/github_copilot_oauth_test.rs` covers Copilot Individual policy fallback and bounded policy-enable batching (`COPILOT_POLICY_CONCURRENCY = 4`). `scripts/validate_v0842_manifests.py` is the executable 42-path/131-row manifest validator. Metadata verifier now targets the v0.84.2 pinned tarball SHA `0262785a76b0eb2eec596cd8a7ab2ee23eef89d2ef1bb1211c4f0a1944dacf41` and reports text `1267`, providers `39`, APIs `9`, batch aliases `60`, image `45`.
+
 ## v0.84.1 bounded release evidence
 
 Source: upstream tag `53fa77ccd8a279eb87e92294ef3687b03ff80112` (`v0.84.1`), exact release-only delta `a5f43bf8aff3c55752432655f7334e3dafd1e256..53fa77ccd8a279eb87e92294ef3687b03ff80112`.

@@ -1,6 +1,140 @@
 # rs-ai upstream release parity
 
-## Current accepted release: v0.84.1
+## Current audit target: v0.84.2
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v0.84.2`
+- Upstream tag/commit: `914cf1472e715297caa30db4b9535d534a9eb718`
+- Previous accepted upstream: `v0.84.1` / `53fa77ccd8a279eb87e92294ef3687b03ff80112`
+- Audited range: `53fa77ccd8a279eb87e92294ef3687b03ff80112..914cf1472e715297caa30db4b9535d534a9eb718`
+- Scope: `packages/ai` only; official tag only, no newer-main chase.
+- Scope status: **complete for bounded deterministic v0.84.2 release parity**.
+
+### v0.84.2 exact upstream path disposition
+
+The official range changes **42** `packages/ai` paths: 18 source, 21 tests, 3 package/docs. Test accounting: **21 changed test paths total = 18 modified existing tests + 3 new tests**. Final corpus: **131** upstream `packages/ai/test/*.test.ts` files, recorded in `docs/v0842-131-test-crosswalk.md`.
+
+Executable validator: `python3 scripts/validate_v0842_manifests.py` asserts this exact 42-path set and the 131 unique crosswalk rows.
+
+| Status | Upstream path | rs-ai disposition |
+|---|---|---|
+| M | `packages/ai/CHANGELOG.md` | DOCUMENTED / metadata-only |
+| M | `packages/ai/package.json` | DOCUMENTED / metadata-only |
+| M | `packages/ai/scripts/generate-models.ts` | ADAPTED in extractor/generator scripts |
+| M | `packages/ai/src/api/anthropic-messages.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/bedrock-converse-stream.ts` | ADAPTED in Rust provider/runtime code |
+| A | `packages/ai/src/api/cloudflare-gateway-binding.ts` | N/A Workers binding object; Rust HTTP routing adaptation covered |
+| M | `packages/ai/src/api/constrained-sampling.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/google-generative-ai.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/google-shared.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/google-vertex.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/mistral-conversations.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/openai-codex-responses.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/openai-completions.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/openai-responses-shared.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/openai-responses.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/auth/oauth/github-copilot.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/image-models.generated.ts` | ADAPTED by regenerated image registry + metadata verifier |
+| M | `packages/ai/src/types.ts` | ADAPTED in Rust types |
+| A | `packages/ai/src/utils/pi-user-agent.ts` | ADAPTED via pi_runtime_user_agent |
+| M | `packages/ai/src/utils/retry.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/utils/validation.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/test/anthropic-auth-token.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/anthropic-eager-tool-input-compat.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/bedrock-convert-messages.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| A | `packages/ai/test/cloudflare-gateway-binding.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/constrained-sampling.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/context-overflow.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/deferred-tools.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/github-copilot-oauth.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/google-raw-stop-reason.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/lazy-module-load.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| A | `packages/ai/test/mistral-http-transport.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/mistral-raw-stop-reason.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/openai-codex-stream.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/openai-completions-tool-choice.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/openai-responses-compat.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| A | `packages/ai/test/openai-responses-namespace.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/retry.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/stream.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/supports-xhigh.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/total-tokens.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+| M | `packages/ai/test/validation.test.ts` | ADAPTED / COVERED (see 131-test crosswalk) |
+
+Changed test paths:
+
+- Modified: `anthropic-auth-token`, `anthropic-eager-tool-input-compat`, `bedrock-convert-messages`, `constrained-sampling`, `context-overflow`, `deferred-tools`, `github-copilot-oauth`, `google-raw-stop-reason`, `lazy-module-load`, `mistral-raw-stop-reason`, `openai-codex-stream`, `openai-completions-tool-choice`, `openai-responses-compat`, `retry`, `stream`, `supports-xhigh`, `total-tokens`, `validation`.
+- Added: `cloudflare-gateway-binding`, `mistral-http-transport`, `openai-responses-namespace`.
+
+### v0.84.2 implementation summary
+
+- Regenerated text catalog from official npm `dist/providers/data` shards: **1267 text provider/id pairs across 39 providers and 9 APIs**; official batch aliases now **60**.
+- Regenerated image catalog: **45 image provider/id pairs**.
+- Updated release metadata verifier defaults to `@earendil-works/pi-ai@0.84.2` and pinned npm tarball SHA-256 `0262785a76b0eb2eec596cd8a7ab2ee23eef89d2ef1bb1211c4f0a1944dacf41`.
+- Extended audited batch-alias policy for the v0.84.2 artifact (`openrouter/google/gemini-3.7-flash:batch` added) while preserving fail-closed behavior.
+- Ported strict JSON-schema tool conversion for OpenAI-compatible tools and optional non-nullable null omission during validation.
+- Added Kimi/Codex `pi (${platform} ${release}; ${arch})` runtime User-Agent handling.
+- Added Responses/Codex message-anchored `additional_tools` selection, retaining tool-search/top-level fallbacks.
+- Added tool-call `namespace` and assistant-message `endTurn` fields; namespace is replayed only when additional-tools replay is supported.
+- Updated DeepSeek URL detection to be case-insensitive and to use `max_tokens`.
+- Updated Google/Vertex finish handling so `MAX_TOKENS` with tool calls remains `length`, while `STOP` with tool calls becomes `toolUse`.
+- Added retry classifier coverage for `exceeded request buffer limit`.
+- Added focused Mistral HTTP/SSE transport coverage for delayed incremental chunks, split UTF-8 bytes, cancellation/drop cleanup, chunk timeouts, bounded 403 error bodies, retry body replay, affinity override/suppression, exact request payload/header replay, thinking/text/tool calls, raw stop reason, and cached-token usage.
+- Ported GitHub Copilot policy parsing/fetching and bounded best-effort policy-enable batching (`COPILOT_POLICY_CONCURRENCY = 4`) with deterministic local HTTP tests; assessed Cloudflare `createGatewayBindingFetch` as **N/A** for Rust Workers binding object semantics; Rust transport injection has no Cloudflare Workers binding object, while existing Cloudflare gateway HTTP routing/header tests remain applicable.
+
+Named Rust evidence:
+
+- `src/v0842_release_test.rs::release_pinned_catalog_counts_match_v0842`
+- `src/v0842_release_test.rs::strict_json_schema_tools_require_optional_properties_as_nullable`
+- `src/v0842_release_test.rs::optional_non_nullable_null_is_omitted_but_nullable_null_is_preserved`
+- `src/v0842_release_test.rs::deepseek_detection_is_case_insensitive_and_uses_max_tokens`
+- `src/v0842_release_test.rs::retry_classifier_matches_request_buffer_exhaustion_wording`
+- `src/v0842_release_test.rs::pi_runtime_user_agent_includes_platform_release_and_arch`
+- `src/v0842_release_test.rs::responses_additional_tools_supersedes_tool_search_for_deferred_tools`
+- `src/v0842_release_test.rs::responses_replays_namespace_only_when_additional_tools_supported`
+- `src/v0842_release_test.rs::mistral_http_sse_parses_utf8_usage_and_raw_tool_stop`
+- `src/v0842_release_test.rs::mistral_http_stream_yields_delayed_chunks_incrementally`
+- `src/v0842_release_test.rs::mistral_http_stream_preserves_utf8_split_across_byte_chunks`
+- `src/v0842_release_test.rs::mistral_http_stream_cancel_while_waiting_for_chunk_cleans_up`
+- `src/v0842_release_test.rs::mistral_http_stream_timeout_while_awaiting_chunk_reports_error`
+- `src/v0842_release_test.rs::mistral_http_uses_bounded_branded_error_body_for_403`
+- `src/v0842_release_test.rs::mistral_http_retries_with_replayable_json_body`
+- `src/v0842_release_test.rs::mistral_http_affinity_override_and_suppression_are_honored`
+- `src/v0842_release_test.rs::mistral_http_exact_wire_payload_matches_replay_contract`
+- `src/github_copilot_oauth_test.rs::filters_models_to_the_authenticated_account_picker_catalog`
+- `src/github_copilot_oauth_test.rs::is_selectable_requires_picker_enabled_not_disabled_and_tool_calls`
+- `src/github_copilot_oauth_test.rs::falls_back_to_policy_enabled_ids_only_for_individual_endpoint`
+- `src/github_copilot_oauth_test.rs::fetch_available_model_ids_uses_copilot_headers`
+- `src/github_copilot_oauth_test.rs::limits_concurrent_policy_updates_to_four_during_login`
+- `src/release_metadata_verification_test.rs::v0842_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
+
+
+### v0.84.2 release-pinned artifact evidence
+
+- upstream tag worktree: `/workspace/tmp/pi-src` at `914cf1472e715297caa30db4b9535d534a9eb718`
+- unpacked npm package: `/workspace/tmp/pi-ai-0842-pkg/package`
+- npm tarball SHA-256: `0262785a76b0eb2eec596cd8a7ab2ee23eef89d2ef1bb1211c4f0a1944dacf41`
+- provider manifest `schemaVersion=3`, `generatedAt=2026-08-14T10:02:30.583Z`, `structureHash=012f19b2e2c92706bc700f4c9dd80a21f1f43d68959bc90c78d2cdb51374d5cc`
+- extracted release JSON: `/workspace/tmp/pi-v0842-json/models.json`
+
+Commands/results run so far:
+
+```bash
+python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0842-pkg/package/dist/providers/data
+python3 scripts/extract_release_model_shards.py /workspace/tmp/pi-ai-0842-pkg/package /workspace/tmp/pi-v0842-json --tag-worktree /workspace/tmp/pi-src --tag-sha 914cf1472e715297caa30db4b9535d534a9eb718
+PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0842-json python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 914cf1472e715297caa30db4b9535d534a9eb718
+python3 scripts/verify_release_model_metadata.py
+cargo test v0842_release_test -- --nocapture
+cargo test github_copilot_oauth_test -- --nocapture
+cargo test release_metadata_verification_test -- --nocapture
+python3 scripts/validate_v0842_manifests.py
+cargo test --all-targets --all-features
+cargo clippy --all-targets --all-features -- -D warnings
+```
+
+Results: validator `1267` models / `39` providers; extractor `1267` models / `39` providers / `9` APIs / `60` batch aliases; pair comparator text `1267/1267`, image `45/45`, missing `0`, extra `0`; full metadata verifier `metadata verified: text=1267 providers=39 apis=9 batchAliases=60 image=45`; deliberate text/image metadata faults both failed with the expected comparator mismatch; `python3 scripts/validate_v0842_manifests.py` passed (`changedPaths=42 testRows=131`); `cargo build` passed; focused v0.84.2 tests `17 passed`; focused Copilot OAuth tests `5 passed`; metadata/manifest verifier tests `4 passed`; full `cargo test --all-targets --all-features` passed three consecutive times (`911` tests, `0` failed, `0` ignored); strict Clippy passed with both `--all-targets --all-features` and `--all-targets`. Hosted CI evidence pending until after push.
+
+## Historical accepted release: v0.84.1
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current accepted release: `v0.84.1`

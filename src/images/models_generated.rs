@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (42 image models, 1 provider)
-//! Generated: 2026-08-06T14:41:06.625289+00:00
+//! Source: image-models.generated.js (45 image models, 1 provider)
+//! Generated: 2026-08-21T15:40:12.041439+00:00
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
@@ -80,6 +80,38 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "bytedance-seed/seedream-5-0-lite".into(),
+            name: "ByteDance Seed: Seedream 5.0 Lite".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "bytedance-seed/seedream-5-0-pro".into(),
+            name: "ByteDance Seed: Seedream 5.0 Pro".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
             output: vec!["image".into()],
             cost: ModelCost {
                 input: 0_f64,
@@ -652,6 +684,22 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         ImagesModel {
             id: "sourceful/riverflow-v2.5-pro".into(),
             name: "Sourceful: Riverflow V2.5 Pro".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "x-ai/grok-imagine-image-2.0".into(),
+            name: "xAI: Grok Imagine Image 2.0".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),

@@ -153,46 +153,49 @@ pub fn detect_compat_for_model(
 fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAICompletionsCompat {
     // 0.80.2 restored runtime provider/baseUrl compat detection (mirrors detectCompat).
     // Explicit per-model compat baked into the catalog still overlays these (getCompat).
+    let base_url_lc = base_url.to_ascii_lowercase();
     let is_zai = provider == "zai"
         || provider == "zai-coding-cn"
-        || base_url.contains("api.z.ai")
-        || base_url.contains("open.bigmodel.cn");
+        || base_url_lc.contains("api.z.ai")
+        || base_url_lc.contains("open.bigmodel.cn");
     let is_together = provider == "together"
-        || base_url.contains("api.together.ai")
-        || base_url.contains("api.together.xyz");
+        || base_url_lc.contains("api.together.ai")
+        || base_url_lc.contains("api.together.xyz");
     let is_moonshot = provider == "moonshotai"
         || provider == "moonshotai-cn"
-        || base_url.contains("api.moonshot.");
-    let is_openrouter = provider == "openrouter" || base_url.contains("openrouter.ai");
+        || base_url_lc.contains("api.moonshot.");
+    let is_openrouter = provider == "openrouter" || base_url_lc.contains("openrouter.ai");
     let is_cloudflare_workers_ai =
-        provider == "cloudflare-workers-ai" || base_url.contains("api.cloudflare.com");
+        provider == "cloudflare-workers-ai" || base_url_lc.contains("api.cloudflare.com");
     let is_cloudflare_ai_gateway =
-        provider == "cloudflare-ai-gateway" || base_url.contains("gateway.ai.cloudflare.com");
-    let is_nvidia = provider == "nvidia" || base_url.contains("integrate.api.nvidia.com");
-    let is_ant_ling = provider == "ant-ling" || base_url.contains("api.ant-ling.com");
+        provider == "cloudflare-ai-gateway" || base_url_lc.contains("gateway.ai.cloudflare.com");
+    let is_nvidia = provider == "nvidia" || base_url_lc.contains("integrate.api.nvidia.com");
+    let is_ant_ling = provider == "ant-ling" || base_url_lc.contains("api.ant-ling.com");
     let is_non_standard = is_nvidia
         || provider == "cerebras"
-        || base_url.contains("cerebras.ai")
+        || base_url_lc.contains("cerebras.ai")
         || provider == "xai"
-        || base_url.contains("api.x.ai")
+        || base_url_lc.contains("api.x.ai")
         || is_together
-        || base_url.contains("chutes.ai")
-        || base_url.contains("deepseek.com")
+        || base_url_lc.contains("chutes.ai")
+        || base_url_lc.contains("deepseek.com")
         || is_zai
         || is_moonshot
         || provider == "opencode"
-        || base_url.contains("opencode.ai")
+        || base_url_lc.contains("opencode.ai")
         || is_cloudflare_workers_ai
         || is_cloudflare_ai_gateway
         || is_ant_ling;
-    let use_max_tokens = base_url.contains("chutes.ai")
+    let is_deepseek = provider == "deepseek" || base_url_lc.contains("deepseek.com");
+    let use_max_tokens = base_url_lc.contains("chutes.ai")
         || is_moonshot
         || is_cloudflare_ai_gateway
         || is_together
         || is_nvidia
-        || is_ant_ling;
-    let is_grok = provider == "xai" || base_url.contains("api.x.ai");
-    let is_deepseek = provider == "deepseek" || base_url.contains("deepseek.com");
+        || is_ant_ling
+        || is_deepseek
+        || provider == "opencode";
+    let is_grok = provider == "xai" || base_url_lc.contains("api.x.ai");
     let is_openrouter_developer_role_model =
         is_openrouter && (model_id.starts_with("anthropic/") || model_id.starts_with("openai/"));
     let cache_control_format = if provider == "openrouter" && model_id.starts_with("anthropic/") {

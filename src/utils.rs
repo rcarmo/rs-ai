@@ -255,13 +255,179 @@ pub fn openai_tool_value(
             "format": {"type": "grammar", "syntax": grammar.format, "definition": grammar.definition},
         }));
     }
-    let mut function = serde_json::json!({"name": tool.name, "description": tool.description, "parameters": tool.parameters});
+    let strict =
+        resolve_json_schema_strict_sampling(tool, supports_strict)?.unwrap_or(default_strict);
+    let parameters = if strict {
+        make_strict_json_schema(&tool.parameters)?
+    } else {
+        tool.parameters.clone()
+    };
+    let mut function = serde_json::json!({"name": tool.name, "description": tool.description, "parameters": parameters});
     if supports_strict {
-        function["strict"] = serde_json::json!(
-            resolve_json_schema_strict_sampling(tool, supports_strict)?.unwrap_or(default_strict)
-        );
+        function["strict"] = serde_json::json!(strict);
     }
     Ok(serde_json::json!({"type":"function", "function": function}))
+}
+
+fn schema_object(value: &serde_json::Value) -> Option<&serde_json::Map<String, serde_json::Value>> {
+    value.as_object()
+}
+
+fn schema_types(schema: &serde_json::Value) -> Vec<&str> {
+    match schema.get("type") {
+        Some(serde_json::Value::String(s)) => vec![s.as_str()],
+        Some(serde_json::Value::Array(arr)) => arr.iter().filter_map(|v| v.as_str()).collect(),
+        _ => Vec::new(),
+    }
+}
+
+fn schema_allows_null(schema: &serde_json::Value) -> bool {
+    if schema.get("type").and_then(|v| v.as_str()) == Some("null") {
+        return true;
+    }
+    if schema_types(schema).contains(&"null") {
+        return true;
+    }
+    if schema.get("const") == Some(&serde_json::Value::Null) {
+        return true;
+    }
+    if let Some(arr) = schema.get("enum").and_then(|v| v.as_array())
+        && arr.iter().any(|v| v.is_null())
+    {
+        return true;
+    }
+    schema
+        .get("anyOf")
+        .and_then(|v| v.as_array())
+        .is_some_and(|arr| arr.iter().any(schema_allows_null))
+}
+
+fn is_structured_schema(schema: &serde_json::Value) -> bool {
+    schema_object(schema).is_some_and(|obj| {
+        let types = schema_types(schema);
+        types.contains(&"object")
+            || types.contains(&"array")
+            || obj.contains_key("properties")
+            || obj.contains_key("items")
+    })
+}
+
+pub fn make_strict_json_schema(schema: &serde_json::Value) -> Result<serde_json::Value, String> {
+    let mut cloned = schema.clone();
+    make_json_schema_node_strict(&mut cloned)?;
+    if cloned.get("type").and_then(|v| v.as_str()) != Some("object") {
+        return Err("root schema must have type object".into());
+    }
+    Ok(cloned)
+}
+
+fn make_json_schema_node_strict(schema: &mut serde_json::Value) -> Result<(), String> {
+    let Some(obj) = schema.as_object_mut() else {
+        return Err("boolean schemas are unsupported".into());
+    };
+    const UNSUPPORTED: &[&str] = &[
+        "$ref",
+        "$defs",
+        "definitions",
+        "allOf",
+        "oneOf",
+        "patternProperties",
+        "dependentSchemas",
+        "dependencies",
+        "unevaluatedProperties",
+        "propertyNames",
+        "contains",
+        "prefixItems",
+        "not",
+        "if",
+        "then",
+        "else",
+    ];
+    for key in UNSUPPORTED {
+        if obj.contains_key(*key) {
+            return Err(format!("{key} schemas are unsupported"));
+        }
+    }
+    if let Some(any_of) = obj.get_mut("anyOf") {
+        let Some(arr) = any_of.as_array_mut() else {
+            return Err("anyOf must contain at least one schema".into());
+        };
+        if arr.is_empty() {
+            return Err("anyOf must contain at least one schema".into());
+        }
+        for variant in arr {
+            if is_structured_schema(variant) {
+                return Err("object and array unions are unsupported".into());
+            }
+            make_json_schema_node_strict(variant)?;
+        }
+    }
+    if let Some(items) = obj.get_mut("items") {
+        if items.is_array() {
+            return Err("tuple schemas are unsupported".into());
+        }
+        make_json_schema_node_strict(items)?;
+    }
+    let is_object = obj.get("type").and_then(|v| v.as_str()) == Some("object");
+    if obj.contains_key("properties") && !is_object {
+        return Err("properties require type object".into());
+    }
+    if !is_object {
+        return Ok(());
+    }
+    if obj
+        .get("additionalProperties")
+        .is_some_and(|v| v != &serde_json::Value::Bool(false))
+    {
+        return Err("schema-valued or true additionalProperties is unsupported".into());
+    }
+    let required_values = obj
+        .get("required")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let properties = match obj.get_mut("properties") {
+        Some(serde_json::Value::Object(props)) => props,
+        Some(_) => return Err("object properties must be a schema map".into()),
+        None => {
+            obj.insert("properties".into(), serde_json::json!({}));
+            obj.get_mut("properties").unwrap().as_object_mut().unwrap()
+        }
+    };
+    if !required_values.iter().all(|v| v.is_string()) {
+        return Err("object required must be a string array".into());
+    }
+    let mut required = required_values
+        .iter()
+        .filter_map(|v| v.as_str().map(ToOwned::to_owned))
+        .collect::<std::collections::HashSet<_>>();
+    if required.iter().any(|key| !properties.contains_key(key)) {
+        return Err("required contains an unknown property".into());
+    }
+    let property_names = properties.keys().cloned().collect::<Vec<_>>();
+    for key in &property_names {
+        let property = properties.get_mut(key).unwrap();
+        make_json_schema_node_strict(property)?;
+        if !required.contains(key) && !schema_allows_null(property) {
+            let old = property.clone();
+            *property = serde_json::json!({"anyOf": [old, {"type": "null"}]});
+        }
+        required.insert(key.clone());
+    }
+    obj.insert(
+        "required".into(),
+        serde_json::Value::Array(
+            property_names
+                .into_iter()
+                .map(serde_json::Value::String)
+                .collect(),
+        ),
+    );
+    obj.insert(
+        "additionalProperties".into(),
+        serde_json::Value::Bool(false),
+    );
+    Ok(())
 }
 
 /// Resolve JSON-schema constrained sampling strict mode for a tool.
@@ -285,6 +451,36 @@ pub fn resolve_json_schema_strict_sampling(
         ));
     }
     Ok(None)
+}
+
+/// Build the Pi runtime User-Agent used by Kimi/Codex provider transports.
+pub fn pi_runtime_user_agent() -> String {
+    let platform = match std::env::consts::OS {
+        "macos" => "darwin",
+        "windows" => "win32",
+        other => other,
+    };
+    let arch = match std::env::consts::ARCH {
+        "x86_64" => "x64",
+        "aarch64" => "arm64",
+        other => other,
+    };
+    let release = std::fs::read_to_string("/proc/sys/kernel/osrelease")
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .or_else(|| {
+            std::process::Command::new("uname")
+                .arg("-r")
+                .output()
+                .ok()
+                .filter(|out| out.status.success())
+                .and_then(|out| String::from_utf8(out.stdout).ok())
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+    format!("pi ({platform} {release}; {arch})")
 }
 
 /// Generate GitHub Copilot headers.
@@ -390,6 +586,7 @@ mod tests {
                 deferred: None,
                 error_message: None,
                 raw_stop_reason: None,
+                end_turn: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,
@@ -448,6 +645,7 @@ mod tests {
                 deferred: None,
                 error_message: None,
                 raw_stop_reason: None,
+                end_turn: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,

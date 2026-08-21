@@ -106,6 +106,11 @@ pub fn stream_anthropic<'a>(
     } else {
         headers.insert("x-api-key", HeaderValue::from_str(&api_key).unwrap());
     }
+    if model.provider == "kimi-coding"
+        && let Ok(value) = HeaderValue::from_str(&crate::utils::pi_runtime_user_agent())
+    {
+        headers.insert("user-agent", value);
+    }
 
     // Beta features (prompt caching is GA and no longer requires a beta header).
     let beta_features = anthropic_beta_features(
@@ -213,6 +218,7 @@ pub fn stream_anthropic<'a>(
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -408,6 +414,7 @@ pub fn stream_anthropic<'a>(
                                     name: current_tool_name.clone(),
                                     arguments: parsed_map,
                                     thought_signature: None,
+                                namespace: None,
                                 });
                                 yield Event::ToolCallEnd {
                                     id: std::mem::take(&mut current_tool_id),

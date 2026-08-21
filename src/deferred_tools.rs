@@ -14,6 +14,16 @@ pub(crate) fn anthropic_supports_tool_references(model: &Model) -> bool {
     !(id.contains("haiku") || id == "claude-sonnet-4-20250514")
 }
 
+pub(crate) fn openai_supports_additional_tools(model: &Model) -> bool {
+    if let Some(v) = model.compat.supports_additional_tools {
+        return v;
+    }
+    match model.api.as_str() {
+        "openai-responses" => matches!(model.id.as_str(), "gpt-5.4" | "gpt-5.4-codex"),
+        _ => false,
+    }
+}
+
 pub(crate) fn openai_supports_tool_search(model: &Model) -> bool {
     if let Some(v) = model.compat.supports_tool_search {
         return v;

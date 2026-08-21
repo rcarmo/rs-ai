@@ -26,6 +26,8 @@ mod tests {
             name: "read".into(),
             arguments: args,
             thought_signature: None,
+
+            namespace: None,
         }
     }
 
@@ -54,6 +56,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: Some(id.into()),
             tool_name: Some("read".into()),
             is_error: false,
@@ -83,6 +86,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -111,6 +115,7 @@ mod tests {
                     deferred: None,
                     error_message: None,
                     raw_stop_reason: None,
+                    end_turn: None,
                     tool_call_id: None,
                     tool_name: None,
                     is_error: false,
@@ -168,6 +173,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -192,6 +198,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: Some("tool-1".into()),
             tool_name: Some("read".into()),
             is_error: false,
@@ -220,6 +227,7 @@ mod tests {
                     deferred: None,
                     error_message: None,
                     raw_stop_reason: None,
+                    end_turn: None,
                     tool_call_id: None,
                     tool_name: None,
                     is_error: false,

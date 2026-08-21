@@ -38,6 +38,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -54,6 +55,8 @@ mod tests {
                 name: "base_tool".into(),
                 arguments: Default::default(),
                 thought_signature: None,
+
+                namespace: None,
             }],
             timestamp: 2,
             api: Some("anthropic-messages".into()),
@@ -67,6 +70,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -94,6 +98,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: Some("call_1".into()),
             tool_name: Some("base_tool".into()),
             is_error: false,
@@ -145,6 +150,13 @@ mod tests {
             .find(|i| i["type"] == "tool_search_output")
     }
 
+    fn response_additional_tools(payload: &Value) -> Option<&Value> {
+        payload["input"]
+            .as_array()?
+            .iter()
+            .find(|i| i["type"] == "additional_tools")
+    }
+
     #[test]
     fn anthropic_loads_tool_at_tool_result_marker() {
         let ctx = context(vec![tool("base_tool"), tool("late_tool")], &["late_tool"]);
@@ -170,12 +182,14 @@ mod tests {
                 name: "base_tool".into(),
                 arguments: Default::default(),
                 thought_signature: None,
+                namespace: None,
             },
             ContentBlock::ToolCall {
                 id: "call_2".into(),
                 name: "base_tool".into(),
                 arguments: Default::default(),
                 thought_signature: None,
+                namespace: None,
             },
         ];
         ctx.messages[2].content = vec![
@@ -255,6 +269,8 @@ mod tests {
             name: "late_tool".into(),
             arguments: Default::default(),
             thought_signature: None,
+
+            namespace: None,
         }];
         let payload = build_anthropic_payload(
             &get_model("anthropic", "claude-opus-4-6").unwrap(),
@@ -279,6 +295,8 @@ mod tests {
             name: "Read".into(),
             arguments: Default::default(),
             thought_signature: None,
+
+            namespace: None,
         }];
         let opts = StreamOptions {
             api_key: Some("sk-ant-oat-fake".into()),
@@ -373,9 +391,9 @@ mod tests {
             &StreamOptions::default(),
         );
         assert_eq!(tool_names(&payload), vec!["base_tool"]);
-        let out = response_tool_search_output(&payload).unwrap();
-        assert_eq!(out["tools"][0]["name"], "late_tool");
-        assert_eq!(out["tools"][0]["defer_loading"], true);
+        let out = response_additional_tools(&payload).unwrap();
+        assert_eq!(out["tools"][0]["function"]["name"], "late_tool");
+        assert!(response_tool_search_output(&payload).is_none());
 
         for id in ["gpt-5.2", "gpt-5.4-nano", "gpt-5.5-pro"] {
             let payload = build_responses_payload(
@@ -388,6 +406,7 @@ mod tests {
         }
         let mut disabled = get_model("openai", "gpt-5.4").unwrap();
         disabled.provider = "openai-proxy".into();
+        disabled.compat.supports_additional_tools = Some(false);
         disabled.compat.supports_tool_search = Some(false);
         let payload = build_responses_payload(&disabled, &ctx, &StreamOptions::default());
         assert_eq!(tool_names(&payload), vec!["base_tool", "late_tool"]);
@@ -397,6 +416,15 @@ mod tests {
     #[test]
     fn codex_tool_search_only_for_supported_models_and_other_providers_unchanged() {
         let ctx = context(vec![tool("base_tool"), tool("late_tool")], &["late_tool"]);
+        let additional = build_codex_payload(
+            &get_model("openai-codex", "gpt-5.6-sol").unwrap(),
+            &ctx,
+            &StreamOptions::default(),
+        );
+        assert_eq!(tool_names(&additional), vec!["base_tool"]);
+        assert!(response_additional_tools(&additional).is_some());
+        assert!(response_tool_search_output(&additional).is_none());
+
         let supported = build_codex_payload(
             &get_model("openai-codex", "gpt-5.4").unwrap(),
             &ctx,
@@ -404,6 +432,8 @@ mod tests {
         );
         assert_eq!(tool_names(&supported), vec!["base_tool"]);
         assert!(response_tool_search_output(&supported).is_some());
+        assert!(response_additional_tools(&supported).is_none());
+
         let unsupported = build_codex_payload(
             &get_model("openai-codex", "gpt-5.3-codex-spark").unwrap(),
             &ctx,

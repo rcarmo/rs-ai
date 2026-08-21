@@ -341,6 +341,7 @@ fn stream_responses_inner<'a>(
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -524,7 +525,8 @@ fn stream_responses_inner<'a>(
                                     let prop = grammar_props.get(&name).map(String::as_str).unwrap_or("input");
                                     let parsed = serde_json::json!({ prop: input });
                                     let parsed_map = parsed.as_object().unwrap().clone().into_iter().collect();
-                                    partial.content.push(ContentBlock::ToolCall { id: match item_id { Some(item_id) if !id.is_empty() => format!("{}|{}", id, item_id), _ => id.clone() }, name: name.clone(), arguments: parsed_map, thought_signature: None });
+                                    let namespace = item.get("namespace").and_then(|v| v.as_str()).map(|s| s.to_string());
+                                    partial.content.push(ContentBlock::ToolCall { id: match item_id { Some(item_id) if !id.is_empty() => format!("{}|{}", id, item_id), _ => id.clone() }, name: name.clone(), arguments: parsed_map, thought_signature: None, namespace });
                                     yield Event::ToolCallEnd { id, name, arguments: parsed };
                                     current_tool_call_id = None; current_tool_item_id = None; current_tool_name = None; current_tool_args.clear();
                                 }
@@ -551,6 +553,7 @@ fn stream_responses_inner<'a>(
                                         name: name.clone(),
                                         arguments: parsed_map,
                                         thought_signature: None,
+                                        namespace: item.get("namespace").and_then(|v| v.as_str()).map(|s| s.to_string()),
                                     });
                                     yield Event::ToolCallEnd {
                                         id,
@@ -610,6 +613,9 @@ fn stream_responses_inner<'a>(
                                 partial.response_id = Some(id.to_string());
                             }
                             // Upstream does not capture response.model into responseModel.
+                            if let Some(end_turn) = response.get("end_turn").and_then(|v| v.as_bool()) {
+                                partial.end_turn = Some(end_turn);
+                            }
                             backfill_reasoning_encrypted_content(&mut partial, response);
                             if let Some(usage) = response.get("usage") {
                                 let mut parsed = crate::simple_options::parse_responses_usage(usage, model);
@@ -933,7 +939,10 @@ pub(crate) fn build_responses_payload(
     opts: &StreamOptions,
 ) -> Value {
     let compat = detect_compat(model);
-    let supports_tool_search = crate::deferred_tools::openai_supports_tool_search(model);
+    let supports_additional_tools = crate::deferred_tools::openai_supports_additional_tools(model);
+    let supports_tool_search =
+        !supports_additional_tools && crate::deferred_tools::openai_supports_tool_search(model);
+    let supports_deferred_tools = supports_additional_tools || supports_tool_search;
     let mut input = Vec::new();
 
     if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
@@ -1019,6 +1028,7 @@ pub(crate) fn build_responses_payload(
                             id,
                             name,
                             arguments,
+                            namespace,
                             ..
                         } => {
                             let (call_id, item_id) = responses_function_call_ids(
@@ -1028,48 +1038,67 @@ pub(crate) fn build_responses_payload(
                                 msg.api.as_deref(),
                                 msg.model.as_deref(),
                             );
-                            input.push(json!({
+                            let mut item = json!({
                                 "type": "function_call",
                                 "id": item_id,
                                 "call_id": call_id,
                                 "name": name,
                                 "arguments": serde_json::to_string(arguments).unwrap_or_else(|_| "{}".to_string()),
-                            }));
+                            });
+                            if supports_additional_tools
+                                && let Some(ns) = namespace.as_deref().filter(|s| !s.is_empty())
+                            {
+                                item["namespace"] = json!(ns);
+                            }
+                            input.push(item);
                         }
                         _ => {}
                     }
                 }
             }
             Role::ToolResult => {
-                let deferred_names = if supports_tool_search {
+                let deferred_names = if supports_deferred_tools {
                     crate::deferred_tools::deferred_tool_names_at(context, msg_index, false)
                 } else {
                     Vec::new()
                 };
                 if !deferred_names.is_empty() {
-                    let call_id = format!("tool_search_{}", msg_index);
-                    input.push(json!({
-                        "type": "tool_search_call",
-                        "call_id": call_id,
-                        "execution": "client",
-                        "status": "completed",
-                    }));
-                    input.push(json!({
-                        "type": "tool_search_output",
-                        "call_id": call_id,
-                        "execution": "client",
-                        "status": "completed",
-                        "tools": deferred_names.iter().filter_map(|name| {
-                            crate::deferred_tools::tool_by_name(context, name, false).map(|t| json!({
-                                "type": "function",
-                                "name": t.name,
-                                "description": t.description,
-                                "parameters": t.parameters,
-                                "strict": crate::utils::resolve_json_schema_strict_sampling(&t, true).ok().flatten().unwrap_or(false),
-                                "defer_loading": true,
-                            }))
-                        }).collect::<Vec<_>>(),
-                    }));
+                    if supports_additional_tools {
+                        let supports_grammar =
+                            model.compat.supports_openai_grammar_tools.unwrap_or(false);
+                        input.push(json!({
+                            "type": "additional_tools",
+                            "role": "developer",
+                            "tools": deferred_names.iter().filter_map(|name| {
+                                crate::deferred_tools::tool_by_name(context, name, false)
+                                    .map(|t| crate::utils::openai_tool_value(&t, supports_grammar, true, false).unwrap())
+                            }).collect::<Vec<_>>(),
+                        }));
+                    } else {
+                        let call_id = format!("tool_search_{}", msg_index);
+                        input.push(json!({
+                            "type": "tool_search_call",
+                            "call_id": call_id,
+                            "execution": "client",
+                            "status": "completed",
+                        }));
+                        input.push(json!({
+                            "type": "tool_search_output",
+                            "call_id": call_id,
+                            "execution": "client",
+                            "status": "completed",
+                            "tools": deferred_names.iter().filter_map(|name| {
+                                crate::deferred_tools::tool_by_name(context, name, false).map(|t| json!({
+                                    "type": "function",
+                                    "name": t.name,
+                                    "description": t.description,
+                                    "parameters": t.parameters,
+                                    "strict": crate::utils::resolve_json_schema_strict_sampling(&t, true).ok().flatten().unwrap_or(false),
+                                    "defer_loading": true,
+                                }))
+                            }).collect::<Vec<_>>(),
+                        }));
+                    }
                 }
                 let text_result = msg
                     .content
@@ -1241,14 +1270,14 @@ pub(crate) fn build_responses_payload(
         let (active_tools, deferred_names) = crate::deferred_tools::immediate_and_deferred_tools(
             context,
             false,
-            supports_tool_search,
+            supports_deferred_tools,
         );
         let supports_grammar = model.compat.supports_openai_grammar_tools.unwrap_or(false);
         let mut tools: Vec<Value> = active_tools
             .iter()
             .map(|t| crate::utils::openai_tool_value(t, supports_grammar, true, false).unwrap())
             .collect();
-        if !supports_tool_search || deferred_names.is_empty() {
+        if !supports_deferred_tools || deferred_names.is_empty() {
             tools = context
                 .tools
                 .iter()

@@ -1,6 +1,16 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.84.1
+## Current parity audit: `@earendil-works/pi-ai` v0.84.2
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.2`, package/tag SHA `914cf1472e715297caa30db4b9535d534a9eb718` (`github.com/earendil-works/pi` tag `v0.84.2`). Pinned scope is exactly `53fa77ccd8a279eb87e92294ef3687b03ff80112..914cf1472e715297caa30db4b9535d534a9eb718`; do not chase newer main.
+
+Status: **ADAPTED / under final gate verification**. The range changes **42** `packages/ai` paths: 18 source, 21 tests, 3 package/docs. Test accounting: **21 changed test paths total = 18 modified existing tests + 3 new tests**. Whole-corpus filename evidence is in `docs/v0842-131-test-crosswalk.md`: **131/131** upstream `packages/ai/test/*.test.ts` files accounted.
+
+Key v0.84.2 dispositions: strict JSON-schema tool conversion and optional non-nullable null omission are ported; Kimi/Codex runtime User-Agent is ported; Responses/Codex `additional_tools`, tool-search fallback, tool-call namespace, and `AssistantMessage.endTurn` are ported; Mistral HTTP/SSE raw streaming coverage is adapted, including delayed chunking, split UTF-8, cancellation/drop cleanup, timeout, bounded 403 body, retry replay, affinity, and exact wire-payload assertions; Copilot policy-enable batching is ported; retry buffer-limit and DeepSeek case-insensitive `max_tokens` handling are ported; Google `STOP`/`MAX_TOKENS` raw reason behavior is ported; catalog/image metadata is regenerated and verified. Cloudflare `createGatewayBindingFetch` is N/A for Rust Workers binding object semantics, with existing HTTP transport injection/gateway tests covering Rust-applicable behavior.
+
+Catalog evidence: npm tarball SHA-256 `0262785a76b0eb2eec596cd8a7ab2ee23eef89d2ef1bb1211c4f0a1944dacf41`; text `1267/1267`, image `45/45`, providers `39`, APIs `9`, official batch aliases `60`, full metadata verifier `metadata verified: text=1267 providers=39 apis=9 batchAliases=60 image=45`.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.84.1
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.1`, package/tag SHA `53fa77ccd8a279eb87e92294ef3687b03ff80112` (`github.com/earendil-works/pi` tag `v0.84.1`). Pinned scope is exactly `a5f43bf8aff3c55752432655f7334e3dafd1e256..53fa77ccd8a279eb87e92294ef3687b03ff80112`; do not chase newer main.
 

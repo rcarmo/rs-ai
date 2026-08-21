@@ -20,7 +20,7 @@ mod tests {
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1220);
+        assert_eq!(pairs.len(), 1267);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -94,7 +94,7 @@ mod tests {
             .into_iter()
             .map(|m| m.id)
             .collect::<HashSet<_>>();
-        assert_eq!(ids.len(), 42);
+        assert_eq!(ids.len(), 45);
         for id in [
             "krea/krea-2-large",
             "krea/krea-2-medium",
@@ -164,6 +164,7 @@ mod tests {
             deferred: None,
             error_message: Some("stream ended before a terminal response event".into()),
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: true,
@@ -231,6 +232,7 @@ mod tests {
                 deferred: None,
                 error_message: None,
                 raw_stop_reason: None,
+                end_turn: None,
                 tool_call_id: None,
                 tool_name: None,
                 is_error: false,
@@ -595,6 +597,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,

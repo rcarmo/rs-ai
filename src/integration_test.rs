@@ -48,6 +48,8 @@ mod tests {
                 name: "read_file".into(),
                 arguments: HashMap::from([("path".into(), serde_json::json!("test.txt"))]),
                 thought_signature: None,
+
+                namespace: None,
             }],
             timestamp: 0,
             api: Some("faux".into()),
@@ -66,6 +68,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,

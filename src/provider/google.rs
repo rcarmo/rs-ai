@@ -154,6 +154,7 @@ pub fn stream_google<'a>(
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -314,6 +315,7 @@ pub fn stream_google<'a>(
                                     };
                                     partial.content.push(ContentBlock::ToolCall {
                                         id: id.clone(), name, arguments, thought_signature: sig,
+                                        namespace: None,
                                     });
                                     tool_call_ids.push(id);
                                 }
@@ -341,19 +343,13 @@ pub fn stream_google<'a>(
                                 _ => {}
                             }
                             block_kind = 0;
-                            partial.stop_reason = Some(if !tool_call_ids.is_empty() {
-                                // Any tool call present -> toolUse, regardless of finishReason
-                                // (mirrors upstream's content.some(toolCall) override).
-                                StopReason::ToolUse
-                            } else {
-                                match reason {
-                                    "STOP" => StopReason::Stop,
-                                    "MAX_TOKENS" => StopReason::Length,
-                                    other => {
-                                        // Safety/recitation/malformed/etc. finish reasons are errors.
-                                        partial.error_message = Some(format!("Gemini stopped with finish reason: {other}"));
-                                        StopReason::Error
-                                    }
+                            partial.stop_reason = Some(match reason {
+                                "MAX_TOKENS" => StopReason::Length,
+                                "STOP" if !tool_call_ids.is_empty() => StopReason::ToolUse,
+                                "STOP" => StopReason::Stop,
+                                other => {
+                                    partial.error_message = Some(format!("Gemini stopped with finish reason: {other}"));
+                                    StopReason::Error
                                 }
                             });
                         }
@@ -771,6 +767,7 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                             name,
                             arguments,
                             thought_signature,
+                            ..
                         } => {
                             let mut fc = json!({"name": name, "args": arguments});
                             if google_requires_tool_call_id(&model.id) {

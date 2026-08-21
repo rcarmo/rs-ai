@@ -136,6 +136,7 @@ def gen_model(m) -> str:
         "supportsFinishReason": ("supports_finish_reason", "bool"),
         "supportsStrictMode": ("supports_strict_mode", "bool"),
         "supportsOpenAIGrammarTools": ("supports_openai_grammar_tools", "bool"),
+        "supportsAdditionalTools": ("supports_additional_tools", "bool"),
         "supportsTemperature": ("supports_temperature", "bool"),
         "supportsThinkingTokenBudget": ("supports_thinking_token_budget", "bool"),
         "thinkingFormat": ("thinking_format", "str"),

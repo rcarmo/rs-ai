@@ -22,6 +22,7 @@ mod tests {
             deferred: None,
             error_message: error.map(|s| s.to_string()),
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,

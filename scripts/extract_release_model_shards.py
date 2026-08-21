@@ -63,6 +63,7 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/google/gemini-3.5-flash-lite:batch",
     "openrouter/google/gemini-3.5-flash:batch",
     "openrouter/google/gemini-3.6-flash:batch",
+    "openrouter/google/gemini-3.7-flash:batch",
     "openrouter/minimax/minimax-m3:batch",
     "openrouter/moonshotai/kimi-k2.7-code:batch",
     "openrouter/nvidia/nemotron-3-ultra-550b-a55b:batch",

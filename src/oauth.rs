@@ -621,9 +621,41 @@ where
     .to_string())
 }
 
+pub const COPILOT_API_VERSION: &str = "2026-06-01";
+pub const COPILOT_POLICY_CONCURRENCY: usize = 4;
+
+fn copilot_base_url_from_token(token: &str) -> Option<String> {
+    token
+        .split(';')
+        .find_map(|part| part.trim().strip_prefix("proxy-ep="))
+        .filter(|host| !host.is_empty())
+        .map(|host| format!("https://{}", host.replacen("proxy.", "api.", 1)))
+}
+
+/// Resolve the GitHub Copilot API base URL from the Copilot access token's
+/// `proxy-ep` claim, enterprise domain, or the Individual-account default.
+pub fn github_copilot_base_url(token: Option<&str>, enterprise_domain: Option<&str>) -> String {
+    if let Some(token) = token
+        && let Some(base_url) = copilot_base_url_from_token(token)
+    {
+        return base_url;
+    }
+    if let Some(domain) = enterprise_domain.map(str::trim).filter(|s| !s.is_empty()) {
+        return format!("https://copilot-api.{domain}");
+    }
+    "https://api.individual.githubcopilot.com".to_string()
+}
+
+fn copilot_model_supports_tools(model: &serde_json::Value) -> bool {
+    model
+        .pointer("/capabilities/supports/tool_calls")
+        .and_then(|v| v.as_bool())
+        != Some(false)
+}
+
 /// Whether a GitHub Copilot `/models` entry is selectable for the model picker
-/// (mirrors the upstream catalog filter): `model_picker_enabled` is true, the
-/// model is not policy-disabled, and it supports tool calls.
+/// (mirrors the strict upstream picker filter): `model_picker_enabled` is true,
+/// the model is not policy-disabled, and tool calls are not explicitly disabled.
 pub fn is_selectable_copilot_model(model: &serde_json::Value) -> bool {
     let picker_enabled = model
         .get("model_picker_enabled")
@@ -631,20 +663,160 @@ pub fn is_selectable_copilot_model(model: &serde_json::Value) -> bool {
         .unwrap_or(false);
     let policy_disabled =
         model.pointer("/policy/state").and_then(|v| v.as_str()) == Some("disabled");
-    let supports_tools = model
-        .pointer("/capabilities/supports/tool_calls")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-    picker_enabled && !policy_disabled && supports_tools
+    picker_enabled && !policy_disabled && copilot_model_supports_tools(model)
 }
 
-/// The selectable Copilot model ids from a `/models` response `data` array.
+/// Parse available Copilot model ids from a `/models` response `data` array.
+/// Picker-enabled ids win. When the Individual Copilot endpoint returns no
+/// picker ids, fall back to explicitly policy-enabled ids (upstream v0.84.2).
+pub fn selectable_copilot_model_ids_with_policy_fallback(
+    models_data: &[serde_json::Value],
+    allow_policy_fallback: bool,
+) -> Vec<String> {
+    let mut picker_ids = Vec::new();
+    let mut policy_enabled_ids = Vec::new();
+    for model in models_data {
+        let Some(id) = model.get("id").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        if !copilot_model_supports_tools(model) {
+            continue;
+        }
+        let policy_state = model.pointer("/policy/state").and_then(|v| v.as_str());
+        if model.get("model_picker_enabled").and_then(|v| v.as_bool()) == Some(true)
+            && policy_state != Some("disabled")
+        {
+            picker_ids.push(id.to_string());
+        }
+        if policy_state == Some("enabled") {
+            policy_enabled_ids.push(id.to_string());
+        }
+    }
+    if !picker_ids.is_empty() || !allow_policy_fallback {
+        picker_ids
+    } else {
+        policy_enabled_ids
+    }
+}
+
+/// The strict selectable Copilot model ids from a `/models` response `data` array.
 pub fn selectable_copilot_model_ids(models_data: &[serde_json::Value]) -> Vec<String> {
-    models_data
-        .iter()
-        .filter(|m| is_selectable_copilot_model(m))
-        .filter_map(|m| m.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()))
+    selectable_copilot_model_ids_with_policy_fallback(models_data, false)
+}
+
+fn copilot_policy_batches(model_ids: &[String]) -> Vec<Vec<String>> {
+    model_ids
+        .chunks(COPILOT_POLICY_CONCURRENCY)
+        .map(|chunk| chunk.to_vec())
         .collect()
+}
+
+/// Fetch available GitHub Copilot model ids from the resolved Copilot API.
+pub async fn fetch_available_github_copilot_model_ids_at(
+    base_url: &str,
+    copilot_token: &str,
+) -> Result<Vec<String>, String> {
+    let url = format!("{}/models", base_url.trim_end_matches('/'));
+    let client = reqwest::Client::new();
+    let mut req = client
+        .get(&url)
+        .header("Accept", "application/json")
+        .header("Authorization", format!("Bearer {copilot_token}"))
+        .header("X-GitHub-Api-Version", COPILOT_API_VERSION);
+    for (k, v) in crate::utils::copilot_headers() {
+        req = req.header(k, v);
+    }
+    let resp = req
+        .send()
+        .await
+        .map_err(|e| format!("Copilot models request failed: {e}"))?;
+    let status = resp.status();
+    let body = resp
+        .text()
+        .await
+        .map_err(|e| format!("Copilot models request failed: {e}"))?;
+    if !status.is_success() {
+        return Err(format!(
+            "{} {}: {}",
+            status.as_u16(),
+            status.canonical_reason().unwrap_or(""),
+            body
+        ));
+    }
+    let raw: serde_json::Value =
+        serde_json::from_str(&body).map_err(|_| "Invalid Copilot models response".to_string())?;
+    let data = raw
+        .get("data")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| "Invalid Copilot models response".to_string())?;
+    Ok(selectable_copilot_model_ids_with_policy_fallback(
+        data,
+        base_url.trim_end_matches('/') == "https://api.individual.githubcopilot.com",
+    ))
+}
+
+pub async fn fetch_available_github_copilot_model_ids(
+    copilot_token: &str,
+    enterprise_domain: Option<&str>,
+) -> Result<Vec<String>, String> {
+    let base_url = github_copilot_base_url(Some(copilot_token), enterprise_domain);
+    fetch_available_github_copilot_model_ids_at(&base_url, copilot_token).await
+}
+
+async fn enable_github_copilot_model_at(
+    client: &reqwest::Client,
+    base_url: &str,
+    token: &str,
+    model_id: &str,
+) -> bool {
+    let url = format!(
+        "{}/models/{}/policy",
+        base_url.trim_end_matches('/'),
+        model_id
+    );
+    let mut req = client
+        .post(&url)
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {token}"))
+        .header("openai-intent", "chat-policy")
+        .header("x-interaction-type", "chat-policy")
+        .json(&serde_json::json!({"state": "enabled"}));
+    for (k, v) in crate::utils::copilot_headers() {
+        req = req.header(k, v);
+    }
+    req.send()
+        .await
+        .is_ok_and(|resp| resp.status().is_success())
+}
+
+/// Enable all requested Copilot model policies in bounded batches. Individual
+/// failures are ignored to match upstream's best-effort policy acceptance.
+pub async fn enable_github_copilot_models_at(
+    base_url: &str,
+    token: &str,
+    model_ids: &[String],
+) -> Result<(), String> {
+    let client = reqwest::Client::new();
+    for batch in copilot_policy_batches(model_ids) {
+        let futures = batch
+            .iter()
+            .map(|id| enable_github_copilot_model_at(&client, base_url, token, id));
+        futures::future::join_all(futures).await;
+    }
+    Ok(())
+}
+
+/// Enable all built-in GitHub Copilot model policies for a freshly logged-in account.
+pub async fn enable_all_github_copilot_models(
+    token: &str,
+    enterprise_domain: Option<&str>,
+) -> Result<(), String> {
+    let ids = crate::registry::list_models(Some(crate::types::provider_id::GITHUB_COPILOT))
+        .into_iter()
+        .map(|model| model.id)
+        .collect::<Vec<_>>();
+    let base_url = github_copilot_base_url(Some(token), enterprise_domain);
+    enable_github_copilot_models_at(&base_url, token, &ids).await
 }
 
 /// Poll once for a GitHub device-code access token (mirrors pollForGitHubAccessToken's poll).

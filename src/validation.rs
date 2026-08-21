@@ -369,15 +369,52 @@ pub fn coerce_with_json_schema(value: Value, schema: &Value) -> Value {
     next
 }
 
+fn schema_allows_null(schema: &Value) -> bool {
+    if schema.get("type").and_then(|v| v.as_str()) == Some("null") {
+        return true;
+    }
+    if schema_types(schema).iter().any(|ty| *ty == "null") {
+        return true;
+    }
+    if schema.get("const") == Some(&Value::Null) {
+        return true;
+    }
+    if let Some(Value::Array(values)) = schema.get("enum")
+        && values.iter().any(Value::is_null)
+    {
+        return true;
+    }
+    schema
+        .get("anyOf")
+        .and_then(|v| v.as_array())
+        .is_some_and(|arr| arr.iter().any(schema_allows_null))
+}
+
 fn apply_object_coercion(value: &mut Value, schema: &Value) {
     let obj = match value.as_object_mut() {
         Some(o) => o,
         None => return,
     };
+    let required = schema
+        .get("required")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .collect::<std::collections::HashSet<_>>()
+        })
+        .unwrap_or_default();
     let mut defined: Vec<String> = Vec::new();
     if let Some(Value::Object(props)) = schema.get("properties") {
         defined = props.keys().cloned().collect();
         for (key, prop_schema) in props {
+            if obj.get(key).is_some_and(Value::is_null)
+                && !required.contains(key.as_str())
+                && !schema_allows_null(prop_schema)
+            {
+                obj.remove(key);
+                continue;
+            }
             if let Some(existing) = obj.get(key).cloned() {
                 obj.insert(key.clone(), coerce_with_json_schema(existing, prop_schema));
             }

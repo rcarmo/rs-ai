@@ -60,6 +60,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -217,6 +218,7 @@ mod tests {
                     name: "read".into(),
                     arguments: thinking_args,
                     thought_signature: None,
+                    namespace: None,
                 },
             ],
             timestamp: 0,
@@ -231,6 +233,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -255,6 +258,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: Some("call_1".into()),
             tool_name: Some("read".into()),
             is_error: false,
@@ -327,7 +331,12 @@ mod tests {
             cat("opencode-go", "kimi-k2.6"),
             cat("opencode", "grok-build-0.1"),
         ] {
-            assert_eq!(model.compat.max_tokens_field.as_deref(), Some("max_tokens"));
+            assert_eq!(
+                crate::compat::detect_compat(&model)
+                    .max_tokens_field
+                    .as_deref(),
+                Some("max_tokens")
+            );
             let opts = StreamOptions {
                 max_tokens: Some(123),
                 sampling_params: None,
@@ -826,6 +835,7 @@ mod tests {
                     name: "read".into(),
                     arguments: args,
                     thought_signature: None,
+                    namespace: None,
                 },
             ],
             timestamp: 0,
@@ -840,6 +850,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -881,6 +892,8 @@ mod tests {
                 name: "read".into(),
                 arguments: args,
                 thought_signature: None,
+
+                namespace: None,
             }],
             timestamp: 0,
             api: Some("openai-completions".into()),
@@ -894,6 +907,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -918,6 +932,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: Some("call_1".into()),
             tool_name: Some("read".into()),
             is_error: false,

@@ -78,6 +78,8 @@ fn normalize_cross_model_content(messages: Vec<Message>, model: &Model) -> Vec<M
                         name,
                         arguments,
                         thought_signature,
+
+                        namespace: None,
                     } => {
                         if !is_same && thought_signature.is_some() {
                             new_content.push(ContentBlock::ToolCall {
@@ -85,6 +87,7 @@ fn normalize_cross_model_content(messages: Vec<Message>, model: &Model) -> Vec<M
                                 name: name.clone(),
                                 arguments: arguments.clone(),
                                 thought_signature: None,
+                                namespace: None,
                             });
                         } else {
                             new_content.push(block.clone());
@@ -135,6 +138,7 @@ fn insert_synthetic_tool_results(messages: Vec<Message>) -> Vec<Message> {
                     deferred: None,
                     error_message: None,
                     raw_stop_reason: None,
+                    end_turn: None,
                     tool_call_id: Some(id),
                     tool_name: Some(name),
                     is_error: true,
@@ -305,6 +309,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -342,6 +347,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -376,6 +382,7 @@ mod tests {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: tcid.map(|s| s.to_string()),
             tool_name: None,
             is_error: false,
@@ -394,6 +401,8 @@ mod tests {
                     name: "search".into(),
                     arguments: std::collections::HashMap::new(),
                     thought_signature: None,
+
+                    namespace: None,
                 }],
                 Some(StopReason::ToolUse),
                 None,
@@ -430,6 +439,8 @@ mod tests {
                     name: "s".into(),
                     arguments: std::collections::HashMap::new(),
                     thought_signature: None,
+
+                    namespace: None,
                 }],
                 Some(StopReason::ToolUse),
                 None,
@@ -492,6 +503,7 @@ mod tests {
                     name: "s".into(),
                     arguments: std::collections::HashMap::new(),
                     thought_signature: Some("ts".into()),
+                    namespace: None,
                 },
             ],
             Some(StopReason::ToolUse),

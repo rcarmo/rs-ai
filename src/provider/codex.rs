@@ -40,21 +40,8 @@ pub(crate) fn codex_websocket_session_expired(created_at_ms: u64, now_ms: u64) -
     now_ms.saturating_sub(created_at_ms) >= SESSION_WEBSOCKET_MAX_AGE_MS
 }
 
-/// Build the Codex User-Agent, mirroring upstream `pi (${os.platform()} ${os.release()}; ${os.arch()})`
-/// as closely as std allows. Platform/arch are mapped to Node's naming (darwin/win32, x64/arm64);
-/// the OS release is omitted (std exposes no portable release without a libc/uname dependency).
 fn codex_user_agent() -> String {
-    let platform = match std::env::consts::OS {
-        "macos" => "darwin",
-        "windows" => "win32",
-        other => other,
-    };
-    let arch = match std::env::consts::ARCH {
-        "x86_64" => "x64",
-        "aarch64" => "arm64",
-        other => other,
-    };
-    format!("pi ({platform}; {arch})")
+    crate::utils::pi_runtime_user_agent()
 }
 
 /// Sessions whose Codex WebSocket transport has failed; subsequent requests for
@@ -528,6 +515,7 @@ impl CodexWsState {
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
+            end_turn: None,
             tool_call_id: None,
             tool_name: None,
             is_error: false,
@@ -711,6 +699,7 @@ impl CodexWsState {
                                 name: name.clone(),
                                 arguments: parsed_map,
                                 thought_signature: None,
+                                namespace: None,
                             });
                             self.events.push(Event::ToolCallEnd {
                                 id,
@@ -806,6 +795,9 @@ impl CodexWsState {
                         self.partial.response_id = Some(id.to_string());
                     }
                     // Upstream does not capture response.model into responseModel.
+                    if let Some(end_turn) = response.get("end_turn").and_then(|v| v.as_bool()) {
+                        self.partial.end_turn = Some(end_turn);
+                    }
                     if let Some(usage) = response.get("usage") {
                         let cached = usage
                             .pointer("/input_tokens_details/cached_tokens")
@@ -1066,6 +1058,9 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
     let mut input = base.get("input").cloned().unwrap_or_else(|| json!([]));
     if let Some(arr) = input.as_array_mut() {
         arr.retain(|m| {
+            if m.get("type").and_then(|t| t.as_str()) == Some("additional_tools") {
+                return true;
+            }
             !matches!(
                 m.get("role").and_then(|r| r.as_str()),
                 Some("system") | Some("developer")
