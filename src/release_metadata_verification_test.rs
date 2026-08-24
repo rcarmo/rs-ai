@@ -25,7 +25,7 @@ mod tests {
             String::from_utf8_lossy(&output.stderr)
         );
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("text=1267"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("text=1312"), "unexpected stdout: {stdout}");
         assert!(
             stdout.contains("providers=39"),
             "unexpected stdout: {stdout}"
@@ -99,6 +99,28 @@ mod tests {
         let stdout = String::from_utf8_lossy(&output.stdout);
         assert!(
             stdout.contains("changedPaths=42 testRows=131"),
+            "unexpected stdout: {stdout}"
+        );
+    }
+
+    #[test]
+    fn v0843_manifest_validator_confirms_changed_paths_and_crosswalk_rows() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/validate_v0843_manifests.py")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "manifest validator failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("changedPaths=48 testRows=136"),
             "unexpected stdout: {stdout}"
         );
     }

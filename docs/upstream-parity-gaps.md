@@ -1,6 +1,16 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.84.2
+## Current parity audit: `@earendil-works/pi-ai` v0.84.3
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.3`, package/tag SHA `4e58f324fae8ebfa98a3d45181fb248072a2afac` (`github.com/earendil-works/pi` tag `v0.84.3`). Pinned scope is exactly `914cf1472e715297caa30db4b9535d534a9eb718..4e58f324fae8ebfa98a3d45181fb248072a2afac`; do not chase newer main.
+
+Status: **ADAPTED / under final gate verification**. The range changes **48** `packages/ai` paths: 19 source/runtime paths, 25 tests, and 4 package/docs/export paths. Whole-corpus filename evidence is in `docs/v0843-136-test-crosswalk.md`: **136/136** upstream `packages/ai/test/*.test.ts` files accounted, with executable validator `scripts/validate_v0843_manifests.py`.
+
+Key v0.84.3 dispositions: generated text catalog is regenerated to **1312** provider/id pairs across **39** providers and **9** APIs, batch aliases remain **60**, image catalog remains **45**. Provider-neutral `tool_choice`, default Pi User-Agent with explicit override, Google thinking level map/error/budget semantics, Bedrock redacted reasoning replay/finalization, OpenAI `reasoning_details` preservation/replay, Copilot policy retry/filter behavior, and xAI/ZAI/Xiaomi generated compatibility changes are adapted. TypeScript export/package/docs-only changes and live credential/browser-only rows are documented as N/A for Rust runtime.
+
+Catalog evidence: npm tarball SHA-256 `9c40af2f43950f8e94e7bbcd0c1b3548f000972da00c4fb9c0d0529d4d7d5431`; provider manifest structure hash `9a017e31c46be9520da694c2d30f95ddb3e4efa885bd043615d5b6f48e90eb81`; full metadata verifier `metadata verified: text=1312 providers=39 apis=9 batchAliases=60 image=45`.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.84.2
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.2`, package/tag SHA `914cf1472e715297caa30db4b9535d534a9eb718` (`github.com/earendil-works/pi` tag `v0.84.2`). Pinned scope is exactly `53fa77ccd8a279eb87e92294ef3687b03ff80112..914cf1472e715297caa30db4b9535d534a9eb718`; do not chase newer main.
 

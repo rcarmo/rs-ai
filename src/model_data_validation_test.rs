@@ -341,7 +341,7 @@ mod tests {
         write_package_shard_models(&package_root, "qwen-token-plan-individual", &model_entries);
         let err = run_extractor(&package_root, &out_root).unwrap_err();
         assert!(err.contains(
-            "qwen-token-plan-individual model IDs do not match (missing: deepseek-v4-flash-0731; extra: qwen3.8-max-preview)"
+            "qwen-token-plan-individual model IDs do not match (missing: deepseek-v4-flash-0731, deepseek-v4-pro-0813; extra: qwen3.8-max-preview)"
         ));
         assert!(!out_root.exists());
         fs::remove_dir_all(root).unwrap();

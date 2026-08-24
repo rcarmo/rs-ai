@@ -11,6 +11,72 @@ use crate::events::Event;
 use crate::transports::sse;
 use crate::types::*;
 
+fn google_model_thinking_level(level: &ThinkingLevel) -> ModelThinkingLevel {
+    match level {
+        ThinkingLevel::Minimal => ModelThinkingLevel::Minimal,
+        ThinkingLevel::Low => ModelThinkingLevel::Low,
+        ThinkingLevel::Medium => ModelThinkingLevel::Medium,
+        ThinkingLevel::High => ModelThinkingLevel::High,
+        ThinkingLevel::XHigh => ModelThinkingLevel::XHigh,
+        ThinkingLevel::Max => ModelThinkingLevel::Max,
+    }
+}
+
+pub(crate) fn resolve_google_thinking_level(
+    model: &Model,
+    level: &ModelThinkingLevel,
+) -> Result<String, String> {
+    let key = level.to_string();
+    let mapped = if *level == ModelThinkingLevel::Off {
+        Some("high".to_string())
+    } else if let Some(ref map) = model.thinking_level_map {
+        match map.get(&key) {
+            Some(Some(value)) => Some(value.to_ascii_lowercase()),
+            Some(None) => None,
+            None => match level {
+                ModelThinkingLevel::Minimal => Some("minimal".to_string()),
+                ModelThinkingLevel::Low => Some("low".to_string()),
+                ModelThinkingLevel::Medium => Some("medium".to_string()),
+                ModelThinkingLevel::High => Some("high".to_string()),
+                ModelThinkingLevel::XHigh | ModelThinkingLevel::Max => None,
+                ModelThinkingLevel::Off => Some("high".to_string()),
+            },
+        }
+    } else {
+        match level {
+            ModelThinkingLevel::Minimal => Some("minimal".to_string()),
+            ModelThinkingLevel::Low => Some("low".to_string()),
+            ModelThinkingLevel::Medium => Some("medium".to_string()),
+            ModelThinkingLevel::High => Some("high".to_string()),
+            ModelThinkingLevel::Off => Some("high".to_string()),
+            ModelThinkingLevel::XHigh | ModelThinkingLevel::Max => None,
+        }
+    };
+    let Some(mapped) = mapped else {
+        return Err(format!(
+            "Unsupported Google thinking level mapping for {}/{}: {} -> undefined",
+            model.provider, model.id, key
+        ));
+    };
+    match mapped.as_str() {
+        "minimal" | "low" | "medium" | "high" => Ok(mapped),
+        other => Err(format!(
+            "Unsupported Google thinking level mapping for {}/{}: {} -> {}",
+            model.provider, model.id, key, other
+        )),
+    }
+}
+
+fn google_api_thinking_level(resolved: &str) -> &'static str {
+    match resolved {
+        "minimal" => "MINIMAL",
+        "low" => "LOW",
+        "medium" => "MEDIUM",
+        "high" => "HIGH",
+        _ => "HIGH",
+    }
+}
+
 /// v0.84 Google shared retry wrapper parity: no retries unless the caller sets
 /// `maxRetries`, and provider-style backoff starts at 500ms.
 pub(crate) fn google_retry_config_from_options(opts: &StreamOptions) -> crate::retry::RetryConfig {
@@ -56,7 +122,17 @@ pub fn stream_google<'a>(
     }
     let api_key = api_key.unwrap();
 
-    let mut payload = build_google_payload(model, context, opts);
+    let mut payload = match build_google_payload(model, context, opts) {
+        Ok(payload) => payload,
+        Err(err) => {
+            let err = Event::Error {
+                reason: StopReason::Error,
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(err)),
+                message: None,
+            };
+            return Box::pin(stream::once(async { err }));
+        }
+    };
     if let Some(ref hook) = opts.on_payload {
         match hook(payload.clone(), model) {
             Ok(next) => payload = next,
@@ -85,6 +161,9 @@ pub fn stream_google<'a>(
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert("accept", HeaderValue::from_static("text/event-stream"));
+    if let Ok(value) = HeaderValue::from_str(&crate::utils::pi_runtime_user_agent()) {
+        headers.insert("user-agent", value);
+    }
     // Merge model-level and option headers (mirrors `{ ...model.headers, ...optionsHeaders }`).
     for source in [model.headers.as_ref(), opts.headers.as_ref()]
         .into_iter()
@@ -433,7 +512,7 @@ pub fn build_google_payload_public(
     context: &Context,
     opts: &StreamOptions,
 ) -> Value {
-    build_google_payload(model, context, opts)
+    build_google_payload(model, context, opts).expect("valid Google payload")
 }
 
 /// Gemini models that require explicit tool-call ids on functionCall/functionResponse
@@ -585,7 +664,11 @@ fn resolve_thought_signature(is_same: bool, sig: Option<&str>) -> Option<&str> {
     }
 }
 
-fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) -> Value {
+fn build_google_payload(
+    model: &Model,
+    context: &Context,
+    opts: &StreamOptions,
+) -> Result<Value, String> {
     let mut contents: Vec<Value> = Vec::new();
 
     let transformed_messages = crate::transform::transform_messages(&context.messages, model);
@@ -820,45 +903,22 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
         let is_gemma4 = id.contains("gemma-4") || id.contains("gemma4");
         if let Some(reasoning) = opts.reasoning.as_ref() {
             let mut thinking_config = json!({"includeThoughts": true});
-            // Clamp to a supported level; a level that clamps to off becomes "high"
-            // (mirrors streamSimpleGoogle effort = clamped==="off" ? "high" : clamped).
-            let effort = match crate::simple_options::clamp_reasoning_for_model(model, reasoning) {
-                Some(clamped) => format!("{:?}", clamped).to_lowercase(),
-                None => "high".to_string(),
+            let requested = google_model_thinking_level(reasoning);
+            let resolved = match resolve_google_thinking_level(model, &requested) {
+                Ok(level) => level,
+                Err(err) => {
+                    return Err(err);
+                }
             };
             if is_gemini3_pro || is_gemini3_flash || is_gemma4 {
-                // Gemini 3 / Gemma 4 use a thinkingLevel string (omitted if effort has no mapping).
-                let tl: Option<&str> = if is_gemini3_pro {
-                    match effort.as_str() {
-                        "minimal" | "low" => Some("LOW"),
-                        "medium" | "high" => Some("HIGH"),
-                        _ => None,
-                    }
-                } else if is_gemma4 {
-                    match effort.as_str() {
-                        "minimal" | "low" => Some("MINIMAL"),
-                        "medium" | "high" => Some("HIGH"),
-                        _ => None,
-                    }
-                } else {
-                    match effort.as_str() {
-                        "minimal" => Some("MINIMAL"),
-                        "low" => Some("LOW"),
-                        "medium" => Some("MEDIUM"),
-                        "high" => Some("HIGH"),
-                        _ => None,
-                    }
-                };
-                if let Some(tl) = tl {
-                    thinking_config["thinkingLevel"] = json!(tl);
-                }
+                thinking_config["thinkingLevel"] = json!(google_api_thinking_level(&resolved));
             } else {
-                // Budget-based models: per-effort custom budget, else model-specific
-                // defaults, else -1 (dynamic). Omitted when getGoogleBudget has no value.
+                // Budget-based models: per-resolved-effort custom budget, else model-specific
+                // defaults, else -1 (dynamic).
                 let custom = opts
                     .thinking_budgets
                     .as_ref()
-                    .and_then(|b| match effort.as_str() {
+                    .and_then(|b| match resolved.as_str() {
                         "minimal" => b.minimal,
                         "low" => b.low,
                         "medium" => b.medium,
@@ -868,7 +928,7 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                     .map(|v| v as i64);
                 let budget: Option<i64> = custom.or_else(|| {
                     if id.contains("2.5-pro") {
-                        match effort.as_str() {
+                        match resolved.as_str() {
                             "minimal" => Some(128),
                             "low" => Some(2048),
                             "medium" => Some(8192),
@@ -876,7 +936,7 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                             _ => None,
                         }
                     } else if id.contains("2.5-flash-lite") {
-                        match effort.as_str() {
+                        match resolved.as_str() {
                             "minimal" => Some(512),
                             "low" => Some(2048),
                             "medium" => Some(8192),
@@ -884,7 +944,7 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
                             _ => None,
                         }
                     } else if id.contains("2.5-flash") {
-                        match effort.as_str() {
+                        match resolved.as_str() {
                             "minimal" => Some(128),
                             "low" => Some(2048),
                             "medium" => Some(8192),
@@ -933,7 +993,7 @@ fn build_google_payload(model: &Model, context: &Context, opts: &StreamOptions) 
         }
     }
 
-    payload
+    Ok(payload)
 }
 
 fn url_encode(s: &str) -> String {

@@ -112,7 +112,7 @@ mod tests {
     fn deepseek_v4_flash_off_high_max_on_opencode_go() {
         assert_eq!(
             levels(&m("opencode-go", "deepseek-v4-flash")),
-            vec!["off", "high", "max"]
+            vec!["off", "low", "high", "max"]
         );
     }
 

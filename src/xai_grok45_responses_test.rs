@@ -48,7 +48,7 @@ mod tests {
     }
 
     #[test]
-    fn xai_catalog_uses_responses_and_low_medium_high_only_for_grok_45() {
+    fn xai_catalog_uses_responses_and_expected_thinking_levels() {
         let grok_45 = get_model("xai", "grok-4.5").expect("xai/grok-4.5");
         assert_eq!(grok_45.api, crate::types::api::OPENAI_RESPONSES);
         assert_eq!(
@@ -60,7 +60,7 @@ mod tests {
             ]
         );
         let grok_43 = get_model("xai", "grok-4.3").expect("xai/grok-4.3");
-        assert_eq!(grok_43.api, crate::types::api::OPENAI_COMPLETIONS);
+        assert_eq!(grok_43.api, crate::types::api::OPENAI_RESPONSES);
         assert!(grok_45.compat.supports_long_cache_retention == Some(false));
     }
 

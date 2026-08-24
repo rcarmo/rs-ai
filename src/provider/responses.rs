@@ -214,6 +214,9 @@ fn stream_responses_inner<'a>(
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert("accept", HeaderValue::from_static("text/event-stream"));
+    if let Ok(value) = HeaderValue::from_str(&crate::utils::pi_runtime_user_agent()) {
+        headers.insert("user-agent", value);
+    }
     if is_azure {
         if let Ok(val) = HeaderValue::from_str(&api_key) {
             headers.insert("api-key", val);
@@ -1264,6 +1267,10 @@ pub(crate) fn build_responses_payload(
                 payload["reasoning"] = json!({ "effort": "none" });
             }
         }
+    }
+
+    if let Some(ref tool_choice) = opts.tool_choice {
+        payload["tool_choice"] = tool_choice.clone();
     }
 
     if !context.tools.is_empty() {

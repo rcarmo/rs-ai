@@ -75,6 +75,9 @@ pub fn stream_anthropic<'a>(
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert("accept", HeaderValue::from_static("text/event-stream"));
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
+    if let Ok(value) = HeaderValue::from_str(&crate::utils::pi_runtime_user_agent()) {
+        headers.insert("user-agent", value);
+    }
     // Upstream's anthropic createClient sets this on every request (dangerouslyAllowBrowser).
     headers.insert(
         "anthropic-dangerous-direct-browser-access",
@@ -105,11 +108,6 @@ pub fn stream_anthropic<'a>(
         headers.insert("x-app", HeaderValue::from_static("cli"));
     } else {
         headers.insert("x-api-key", HeaderValue::from_str(&api_key).unwrap());
-    }
-    if model.provider == "kimi-coding"
-        && let Ok(value) = HeaderValue::from_str(&crate::utils::pi_runtime_user_agent())
-    {
-        headers.insert("user-agent", value);
     }
 
     // Beta features (prompt caching is GA and no longer requires a beta header).

@@ -27,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TIMESTAMP_RE = re.compile(r"//! Generated: .*", re.MULTILINE)
-DEFAULT_PACKAGE_SHA256 = "0262785a76b0eb2eec596cd8a7ab2ee23eef89d2ef1bb1211c4f0a1944dacf41"
+DEFAULT_PACKAGE_SHA256 = "9c40af2f43950f8e94e7bbcd0c1b3548f000972da00c4fb9c0d0529d4d7d5431"
 
 
 def run(cmd: list[str], cwd: Path | None = None, env: dict[str, str] | None = None) -> str:
@@ -160,7 +160,7 @@ def maybe_fault(path: Path, fault: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--package", default="@earendil-works/pi-ai@0.84.2")
+    ap.add_argument("--package", default="@earendil-works/pi-ai@0.84.3")
     ap.add_argument("--package-sha256", default=DEFAULT_PACKAGE_SHA256)
     ap.add_argument("--upstream", default="", help="ignored compatibility option; npm artifact is authoritative")
     ap.add_argument("--tag-sha", default="", help="ignored compatibility option; npm artifact is authoritative")

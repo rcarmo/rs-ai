@@ -12,6 +12,7 @@ use aws_sdk_bedrockruntime::types::{
     ToolResultContentBlock, ToolResultStatus, ToolSpecification, ToolUseBlock,
 };
 use aws_smithy_types::{Document, Number};
+use base64::Engine;
 
 use crate::events::Event;
 use crate::types::*;
@@ -147,6 +148,23 @@ pub(crate) fn build_bedrock_messages(
                                 .build()
                             {
                                 content.push(BedrockContent::ToolUse(tub));
+                            }
+                        }
+                        ContentBlock::Thinking {
+                            thinking,
+                            thinking_signature,
+                            redacted,
+                        } if *redacted => {
+                            if let Some(sig) =
+                                thinking_signature.as_ref().filter(|s| !s.trim().is_empty())
+                                && let Ok(bytes) =
+                                    base64::engine::general_purpose::STANDARD.decode(sig)
+                            {
+                                content.push(BedrockContent::ReasoningContent(
+                                    ReasoningContentBlock::RedactedContent(
+                                        aws_smithy_types::Blob::new(bytes),
+                                    ),
+                                ));
                             }
                         }
                         ContentBlock::Thinking {
@@ -817,6 +835,7 @@ pub fn stream_bedrock<'a>(
         let mut in_tool_block = false;
         let mut current_thinking = String::new();
         let mut current_thinking_signature: Option<String> = None;
+        let mut current_thinking_redacted = false;
         let mut thinking_started = false;
 
         let mut recv = output.stream;
@@ -881,6 +900,21 @@ pub fn stream_bedrock<'a>(
                                                     None => current_thinking_signature = Some(s.to_string()),
                                                 }
                                             }
+                                            ReasoningContentBlockDelta::RedactedContent(blob) => {
+                                                if !thinking_started {
+                                                    thinking_started = true;
+                                                    yield Event::ThinkingStart;
+                                                }
+                                                current_thinking_redacted = true;
+                                                let encoded = base64::engine::general_purpose::STANDARD.encode(blob.as_ref());
+                                                match &mut current_thinking_signature {
+                                                    Some(existing) => existing.push_str(&encoded),
+                                                    None => current_thinking_signature = Some(encoded),
+                                                }
+                                                if current_thinking.is_empty() {
+                                                    current_thinking.push_str("[Reasoning redacted]");
+                                                }
+                                            }
                                             _ => {}
                                         }
                                     }
@@ -914,8 +948,9 @@ pub fn stream_bedrock<'a>(
                                 partial.content.push(ContentBlock::Thinking {
                                     thinking: std::mem::take(&mut current_thinking),
                                     thinking_signature: current_thinking_signature.take(),
-                                    redacted: false,
+                                    redacted: current_thinking_redacted,
                                 });
+                                current_thinking_redacted = false;
                                 yield Event::ThinkingEnd;
                             } else if text_started {
                                 text_started = false;
@@ -977,6 +1012,14 @@ pub fn stream_bedrock<'a>(
             }
         }
 
+        if thinking_started {
+            partial.content.push(ContentBlock::Thinking {
+                thinking: std::mem::take(&mut current_thinking),
+                thinking_signature: current_thinking_signature.take(),
+                redacted: current_thinking_redacted,
+            });
+            yield Event::ThinkingEnd;
+        }
         if !current_text.is_empty() {
             partial.content.push(ContentBlock::Text { text: current_text, text_signature: None });
         }

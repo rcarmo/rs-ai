@@ -200,6 +200,59 @@ mod tests {
     }
 
     #[test]
+    fn replays_redacted_reasoning_as_bedrock_redacted_content() {
+        use crate::provider::bedrock::build_bedrock_messages;
+        use crate::types::{ContentBlock, Message, Role};
+        use aws_sdk_bedrockruntime::types::{
+            ContentBlock as BedrockContent, ReasoningContentBlock,
+        };
+
+        let signature = base64::Engine::encode(
+            &base64::engine::general_purpose::STANDARD,
+            b"encrypted-reasoning",
+        );
+        let m = app_profile(
+            "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+            "Claude Sonnet 4.5",
+        );
+        let assistant = Message {
+            role: Role::Assistant,
+            content: vec![ContentBlock::Thinking {
+                thinking: "[Reasoning redacted]".into(),
+                thinking_signature: Some(signature.clone()),
+                redacted: true,
+            }],
+            timestamp: 0,
+            api: Some(m.api.clone()),
+            provider: Some(m.provider.clone()),
+            model: Some(m.id.clone()),
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            deferred: None,
+            error_message: None,
+            raw_stop_reason: None,
+            end_turn: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
+            added_tool_names: Vec::new(),
+        };
+        let msgs = build_bedrock_messages(&[assistant], &m, &StreamOptions::default()).unwrap();
+        let content = msgs[0].content();
+        assert_eq!(content.len(), 1);
+        match &content[0] {
+            BedrockContent::ReasoningContent(ReasoningContentBlock::RedactedContent(blob)) => {
+                assert_eq!(blob.as_ref(), b"encrypted-reasoning");
+            }
+            other => panic!("expected redacted reasoning content, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn injects_cache_point_on_last_user_message_when_model_name_identifies_supported_claude() {
         use crate::provider::bedrock::build_bedrock_messages;
         use crate::types::{ContentBlock, Context, Message, Role};

@@ -14,6 +14,7 @@ fn user_context() -> Context {
 const INDIVIDUAL_MODELS: &[&str] = &[
     "deepseek-v4-flash-0731",
     "deepseek-v4-pro",
+    "deepseek-v4-pro-0813",
     "glm-5.2",
     "qwen3.6-flash",
     "qwen3.7-max",
@@ -37,7 +38,7 @@ fn release_pinned_catalog_counts_include_individual_and_batch_aliases() {
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
 
-    assert_eq!(pairs.len(), 1267);
+    assert_eq!(pairs.len(), 1312);
     assert_eq!(providers.len(), 39);
     assert_eq!(apis.len(), 9);
 

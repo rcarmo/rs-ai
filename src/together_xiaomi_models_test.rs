@@ -100,10 +100,18 @@ mod tests {
     }
 
     #[test]
-    fn xiaomi_keeps_mimo_v2_flash_on_the_api_billing_provider() {
-        // v0.80.5: mimo-v2-flash and mimo-v2-omni stay on the API billing provider.
-        for id in ["mimo-v2-flash", "mimo-v2-omni"] {
-            assert!(get_model("xiaomi", id).is_some(), "xiaomi must keep {id}");
+    fn xiaomi_replaces_deprecated_mimo_v2_api_billing_models() {
+        for deprecated in ["mimo-v2-flash", "mimo-v2-omni"] {
+            assert!(
+                get_model("xiaomi", deprecated).is_none(),
+                "xiaomi should drop deprecated {deprecated}"
+            );
+        }
+        for replacement in ["mimo-v2.5", "mimo-v2.5-pro"] {
+            assert!(
+                get_model("xiaomi", replacement).is_some(),
+                "xiaomi should expose replacement {replacement}"
+            );
         }
     }
 

@@ -29,12 +29,14 @@ def flatten(value):
     return out
 
 
-# Official @earendil-works/pi-ai v0.84.1 provider shards include these
-# release-pinned OpenRouter batch aliases. Keep this list exact so fresh dynamic
-# models.dev/OpenRouter aliases still fail loudly during release audits.
+# Official @earendil-works/pi-ai release provider shards include these
+# release-pinned OpenRouter batch aliases and Qwen/ZAI Coding Plan Individual ids.
+# Keep these lists exact so fresh dynamic models.dev/OpenRouter drift still fails
+# loudly during release audits.
 QWEN_TOKEN_PLAN_INDIVIDUAL_MODEL_IDS = {
     "deepseek-v4-flash-0731",
     "deepseek-v4-pro",
+    "deepseek-v4-pro-0813",
     "glm-5.2",
     "qwen3.6-flash",
     "qwen3.7-max",

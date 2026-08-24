@@ -20,7 +20,7 @@ mod tests {
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1267);
+        assert_eq!(pairs.len(), 1312);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())

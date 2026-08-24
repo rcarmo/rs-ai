@@ -54,6 +54,9 @@ pub fn stream_mistral<'a>(
         HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
     );
     headers.insert("Accept", HeaderValue::from_static("text/event-stream"));
+    if let Ok(value) = HeaderValue::from_str(&crate::utils::pi_runtime_user_agent()) {
+        headers.insert("user-agent", value);
+    }
     // Merge model-level and option headers, then add session affinity (mirrors upstream).
     for source in [model.headers.as_ref(), opts.headers.as_ref()]
         .into_iter()

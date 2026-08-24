@@ -5406,20 +5406,17 @@ mod tests {
             build_google_payload_public(&m, &ctx, &opts)["generationConfig"]["thinkingConfig"]
                 .clone()
         };
-        // Gemini 3 Pro: medium -> HIGH thinkingLevel.
+        // v0.84.3: Google thinking-level resolver preserves standard medium -> MEDIUM.
         assert_eq!(
             mk("gemini-3-pro", ThinkingLevel::Medium)["thinkingLevel"],
-            "HIGH"
+            "MEDIUM"
         );
         assert_eq!(
             mk("gemini-3-pro", ThinkingLevel::Low)["thinkingLevel"],
             "LOW"
         );
-        // Gemma 4: low -> MINIMAL.
-        assert_eq!(
-            mk("gemma-4-it", ThinkingLevel::Low)["thinkingLevel"],
-            "MINIMAL"
-        );
+        // v0.84.3: standard low maps to LOW for Google thinkingLevel models.
+        assert_eq!(mk("gemma-4-it", ThinkingLevel::Low)["thinkingLevel"], "LOW");
         // 2.5-flash budget: low -> 2048.
         assert_eq!(
             mk("gemini-2.5-flash", ThinkingLevel::Low)["thinkingBudget"],

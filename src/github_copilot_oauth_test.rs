@@ -8,9 +8,10 @@
 #[cfg(test)]
 mod tests {
     use crate::oauth::{
-        COPILOT_API_VERSION, COPILOT_POLICY_CONCURRENCY, enable_github_copilot_models_at,
-        fetch_available_github_copilot_model_ids_at, is_selectable_copilot_model,
-        selectable_copilot_model_ids, selectable_copilot_model_ids_with_policy_fallback,
+        COPILOT_API_VERSION, COPILOT_POLICY_CONCURRENCY, copilot_policy_model_ids,
+        enable_github_copilot_models_at, fetch_available_github_copilot_model_ids_at,
+        is_selectable_copilot_model, selectable_copilot_model_ids,
+        selectable_copilot_model_ids_with_policy_fallback,
     };
     use serde_json::json;
     use std::time::Duration;
@@ -85,6 +86,61 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(ids, vec!["gpt-4.1".to_string()]);
+    }
+
+    #[test]
+    fn policy_updates_only_known_tool_capable_unconfigured_models() {
+        let data = vec![
+            json!({"id":"gpt-4.1","policy":{"state":"enabled"},"capabilities":{"supports":{"tool_calls":true}}}),
+            json!({"id":"claude-sonnet-4.5","policy":{"state":"unconfigured"},"capabilities":{"supports":{"tool_calls":true}}}),
+            json!({"id":"remote-only-model","policy":{"state":"unconfigured"},"capabilities":{"supports":{"tool_calls":true}}}),
+            json!({"id":"gpt-5.4","policy":{"state":"unconfigured"},"capabilities":{"supports":{"tool_calls":false}}}),
+        ];
+        assert_eq!(
+            copilot_policy_model_ids(&data),
+            vec!["claude-sonnet-4.5".to_string()]
+        );
+    }
+
+    #[tokio::test]
+    async fn retries_throttled_policy_update_once_and_continues_transport_failures() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/models/gpt-4.1/policy"))
+            .respond_with(ResponseTemplate::new(429).insert_header("retry-after", "0"))
+            .up_to_n_times(1)
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .and(path("/models/gpt-4.1/policy"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&server)
+            .await;
+        Mock::given(method("POST"))
+            .and(path("/models/claude-sonnet-4.5/policy"))
+            .respond_with(ResponseTemplate::new(200))
+            .mount(&server)
+            .await;
+        enable_github_copilot_models_at(
+            &server.uri(),
+            "token",
+            &["gpt-4.1".into(), "claude-sonnet-4.5".into()],
+        )
+        .await
+        .unwrap();
+        let requests = server.received_requests().await.unwrap();
+        let paths = requests
+            .iter()
+            .map(|r| r.url.path().to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            paths,
+            vec![
+                "/models/gpt-4.1/policy",
+                "/models/claude-sonnet-4.5/policy",
+                "/models/gpt-4.1/policy"
+            ]
+        );
     }
 
     #[tokio::test]

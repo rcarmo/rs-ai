@@ -704,6 +704,30 @@ pub fn selectable_copilot_model_ids(models_data: &[serde_json::Value]) -> Vec<St
     selectable_copilot_model_ids_with_policy_fallback(models_data, false)
 }
 
+pub fn copilot_policy_model_ids(models_data: &[serde_json::Value]) -> Vec<String> {
+    let known = crate::registry::list_models(Some(crate::types::provider_id::GITHUB_COPILOT))
+        .into_iter()
+        .map(|model| model.id)
+        .collect::<std::collections::HashSet<_>>();
+    models_data
+        .iter()
+        .filter_map(|model| {
+            let id = model.get("id").and_then(|v| v.as_str())?;
+            if !known.contains(id) {
+                return None;
+            }
+            if !copilot_model_supports_tools(model) {
+                return None;
+            }
+            if model.pointer("/policy/state").and_then(|v| v.as_str()) == Some("unconfigured") {
+                Some(id.to_string())
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 fn copilot_policy_batches(model_ids: &[String]) -> Vec<Vec<String>> {
     model_ids
         .chunks(COPILOT_POLICY_CONCURRENCY)
@@ -784,9 +808,35 @@ async fn enable_github_copilot_model_at(
     for (k, v) in crate::utils::copilot_headers() {
         req = req.header(k, v);
     }
-    req.send()
-        .await
-        .is_ok_and(|resp| resp.status().is_success())
+    match req.send().await {
+        Ok(resp) if resp.status().is_success() => true,
+        Ok(resp) if resp.status().as_u16() == 429 => {
+            let delay = resp
+                .headers()
+                .get(reqwest::header::RETRY_AFTER)
+                .and_then(|v| v.to_str().ok())
+                .and_then(crate::retry::parse_retry_after)
+                .unwrap_or(std::time::Duration::ZERO);
+            if !delay.is_zero() {
+                tokio::time::sleep(delay).await;
+            }
+            let mut retry = client
+                .post(&url)
+                .header("Content-Type", "application/json")
+                .header("Authorization", format!("Bearer {token}"))
+                .header("openai-intent", "chat-policy")
+                .header("x-interaction-type", "chat-policy")
+                .json(&serde_json::json!({"state": "enabled"}));
+            for (k, v) in crate::utils::copilot_headers() {
+                retry = retry.header(k, v);
+            }
+            retry
+                .send()
+                .await
+                .is_ok_and(|resp| resp.status().is_success())
+        }
+        _ => false,
+    }
 }
 
 /// Enable all requested Copilot model policies in bounded batches. Individual

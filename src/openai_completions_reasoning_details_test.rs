@@ -51,6 +51,120 @@ mod tests {
         json!({"type": "reasoning.encrypted", "id": "call_1", "data": "encrypted-signature"})
     }
 
+    #[test]
+    fn replays_thinking_signature_reasoning_details_sequence() {
+        let m = model("https://example.invalid/v1");
+        let details = json!([
+            {"type":"reasoning.text","text":"Chain","signature":"sig","id":"txt_1","format":"gemini","index":0},
+            {"type":"reasoning.summary","summary":"Summary","id":"sum_1","format":"gemini","index":1}
+        ]);
+        let assistant = crate::types::Message {
+            role: crate::types::Role::Assistant,
+            content: vec![
+                ContentBlock::Thinking {
+                    thinking: "Chain\nSummary".into(),
+                    thinking_signature: Some(details.to_string()),
+                    redacted: false,
+                },
+                ContentBlock::Text {
+                    text: "done".into(),
+                    text_signature: None,
+                },
+            ],
+            timestamp: 0,
+            api: Some(m.api.clone()),
+            provider: Some(m.provider.clone()),
+            model: Some(m.id.clone()),
+            response_id: None,
+            response_model: None,
+            diagnostics: Vec::new(),
+            usage: None,
+            stop_reason: None,
+            deferred: None,
+            error_message: None,
+            raw_stop_reason: None,
+            end_turn: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
+            added_tool_names: Vec::new(),
+        };
+        let payload = build_payload(
+            &m,
+            &Context {
+                system_prompt: None,
+                tools: Vec::new(),
+                messages: vec![assistant],
+            },
+            &StreamOptions::default(),
+            &detect_compat(&m),
+        );
+        let assistant_payload = payload["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|msg| msg.get("role").and_then(|r| r.as_str()) == Some("assistant"))
+            .expect("assistant payload");
+        assert_eq!(assistant_payload["reasoning_details"], details);
+        assert!(assistant_payload.get("reasoning").is_none());
+    }
+
+    #[tokio::test]
+    async fn preserves_streamed_text_and_summary_reasoning_details_on_thinking() {
+        let details = json!([
+            {"type":"reasoning.text","text":"Chain","signature":"sig","id":"txt_1","format":"gemini","index":0},
+            {"type":"reasoning.summary","summary":"Summary","id":"sum_1","format":"gemini","index":1}
+        ]);
+        let body = format!(
+            "data: {{\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{{\"index\":0,\"delta\":{{\"reasoning_content\":\"Chain\",\"reasoning_details\":{details}}},\"finish_reason\":null}}]}}\n\n\
+             data: {{\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{{\"index\":0,\"delta\":{{\"content\":\"done\"}},\"finish_reason\":null}}]}}\n\n\
+             data: {{\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{{\"index\":0,\"delta\":{{}},\"finish_reason\":\"stop\"}}],\"usage\":{{\"prompt_tokens\":1,\"completion_tokens\":1}}}}\n\n\
+             data: [DONE]\n\n"
+        );
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
+        let m = model(&server.uri());
+        let ctx = Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: Vec::new(),
+        };
+        let opts = StreamOptions::default();
+        let mut stream = stream_openai(&m, &ctx, &opts);
+        let mut assistant_msg = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt {
+                assistant_msg = Some(message);
+            }
+        }
+        let assistant = assistant_msg.expect("Done");
+        let thinking = assistant
+            .content
+            .iter()
+            .find_map(|b| match b {
+                ContentBlock::Thinking {
+                    thinking,
+                    thinking_signature,
+                    ..
+                } => Some((thinking, thinking_signature)),
+                _ => None,
+            })
+            .expect("thinking block");
+        assert_eq!(thinking.0, "Chain");
+        assert_eq!(
+            serde_json::from_str::<Value>(thinking.1.as_deref().unwrap()).unwrap(),
+            details
+        );
+    }
+
     #[tokio::test]
     async fn preserves_reasoning_details_that_arrive_before_their_matching_tool_call() {
         // Stream: reasoning_details, then the matching tool call, then finish.

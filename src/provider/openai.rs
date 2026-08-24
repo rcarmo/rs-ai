@@ -305,12 +305,18 @@ pub fn stream_openai<'a>(
                         // 0.79.10 pendingReasoningDetailsByToolCallId case). Validation mirrors
                         // isEncryptedReasoningDetail: non-empty string id and data.
                         if let Some(details) = delta.get("reasoning_details").and_then(|v| v.as_array()) {
+                            let mut preserve_on_thinking = false;
                             for detail in details {
                                 if detail.get("type").and_then(|v| v.as_str()) == Some("reasoning.encrypted")
                                     && let Some(did) = detail.get("id").and_then(|v| v.as_str()).filter(|s| !s.is_empty())
                                     && detail.get("data").and_then(|v| v.as_str()).is_some_and(|s| !s.is_empty()) {
                                     tool_call_signatures.insert(did.to_string(), detail.to_string());
+                                } else {
+                                    preserve_on_thinking = true;
                                 }
+                            }
+                            if preserve_on_thinking {
+                                current_thinking_signature = Some(Value::Array(details.clone()).to_string());
                             }
                         }
 
@@ -512,6 +518,9 @@ pub(crate) fn build_openai_request_parts(
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert("Accept", HeaderValue::from_static("text/event-stream"));
+    if let Ok(value) = HeaderValue::from_str(&crate::utils::pi_runtime_user_agent()) {
+        headers.insert("user-agent", value);
+    }
 
     if model.provider == "cloudflare-ai-gateway" {
         headers.insert(
@@ -832,18 +841,23 @@ pub(crate) fn build_payload(
                 if let Some((_, Some(sig))) = thinking_blocks.first()
                     && !sig.is_empty()
                 {
-                    // opencode-go uses `reasoning_content` as the replay key.
-                    let key = if model.provider == "opencode-go" && sig.as_str() == "reasoning" {
-                        "reasoning_content"
+                    if let Ok(Value::Array(details)) = serde_json::from_str::<Value>(sig) {
+                        m["reasoning_details"] = json!(details);
                     } else {
-                        sig.as_str()
-                    };
-                    let joined = thinking_blocks
-                        .iter()
-                        .map(|(t, _)| t.as_str())
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    m[key] = json!(joined);
+                        // opencode-go uses `reasoning_content` as the replay key.
+                        let key = if model.provider == "opencode-go" && sig.as_str() == "reasoning"
+                        {
+                            "reasoning_content"
+                        } else {
+                            sig.as_str()
+                        };
+                        let joined = thinking_blocks
+                            .iter()
+                            .map(|(t, _)| t.as_str())
+                            .collect::<Vec<_>>()
+                            .join("\n");
+                        m[key] = json!(joined);
+                    }
                 }
             }
             // DeepSeek-style providers require reasoning_content on assistant messages.

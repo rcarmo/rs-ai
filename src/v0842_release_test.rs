@@ -188,7 +188,7 @@ fn release_pinned_catalog_counts_match_v0842() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1267);
+    assert_eq!(pairs.len(), 1312);
     assert_eq!(providers.len(), 39);
     assert_eq!(apis.len(), 9);
     assert_eq!(
