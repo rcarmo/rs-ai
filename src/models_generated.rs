@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
 //! Source: models.generated.js (1312 models, 39 providers)
-//! Generated: 2026-08-24T18:08:02.128659Z
+//! Generated: 2026-08-24T18:34:06.300936Z
 
 #![allow(clippy::approx_constant)]
 
@@ -3139,36 +3139,33 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-    models.push(Model {
-        id: "claude-fable-5".into(),
-        name: "Claude Fable 5".into(),
-        api: "anthropic-messages".into(),
-        provider: "anthropic".into(),
-        base_url: "https://api.anthropic.com".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("max".into(), Some("max".into())),
-            ("off".into(), None),
-            ("xhigh".into(), Some("xhigh".into())),
-        ])),
-        input: vec!["text".into(), "image".into()],
-        cost: ModelCost {
-            input: 10_f64,
-            output: 50_f64,
-            cache_read: 1_f64,
-            cache_write: 12.5_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 128000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            force_adaptive_thinking: Some(true),
-            ..Default::default()
-        },
-    });
+    models.push(
+        Model {
+            id: "claude-fable-5".into(),
+            name: "Claude Fable 5".into(),
+            api: "anthropic-messages".into(),
+            provider: "anthropic".into(),
+            base_url: "https://api.anthropic.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                allowed_fallback_models: Some(serde_json::from_str("[{\"cost\": {\"cacheRead\": 0.5, \"cacheWrite\": 6.25, \"input\": 5, \"output\": 25}, \"model\": \"claude-opus-4-8\", \"provider\": \"anthropic\"}, {\"cost\": {\"cacheRead\": 0.5, \"cacheWrite\": 6.25, \"input\": 5, \"output\": 25}, \"model\": \"claude-opus-5\", \"provider\": \"anthropic\"}]").unwrap()),
+                ..Default::default()
+            },
+        }
+    );
     models.push(Model {
         id: "claude-haiku-4-5".into(),
         name: "Claude Haiku 4.5 (latest)".into(),
@@ -3347,36 +3344,33 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-    models.push(Model {
-        id: "claude-opus-5".into(),
-        name: "Claude Opus 5".into(),
-        api: "anthropic-messages".into(),
-        provider: "anthropic".into(),
-        base_url: "https://api.anthropic.com".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("max".into(), Some("max".into())),
-            ("xhigh".into(), Some("xhigh".into())),
-        ])),
-        input: vec!["text".into(), "image".into()],
-        cost: ModelCost {
-            input: 5_f64,
-            output: 25_f64,
-            cache_read: 0.5_f64,
-            cache_write: 6.25_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 128000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            force_adaptive_thinking: Some(true),
-            supports_temperature: Some(false),
-            ..Default::default()
-        },
-    });
+    models.push(
+        Model {
+            id: "claude-opus-5".into(),
+            name: "Claude Opus 5".into(),
+            api: "anthropic-messages".into(),
+            provider: "anthropic".into(),
+            base_url: "https://api.anthropic.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_temperature: Some(false),
+                allowed_fallback_models: Some(serde_json::from_str("[{\"cost\": {\"cacheRead\": 0.5, \"cacheWrite\": 6.25, \"input\": 5, \"output\": 25}, \"model\": \"claude-opus-4-8\", \"provider\": \"anthropic\"}]").unwrap()),
+                ..Default::default()
+            },
+        }
+    );
     models.push(Model {
         id: "claude-sonnet-4-5".into(),
         name: "Claude Sonnet 4.5 (latest)".into(),

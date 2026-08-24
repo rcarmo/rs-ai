@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod tests {
     use crate::provider::bedrock::{
-        append_bedrock_failure_diagnostic, bedrock_sdk_error_request_id, bedrock_sdk_error_status,
-        normalize_bedrock_error_code,
+        append_bedrock_failure_diagnostic, bedrock_on_response_metadata,
+        bedrock_sdk_error_request_id, bedrock_sdk_error_status, normalize_bedrock_error_code,
     };
     use crate::types::{ContentBlock, Message, Role, StopReason};
 
@@ -40,6 +40,19 @@ mod tests {
         let diag = msg.diagnostics.first().expect("bedrock diagnostic");
         assert_eq!(diag.diagnostic_type, "bedrock_response_failure");
         serde_json::to_value(diag.details.as_ref().expect("details")).unwrap()
+    }
+
+    #[test]
+    fn on_response_metadata_adapts_sdk_exposed_status_and_request_id_boundary() {
+        let (status, headers) = bedrock_on_response_metadata(Some("req-123"));
+        assert_eq!(status, 200);
+        assert_eq!(
+            headers.get("x-amzn-requestid").map(String::as_str),
+            Some("req-123")
+        );
+        let (status, headers) = bedrock_on_response_metadata(None);
+        assert_eq!(status, 200);
+        assert!(headers.is_empty());
     }
 
     #[test]

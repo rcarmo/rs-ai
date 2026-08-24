@@ -381,6 +381,9 @@ pub struct Model {
 pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub allow_empty_signature: Option<bool>,
+    /// Anthropic server-side fallback models, sent as `fallbacks` and used for fallback pricing.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub allowed_fallback_models: Option<serde_json::Value>,
     /// OpenRouter provider-routing preferences, sent verbatim as `provider`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub open_router_routing: Option<serde_json::Value>,

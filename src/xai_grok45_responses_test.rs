@@ -59,8 +59,38 @@ mod tests {
                 ModelThinkingLevel::High,
             ]
         );
+        let grok_46 = get_model("xai", "grok-4.6").expect("xai/grok-4.6");
+        assert_eq!(grok_46.api, crate::types::api::OPENAI_RESPONSES);
+        assert_eq!(
+            get_supported_thinking_levels(&grok_46),
+            vec![
+                ModelThinkingLevel::Low,
+                ModelThinkingLevel::Medium,
+                ModelThinkingLevel::High,
+                ModelThinkingLevel::XHigh,
+            ]
+        );
         let grok_43 = get_model("xai", "grok-4.3").expect("xai/grok-4.3");
         assert_eq!(grok_43.api, crate::types::api::OPENAI_RESPONSES);
+        assert_eq!(
+            get_supported_thinking_levels(&grok_43),
+            vec![
+                ModelThinkingLevel::Off,
+                ModelThinkingLevel::Low,
+                ModelThinkingLevel::Medium,
+                ModelThinkingLevel::High,
+            ]
+        );
+        let grok_build = get_model("xai", "grok-build-0.1").expect("xai/grok-build-0.1");
+        assert_eq!(grok_build.api, crate::types::api::OPENAI_RESPONSES);
+        assert_eq!(
+            get_supported_thinking_levels(&grok_build),
+            vec![
+                ModelThinkingLevel::Low,
+                ModelThinkingLevel::Medium,
+                ModelThinkingLevel::High
+            ]
+        );
         assert!(grok_45.compat.supports_long_cache_retention == Some(false));
     }
 
@@ -130,5 +160,55 @@ mod tests {
                 && item.get("content")
                     == Some(&serde_json::json!("You are a careful coding assistant."))
         }));
+    }
+
+    #[tokio::test]
+    async fn xai_grok_46_uses_responses_xhigh_encrypted_reasoning_and_user_agent_override() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string("data: {\"type\":\"response.completed\",\"response\":{\"id\":\"r\",\"status\":\"completed\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2}}}\n\ndata: [DONE]\n\n"),
+            )
+            .mount(&server)
+            .await;
+        let mut model = get_model("xai", "grok-4.6").expect("xai/grok-4.6");
+        model.base_url = server.uri();
+        model.api_key = Some("xai-token".into());
+        let c = ctx();
+        let opts = StreamOptions {
+            reasoning: Some(ThinkingLevel::XHigh),
+            headers: Some(std::collections::HashMap::from([(
+                "User-Agent".into(),
+                "custom-agent".into(),
+            )])),
+            ..Default::default()
+        };
+        let mut stream = stream_responses(&model, &c, &opts);
+        while let Some(event) = stream.next().await {
+            if let Event::Error { error, .. } = event {
+                panic!("unexpected error: {error}");
+            }
+        }
+        let reqs = server.received_requests().await.unwrap();
+        assert_eq!(reqs.len(), 1);
+        assert_eq!(reqs[0].url.path(), "/responses");
+        assert_eq!(
+            reqs[0].headers.get("user-agent").unwrap().to_str().unwrap(),
+            "custom-agent"
+        );
+        let body: Value = serde_json::from_slice(&reqs[0].body).unwrap();
+        assert_eq!(body["model"], "grok-4.6");
+        assert_eq!(body["store"], false);
+        assert_eq!(body["stream"], true);
+        assert_eq!(
+            body["reasoning"],
+            serde_json::json!({"effort":"xhigh","summary":"auto"})
+        );
+        assert_eq!(
+            body["include"],
+            serde_json::json!(["reasoning.encrypted_content"])
+        );
     }
 }

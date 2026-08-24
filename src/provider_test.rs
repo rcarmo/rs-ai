@@ -3735,8 +3735,8 @@ mod tests {
                 Event::Done { reason, message } => {
                     assert_eq!(reason, StopReason::Stop);
                     assert_eq!(message.response_id.as_deref(), Some("msg-1"));
-                    // Upstream does not capture message.model into responseModel for Anthropic.
-                    assert_eq!(message.response_model, None);
+                    // v0.84.3: Anthropic captures message.model into responseModel for fallback pricing/diagnostics.
+                    assert_eq!(message.response_model.as_deref(), Some("claude-served-x"));
                     saw_done = true;
                 }
                 _ => {}

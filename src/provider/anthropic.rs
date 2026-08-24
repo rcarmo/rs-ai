@@ -156,6 +156,17 @@ pub fn stream_anthropic<'a>(
         }
     }
 
+    if let Some(ref extra_headers) = opts.headers {
+        for (k, v) in extra_headers {
+            if let (Ok(name), Ok(val)) = (
+                reqwest::header::HeaderName::from_bytes(k.as_bytes()),
+                HeaderValue::from_str(v),
+            ) {
+                headers.insert(name, val);
+            }
+        }
+    }
+
     Box::pin(async_stream::stream! {
         let client = crate::http_proxy::client_for_target(&url, None);
         let mut request = client.post(&url).headers(headers).json(&payload);
@@ -285,10 +296,11 @@ pub fn stream_anthropic<'a>(
                         if let Some(id) = data.pointer("/message/id").and_then(|v| v.as_str()) {
                             partial.response_id = Some(id.to_string());
                         }
-                        // Note: upstream does not capture message.model into responseModel for
-                        // Anthropic, so we deliberately leave response_model unset here.
+                        if let Some(response_model) = data.pointer("/message/model").and_then(|v| v.as_str()).filter(|s| !s.is_empty()) {
+                            partial.response_model = Some(response_model.to_string());
+                        }
                         if let Some(usage) = data.pointer("/message/usage") {
-                            partial.usage = Some(parse_anthropic_usage(usage));
+                            partial.usage = Some(parse_anthropic_usage(usage, model, partial.response_model.as_deref()));
                         }
                     }
                     "content_block_start" => {
@@ -480,6 +492,8 @@ pub fn stream_anthropic<'a>(
                                 // Note: cache_write_1h is set once in message_start and preserved;
                                 // upstream's message_delta does not update it.
                                 u.total_tokens = u.input + u.output + u.cache_read + u.cache_write;
+                                let usage_model = anthropic_fallback_cost_model(model, partial.response_model.as_deref());
+                                u.cost = crate::simple_options::calculate_cost(&usage_model, u);
                             }
                     }
                     "message_stop" => { saw_message_stop = true; }
@@ -519,9 +533,8 @@ pub fn stream_anthropic<'a>(
             }
 
         if let Some(ref mut u) = partial.usage {
-
-            crate::simple_options::finalize_usage(model, u);
-
+            let usage_model = anthropic_fallback_cost_model(model, partial.response_model.as_deref());
+            crate::simple_options::finalize_usage(&usage_model, u);
         }
 
         // A stream that started but never reached message_stop was truncated (mirrors upstream).
@@ -684,6 +697,8 @@ pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
 
 /// Compute the Anthropic `anthropic-beta` feature list for a request (mirrors the
 /// upstream createClient beta-header logic).
+const SERVER_SIDE_FALLBACK_BETA: &str = "server-side-fallback-2026-07-01";
+
 pub(crate) fn anthropic_beta_features<'a>(
     model: &'a Model,
     context: &Context,
@@ -704,6 +719,15 @@ pub(crate) fn anthropic_beta_features<'a>(
     // (mirrors needsInterleavedBeta = interleavedThinking && !forceAdaptiveThinking).
     if interleaved_thinking && model.compat.force_adaptive_thinking != Some(true) {
         beta_features.push("interleaved-thinking-2025-05-14");
+    }
+    if model
+        .compat
+        .allowed_fallback_models
+        .as_ref()
+        .and_then(|v| v.as_array())
+        .is_some_and(|items| !items.is_empty())
+    {
+        beta_features.push(SERVER_SIDE_FALLBACK_BETA);
     }
     beta_features
 }
@@ -1042,6 +1066,10 @@ pub(crate) fn build_anthropic_payload(
         }
     }
 
+    if let Some(fallbacks) = anthropic_fallbacks(model) {
+        payload["fallbacks"] = fallbacks;
+    }
+
     // Metadata: only user_id is forwarded (mirrors upstream).
     if let Some(ref metadata) = opts.metadata
         && let Some(user_id) = metadata.get("user_id").and_then(|v| v.as_str())
@@ -1052,8 +1080,68 @@ pub(crate) fn build_anthropic_payload(
     payload
 }
 
-fn parse_anthropic_usage(usage: &Value) -> Usage {
-    Usage {
+fn anthropic_fallbacks(model: &Model) -> Option<Value> {
+    let items = model
+        .compat
+        .allowed_fallback_models
+        .as_ref()?
+        .as_array()?
+        .iter()
+        .filter_map(|item| {
+            item.get("model")
+                .and_then(|v| v.as_str())
+                .map(|m| json!({"model": m}))
+        })
+        .collect::<Vec<_>>();
+    if items.is_empty() {
+        None
+    } else {
+        Some(Value::Array(items))
+    }
+}
+
+fn anthropic_fallback_cost_model(base_model: &Model, response_model: Option<&str>) -> Model {
+    let Some(response_model) = response_model else {
+        return base_model.clone();
+    };
+    let Some(items) = base_model
+        .compat
+        .allowed_fallback_models
+        .as_ref()
+        .and_then(|v| v.as_array())
+    else {
+        return base_model.clone();
+    };
+    for item in items {
+        if item.get("model").and_then(|v| v.as_str()) == Some(response_model)
+            && let Some(cost) = item.get("cost")
+        {
+            let mut model = base_model.clone();
+            model.id = response_model.to_string();
+            model.cost.input = cost
+                .get("input")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(model.cost.input);
+            model.cost.output = cost
+                .get("output")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(model.cost.output);
+            model.cost.cache_read = cost
+                .get("cacheRead")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(model.cost.cache_read);
+            model.cost.cache_write = cost
+                .get("cacheWrite")
+                .and_then(|v| v.as_f64())
+                .unwrap_or(model.cost.cache_write);
+            return model;
+        }
+    }
+    base_model.clone()
+}
+
+fn parse_anthropic_usage(usage: &Value, model: &Model, response_model: Option<&str>) -> Usage {
+    let mut parsed = Usage {
         input: usage
             .get("input_tokens")
             .and_then(|v| v.as_u64())
@@ -1084,5 +1172,9 @@ fn parse_anthropic_usage(usage: &Value) -> Usage {
             .map(|v| v as u32),
         total_tokens: 0,
         cost: CostBreakdown::default(),
-    }
+    };
+    parsed.total_tokens = parsed.input + parsed.output + parsed.cache_read + parsed.cache_write;
+    let usage_model = anthropic_fallback_cost_model(model, response_model);
+    parsed.cost = crate::simple_options::calculate_cost(&usage_model, &parsed);
+    parsed
 }

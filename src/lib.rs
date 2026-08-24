@@ -60,6 +60,8 @@ mod anthropic_cache_write_1h_cost_test;
 #[cfg(test)]
 mod anthropic_compat_test;
 #[cfg(test)]
+mod anthropic_fallback_test;
+#[cfg(test)]
 mod anthropic_force_adaptive_thinking_test;
 #[cfg(test)]
 mod anthropic_oauth_test;

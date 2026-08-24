@@ -789,17 +789,14 @@ pub fn stream_bedrock<'a>(
             }
         };
 
-        // Invoke the on_response hook on a successful response, mirroring upstream's
-        // onResponse({ status: $metadata.httpStatusCode, headers }). A successful
-        // converse_stream is HTTP 200. (The AWS request id is not readily exposed on the
-        // streaming output type, so the header map is left empty.)
+        // AWS SDK for Rust's ConverseStreamOutput exposes the modeled request id but
+        // not the full raw Smithy HTTP header map that JS receives in `$metadata`.
+        // Adapt the available boundary faithfully: successful converse_stream is HTTP
+        // 200, and `x-amzn-requestid` is forwarded when present.
         let output_request_id = bedrock_output_request_id(&output);
         if let Some(ref hook) = opts.on_response {
-            let mut hdrs = std::collections::HashMap::new();
-            if let Some(id) = output_request_id.as_deref() {
-                hdrs.insert("x-amzn-requestid".to_string(), id.to_string());
-            }
-            hook(200, &hdrs, model);
+            let (status, hdrs) = bedrock_on_response_metadata(output_request_id.as_deref());
+            hook(status, &hdrs, model);
         }
 
         let mut partial = Message {
@@ -1210,6 +1207,16 @@ pub(crate) fn bedrock_sdk_error_status(
     >,
 ) -> Option<u16> {
     e.raw_response().map(|raw| raw.status().as_u16())
+}
+
+pub(crate) fn bedrock_on_response_metadata(
+    request_id: Option<&str>,
+) -> (u16, std::collections::HashMap<String, String>) {
+    let mut headers = std::collections::HashMap::new();
+    if let Some(id) = request_id.filter(|s| !s.is_empty()) {
+        headers.insert("x-amzn-requestid".to_string(), id.to_string());
+    }
+    (200, headers)
 }
 
 pub(crate) fn bedrock_sdk_error_request_id(

@@ -141,6 +141,7 @@ def gen_model(m) -> str:
         "supportsThinkingTokenBudget": ("supports_thinking_token_budget", "bool"),
         "thinkingFormat": ("thinking_format", "str"),
         "zaiToolStream": ("zai_tool_stream", "bool"),
+        "allowedFallbackModels": ("allowed_fallback_models", "json"),
     }
     compat_lines = []
     for js_key, (rs_key, kind) in compat_fields.items():
@@ -148,6 +149,8 @@ def gen_model(m) -> str:
             v = compat[js_key]
             if kind == "bool":
                 compat_lines.append(f"                {rs_key}: Some({str(v).lower()}),")
+            elif kind == "json":
+                compat_lines.append(f'                {rs_key}: Some(serde_json::from_str({rust_string(json.dumps(v))}).unwrap()),')
             else:
                 compat_lines.append(f"                {rs_key}: Some({rust_string(v)}.into()),")
     ctk = compat.get("chatTemplateKwargs")

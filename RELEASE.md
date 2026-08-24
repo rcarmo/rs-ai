@@ -74,10 +74,10 @@ Executable validator: `python3 scripts/validate_v0843_manifests.py` asserts this
 - Verified image catalog remains **45 image provider/id pairs**.
 - Updated release metadata verifier defaults to `@earendil-works/pi-ai@0.84.3` and pinned npm tarball SHA-256 `9c40af2f43950f8e94e7bbcd0c1b3548f000972da00c4fb9c0d0529d4d7d5431`.
 - Extended exact Qwen/ZAI Coding Plan Individual allowlist with `deepseek-v4-pro-0813`; regenerated xAI/ZAI/Xiaomi compatibility metadata.
-- Added provider-neutral `tool_choice` forwarding for Responses/Azure Responses while preserving tool definitions.
+- Added provider-neutral `tool_choice` forwarding for Responses/Azure Responses while preserving tool definitions; ported Anthropic server-side fallback beta/payload, fallback response-model capture, and fallback-model usage pricing.
 - Added default Pi User-Agent on OpenAI-compatible, Responses/Azure, Anthropic Messages, Google, and Mistral HTTP adapters, with explicit request headers overriding defaults.
 - Added Google-specific thinking-level resolver for v0.84.3: standard levels preserve exact mapping, xhigh/max must map through `thinkingLevelMap`, unsupported mappings error, and mapped token budgets are honored for Google/Vertex payloads.
-- Added Bedrock redacted reasoning replay support (`reasoningContent.redactedContent`) and stream finalization for open/redacted reasoning blocks.
+- Added Bedrock redacted reasoning replay support (`reasoningContent.redactedContent`) and stream finalization for open/redacted reasoning blocks; documented the AWS Rust SDK `ConverseStreamOutput` raw-header boundary and added executable status/request-id onResponse adaptation evidence.
 - Preserved OpenAI-compatible full `reasoning_details` arrays on thinking signatures and replays them in request payloads; encrypted tool-call detail fallback remains covered.
 - Added Copilot policy update filtering for known/tool-capable/unconfigured models and one Retry-After retry for throttled policy updates while continuing best-effort after transport failures.
 - Documented TS export/package/docs-only changes as N/A for Rust runtime.
@@ -91,7 +91,10 @@ Named Rust evidence added/updated for v0.84.3:
 - `src/v0843_release_test.rs::openai_responses_uses_pi_user_agent_by_default_and_allows_override`
 - `src/v0843_release_test.rs::azure_responses_uses_pi_user_agent_and_preserves_tool_choice_on_wire`
 - `src/v0843_release_test.rs::completions_anthropic_and_mistral_default_user_agent_can_be_overridden`
-- `src/bedrock_thinking_payload_test.rs::replays_redacted_reasoning_as_bedrock_redacted_content`
+- `src/anthropic_fallback_test.rs::{anthropic_payload_includes_server_side_fallbacks,anthropic_stream_sends_fallback_beta_and_prices_response_model_usage}`
+- `src/bedrock_error_metadata_test.rs::on_response_metadata_adapts_sdk_exposed_status_and_request_id_boundary`
+- `src/xai_grok45_responses_test.rs::xai_grok_46_uses_responses_xhigh_encrypted_reasoning_and_user_agent_override`
+- `src/bedrock_thinking_payload_test.rs::replays_redacted_reasoning_as_bedrock_redacted_content`, `src/bedrock_error_metadata_test.rs::on_response_metadata_adapts_sdk_exposed_status_and_request_id_boundary`
 - `src/openai_completions_reasoning_details_test.rs::{preserves_streamed_text_and_summary_reasoning_details_on_thinking,replays_thinking_signature_reasoning_details_sequence}`
 - `src/github_copilot_oauth_test.rs::{policy_updates_only_known_tool_capable_unconfigured_models,retries_throttled_policy_update_once_and_continues_transport_failures}`
 - `src/release_metadata_verification_test.rs::v0843_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
@@ -117,7 +120,7 @@ cargo test openai_completions_reasoning_details_test -- --nocapture
 cargo test --all-targets --all-features
 ```
 
-Final local results: validator `1312` models / `39` providers; metadata verifier `metadata verified: text=1312 providers=39 apis=9 batchAliases=60 image=45`; deliberate text/image metadata faults both failed with expected mismatches; v0.84.2 manifest validator `changedPaths=42 testRows=131`; v0.84.3 manifest validator `changedPaths=48 testRows=136`; focused v0.84.3 tests `7 passed`; Copilot OAuth focused tests `7 passed`; Bedrock focused tests `56 passed`; OpenAI reasoning-details tests `3 passed`; metadata/manifest verifier tests `5 passed`; `cargo build` passed; full `cargo test --all-targets --all-features` passed three consecutive times (`924` tests, `0` failed, `0` ignored); strict Clippy passed with both `--all-targets --all-features` and `--all-targets`. Hosted CI evidence pending until after push.
+Final local results: validator `1312` models / `39` providers; metadata verifier `metadata verified: text=1312 providers=39 apis=9 batchAliases=60 image=45`; deliberate text/image metadata faults both failed with expected mismatches; v0.84.2 manifest validator `changedPaths=42 testRows=131`; v0.84.3 manifest validator `changedPaths=48 testRows=136`; focused v0.84.3 tests `7 passed`; Copilot OAuth focused tests `7 passed`; Bedrock focused tests `56 passed`; OpenAI reasoning-details tests (`cargo test openai_completions_reasoning_details_test -- --nocapture`) `3 passed`; Anthropic fallback tests `2 passed`; Bedrock metadata tests `8 passed`; xAI Responses tests `3 passed`; metadata/manifest verifier tests `5 passed`; `cargo build` passed; full `cargo test --all-targets --all-features` passed three consecutive times (`928` tests, `0` failed, `0` ignored); strict Clippy passed with both `--all-targets --all-features` and `--all-targets`. Hosted CI evidence pending until after push.
 
 ## Historical accepted release: v0.84.2
 

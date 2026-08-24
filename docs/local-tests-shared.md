@@ -6,7 +6,7 @@ Source: upstream tag `4e58f324fae8ebfa98a3d45181fb248072a2afac` (`v0.84.3`), exa
 
 Status: **ADAPTED / under final gate verification**. The v0.84.3 audit spans 48 changed `packages/ai` paths and **25 changed test paths total**: 20 existing tests modified plus 5 new tests. The final upstream test corpus is **136 files**, recorded in `docs/v0843-136-test-crosswalk.md` and mechanically checked by `scripts/validate_v0843_manifests.py`.
 
-Named tests in `src/v0843_release_test.rs` cover v0.84.3 catalog counts, Azure Responses provider-neutral `tool_choice`, default/override Pi User-Agent behavior, and Google thinking-level map/error/budget semantics. Additional v0.84.3 evidence is in `src/bedrock_thinking_payload_test.rs`, `src/openai_completions_reasoning_details_test.rs`, and `src/github_copilot_oauth_test.rs`. Metadata verifier targets pinned tarball SHA `9c40af2f43950f8e94e7bbcd0c1b3548f000972da00c4fb9c0d0529d4d7d5431` and reports text `1312`, providers `39`, APIs `9`, batch aliases `60`, image `45`.
+Named tests in `src/v0843_release_test.rs` cover v0.84.3 catalog counts, Azure Responses provider-neutral `tool_choice`, default/override Pi User-Agent behavior, and Google thinking-level map/error/budget semantics. Additional v0.84.3 evidence is in `src/anthropic_fallback_test.rs`, `src/bedrock_thinking_payload_test.rs`, `src/bedrock_error_metadata_test.rs`, `src/openai_completions_reasoning_details_test.rs`, `src/github_copilot_oauth_test.rs`, and `src/xai_grok45_responses_test.rs`. Metadata verifier targets pinned tarball SHA `9c40af2f43950f8e94e7bbcd0c1b3548f000972da00c4fb9c0d0529d4d7d5431` and reports text `1312`, providers `39`, APIs `9`, batch aliases `60`, image `45`.
 
 ## v0.84.2 bounded release evidence
 
