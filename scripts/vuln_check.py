@@ -3,7 +3,8 @@
 
 Uses `cargo audit` at the pinned version below. Known advisories may be
 accepted only with an owner, rationale, and expiry in `APPROVED_EXCEPTIONS`;
-any new/unapproved high/critical advisory or warning fails the check.
+any new/unapproved advisory or warning fails the check. Scanner/runtime errors
+fail closed even if a partial JSON report is emitted.
 """
 from __future__ import annotations
 
@@ -14,9 +15,16 @@ import subprocess
 import sys
 from datetime import date
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 PINNED_CARGO_AUDIT_VERSION = "0.22.2"
+# cargo-audit returns 0 for no findings and 1 for reported vulnerabilities /
+# denied warnings. Any other status is an execution/runtime/database failure.
+EXPECTED_AUDIT_RETURN_CODES = {0, 1}
+
+ExceptionKey = tuple[str, str, str]
+ExceptionPolicy = dict[ExceptionKey, dict[str, str]]
 
 # Existing AWS SDK legacy HTTP/TLS stack pulled by aws-sdk-bedrockruntime.
 # Owner: Rui Carmo <rui.carmo@gmail.com>
@@ -24,7 +32,7 @@ PINNED_CARGO_AUDIT_VERSION = "0.22.2"
 # resolves legacy hyper-rustls/rustls-webpki/h2 via aws-smithy-http-client.
 # This exception is temporary and must be revisited on the next dependency or
 # release audit, or sooner if a patched AWS stack is available.
-APPROVED_EXCEPTIONS = {
+APPROVED_EXCEPTIONS: ExceptionPolicy = {
     ("RUSTSEC-2026-0258", "h2", "0.3.27"): {
         "owner": "Rui Carmo <rui.carmo@gmail.com>",
         "expires": "2026-09-30",
@@ -67,19 +75,93 @@ def ensure_version(exe: str) -> None:
         )
 
 
-def exception_for(advisory: dict) -> dict | None:
-    advisory_id = advisory["advisory"]["id"]
-    package = advisory["package"]["name"]
-    version = advisory["package"]["version"]
-    item = APPROVED_EXCEPTIONS.get((advisory_id, package, version))
+def finding_key(finding: dict[str, Any]) -> ExceptionKey:
+    try:
+        return (
+            str(finding["advisory"]["id"]),
+            str(finding["package"]["name"]),
+            str(finding["package"]["version"]),
+        )
+    except (KeyError, TypeError) as exc:
+        raise ValueError(f"incomplete advisory finding: {finding!r}") from exc
+
+
+def validate_exception(
+    finding: dict[str, Any],
+    exceptions: ExceptionPolicy = APPROVED_EXCEPTIONS,
+    today: date | None = None,
+) -> dict[str, str] | None:
+    advisory_id, package, version = finding_key(finding)
+    item = exceptions.get((advisory_id, package, version))
     if not item:
         return None
-    expiry = date.fromisoformat(item["expires"])
-    if expiry < date.today():
-        raise SystemExit(f"expired vulnerability exception: {advisory_id} {package} {version} expired {expiry}")
+    today = today or date.today()
+    expiry_text = item.get("expires", "")
+    try:
+        expiry = date.fromisoformat(expiry_text)
+    except ValueError as exc:
+        raise ValueError(f"invalid vulnerability exception expiry: {advisory_id} {package} {version}: {expiry_text!r}") from exc
+    if expiry < today:
+        raise ValueError(f"expired vulnerability exception: {advisory_id} {package} {version} expired {expiry}")
     if not item.get("owner") or not item.get("rationale"):
-        raise SystemExit(f"incomplete vulnerability exception: {advisory_id} {package} {version}")
+        raise ValueError(f"incomplete vulnerability exception: {advisory_id} {package} {version}")
     return item
+
+
+def validate_report_shape(report: Any) -> tuple[list[dict[str, Any]], list[tuple[str, dict[str, Any]]]]:
+    if not isinstance(report, dict):
+        raise ValueError("cargo-audit report must be a JSON object")
+    vulnerabilities = report.get("vulnerabilities")
+    warnings = report.get("warnings")
+    if not isinstance(vulnerabilities, dict) or not isinstance(vulnerabilities.get("list"), list):
+        raise ValueError("cargo-audit report missing vulnerabilities.list")
+    if warnings is None:
+        warnings = {}
+    if not isinstance(warnings, dict):
+        raise ValueError("cargo-audit report warnings must be an object")
+    vuln_list = vulnerabilities["list"]
+    warning_list: list[tuple[str, dict[str, Any]]] = []
+    for warning_kind, entries in warnings.items():
+        if not isinstance(entries, list):
+            raise ValueError(f"cargo-audit warning bucket {warning_kind!r} must be a list")
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise ValueError(f"cargo-audit warning entry in {warning_kind!r} must be an object")
+            # Validate required shape now so incomplete reports cannot pass as clean.
+            finding_key(entry)
+            warning_list.append((str(warning_kind), entry))
+    for entry in vuln_list:
+        if not isinstance(entry, dict):
+            raise ValueError("cargo-audit vulnerability entry must be an object")
+        finding_key(entry)
+    return vuln_list, warning_list
+
+
+def review_report(
+    report: Any,
+    exceptions: ExceptionPolicy = APPROVED_EXCEPTIONS,
+    today: date | None = None,
+) -> tuple[list[str], list[str], int]:
+    vulnerabilities, warnings = validate_report_shape(report)
+    failures: list[str] = []
+    accepted: list[str] = []
+    for finding in vulnerabilities:
+        advisory_id, package, version = finding_key(finding)
+        item = validate_exception(finding, exceptions, today)
+        label = f"{advisory_id} {package} {version}"
+        if item:
+            accepted.append(f"{label} (owner={item['owner']}, expires={item['expires']})")
+        else:
+            failures.append(f"unapproved vulnerability: {label} - {finding['advisory'].get('title', '')}")
+    for warning_kind, finding in warnings:
+        advisory_id, package, version = finding_key(finding)
+        item = validate_exception(finding, exceptions, today)
+        label = f"{warning_kind}: {advisory_id} {package} {version}"
+        if item:
+            accepted.append(f"{label} (owner={item['owner']}, expires={item['expires']})")
+        else:
+            failures.append(f"unapproved warning: {label} - {finding['advisory'].get('title', '')}")
+    return failures, accepted, len(vulnerabilities) + len(warnings)
 
 
 def main() -> int:
@@ -96,27 +178,28 @@ def main() -> int:
     try:
         report = json.loads(proc.stdout)
     except json.JSONDecodeError as exc:
-        print(proc.stdout, file=sys.stdout)
-        print(proc.stderr, file=sys.stderr)
-        raise SystemExit(f"cargo-audit did not produce JSON: {exc}") from exc
-
-    failures: list[str] = []
-    accepted: list[str] = []
-    for advisory in report.get("vulnerabilities", {}).get("list", []):
-        item = exception_for(advisory)
-        label = f"{advisory['advisory']['id']} {advisory['package']['name']} {advisory['package']['version']}"
-        if item:
-            accepted.append(f"{label} (owner={item['owner']}, expires={item['expires']})")
-        else:
-            failures.append(f"unapproved vulnerability: {label} - {advisory['advisory'].get('title', '')}")
-    for warning_kind, entries in (report.get("warnings") or {}).items():
-        for advisory in entries:
-            item = exception_for(advisory)
-            label = f"{warning_kind}: {advisory['advisory']['id']} {advisory['package']['name']} {advisory['package']['version']}"
-            if item:
-                accepted.append(f"{label} (owner={item['owner']}, expires={item['expires']})")
-            else:
-                failures.append(f"unapproved warning: {label} - {advisory['advisory'].get('title', '')}")
+        if proc.stdout:
+            print(proc.stdout, file=sys.stdout)
+        if proc.stderr:
+            print(proc.stderr, file=sys.stderr)
+        print(f"cargo-audit did not produce JSON: {exc}", file=sys.stderr)
+        return 2
+    if proc.returncode not in EXPECTED_AUDIT_RETURN_CODES:
+        if proc.stderr:
+            print(proc.stderr, file=sys.stderr)
+        print(f"cargo-audit failed with unexpected exit status {proc.returncode}", file=sys.stderr)
+        return 2
+    try:
+        failures, accepted, finding_count = review_report(report)
+    except ValueError as exc:
+        print(f"invalid cargo-audit report: {exc}", file=sys.stderr)
+        return 2
+    if proc.returncode == 0 and finding_count:
+        print("cargo-audit returned success but reported findings", file=sys.stderr)
+        return 2
+    if proc.returncode == 1 and not finding_count:
+        print("cargo-audit returned findings status but report is empty", file=sys.stderr)
+        return 2
     if failures:
         print("vulnerability review failed:", file=sys.stderr)
         print("\n".join(failures), file=sys.stderr)

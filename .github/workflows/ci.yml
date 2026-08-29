@@ -42,6 +42,8 @@ jobs:
         run: make sbom && make sbom-check
       - name: License review
         run: make license-check
+      - name: Vulnerability wrapper self-test
+        run: make vuln-check-selftest
       - name: Vulnerability scan
         run: make vuln-check
       - name: Upload SBOM artifact
