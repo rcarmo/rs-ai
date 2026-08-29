@@ -7,6 +7,7 @@
 - Upstream tag/commit: `b79e4cc834970cca69daebffab7df1da7d1e52c4`
 - Previous accepted upstream: `v0.84.3` / `4e58f324fae8ebfa98a3d45181fb248072a2afac`
 - Accepted rs-ai baseline: `47befc1`
+- Candidate rs-ai SHA: `caa03be5ddb0d7013d6576f3c17893522cc88849`
 - Audited range: `4e58f324fae8ebfa98a3d45181fb248072a2afac..b79e4cc834970cca69daebffab7df1da7d1e52c4`
 - Scope: `packages/ai` only; official tag/npm artifact only, no newer-main chase.
 - Scope status: **complete for bounded deterministic v0.84.4 release parity**.
@@ -37,8 +38,8 @@ Executable validator: `python3 scripts/validate_v0844_manifests.py` asserts this
 
 ### v0.84.4 implementation summary
 
-- Regenerated the text catalog from official npm `dist/providers/data` shards: **1290 text provider/id pairs across 39 providers and 9 APIs**; official OpenRouter batch aliases are now **40**.
-- Regenerated the image catalog from the package `IMAGE_MODELS`: **50 image provider/id pairs**, including new OpenRouter image entries such as `meta/muse-image` and Recraft v4 vector/style variants.
+- Regenerated the text catalog from official npm `dist/providers/data` shards: **1290 text provider/id pairs across 39 providers and 9 APIs**; official OpenRouter batch aliases are now **40**. Full-record text delta from v0.84.3: `1312→1290`, `+57/-79/227 changed`.
+- Regenerated the image catalog from the package `IMAGE_MODELS`: **50 image provider/id pairs**, including new OpenRouter image entries such as `meta/muse-image` and Recraft v4 vector/style variants. Full-record image delta from v0.84.3: `45→50`, `+5/0/0`.
 - Updated release metadata verifier defaults to `@earendil-works/pi-ai@0.84.4` and pinned npm tarball SHA-256 `dfd3c929cee5a7387199a0a24dfc1be2096f1ea8f59ffb8285198a0ed01ebf93`.
 - Preserved the exact v0.84.4 provider manifest shape: `schemaVersion=3`, `generatedAt=2026-08-28T22:00:02.569Z`, `structureHash=456b83c08bed3255d7e399d7927c6743e7f3568435691b3d38cc3666ffa70479`, `manifestSha256=904df30578689548238e080ca46be14b93ab6cd3de0d20445ee61eec11135474`.
 - Ported OpenAI-compatible `reasoning_details` stream buffering: consecutive `reasoning.text` and `reasoning.summary` deltas merge before replay, while encrypted details remain discrete and are not duplicated.
@@ -62,9 +63,11 @@ Named Rust evidence added/updated for v0.84.4:
 ### v0.84.4 release-pinned artifact evidence
 
 - upstream tag worktree: `/workspace/tmp/pi-src` at `b79e4cc834970cca69daebffab7df1da7d1e52c4`
+- candidate rs-ai SHA: `caa03be5ddb0d7013d6576f3c17893522cc88849`
 - npm tarball SHA-256: `dfd3c929cee5a7387199a0a24dfc1be2096f1ea8f59ffb8285198a0ed01ebf93`
 - provider manifest structure hash: `456b83c08bed3255d7e399d7927c6743e7f3568435691b3d38cc3666ffa70479`
 - extracted release JSON: `/workspace/tmp/pi-v0844-json/models.json`
+- hosted CI: GitHub Actions run `33252334207` completed with conclusion `success` for candidate `caa03be5ddb0d7013d6576f3c17893522cc88849`; job `build-test-lint` (`99100057309`) succeeded, including `Build`, `Clippy (deny warnings)`, and `Test` steps (`https://github.com/rcarmo/rs-ai/actions/runs/33252334207/job/99100057309`).
 
 Commands/results run so far:
 
@@ -78,7 +81,7 @@ cargo test openai_completions_reasoning_details_test -- --nocapture
 cargo test --all-targets --all-features
 ```
 
-Final local results: `cargo fmt -- --check` passed; `cargo build` passed; metadata verifier `metadata verified: text=1290 providers=39 apis=9 batchAliases=40 image=50`; deliberate `--fault text-name` and `--fault image-name` metadata gates failed with the expected text/image mismatches; provider/id comparator passed with text `upstream=1290 local=1290 missing=0 extra=0` and image `upstream=50 local=50 missing=0 extra=0`; v0.84.4 manifest validator `changedPaths=15 testRows=137`; focused v0.84.4 tests `6 passed`; OpenAI reasoning-details tests `4 passed`; full `cargo test --all-targets --all-features` passed three consecutive times (`936 passed`, `0 failed`, `0 ignored`); strict `cargo clippy --all-targets -- -D warnings` passed.
+Final local results: `cargo fmt -- --check` passed; `cargo build` passed; metadata verifier `metadata verified: text=1290 providers=39 apis=9 batchAliases=40 image=50`; deliberate `--fault text-name` and `--fault image-name` metadata gates failed with the expected text/image mismatches; provider/id comparator passed with text `upstream=1290 local=1290 missing=0 extra=0` and image `upstream=50 local=50 missing=0 extra=0`; v0.84.4 manifest validator `changedPaths=15 testRows=137`; focused v0.84.4 tests `6 passed`; OpenAI reasoning-details tests `4 passed`; full `cargo test --all-targets --all-features` passed three consecutive times (`936 passed`, `0 failed`, `0 ignored`); strict `cargo clippy --all-targets -- -D warnings` passed. Hosted GitHub Actions run `33252334207` also completed successfully for candidate `caa03be5ddb0d7013d6576f3c17893522cc88849`, with job `build-test-lint` (`99100057309`) succeeding all Build, Clippy, and Test steps.
 
 ## Historical accepted release: v0.84.3
 
