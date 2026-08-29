@@ -3,7 +3,7 @@ SBOM ?= $(ARTIFACT_DIR)/sbom.cdx.json
 SBOM_SHA ?= $(SBOM).sha256
 CARGO_AUDIT_VERSION ?= 0.22.2
 
-.PHONY: all build test test-all clippy fmt check ci sbom sbom-check license-check vuln-check vuln-check-selftest security-check
+.PHONY: all build test test-all clippy fmt check ci sbom sbom-check license-check license-check-selftest vuln-check vuln-check-selftest security-check
 
 # Static-analysis-clean is a hard requirement: clippy must be 0 warnings.
 all: check
@@ -32,13 +32,16 @@ sbom-check:
 license-check:
 	python3 scripts/license_check.py
 
+license-check-selftest:
+	python3 scripts/license_check_selftest.py
+
 vuln-check:
 	python3 scripts/vuln_check.py
 
 vuln-check-selftest:
 	python3 scripts/vuln_check_selftest.py
 
-security-check: sbom sbom-check license-check vuln-check-selftest vuln-check
+security-check: sbom sbom-check license-check-selftest license-check vuln-check-selftest vuln-check
 
 # Full gate: fails on any clippy warning, test failure, malformed SBOM,
 # license issue, or high/critical RustSec advisory.

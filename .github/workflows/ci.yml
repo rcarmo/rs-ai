@@ -40,6 +40,8 @@ jobs:
         run: cargo test --all-targets --all-features
       - name: Generate and validate SBOM
         run: make sbom && make sbom-check
+      - name: License wrapper self-test
+        run: make license-check-selftest
       - name: License review
         run: make license-check
       - name: Vulnerability wrapper self-test
