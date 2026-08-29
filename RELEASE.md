@@ -95,7 +95,7 @@ Post-acceptance policy convergence commit for the accepted v0.84.4 line adds exe
 - License review: `make license-check` passed for **283** third-party packages using the committed allowlist of permissive tokens.
 - CI retention: `.github/workflows/ci.yml` now uploads `artifacts/sbom.cdx.json` and `artifacts/sbom.cdx.json.sha256` as `rs-ai-sbom` with `retention-days: 14`.
 - Lockfile decision: `Cargo.lock` is now committed for reproducible library SBOM/security resolution; generated SBOM artifacts remain uncommitted.
-- Local gate: `make check` passed after these policy/workflow changes, including fmt, build, strict all-feature Clippy, all-target all-feature tests (`936 passed`, `0 failed`, `0 ignored`), SBOM validation, license review, and vulnerability scan.
+- Local gate: `make check` passed after these policy/workflow changes, including fmt, build, strict all-feature Clippy, all-target all-feature tests (`936 passed`, `0 failed`, `0 ignored`), SBOM validation, license review, and vulnerability scan. CI now includes an explicit `cargo fmt --all -- --check` step and runs `make sbom && make sbom-check` so fresh checkouts generate artifacts before validation while `sbom-check` remains validation-only for stale/malformed artifact detection.
 
 ## Historical accepted release: v0.84.3
 

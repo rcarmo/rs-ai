@@ -29,6 +29,8 @@ jobs:
           if ! command -v cargo-audit >/dev/null || ! cargo-audit --version | grep -q 'cargo-audit 0.22.2'; then
             cargo install cargo-audit --version 0.22.2 --locked
           fi
+      - name: Format check
+        run: cargo fmt --all -- --check
       - name: Build
         run: cargo build --all-targets
       # Static-analysis-clean gate: any warning fails the build.
