@@ -249,6 +249,8 @@ mod v0842_release_test;
 #[cfg(test)]
 mod v0843_release_test;
 #[cfg(test)]
+mod v0844_release_test;
+#[cfg(test)]
 mod validation_upstream_test;
 #[cfg(test)]
 mod xai_grok45_responses_test;

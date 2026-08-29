@@ -166,6 +166,79 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn merges_adjacent_text_and_summary_reasoning_details_before_replay() {
+        let expected = json!([
+            {"type":"reasoning.text","text":"The user wants the time.","index":0,"signature":"sha256:text-signature","format":"openai-responses-v1"},
+            {"type":"reasoning.summary","summary":"Looked up time.","index":0,"format":"openai-responses-v1"},
+            detail(),
+            {"type":"reasoning.summary","summary":"After encrypted block.","index":0,"format":"openai-responses-v1"}
+        ]);
+        let body = concat!(
+            "data: {\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\"The\",\"index\":0}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_details\":[{\"type\":\"reasoning.text\",\"text\":\" user wants the time.\",\"signature\":\"sha256:text-signature\",\"format\":\"openai-responses-v1\",\"index\":0}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_details\":[{\"type\":\"reasoning.summary\",\"summary\":\"Looked\",\"index\":0}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_details\":[{\"type\":\"reasoning.summary\",\"summary\":\" up time.\",\"format\":\"openai-responses-v1\",\"index\":0}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_details\":[{\"type\":\"reasoning.encrypted\",\"id\":\"call_1\",\"data\":\"encrypted-signature\"}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{\"index\":0,\"delta\":{\"reasoning_details\":[{\"type\":\"reasoning.summary\",\"summary\":\"After encrypted block.\",\"format\":\"openai-responses-v1\",\"index\":0}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{\"index\":0,\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"type\":\"function\",\"function\":{\"name\":\"read\",\"arguments\":\"{\\\"path\\\":\\\"README.md\\\"}\"}}]},\"finish_reason\":null}]}\n\n",
+            "data: {\"id\":\"chatcmpl-test\",\"model\":\"google/gemini-test\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\n",
+            "data: [DONE]\n\n"
+        );
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
+        let m = model(&server.uri());
+        let ctx = Context {
+            system_prompt: None,
+            tools: vec![read_tool()],
+            messages: Vec::new(),
+        };
+        let opts = StreamOptions::default();
+        let mut stream = stream_openai(&m, &ctx, &opts);
+        let mut assistant_msg = None;
+        while let Some(evt) = stream.next().await {
+            if let Event::Done { message, .. } = evt {
+                assistant_msg = Some(message);
+            }
+        }
+        let assistant = assistant_msg.expect("Done");
+        let thinking = assistant
+            .content
+            .iter()
+            .find_map(|b| match b {
+                ContentBlock::Thinking {
+                    thinking_signature, ..
+                } => thinking_signature.as_ref(),
+                _ => None,
+            })
+            .expect("thinking signature");
+        assert_eq!(serde_json::from_str::<Value>(thinking).unwrap(), expected);
+        let payload = build_payload(
+            &m,
+            &Context {
+                system_prompt: None,
+                tools: vec![read_tool()],
+                messages: vec![assistant],
+            },
+            &StreamOptions::default(),
+            &detect_compat(&m),
+        );
+        let assistant_payload = payload["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|msg| msg.get("role").and_then(|r| r.as_str()) == Some("assistant"))
+            .unwrap();
+        assert_eq!(assistant_payload["reasoning_details"], expected);
+    }
+
+    #[tokio::test]
     async fn preserves_reasoning_details_that_arrive_before_their_matching_tool_call() {
         // Stream: reasoning_details, then the matching tool call, then finish.
         let body = concat!(

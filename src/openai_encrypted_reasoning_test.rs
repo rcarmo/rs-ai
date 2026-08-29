@@ -98,8 +98,29 @@ mod tests {
             }
         }
         let msg = done_msg.expect("a Done event");
-        assert_eq!(msg.content.len(), 1, "expected a single tool-call block");
-        match &msg.content[0] {
+        let thinking_signature = msg
+            .content
+            .iter()
+            .find_map(|block| match block {
+                ContentBlock::Thinking {
+                    thinking_signature, ..
+                } => thinking_signature.as_deref(),
+                _ => None,
+            })
+            .expect("encrypted reasoning is also preserved as replay reasoning_details");
+        let preserved: serde_json::Value =
+            serde_json::from_str(thinking_signature).expect("thinking signature is JSON");
+        assert_eq!(
+            preserved,
+            serde_json::json!([{ "type": "reasoning.encrypted", "id": "call_1", "data": "secret" }])
+        );
+
+        let tool_call = msg
+            .content
+            .iter()
+            .find(|block| matches!(block, ContentBlock::ToolCall { .. }))
+            .expect("expected a tool-call block");
+        match tool_call {
             ContentBlock::ToolCall {
                 name,
                 thought_signature,

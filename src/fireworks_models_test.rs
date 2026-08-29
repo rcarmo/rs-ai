@@ -40,14 +40,15 @@ mod tests {
     }
 
     #[test]
-    fn registers_fire_pass_turbo_router_model() {
-        let m = list_models(Some("fireworks"))
+    fn omits_removed_fire_pass_turbo_router_models() {
+        let routers = list_models(Some("fireworks"))
             .into_iter()
-            .find(|c| c.id.starts_with("accounts/fireworks/routers/") && c.id.ends_with("-turbo"))
-            .expect("a turbo router model");
-        assert_eq!(m.api, "anthropic-messages");
-        assert_eq!(m.base_url, "https://api.fireworks.ai/inference");
-        assert_eq!(m.input, vec!["text".to_string(), "image".to_string()]);
+            .filter(|c| c.id.starts_with("accounts/fireworks/routers/") && c.id.ends_with("-turbo"))
+            .collect::<Vec<_>>();
+        assert!(
+            routers.is_empty(),
+            "v0.84.4 removes Fireworks turbo routers: {routers:?}"
+        );
     }
 
     #[test]

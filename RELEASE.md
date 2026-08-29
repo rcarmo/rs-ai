@@ -1,15 +1,95 @@
 # rs-ai upstream release parity
 
-## Current audit target: v0.84.3
+## Current audit target: v0.84.4
 
 - Upstream package: `@earendil-works/pi-ai`
-- Current audit target: `v0.84.3`
+- Current audit target: `v0.84.4`
+- Upstream tag/commit: `b79e4cc834970cca69daebffab7df1da7d1e52c4`
+- Previous accepted upstream: `v0.84.3` / `4e58f324fae8ebfa98a3d45181fb248072a2afac`
+- Accepted rs-ai baseline: `47befc1`
+- Audited range: `4e58f324fae8ebfa98a3d45181fb248072a2afac..b79e4cc834970cca69daebffab7df1da7d1e52c4`
+- Scope: `packages/ai` only; official tag/npm artifact only, no newer-main chase.
+- Scope status: **complete for bounded deterministic v0.84.4 release parity**.
+
+### v0.84.4 exact upstream path disposition
+
+The official range changes **15** `packages/ai` paths: 2 package metadata paths, 2 scripts, 5 source/runtime/catalog paths, and 6 tests. Final corpus: **137** upstream `packages/ai/test/*.test.ts` files, recorded in `docs/v0844-137-test-crosswalk.md`.
+
+Executable validator: `python3 scripts/validate_v0844_manifests.py` asserts this exact 15-path set and the 137 unique crosswalk rows.
+
+| Status | Upstream path | rs-ai disposition |
+|---|---|---|
+| M | `packages/ai/CHANGELOG.md` | DOCUMENTED / metadata-only |
+| M | `packages/ai/package.json` | DOCUMENTED / metadata-only |
+| M | `packages/ai/scripts/generate-models.ts` | ADAPTED via extractor/generator and regenerated catalog |
+| A | `packages/ai/scripts/openrouter-reasoning-options.ts` | ADAPTED in generator parity and OpenRouter reasoning tests |
+| M | `packages/ai/src/api/mistral-conversations.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/openai-completions.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/image-models.generated.ts` | ADAPTED by regenerated image registry + metadata verifier |
+| M | `packages/ai/src/providers/cloudflare-ai-gateway.ts` | ADAPTED by generated Cloudflare AI Gateway catalog/routing evidence |
+| M | `packages/ai/src/types.ts` | DOCUMENTED / option comment only; Rust option semantics already represented |
+| M | `packages/ai/test/fireworks-models.test.ts` | ADAPTED / COVERED (see 137-test crosswalk) |
+| M | `packages/ai/test/mistral-http-transport.test.ts` | ADAPTED / COVERED (see 137-test crosswalk) |
+| M | `packages/ai/test/openai-completions-reasoning-details.test.ts` | ADAPTED / COVERED (see 137-test crosswalk) |
+| M | `packages/ai/test/openai-completions-tool-choice.test.ts` | ADAPTED / COVERED (see 137-test crosswalk) |
+| A | `packages/ai/test/openrouter-reasoning-options.test.ts` | ADAPTED / COVERED (see 137-test crosswalk) |
+| M | `packages/ai/test/zai-coding-plan-models.test.ts` | ADAPTED / COVERED (see 137-test crosswalk) |
+
+### v0.84.4 implementation summary
+
+- Regenerated the text catalog from official npm `dist/providers/data` shards: **1290 text provider/id pairs across 39 providers and 9 APIs**; official OpenRouter batch aliases are now **40**.
+- Regenerated the image catalog from the package `IMAGE_MODELS`: **50 image provider/id pairs**, including new OpenRouter image entries such as `meta/muse-image` and Recraft v4 vector/style variants.
+- Updated release metadata verifier defaults to `@earendil-works/pi-ai@0.84.4` and pinned npm tarball SHA-256 `dfd3c929cee5a7387199a0a24dfc1be2096f1ea8f59ffb8285198a0ed01ebf93`.
+- Preserved the exact v0.84.4 provider manifest shape: `schemaVersion=3`, `generatedAt=2026-08-28T22:00:02.569Z`, `structureHash=456b83c08bed3255d7e399d7927c6743e7f3568435691b3d38cc3666ffa70479`, `manifestSha256=904df30578689548238e080ca46be14b93ab6cd3de0d20445ee61eec11135474`.
+- Ported OpenAI-compatible `reasoning_details` stream buffering: consecutive `reasoning.text` and `reasoning.summary` deltas merge before replay, while encrypted details remain discrete and are not duplicated.
+- Confirmed provider-neutral `tool_choice: "none"` is emitted for OpenAI Completions and Responses even when no tools are present, without creating an empty `tools` field.
+- Covered Mistral fragmented indexed tool-call chunks where later fragments omit `id` and carry an empty `function.name`; chunks merge by index and preserve the first id/name plus complete JSON arguments.
+- Adapted OpenRouter reasoning metadata semantics: mandatory reasoning maps `off`/unsupported efforts to unavailable and omits reasoning for background calls; optional models still explicitly disable reasoning with `{ effort: "none" }`.
+- Reflected generated catalog deltas: Fireworks turbo routers removed, Cloudflare AI Gateway mirrors Workers AI `/compat` models without duplicates, and ZAI Coding Plan CN `glm-5.3` pricing is updated.
+
+Named Rust evidence added/updated for v0.84.4:
+
+- `src/v0844_release_test.rs::release_pinned_catalog_counts_match_v0844`
+- `src/v0844_release_test.rs::tool_choice_none_serializes_without_tools`
+- `src/v0844_release_test.rs::openrouter_mandatory_and_optional_reasoning_payloads_match_v0844`
+- `src/v0844_release_test.rs::cloudflare_workers_ai_models_are_mirrored_into_gateway_compat_catalog`
+- `src/v0844_release_test.rs::zai_coding_plan_glm_5_3_cost_matches_v0844`
+- `src/v0844_release_test.rs::mistral_indexed_tool_call_fragments_merge_without_repeated_ids_or_names`
+- `src/openai_completions_reasoning_details_test.rs::merges_adjacent_text_and_summary_reasoning_details_before_replay`
+- `src/fireworks_models_test.rs::omits_removed_fire_pass_turbo_router_models`
+- `src/release_metadata_verification_test.rs::v0844_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
+
+### v0.84.4 release-pinned artifact evidence
+
+- upstream tag worktree: `/workspace/tmp/pi-src` at `b79e4cc834970cca69daebffab7df1da7d1e52c4`
+- npm tarball SHA-256: `dfd3c929cee5a7387199a0a24dfc1be2096f1ea8f59ffb8285198a0ed01ebf93`
+- provider manifest structure hash: `456b83c08bed3255d7e399d7927c6743e7f3568435691b3d38cc3666ffa70479`
+- extracted release JSON: `/workspace/tmp/pi-v0844-json/models.json`
+
+Commands/results run so far:
+
+```bash
+python3 scripts/validate_release_model_data.py <v0.84.4 package>/dist/providers/data
+python3 scripts/extract_release_model_shards.py <v0.84.4 package> /workspace/tmp/pi-v0844-json --tag-worktree /workspace/tmp/pi-src --tag-sha b79e4cc834970cca69daebffab7df1da7d1e52c4
+python3 scripts/verify_release_model_metadata.py
+python3 scripts/validate_v0844_manifests.py
+cargo test v0844_release_test -- --nocapture
+cargo test openai_completions_reasoning_details_test -- --nocapture
+cargo test --all-targets --all-features
+```
+
+Final local results: `cargo fmt -- --check` passed; `cargo build` passed; metadata verifier `metadata verified: text=1290 providers=39 apis=9 batchAliases=40 image=50`; deliberate `--fault text-name` and `--fault image-name` metadata gates failed with the expected text/image mismatches; provider/id comparator passed with text `upstream=1290 local=1290 missing=0 extra=0` and image `upstream=50 local=50 missing=0 extra=0`; v0.84.4 manifest validator `changedPaths=15 testRows=137`; focused v0.84.4 tests `6 passed`; OpenAI reasoning-details tests `4 passed`; full `cargo test --all-targets --all-features` passed three consecutive times (`936 passed`, `0 failed`, `0 ignored`); strict `cargo clippy --all-targets -- -D warnings` passed.
+
+## Historical accepted release: v0.84.3
+
+- Upstream package: `@earendil-works/pi-ai`
+- Historical accepted release: `v0.84.3`
 - Upstream tag/commit: `4e58f324fae8ebfa98a3d45181fb248072a2afac`
 - Previous accepted upstream: `v0.84.2` / `914cf1472e715297caa30db4b9535d534a9eb718`
 - Accepted rs-ai baseline: `f615a0b525bd06b75e61de3dd87cab6dc497cf00`
 - Audited range: `914cf1472e715297caa30db4b9535d534a9eb718..4e58f324fae8ebfa98a3d45181fb248072a2afac`
 - Scope: `packages/ai` only; official tag only, no newer-main chase.
-- Scope status: **complete for bounded deterministic v0.84.3 release parity; hosted CI pending until after push**.
+- Scope status: **complete for bounded deterministic v0.84.3 release parity**.
 
 ### v0.84.3 exact upstream path disposition
 

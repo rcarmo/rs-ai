@@ -11,8 +11,11 @@ EXPECTED_TEST_FILES = ['abort.test.ts', 'anthropic-adaptive-thinking-models.test
 
 def current_release_section() -> str:
     text = RELEASE.read_text()
-    start = text.index("## Current audit target: v0.84.3")
-    end = text.find("## Historical accepted release:", start)
+    marker = "## Current audit target: v0.84.3"
+    if marker not in text:
+        marker = "## Historical accepted release: v0.84.3"
+    start = text.index(marker)
+    end = text.find("## Historical accepted release:", start + len(marker))
     return text[start:] if end == -1 else text[start:end]
 
 def release_changed_paths() -> set[str]:

@@ -100,18 +100,18 @@ fn release_pinned_catalog_counts_match_v0843() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1312);
+    assert_eq!(pairs.len(), 1290);
     assert_eq!(providers.len(), 39);
     assert_eq!(apis.len(), 9);
     assert_eq!(
         pairs.iter().filter(|(_, id)| id.contains(":batch")).count(),
-        60
+        40
     );
     let image_pairs = crate::images::list_image_models(None)
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 45);
+    assert_eq!(image_pairs.len(), 50);
 }
 
 #[test]

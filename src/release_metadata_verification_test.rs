@@ -25,17 +25,17 @@ mod tests {
             String::from_utf8_lossy(&output.stderr)
         );
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("text=1312"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("text=1290"), "unexpected stdout: {stdout}");
         assert!(
             stdout.contains("providers=39"),
             "unexpected stdout: {stdout}"
         );
         assert!(stdout.contains("apis=9"), "unexpected stdout: {stdout}");
         assert!(
-            stdout.contains("batchAliases=60"),
+            stdout.contains("batchAliases=40"),
             "unexpected stdout: {stdout}"
         );
-        assert!(stdout.contains("image=45"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("image=50"), "unexpected stdout: {stdout}");
     }
 
     fn run_fault(fault: &str) -> String {
@@ -121,6 +121,28 @@ mod tests {
         let stdout = String::from_utf8_lossy(&output.stdout);
         assert!(
             stdout.contains("changedPaths=48 testRows=136"),
+            "unexpected stdout: {stdout}"
+        );
+    }
+
+    #[test]
+    fn v0844_manifest_validator_confirms_changed_paths_and_crosswalk_rows() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/validate_v0844_manifests.py")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "manifest validator failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("changedPaths=15 testRows=137"),
             "unexpected stdout: {stdout}"
         );
     }

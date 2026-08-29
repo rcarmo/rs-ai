@@ -20,7 +20,7 @@ mod tests {
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1312);
+        assert_eq!(pairs.len(), 1290);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -94,7 +94,7 @@ mod tests {
             .into_iter()
             .map(|m| m.id)
             .collect::<HashSet<_>>();
-        assert_eq!(ids.len(), 45);
+        assert_eq!(ids.len(), 50);
         for id in [
             "krea/krea-2-large",
             "krea/krea-2-medium",
@@ -841,7 +841,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn opencode_go_grok_45_uses_openai_responses_request_path() {
+    async fn opencode_go_grok_46_uses_openai_responses_request_path() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(
@@ -849,7 +849,7 @@ mod tests {
             ))
             .mount(&server)
             .await;
-        let mut model = get_model("opencode-go", "grok-4.5").expect("opencode-go/grok-4.5");
+        let mut model = get_model("opencode-go", "grok-4.6").expect("opencode-go/grok-4.6");
         assert_eq!(model.api, crate::types::api::OPENAI_RESPONSES);
         model.base_url = server.uri();
         model.api_key = Some("opencode-key".into());
@@ -873,6 +873,6 @@ mod tests {
             "Bearer opencode-key"
         );
         let body: Value = serde_json::from_slice(&reqs[0].body).unwrap();
-        assert_eq!(body["model"], "grok-4.5");
+        assert_eq!(body["model"], "grok-4.6");
     }
 }

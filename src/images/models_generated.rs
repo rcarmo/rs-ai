@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (45 image models, 1 provider)
-//! Generated: 2026-08-24T18:08:07.924105+00:00
+//! Source: image-models.generated.js (50 image models, 1 provider)
+//! Generated: 2026-08-29T11:42:08.737727+00:00
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
@@ -266,6 +266,22 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             },
         },
         ImagesModel {
+            id: "meta/muse-image".into(),
+            name: "Meta: Muse Image".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
             id: "microsoft/mai-image-2.5".into(),
             name: "Microsoft: MAI-Image-2.5".into(),
             api: "openrouter-images".into(),
@@ -508,6 +524,70 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         ImagesModel {
             id: "recraft/recraft-v4-pro-vector".into(),
             name: "Recraft: Recraft V4 Pro Vector".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "recraft/recraft-v4-styles".into(),
+            name: "Recraft: Recraft V4 Styles".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "recraft/recraft-v4-styles-pro".into(),
+            name: "Recraft: Recraft V4 Styles Pro".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "recraft/recraft-v4-styles-pro-vector".into(),
+            name: "Recraft: Recraft V4 Styles Pro Vector".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "recraft/recraft-v4-styles-vector".into(),
+            name: "Recraft: Recraft V4 Styles Vector".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),

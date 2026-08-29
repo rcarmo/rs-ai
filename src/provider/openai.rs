@@ -149,6 +149,7 @@ pub fn stream_openai<'a>(
         let mut thinking_before_text = false;
         let mut current_thinking = String::new();
         let mut current_thinking_signature: Option<String> = None;
+        let mut reasoning_details_accum: Vec<Value> = Vec::new();
         let mut tool_calls: std::collections::BTreeMap<usize, (String, String, String)> = std::collections::BTreeMap::new();
         // Captured encrypted reasoning details keyed by tool-call id (OpenRouter).
         let mut tool_call_signatures: std::collections::HashMap<String, String> = std::collections::HashMap::new();
@@ -305,18 +306,16 @@ pub fn stream_openai<'a>(
                         // 0.79.10 pendingReasoningDetailsByToolCallId case). Validation mirrors
                         // isEncryptedReasoningDetail: non-empty string id and data.
                         if let Some(details) = delta.get("reasoning_details").and_then(|v| v.as_array()) {
-                            let mut preserve_on_thinking = false;
                             for detail in details {
+                                merge_reasoning_detail(&mut reasoning_details_accum, detail.clone());
                                 if detail.get("type").and_then(|v| v.as_str()) == Some("reasoning.encrypted")
                                     && let Some(did) = detail.get("id").and_then(|v| v.as_str()).filter(|s| !s.is_empty())
                                     && detail.get("data").and_then(|v| v.as_str()).is_some_and(|s| !s.is_empty()) {
                                     tool_call_signatures.insert(did.to_string(), detail.to_string());
-                                } else {
-                                    preserve_on_thinking = true;
                                 }
                             }
-                            if preserve_on_thinking {
-                                current_thinking_signature = Some(Value::Array(details.clone()).to_string());
+                            if !reasoning_details_accum.is_empty() {
+                                current_thinking_signature = Some(Value::Array(reasoning_details_accum.clone()).to_string());
                             }
                         }
 
@@ -458,6 +457,64 @@ pub fn stream_openai<'a>(
 /// Append the accumulated text and thinking blocks to `content`, preserving the
 /// stream order in which they began (`thinking_first` = thinking started before
 /// any text). Mirrors upstream's incremental block creation.
+fn merge_reasoning_detail(accum: &mut Vec<Value>, detail: Value) {
+    let Some(kind) = detail.get("type").and_then(|v| v.as_str()) else {
+        accum.push(detail);
+        return;
+    };
+    let text_key = match kind {
+        "reasoning.text" => "text",
+        "reasoning.summary" => "summary",
+        _ => {
+            accum.push(detail);
+            return;
+        }
+    };
+    if let Some(last) = accum.last_mut()
+        && last.get("type").and_then(|v| v.as_str()) == Some(kind)
+    {
+        if let Some(delta_text) = detail.get(text_key).and_then(|v| v.as_str()) {
+            let mut merged = last
+                .get(text_key)
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            merged.push_str(delta_text);
+            last[text_key] = json!(merged);
+        }
+        if let Some(last_obj) = last.as_object_mut() {
+            for key in ["id", "index"] {
+                if (!last_obj.contains_key(key) || last_obj.get(key).is_some_and(Value::is_null))
+                    && let Some(value) = detail.get(key)
+                {
+                    last_obj.insert(key.to_string(), value.clone());
+                }
+            }
+            if last_obj
+                .get("format")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .is_empty()
+                && let Some(value) = detail.get("format")
+            {
+                last_obj.insert("format".to_string(), value.clone());
+            }
+            if kind == "reasoning.text"
+                && last_obj
+                    .get("signature")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .is_empty()
+                && let Some(value) = detail.get("signature")
+            {
+                last_obj.insert("signature".to_string(), value.clone());
+            }
+        }
+        return;
+    }
+    accum.push(detail);
+}
+
 fn assemble_text_thinking(
     content: &mut Vec<ContentBlock>,
     thinking: &str,
@@ -465,7 +522,7 @@ fn assemble_text_thinking(
     text: &str,
     thinking_first: bool,
 ) {
-    let needs_thinking = !thinking.is_empty()
+    let needs_thinking = (!thinking.is_empty() || sig.as_ref().is_some_and(|s| !s.is_empty()))
         && !content
             .iter()
             .any(|b| matches!(b, ContentBlock::Thinking { .. }));
@@ -834,7 +891,11 @@ pub(crate) fn build_payload(
                             thinking,
                             thinking_signature,
                             ..
-                        } if !thinking.trim().is_empty() => Some((thinking, thinking_signature)),
+                        } if !thinking.trim().is_empty()
+                            || thinking_signature.as_ref().is_some_and(|s| !s.is_empty()) =>
+                        {
+                            Some((thinking, thinking_signature))
+                        }
                         _ => None,
                     })
                     .collect();

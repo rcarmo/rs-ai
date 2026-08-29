@@ -38,7 +38,7 @@ fn release_pinned_catalog_counts_include_individual_and_batch_aliases() {
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
 
-    assert_eq!(pairs.len(), 1312);
+    assert_eq!(pairs.len(), 1290);
     assert_eq!(providers.len(), 39);
     assert_eq!(apis.len(), 9);
 
@@ -47,16 +47,16 @@ fn release_pinned_catalog_counts_include_individual_and_batch_aliases() {
         .filter(|model| model.id.contains(":batch"))
         .map(|model| format!("{}/{}", model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(batch_aliases.len(), 60);
-    assert!(batch_aliases.contains("openrouter/openai/gpt-5:batch"));
-    assert!(batch_aliases.contains("openrouter/z-ai/glm-5.2:batch"));
-    assert!(batch_aliases.contains("openrouter/thinkingmachines/inkling:batch"));
+    assert_eq!(batch_aliases.len(), 40);
+    assert!(batch_aliases.contains("openrouter/anthropic/claude-opus-5:batch"));
+    assert!(batch_aliases.contains("openrouter/deepseek/deepseek-v4-pro-0813:batch"));
+    assert!(batch_aliases.contains("openrouter/z-ai/glm-5.3-flash:batch"));
 
     let image_pairs = crate::images::list_image_models(None)
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 45);
+    assert_eq!(image_pairs.len(), 50);
 }
 
 #[test]

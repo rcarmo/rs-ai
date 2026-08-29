@@ -1,10 +1,20 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.84.3
+## Current parity audit: `@earendil-works/pi-ai` v0.84.4
+
+Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.4`, package/tag SHA `b79e4cc834970cca69daebffab7df1da7d1e52c4` (`github.com/earendil-works/pi` tag `v0.84.4`). Pinned scope is exactly `4e58f324fae8ebfa98a3d45181fb248072a2afac..b79e4cc834970cca69daebffab7df1da7d1e52c4`; do not chase newer main.
+
+Status: **ADAPTED / completed for bounded deterministic v0.84.4 release parity**. The range changes **15** `packages/ai` paths: 2 package metadata paths, 2 scripts, 5 source/runtime/catalog paths, and 6 tests. Whole-corpus filename evidence is in `docs/v0844-137-test-crosswalk.md`: **137/137** upstream `packages/ai/test/*.test.ts` files accounted, with executable validator `scripts/validate_v0844_manifests.py`.
+
+Key v0.84.4 dispositions: generated text catalog is regenerated to **1290** provider/id pairs across **39** providers and **9** APIs, batch aliases are **40**, and image catalog is **50**. OpenAI-compatible streamed `reasoning_details` now merge adjacent text/summary deltas before replay; OpenAI/Responses `tool_choice` is forwarded even without tools; Mistral tool-call chunks merge by `index` when later fragments omit `id`/name; OpenRouter reasoning metadata now drives mandatory/optional `thinkingLevelMap` semantics; Cloudflare AI Gateway mirrors Workers AI `/compat` models without duplicate ids; Fireworks turbo routers are removed; and ZAI Coding Plan `glm-5.3` costs are updated. TypeScript-only comments/provider typing and package metadata are documented as N/A where no Rust runtime surface exists.
+
+Catalog evidence: npm tarball SHA-256 `dfd3c929cee5a7387199a0a24dfc1be2096f1ea8f59ffb8285198a0ed01ebf93`; provider manifest structure hash `456b83c08bed3255d7e399d7927c6743e7f3568435691b3d38cc3666ffa70479`; full metadata verifier `metadata verified: text=1290 providers=39 apis=9 batchAliases=40 image=50`.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.84.3
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.84.3`, package/tag SHA `4e58f324fae8ebfa98a3d45181fb248072a2afac` (`github.com/earendil-works/pi` tag `v0.84.3`). Pinned scope is exactly `914cf1472e715297caa30db4b9535d534a9eb718..4e58f324fae8ebfa98a3d45181fb248072a2afac`; do not chase newer main.
 
-Status: **ADAPTED / under final gate verification**. The range changes **48** `packages/ai` paths: 19 source/runtime paths, 25 tests, and 4 package/docs/export paths. Whole-corpus filename evidence is in `docs/v0843-136-test-crosswalk.md`: **136/136** upstream `packages/ai/test/*.test.ts` files accounted, with executable validator `scripts/validate_v0843_manifests.py`.
+Status: **ADAPTED / completed for bounded deterministic v0.84.3 release parity**. The range changes **48** `packages/ai` paths: 19 source/runtime paths, 25 tests, and 4 package/docs/export paths. Whole-corpus filename evidence is in `docs/v0843-136-test-crosswalk.md`: **136/136** upstream `packages/ai/test/*.test.ts` files accounted, with executable validator `scripts/validate_v0843_manifests.py`.
 
 Key v0.84.3 dispositions: generated text catalog is regenerated to **1312** provider/id pairs across **39** providers and **9** APIs, batch aliases remain **60**, image catalog remains **45**. Provider-neutral `tool_choice`, default Pi User-Agent with explicit override, Google thinking level map/error/budget semantics, Bedrock redacted reasoning replay/finalization, OpenAI `reasoning_details` preservation/replay, Copilot policy retry/filter behavior, and xAI/ZAI/Xiaomi generated compatibility changes are adapted. TypeScript export/package/docs-only changes and live credential/browser-only rows are documented as N/A for Rust runtime.
 

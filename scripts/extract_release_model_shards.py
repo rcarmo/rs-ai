@@ -105,6 +105,22 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/openai/o4-mini:batch",
     "openrouter/thinkingmachines/inkling:batch",
     "openrouter/z-ai/glm-5.2:batch",
+    "openrouter/z-ai/glm-5.3-flash:batch",
+    "openrouter/thinkingmachines/inkling-small:batch",
+    "openrouter/qwen/qwen3.8-2.4t-a95b:batch",
+    "openrouter/qwen/qwen3.5-9b:batch",
+    "openrouter/openai/gpt-oss-120b:batch",
+    "openrouter/moonshotai/kimi-k3:batch",
+    "openrouter/mistralai/mistral-small-2603:batch",
+    "openrouter/mistralai/mistral-medium-3.1:batch",
+    "openrouter/mistralai/mistral-medium-3-5:batch",
+    "openrouter/mistralai/mistral-large-2512:batch",
+    "openrouter/mistralai/ministral-8b-2512:batch",
+    "openrouter/mistralai/codestral-2508:batch",
+    "openrouter/meta/muse-glimmer-30b:batch",
+    "openrouter/google/gemma-4-31b-it:batch",
+    "openrouter/deepseek/deepseek-v4-pro-0813:batch",
+    "openrouter/deepseek/deepseek-v4-flash-0731:batch",
 }
 
 

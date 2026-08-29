@@ -1,10 +1,18 @@
 # Shared local-test adaptation tracker (rs-ai)
 
+## v0.84.4 bounded release evidence
+
+Source: upstream tag `b79e4cc834970cca69daebffab7df1da7d1e52c4` (`v0.84.4`), exact release-only delta `4e58f324fae8ebfa98a3d45181fb248072a2afac..b79e4cc834970cca69daebffab7df1da7d1e52c4`.
+
+Status: **ADAPTED / completed for bounded deterministic v0.84.4 release parity**. The v0.84.4 audit spans 15 changed `packages/ai` paths and **6 changed test paths total**: 5 existing tests modified plus 1 new `openrouter-reasoning-options.test.ts`. The final upstream test corpus is **137 files**, recorded in `docs/v0844-137-test-crosswalk.md` and mechanically checked by `scripts/validate_v0844_manifests.py`.
+
+Named tests in `src/v0844_release_test.rs` cover v0.84.4 catalog counts, provider-neutral `tool_choice` with no tools, OpenRouter mandatory/optional reasoning payload semantics, Cloudflare AI Gateway Workers AI mirror dedupe, ZAI Coding Plan `glm-5.3` pricing, and Mistral fragmented indexed tool-call chunk merging. `src/openai_completions_reasoning_details_test.rs::merges_adjacent_text_and_summary_reasoning_details_before_replay` covers the v0.84.4 OpenAI-compatible `reasoning_details` merge/replay delta, and `src/fireworks_models_test.rs::omits_removed_fire_pass_turbo_router_models` covers the Fireworks catalog removal. Metadata verifier targets pinned tarball SHA `dfd3c929cee5a7387199a0a24dfc1be2096f1ea8f59ffb8285198a0ed01ebf93` and reports text `1290`, providers `39`, APIs `9`, batch aliases `40`, image `50`.
+
 ## v0.84.3 bounded release evidence
 
 Source: upstream tag `4e58f324fae8ebfa98a3d45181fb248072a2afac` (`v0.84.3`), exact release-only delta `914cf1472e715297caa30db4b9535d534a9eb718..4e58f324fae8ebfa98a3d45181fb248072a2afac`.
 
-Status: **ADAPTED / under final gate verification**. The v0.84.3 audit spans 48 changed `packages/ai` paths and **25 changed test paths total**: 20 existing tests modified plus 5 new tests. The final upstream test corpus is **136 files**, recorded in `docs/v0843-136-test-crosswalk.md` and mechanically checked by `scripts/validate_v0843_manifests.py`.
+Status: **ADAPTED / completed for bounded deterministic v0.84.3 release parity**. The v0.84.3 audit spans 48 changed `packages/ai` paths and **25 changed test paths total**: 20 existing tests modified plus 5 new tests. The final upstream test corpus is **136 files**, recorded in `docs/v0843-136-test-crosswalk.md` and mechanically checked by `scripts/validate_v0843_manifests.py`.
 
 Named tests in `src/v0843_release_test.rs` cover v0.84.3 catalog counts, Azure Responses provider-neutral `tool_choice`, default/override Pi User-Agent behavior, and Google thinking-level map/error/budget semantics. Additional v0.84.3 evidence is in `src/anthropic_fallback_test.rs`, `src/bedrock_thinking_payload_test.rs`, `src/bedrock_error_metadata_test.rs`, `src/openai_completions_reasoning_details_test.rs`, `src/github_copilot_oauth_test.rs`, and `src/xai_grok45_responses_test.rs`. Metadata verifier targets pinned tarball SHA `9c40af2f43950f8e94e7bbcd0c1b3548f000972da00c4fb9c0d0529d4d7d5431` and reports text `1312`, providers `39`, APIs `9`, batch aliases `60`, image `45`.
 
