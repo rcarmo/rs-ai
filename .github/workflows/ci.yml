@@ -55,4 +55,5 @@ jobs:
           path: |
             artifacts/sbom.cdx.json
             artifacts/sbom.cdx.json.sha256
+          if-no-files-found: error
           retention-days: 14
