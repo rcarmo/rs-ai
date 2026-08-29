@@ -83,6 +83,20 @@ cargo test --all-targets --all-features
 
 Final local results: `cargo fmt -- --check` passed; `cargo build` passed; metadata verifier `metadata verified: text=1290 providers=39 apis=9 batchAliases=40 image=50`; deliberate `--fault text-name` and `--fault image-name` metadata gates failed with the expected text/image mismatches; provider/id comparator passed with text `upstream=1290 local=1290 missing=0 extra=0` and image `upstream=50 local=50 missing=0 extra=0`; v0.84.4 manifest validator `changedPaths=15 testRows=137`; focused v0.84.4 tests `6 passed`; OpenAI reasoning-details tests `4 passed`; full `cargo test --all-targets --all-features` passed three consecutive times (`936 passed`, `0 failed`, `0 ignored`); strict `cargo clippy --all-targets -- -D warnings` passed. Hosted GitHub Actions run `33252334207` also completed successfully for candidate `caa03be5ddb0d7013d6576f3c17893522cc88849`, with job `build-test-lint` (`99100057309`) succeeding all Build, Clippy, and Test steps.
 
+## Policy/SBOM maintenance: 2026-08-29
+
+Post-acceptance policy convergence commit for the accepted v0.84.4 line adds executable supply-chain gates without changing runtime code or generated catalogs.
+
+- SBOM generator: repo-local `scripts/sbom.py` (`rs-ai-sbom.py` version `1.0.0`), consuming `cargo metadata --locked --all-features` and committed `Cargo.lock`.
+- SBOM output: gitignored `artifacts/sbom.cdx.json` plus `artifacts/sbom.cdx.json.sha256`; latest local generation contains **283** third-party dependency components.
+- SBOM digest: `fba37e666f4642b72d61c1e008088cf78274af9bdc67045a9d675ca81061fe33`.
+- SBOM validation: `make sbom && make sbom-check` passed, validating CycloneDX fields, root crate/revision, dependency list, checksum, stale output, malformed/empty output, and absence of local paths/secrets.
+- Vulnerability scanner: pinned `cargo-audit 0.22.2`; `make vuln-check` passed with temporary owner-approved AWS legacy transitive exceptions expiring `2026-09-30` for `h2 0.3.27` (`RUSTSEC-2026-0258`) and `rustls-webpki 0.101.7` (`RUSTSEC-2026-0098`, `RUSTSEC-2026-0099`, `RUSTSEC-2026-0104`).
+- License review: `make license-check` passed for **283** third-party packages using the committed allowlist of permissive tokens.
+- CI retention: `.github/workflows/ci.yml` now uploads `artifacts/sbom.cdx.json` and `artifacts/sbom.cdx.json.sha256` as `rs-ai-sbom` with `retention-days: 14`.
+- Lockfile decision: `Cargo.lock` is now committed for reproducible library SBOM/security resolution; generated SBOM artifacts remain uncommitted.
+- Local gate: `make check` passed after these policy/workflow changes, including fmt, build, strict all-feature Clippy, all-target all-feature tests (`936 passed`, `0 failed`, `0 ignored`), SBOM validation, license review, and vulnerability scan.
+
 ## Historical accepted release: v0.84.3
 
 - Upstream package: `@earendil-works/pi-ai`

@@ -21,12 +21,32 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            ~/.cargo/bin/cargo-audit
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install pinned cargo-audit
+        run: |
+          if ! command -v cargo-audit >/dev/null || ! cargo-audit --version | grep -q 'cargo-audit 0.22.2'; then
+            cargo install cargo-audit --version 0.22.2 --locked
+          fi
       - name: Build
         run: cargo build --all-targets
       # Static-analysis-clean gate: any warning fails the build.
       - name: Clippy (deny warnings)
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Test
-        run: cargo test
+        run: cargo test --all-targets --all-features
+      - name: Generate and validate SBOM
+        run: make sbom && make sbom-check
+      - name: License review
+        run: make license-check
+      - name: Vulnerability scan
+        run: make vuln-check
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rs-ai-sbom
+          path: |
+            artifacts/sbom.cdx.json
+            artifacts/sbom.cdx.json.sha256
+          retention-days: 14
