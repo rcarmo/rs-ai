@@ -65,7 +65,7 @@ Inspect diffs before committing, including generated-source drift and generated-
 
 - Use a local-first workflow: finish implementation, reviewer/auditor corrections, docs, tests, regeneration, SBOM/security checks, and git hygiene locally before pushing.
 - Batch fixes into the final candidate push unless explicitly told otherwise.
-- Hosted CI must run only once at the end for the final candidate. Do not use hosted CI as an iterative debugging loop.
+- Hosted CI must run only once at the end for human-driven final candidate pushes. Do not use hosted CI as an iterative debugging loop. Weekly scheduled maintenance CI is independent and exists to rerun RustSec/SBOM/license gates between releases.
 - If the final hosted run ID must be recorded after CI completes, use a docs-only `[skip ci]` commit or a proven `paths-ignore` mechanism so CI still runs only once for the runtime candidate. Record separate runtime and final-docs SHAs when this happens.
 - Final release parity state must be Rui-authored, non-rebased, clean, and synced.
 
@@ -81,16 +81,16 @@ Inspect diffs before committing, including generated-source drift and generated-
 - `make vuln-check-selftest` exercises scanner error exits, malformed/incomplete reports, unapproved advisories, expired/incomplete waivers, and approved-advisory handling. `make vuln-check` runs the pinned RustSec scanner (`cargo-audit 0.22.2`) and must fail closed on scanner/runtime/database errors, malformed reports, high/critical advisories, or warnings unless an owner-approved rationale, mitigation, and expiry are documented.
 - `make license-check-selftest` exercises the fail-closed SPDX expression policy. `make license-check` reviews all resolved third-party licenses from Cargo metadata and rejects malformed expressions, missing expressions, unknown identifiers, proprietary `LicenseRef-*` identifiers, and incompatible mandatory branches. Permissive `OR` alternatives may pass only when a valid selectable branch exists. Incompatible, unknown, or missing licenses require an owner, rationale, mitigation, and expiry before acceptance.
 - Any new dependency must include vulnerability and license review before the final candidate push.
-- Final CI must generate, validate, scan, and upload the SBOM plus checksum artifact with retention. `RELEASE.md` must record SBOM tool/version, artifact path, digest, scan disposition, and license disposition for release audits.
+- Final and weekly scheduled CI must generate, validate, scan, and upload the SBOM plus checksum artifact as `rs-ai-sbom-${{ github.sha }}` with 30-day retention. Cleanup must not delete these SBOM artifacts or their associated runs before that 30-day window. `RELEASE.md` must record SBOM tool/version, artifact path or run/artifact pointer, scan disposition, and license disposition for release audits.
 
 ## Lifecycle maintenance and triggers
 
-Perform a lifecycle/security review when any trigger applies:
+Perform an automated lifecycle/security review weekly via scheduled CI, and perform an immediate lifecycle/security review when any trigger applies:
 
 - new upstream `@earendil-works/pi-ai` official release;
 - Rust dependency additions/removals/version changes;
 - `Cargo.toml`, `Cargo.lock`, generated catalog, SBOM, CI, or release-script changes;
-- RustSec or upstream security advisories, high/critical vulnerabilities, yanked crates, or license-policy changes;
+- urgent RustSec or upstream security advisories, high/critical vulnerabilities, yanked crates, or license-policy changes;
 - generated-data drift or provider catalog drift;
 - public API deprecation/removal, serialization change, or compatibility-risking behavior change;
 - release/tag/changelog publication;

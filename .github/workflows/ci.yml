@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Weekly supply-chain maintenance: rerun SBOM/license/RustSec gates between releases.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
 
 jobs:
   build-test-lint:
@@ -51,9 +55,9 @@ jobs:
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rs-ai-sbom
+          name: rs-ai-sbom-${{ github.sha }}
           path: |
             artifacts/sbom.cdx.json
             artifacts/sbom.cdx.json.sha256
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
