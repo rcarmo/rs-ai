@@ -50,15 +50,15 @@ Executable validator: `python3 scripts/validate_v0844_manifests.py` asserts this
 
 Named Rust evidence added/updated for v0.84.4:
 
-- `src/v0844_release_test.rs::release_pinned_catalog_counts_match_v0844`
-- `src/v0844_release_test.rs::tool_choice_none_serializes_without_tools`
-- `src/v0844_release_test.rs::openrouter_mandatory_and_optional_reasoning_payloads_match_v0844`
-- `src/v0844_release_test.rs::cloudflare_workers_ai_models_are_mirrored_into_gateway_compat_catalog`
-- `src/v0844_release_test.rs::zai_coding_plan_glm_5_3_cost_matches_v0844`
-- `src/v0844_release_test.rs::mistral_indexed_tool_call_fragments_merge_without_repeated_ids_or_names`
-- `src/openai_completions_reasoning_details_test.rs::merges_adjacent_text_and_summary_reasoning_details_before_replay`
-- `src/fireworks_models_test.rs::omits_removed_fire_pass_turbo_router_models`
-- `src/release_metadata_verification_test.rs::v0844_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
+- `src/tests/release/v0844_release_test.rs::release_pinned_catalog_counts_match_v0844`
+- `src/tests/release/v0844_release_test.rs::tool_choice_none_serializes_without_tools`
+- `src/tests/release/v0844_release_test.rs::openrouter_mandatory_and_optional_reasoning_payloads_match_v0844`
+- `src/tests/release/v0844_release_test.rs::cloudflare_workers_ai_models_are_mirrored_into_gateway_compat_catalog`
+- `src/tests/release/v0844_release_test.rs::zai_coding_plan_glm_5_3_cost_matches_v0844`
+- `src/tests/release/v0844_release_test.rs::mistral_indexed_tool_call_fragments_merge_without_repeated_ids_or_names`
+- `src/tests/providers/openai/openai_completions_reasoning_details_test.rs::merges_adjacent_text_and_summary_reasoning_details_before_replay`
+- `src/tests/catalogs/fireworks_models_test.rs::omits_removed_fire_pass_turbo_router_models`
+- `src/tests/release/release_metadata_verification_test.rs::v0844_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
 
 ### v0.84.4 release-pinned artifact evidence
 
@@ -181,20 +181,20 @@ Executable validator: `python3 scripts/validate_v0843_manifests.py` asserts this
 
 Named Rust evidence added/updated for v0.84.3:
 
-- `src/v0843_release_test.rs::release_pinned_catalog_counts_match_v0843`
-- `src/v0843_release_test.rs::google_thinking_level_resolver_matches_v0843`
-- `src/v0843_release_test.rs::google_payload_uses_mapped_levels_and_token_budgets`
-- `src/v0843_release_test.rs::azure_responses_payload_forwards_provider_neutral_tool_choice`
-- `src/v0843_release_test.rs::openai_responses_uses_pi_user_agent_by_default_and_allows_override`
-- `src/v0843_release_test.rs::azure_responses_uses_pi_user_agent_and_preserves_tool_choice_on_wire`
-- `src/v0843_release_test.rs::completions_anthropic_and_mistral_default_user_agent_can_be_overridden`
-- `src/anthropic_fallback_test.rs::{anthropic_payload_includes_server_side_fallbacks,anthropic_stream_sends_fallback_beta_and_prices_response_model_usage}`
-- `src/bedrock_error_metadata_test.rs::on_response_metadata_adapts_sdk_exposed_status_and_request_id_boundary`
-- `src/xai_grok45_responses_test.rs::xai_grok_46_uses_responses_xhigh_encrypted_reasoning_and_user_agent_override`
-- `src/bedrock_thinking_payload_test.rs::replays_redacted_reasoning_as_bedrock_redacted_content`, `src/bedrock_error_metadata_test.rs::on_response_metadata_adapts_sdk_exposed_status_and_request_id_boundary`
-- `src/openai_completions_reasoning_details_test.rs::{preserves_streamed_text_and_summary_reasoning_details_on_thinking,replays_thinking_signature_reasoning_details_sequence}`
-- `src/github_copilot_oauth_test.rs::{policy_updates_only_known_tool_capable_unconfigured_models,retries_throttled_policy_update_once_and_continues_transport_failures}`
-- `src/release_metadata_verification_test.rs::v0843_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
+- `src/tests/release/v0843_release_test.rs::release_pinned_catalog_counts_match_v0843`
+- `src/tests/release/v0843_release_test.rs::google_thinking_level_resolver_matches_v0843`
+- `src/tests/release/v0843_release_test.rs::google_payload_uses_mapped_levels_and_token_budgets`
+- `src/tests/release/v0843_release_test.rs::azure_responses_payload_forwards_provider_neutral_tool_choice`
+- `src/tests/release/v0843_release_test.rs::openai_responses_uses_pi_user_agent_by_default_and_allows_override`
+- `src/tests/release/v0843_release_test.rs::azure_responses_uses_pi_user_agent_and_preserves_tool_choice_on_wire`
+- `src/tests/release/v0843_release_test.rs::completions_anthropic_and_mistral_default_user_agent_can_be_overridden`
+- `src/tests/providers/anthropic/anthropic_fallback_test.rs::{anthropic_payload_includes_server_side_fallbacks,anthropic_stream_sends_fallback_beta_and_prices_response_model_usage}`
+- `src/tests/providers/bedrock/bedrock_error_metadata_test.rs::on_response_metadata_adapts_sdk_exposed_status_and_request_id_boundary`
+- `src/tests/providers/xai/xai_grok45_responses_test.rs::xai_grok_46_uses_responses_xhigh_encrypted_reasoning_and_user_agent_override`
+- `src/tests/providers/bedrock/bedrock_thinking_payload_test.rs::replays_redacted_reasoning_as_bedrock_redacted_content`, `src/tests/providers/bedrock/bedrock_error_metadata_test.rs::on_response_metadata_adapts_sdk_exposed_status_and_request_id_boundary`
+- `src/tests/providers/openai/openai_completions_reasoning_details_test.rs::{preserves_streamed_text_and_summary_reasoning_details_on_thinking,replays_thinking_signature_reasoning_details_sequence}`
+- `src/tests/auth/oauth/github_copilot_oauth_test.rs::{policy_updates_only_known_tool_capable_unconfigured_models,retries_throttled_policy_update_once_and_continues_transport_failures}`
+- `src/tests/release/release_metadata_verification_test.rs::v0843_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
 
 ### v0.84.3 release-pinned artifact evidence
 
@@ -303,29 +303,29 @@ Changed test paths:
 
 Named Rust evidence:
 
-- `src/v0842_release_test.rs::release_pinned_catalog_counts_match_v0842`
-- `src/v0842_release_test.rs::strict_json_schema_tools_require_optional_properties_as_nullable`
-- `src/v0842_release_test.rs::optional_non_nullable_null_is_omitted_but_nullable_null_is_preserved`
-- `src/v0842_release_test.rs::deepseek_detection_is_case_insensitive_and_uses_max_tokens`
-- `src/v0842_release_test.rs::retry_classifier_matches_request_buffer_exhaustion_wording`
-- `src/v0842_release_test.rs::pi_runtime_user_agent_includes_platform_release_and_arch`
-- `src/v0842_release_test.rs::responses_additional_tools_supersedes_tool_search_for_deferred_tools`
-- `src/v0842_release_test.rs::responses_replays_namespace_only_when_additional_tools_supported`
-- `src/v0842_release_test.rs::mistral_http_sse_parses_utf8_usage_and_raw_tool_stop`
-- `src/v0842_release_test.rs::mistral_http_stream_yields_delayed_chunks_incrementally`
-- `src/v0842_release_test.rs::mistral_http_stream_preserves_utf8_split_across_byte_chunks`
-- `src/v0842_release_test.rs::mistral_http_stream_cancel_while_waiting_for_chunk_cleans_up`
-- `src/v0842_release_test.rs::mistral_http_stream_timeout_while_awaiting_chunk_reports_error`
-- `src/v0842_release_test.rs::mistral_http_uses_bounded_branded_error_body_for_403`
-- `src/v0842_release_test.rs::mistral_http_retries_with_replayable_json_body`
-- `src/v0842_release_test.rs::mistral_http_affinity_override_and_suppression_are_honored`
-- `src/v0842_release_test.rs::mistral_http_exact_wire_payload_matches_replay_contract`
-- `src/github_copilot_oauth_test.rs::filters_models_to_the_authenticated_account_picker_catalog`
-- `src/github_copilot_oauth_test.rs::is_selectable_requires_picker_enabled_not_disabled_and_tool_calls`
-- `src/github_copilot_oauth_test.rs::falls_back_to_policy_enabled_ids_only_for_individual_endpoint`
-- `src/github_copilot_oauth_test.rs::fetch_available_model_ids_uses_copilot_headers`
-- `src/github_copilot_oauth_test.rs::limits_concurrent_policy_updates_to_four_during_login`
-- `src/release_metadata_verification_test.rs::v0842_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
+- `src/tests/release/v0842_release_test.rs::release_pinned_catalog_counts_match_v0842`
+- `src/tests/release/v0842_release_test.rs::strict_json_schema_tools_require_optional_properties_as_nullable`
+- `src/tests/release/v0842_release_test.rs::optional_non_nullable_null_is_omitted_but_nullable_null_is_preserved`
+- `src/tests/release/v0842_release_test.rs::deepseek_detection_is_case_insensitive_and_uses_max_tokens`
+- `src/tests/release/v0842_release_test.rs::retry_classifier_matches_request_buffer_exhaustion_wording`
+- `src/tests/release/v0842_release_test.rs::pi_runtime_user_agent_includes_platform_release_and_arch`
+- `src/tests/release/v0842_release_test.rs::responses_additional_tools_supersedes_tool_search_for_deferred_tools`
+- `src/tests/release/v0842_release_test.rs::responses_replays_namespace_only_when_additional_tools_supported`
+- `src/tests/release/v0842_release_test.rs::mistral_http_sse_parses_utf8_usage_and_raw_tool_stop`
+- `src/tests/release/v0842_release_test.rs::mistral_http_stream_yields_delayed_chunks_incrementally`
+- `src/tests/release/v0842_release_test.rs::mistral_http_stream_preserves_utf8_split_across_byte_chunks`
+- `src/tests/release/v0842_release_test.rs::mistral_http_stream_cancel_while_waiting_for_chunk_cleans_up`
+- `src/tests/release/v0842_release_test.rs::mistral_http_stream_timeout_while_awaiting_chunk_reports_error`
+- `src/tests/release/v0842_release_test.rs::mistral_http_uses_bounded_branded_error_body_for_403`
+- `src/tests/release/v0842_release_test.rs::mistral_http_retries_with_replayable_json_body`
+- `src/tests/release/v0842_release_test.rs::mistral_http_affinity_override_and_suppression_are_honored`
+- `src/tests/release/v0842_release_test.rs::mistral_http_exact_wire_payload_matches_replay_contract`
+- `src/tests/auth/oauth/github_copilot_oauth_test.rs::filters_models_to_the_authenticated_account_picker_catalog`
+- `src/tests/auth/oauth/github_copilot_oauth_test.rs::is_selectable_requires_picker_enabled_not_disabled_and_tool_calls`
+- `src/tests/auth/oauth/github_copilot_oauth_test.rs::falls_back_to_policy_enabled_ids_only_for_individual_endpoint`
+- `src/tests/auth/oauth/github_copilot_oauth_test.rs::fetch_available_model_ids_uses_copilot_headers`
+- `src/tests/auth/oauth/github_copilot_oauth_test.rs::limits_concurrent_policy_updates_to_four_during_login`
+- `src/tests/release/release_metadata_verification_test.rs::v0842_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
 
 
 ### v0.84.2 release-pinned artifact evidence
@@ -411,13 +411,13 @@ Changed paths:
 - Updated `scripts/extract_release_model_shards.py` for v0.84.1 release artifacts: official npm shards now include **59** OpenRouter `:batch` aliases. The extractor preserves only the exact audited allowlist, rejects any unexpected batch alias, records `batchAliasCount`, `batchAliases`, and `allowedBatchAliasPolicySha256`, and enforces the Qwen Individual model ID allowlist before creating output.
 - Added `scripts/verify_release_model_metadata.py`, a clean-run full metadata gate that downloads the official npm package, verifies tarball SHA-256 `6ab689189e7cb3de5cdb126312a3e60e8ac35fe5ee5f1b63d00f711c8a430c73` before extraction, validates/extracts shards, imports package image metadata, regenerates text and image Rust registries in a temporary project copy, rustfmt-formats the generated outputs, normalizes only generated timestamps, and compares all Rust-representable metadata byte-for-byte against committed files.
 - Added deterministic Rust evidence:
-  - `src/v0841_release_test.rs::release_pinned_catalog_counts_include_individual_and_batch_aliases`
-  - `src/v0841_release_test.rs::qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841`
-  - `src/v0841_release_test.rs::qwen_token_plan_individual_reasoning_payloads_match_v0841`
-  - `src/model_data_validation_test.rs::extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
-  - `src/model_data_validation_test.rs::extractor_allows_only_audited_release_batch_aliases`
-  - `src/release_metadata_verification_test.rs::release_metadata_verifier_clean_run_succeeds_with_expected_counts`
-  - `src/release_metadata_verification_test.rs::release_metadata_verifier_detects_fault_injected_text_metadata`
+  - `src/tests/release/v0841_release_test.rs::release_pinned_catalog_counts_include_individual_and_batch_aliases`
+  - `src/tests/release/v0841_release_test.rs::qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841`
+  - `src/tests/release/v0841_release_test.rs::qwen_token_plan_individual_reasoning_payloads_match_v0841`
+  - `src/tests/catalogs/model_data_validation_test.rs::extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
+  - `src/tests/catalogs/model_data_validation_test.rs::extractor_allows_only_audited_release_batch_aliases`
+  - `src/tests/release/release_metadata_verification_test.rs::release_metadata_verifier_clean_run_succeeds_with_expected_counts`
+  - `src/tests/release/release_metadata_verification_test.rs::release_metadata_verifier_detects_fault_injected_text_metadata`
 
 ### v0.84.1 release-pinned artifact evidence
 
@@ -510,7 +510,7 @@ Ported/adapted in this slice:
 
 ### Named Rust evidence in this slice
 
-`src/v0840_release_test.rs`:
+`src/tests/release/v0840_release_test.rs`:
 
 - `sampling_params_merge_and_override_openai_compatible_payloads`
 - `baseten_catalog_and_reasoning_payload_match_v0840`
@@ -550,7 +550,7 @@ Authoritative catalog source for this release audit is offline and release-pinne
 - extracted release JSON: `/workspace/tmp/pi-v0840-release-json/models.json`
 - extractor metadata: `/workspace/tmp/pi-v0840-release-json/source-metadata.json`
 
-Hardened extractor: `scripts/extract_release_model_shards.py` reads only local npm `dist/providers/data` shards, records package/shard/manifest hashes, verifies the tag worktree SHA when provided, and fails if any `:batch` aliases appear in the release shards. Current release-pinned text catalog is **1153 provider/id pairs across 38 providers and 9 APIs** with **0** `:batch` aliases; image catalog remains **42** pairs. Regression evidence is `release_pinned_catalog_has_no_unpinned_batch_aliases` in `src/v0840_release_test.rs`.
+Hardened extractor: `scripts/extract_release_model_shards.py` reads only local npm `dist/providers/data` shards, records package/shard/manifest hashes, verifies the tag worktree SHA when provided, and fails if any `:batch` aliases appear in the release shards. Current release-pinned text catalog is **1153 provider/id pairs across 38 providers and 9 APIs** with **0** `:batch` aliases; image catalog remains **42** pairs. Regression evidence is `release_pinned_catalog_has_no_unpinned_batch_aliases` in `src/tests/release/v0840_release_test.rs`.
 
 ### Committed slice 2: public deferred/background response lifecycle
 
@@ -712,7 +712,7 @@ The deterministic changed assertions called out in `docs/v0840-manifests.md` are
 Explicit rubric dispositions:
 
 - `message_update` delta-only JSON/RPC change — **N/A** for rs-ai. It is coding-agent transport/serialization outside the `packages/ai` API/runtime scope and outside rs-ai's typed in-process `Message`/`Event` API; there is no JSON/RPC delta transport surface to port without inventing a parallel protocol.
-- `ModelsStreamTransforms` → `ModelsRequestTransforms` — **ADAPTED**. rs-ai applies the equivalent request transforms across stream/simple/deferred fetch+cancel, not only streaming: auth/header transforms flow through `merge_auth_into_request` into provider request builders (`src/auth.rs`, `src/models_runtime_auth_test.rs::provider_header_null_deletion_reaches_openai_request_builder`), telemetry flows through `registry::stream_simple`, `registry::fetch_deferred`, `registry::cancel_deferred`, and image dispatch (`src/registry.rs`, `src/providers_upstream_test.rs::telemetry_context_flows_through_stream_simple_deferred_cancel_and_images`), and deferred public dispatch is represented by `ApiProvider::fetch_deferred` / `ApiProvider::cancel_deferred` plus the registry wrappers.
+- `ModelsStreamTransforms` → `ModelsRequestTransforms` — **ADAPTED**. rs-ai applies the equivalent request transforms across stream/simple/deferred fetch+cancel, not only streaming: auth/header transforms flow through `merge_auth_into_request` into provider request builders (`src/auth.rs`, `src/tests/auth/oauth/models_runtime_auth_test.rs::provider_header_null_deletion_reaches_openai_request_builder`), telemetry flows through `registry::stream_simple`, `registry::fetch_deferred`, `registry::cancel_deferred`, and image dispatch (`src/registry.rs`, `src/tests/transports/providers_upstream_test.rs::telemetry_context_flows_through_stream_simple_deferred_cancel_and_images`), and deferred public dispatch is represented by `ApiProvider::fetch_deferred` / `ApiProvider::cancel_deferred` plus the registry wrappers.
 
 This file is the release-audit ledger for `rs-ai`. It must be updated in the same commit as every future upstream `@earendil-works/pi-ai` release audit.
 
@@ -808,7 +808,7 @@ PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0830-json \
   - Google Generative AI / Vertex shared paths
   - Mistral Conversations
   - Bedrock Converse Stream
-- Tests include raw-stop and pending/no-terminal behavior in provider fixtures and `src/v0830_release_test.rs`.
+- Tests include raw-stop and pending/no-terminal behavior in provider fixtures and `src/tests/release/v0830_release_test.rs`.
 
 ### Constrained sampling
 
@@ -822,7 +822,7 @@ Already completed as part of the v0.82.0 corrective work and retained for v0.83.
   - custom-tool request shape
   - monotonic streamed JSON delta reconstruction
 - Integrated request-shape handling for OpenAI Completions, Responses/Azure, and Codex payloads.
-- Tests are in `src/v0830_release_test.rs` and provider request fixtures.
+- Tests are in `src/tests/release/v0830_release_test.rs` and provider request fixtures.
 
 ### Retry behavior
 

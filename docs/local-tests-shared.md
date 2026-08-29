@@ -6,7 +6,7 @@ Source: upstream tag `b79e4cc834970cca69daebffab7df1da7d1e52c4` (`v0.84.4`), exa
 
 Status: **ADAPTED / completed for bounded deterministic v0.84.4 release parity**. The v0.84.4 audit spans 15 changed `packages/ai` paths and **6 changed test paths total**: 5 existing tests modified plus 1 new `openrouter-reasoning-options.test.ts`. The final upstream test corpus is **137 files**, recorded in `docs/v0844-137-test-crosswalk.md` and mechanically checked by `scripts/validate_v0844_manifests.py`.
 
-Named tests in `src/v0844_release_test.rs` cover v0.84.4 catalog counts, provider-neutral `tool_choice` with no tools, OpenRouter mandatory/optional reasoning payload semantics, Cloudflare AI Gateway Workers AI mirror dedupe, ZAI Coding Plan `glm-5.3` pricing, and Mistral fragmented indexed tool-call chunk merging. `src/openai_completions_reasoning_details_test.rs::merges_adjacent_text_and_summary_reasoning_details_before_replay` covers the v0.84.4 OpenAI-compatible `reasoning_details` merge/replay delta, and `src/fireworks_models_test.rs::omits_removed_fire_pass_turbo_router_models` covers the Fireworks catalog removal. Metadata verifier targets pinned tarball SHA `dfd3c929cee5a7387199a0a24dfc1be2096f1ea8f59ffb8285198a0ed01ebf93` and reports text `1290`, providers `39`, APIs `9`, batch aliases `40`, image `50`.
+Named tests in `src/tests/release/v0844_release_test.rs` cover v0.84.4 catalog counts, provider-neutral `tool_choice` with no tools, OpenRouter mandatory/optional reasoning payload semantics, Cloudflare AI Gateway Workers AI mirror dedupe, ZAI Coding Plan `glm-5.3` pricing, and Mistral fragmented indexed tool-call chunk merging. `src/tests/providers/openai/openai_completions_reasoning_details_test.rs::merges_adjacent_text_and_summary_reasoning_details_before_replay` covers the v0.84.4 OpenAI-compatible `reasoning_details` merge/replay delta, and `src/tests/catalogs/fireworks_models_test.rs::omits_removed_fire_pass_turbo_router_models` covers the Fireworks catalog removal. Metadata verifier targets pinned tarball SHA `dfd3c929cee5a7387199a0a24dfc1be2096f1ea8f59ffb8285198a0ed01ebf93` and reports text `1290`, providers `39`, APIs `9`, batch aliases `40`, image `50`.
 
 ## v0.84.3 bounded release evidence
 
@@ -14,7 +14,7 @@ Source: upstream tag `4e58f324fae8ebfa98a3d45181fb248072a2afac` (`v0.84.3`), exa
 
 Status: **ADAPTED / completed for bounded deterministic v0.84.3 release parity**. The v0.84.3 audit spans 48 changed `packages/ai` paths and **25 changed test paths total**: 20 existing tests modified plus 5 new tests. The final upstream test corpus is **136 files**, recorded in `docs/v0843-136-test-crosswalk.md` and mechanically checked by `scripts/validate_v0843_manifests.py`.
 
-Named tests in `src/v0843_release_test.rs` cover v0.84.3 catalog counts, Azure Responses provider-neutral `tool_choice`, default/override Pi User-Agent behavior, and Google thinking-level map/error/budget semantics. Additional v0.84.3 evidence is in `src/anthropic_fallback_test.rs`, `src/bedrock_thinking_payload_test.rs`, `src/bedrock_error_metadata_test.rs`, `src/openai_completions_reasoning_details_test.rs`, `src/github_copilot_oauth_test.rs`, and `src/xai_grok45_responses_test.rs`. Metadata verifier targets pinned tarball SHA `9c40af2f43950f8e94e7bbcd0c1b3548f000972da00c4fb9c0d0529d4d7d5431` and reports text `1312`, providers `39`, APIs `9`, batch aliases `60`, image `45`.
+Named tests in `src/tests/release/v0843_release_test.rs` cover v0.84.3 catalog counts, Azure Responses provider-neutral `tool_choice`, default/override Pi User-Agent behavior, and Google thinking-level map/error/budget semantics. Additional v0.84.3 evidence is in `src/tests/providers/anthropic/anthropic_fallback_test.rs`, `src/tests/providers/bedrock/bedrock_thinking_payload_test.rs`, `src/tests/providers/bedrock/bedrock_error_metadata_test.rs`, `src/tests/providers/openai/openai_completions_reasoning_details_test.rs`, `src/tests/auth/oauth/github_copilot_oauth_test.rs`, and `src/tests/providers/xai/xai_grok45_responses_test.rs`. Metadata verifier targets pinned tarball SHA `9c40af2f43950f8e94e7bbcd0c1b3548f000972da00c4fb9c0d0529d4d7d5431` and reports text `1312`, providers `39`, APIs `9`, batch aliases `60`, image `45`.
 
 ## v0.84.2 bounded release evidence
 
@@ -22,7 +22,7 @@ Source: upstream tag `914cf1472e715297caa30db4b9535d534a9eb718` (`v0.84.2`), exa
 
 Status: **ADAPTED / completed pending hosted CI confirmation**. The v0.84.2 audit spans 42 changed `packages/ai` paths and **21 changed test paths total**: 18 existing tests modified plus 3 new tests. The final upstream test corpus is **131 files**, recorded in `docs/v0842-131-test-crosswalk.md`.
 
-Named tests in `src/v0842_release_test.rs` cover v0.84.2 catalog counts, strict JSON-schema conversion, optional-null omission, DeepSeek detection/max_tokens, retry buffer exhaustion, Kimi/Codex user-agent helper, Responses additional_tools/namespace replay, and Mistral HTTP/SSE production-path behavior (delayed chunks, split UTF-8, cancellation/drop cleanup, timeout, bounded 403 body, retry replay, affinity, exact wire payload). `src/github_copilot_oauth_test.rs` covers Copilot Individual policy fallback and bounded policy-enable batching (`COPILOT_POLICY_CONCURRENCY = 4`). `scripts/validate_v0842_manifests.py` is the executable 42-path/131-row manifest validator. Metadata verifier now targets the v0.84.2 pinned tarball SHA `0262785a76b0eb2eec596cd8a7ab2ee23eef89d2ef1bb1211c4f0a1944dacf41` and reports text `1267`, providers `39`, APIs `9`, batch aliases `60`, image `45`.
+Named tests in `src/tests/release/v0842_release_test.rs` cover v0.84.2 catalog counts, strict JSON-schema conversion, optional-null omission, DeepSeek detection/max_tokens, retry buffer exhaustion, Kimi/Codex user-agent helper, Responses additional_tools/namespace replay, and Mistral HTTP/SSE production-path behavior (delayed chunks, split UTF-8, cancellation/drop cleanup, timeout, bounded 403 body, retry replay, affinity, exact wire payload). `src/tests/auth/oauth/github_copilot_oauth_test.rs` covers Copilot Individual policy fallback and bounded policy-enable batching (`COPILOT_POLICY_CONCURRENCY = 4`). `scripts/validate_v0842_manifests.py` is the executable 42-path/131-row manifest validator. Metadata verifier now targets the v0.84.2 pinned tarball SHA `0262785a76b0eb2eec596cd8a7ab2ee23eef89d2ef1bb1211c4f0a1944dacf41` and reports text `1267`, providers `39`, APIs `9`, batch aliases `60`, image `45`.
 
 ## v0.84.1 bounded release evidence
 
@@ -30,7 +30,7 @@ Source: upstream tag `53fa77ccd8a279eb87e92294ef3687b03ff80112` (`v0.84.1`), exa
 
 Status: **ADAPTED / under final evidence-correction verification**. The v0.84.1 audit spans 25 changed `packages/ai` paths and **14 changed test paths total**: 13 existing tests modified plus 1 new `generate-models-strict.test.ts`. Exact split: **10 credential-gated live-matrix additions**, **2 deterministic provider/request rows**, and **2 generator-policy rows**. The final upstream test corpus is **128 files**, recorded in `docs/v0841-128-test-crosswalk.md`.
 
-Named tests in `src/v0841_release_test.rs`:
+Named tests in `src/tests/release/v0841_release_test.rs`:
 
 - `release_pinned_catalog_counts_include_individual_and_batch_aliases`
 - `qwen_token_plan_individual_catalog_env_and_endpoint_match_v0841`
@@ -38,11 +38,11 @@ Named tests in `src/v0841_release_test.rs`:
 
 Model-data/extractor/metadata evidence:
 
-- `src/model_data_validation_test.rs::extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
-- `src/model_data_validation_test.rs::extractor_allows_only_audited_release_batch_aliases`
+- `src/tests/catalogs/model_data_validation_test.rs::extractor_enforces_qwen_individual_strict_model_ids_without_output_mutation`
+- `src/tests/catalogs/model_data_validation_test.rs::extractor_allows_only_audited_release_batch_aliases`
 - `scripts/verify_release_model_metadata.py` full clean-run text/image metadata regeneration equality gate with SHA-256-pinned npm tarball (`6ab689189e7cb3de5cdb126312a3e60e8ac35fe5ee5f1b63d00f711c8a430c73`)
-- `src/release_metadata_verification_test.rs::release_metadata_verifier_clean_run_succeeds_with_expected_counts`
-- `src/release_metadata_verification_test.rs::release_metadata_verifier_detects_fault_injected_text_metadata`
+- `src/tests/release/release_metadata_verification_test.rs::release_metadata_verifier_clean_run_succeeds_with_expected_counts`
+- `src/tests/release/release_metadata_verification_test.rs::release_metadata_verifier_detects_fault_injected_text_metadata`
 
 Ported/adapted behavior:
 
@@ -59,7 +59,7 @@ Source: upstream tag `a5f43bf8aff3c55752432655f7334e3dafd1e256` (`v0.84.0`), exa
 
 Status: **ADAPTED / COMPLETED for deterministic release parity**. The v0.84.0 audit spans 101 changed `packages/ai` paths and 46 changed upstream test files; deterministic assertions are ported/adapted, covered, or explicitly N/A for live credentials/interactive UI/JS-runtime-only surfaces.
 
-Named tests in `src/v0840_release_test.rs`:
+Named tests in `src/tests/release/v0840_release_test.rs`:
 
 - `sampling_params_merge_and_override_openai_compatible_payloads`
 - `baseten_catalog_and_reasoning_payload_match_v0840`
@@ -73,11 +73,11 @@ Slice gate results: comparator text `1153/1153`, image `42/42`; `cargo build`; `
 
 
 
-Catalog correction fixture: `src/v0840_release_test.rs::release_pinned_catalog_has_no_unpinned_batch_aliases` asserts the corrected official-release catalog counts: text pairs `1153`, providers `38`, APIs `9`, image pairs `42`, and no unpinned `:batch` aliases. The extractor `scripts/extract_release_model_shards.py` records npm provider-shard source hashes and rejects `:batch` drift.
+Catalog correction fixture: `src/tests/release/v0840_release_test.rs::release_pinned_catalog_has_no_unpinned_batch_aliases` asserts the corrected official-release catalog counts: text pairs `1153`, providers `38`, APIs `9`, image pairs `42`, and no unpinned `:batch` aliases. The extractor `scripts/extract_release_model_shards.py` records npm provider-shard source hashes and rejects `:batch` drift.
 
-Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.
+Second committed v0.84.0 slice: upstream `382aa641` deferred/background response lifecycle is now **PORTED**. Evidence: `DeferredHandle`, `StopReason::Deferred`, `Message.deferred`, public `fetch_deferred`/`cancel_deferred` provider dispatch, and faux submit/pending/ready/cancel/unknown-handle executable tests in `src/tests/transports/providers_upstream_test.rs`. Full `cargo test` for this slice: `836 passed`; doctest `1 passed`; strict Clippy/build/comparator clean.
 
-Final v0.84.0 closure evidence now also includes provider stream/error regressions, runtime/OAuth/telemetry dispatch semantics, Codex account+session WebSocket fallback isolation, Bedrock status/requestId diagnostics, and Google shared retry at the real `stream_google` call site. Named final-gap evidence: `src/google_shared_retry_test.rs` (429 retry once with explicit budget, no retry when unset, no retry for 400, delay cap, caller cancellation). Whole-corpus hardening evidence adds `src/cloudflare_stream_test.rs`, `src/image_model_data_test.rs`, `src/model_data_validation_test.rs`, `src/openrouter_cache_control_models_test.rs`, `src/provider_retry_upstream_test.rs`, `src/reasoning_options_test.rs`, `src/uuid_test.rs`, and expanded `src/xai_grok45_responses_test.rs`; image/reasoning tests call production generator helpers and model-data tests call the production release-shard validator.
+Final v0.84.0 closure evidence now also includes provider stream/error regressions, runtime/OAuth/telemetry dispatch semantics, Codex account+session WebSocket fallback isolation, Bedrock status/requestId diagnostics, and Google shared retry at the real `stream_google` call site. Named final-gap evidence: `src/tests/providers/google/google_shared_retry_test.rs` (429 retry once with explicit budget, no retry when unset, no retry for 400, delay cap, caller cancellation). Whole-corpus hardening evidence adds `src/tests/transports/cloudflare_stream_test.rs`, `src/tests/catalogs/image_model_data_test.rs`, `src/tests/catalogs/model_data_validation_test.rs`, `src/tests/catalogs/openrouter_cache_control_models_test.rs`, `src/tests/transports/provider_retry_upstream_test.rs`, `src/tests/core/reasoning_options_test.rs`, `src/tests/core/uuid_test.rs`, and expanded `src/tests/providers/xai/xai_grok45_responses_test.rs`; image/reasoning tests call production generator helpers and model-data tests call the production release-shard validator.
 
 
 Mirror of the cross-port requirement: adapt locally-authored regression/edge-case
@@ -92,7 +92,7 @@ Status legend: **ADAPTED** (ported to a named rs-ai test), **COVERED**
 
 ## Current upstream test-for-test fixture: deferred/message-anchored tools
 
-Source: upstream main `packages/ai/test/deferred-tools.test.ts` at `0e6909f050eeb15e8f6c05185511f3788357ddb3` (`feat(ai): support message-anchored tool loading (#6474)`). rs-ai adaptation: `src/deferred_tools_test.rs` plus `src/deferred_tools.rs`.
+Source: upstream main `packages/ai/test/deferred-tools.test.ts` at `0e6909f050eeb15e8f6c05185511f3788357ddb3` (`feat(ai): support message-anchored tool loading (#6474)`). rs-ai adaptation: `src/tests/core/deferred_tools_test.rs` plus `src/deferred_tools.rs`.
 
 Status: **ADAPTED**. The Rust tests cover the upstream branches for `addedToolNames`/`added_tool_names`, Anthropic `defer_loading`, `tool_reference`, sibling `tool_result` output preservation, OAuth Claude Code name canonicalization/deduplication, unsupported/all-marked/prior-use fallback cases, OpenAI Responses `tool_search_call`/`tool_search_output`, Codex support gating, OpenAI-compatible fallback behavior, and context-estimator accounting for deferred definitions.
 
@@ -100,7 +100,7 @@ This is an upstream parity fixture, not counted as a local-only conformance test
 
 ## Current upstream test-for-test fixture: Azure Responses reasoning replay
 
-Source: upstream main `packages/ai/test/azure-openai-responses-reasoning-replay.test.ts` at `0e6909f050eeb15e8f6c05185511f3788357ddb3`. rs-ai adaptation: `src/azure_openai_responses_reasoning_replay_test.rs`.
+Source: upstream main `packages/ai/test/azure-openai-responses-reasoning-replay.test.ts` at `0e6909f050eeb15e8f6c05185511f3788357ddb3`. rs-ai adaptation: `src/tests/providers/openai/azure_openai_responses_reasoning_replay_test.rs`.
 
 Status: **ADAPTED**. The two deterministic cases verify that completed-output `encrypted_content` backfill preserves `response.output_item.done` when it already included encrypted content, and uses terminal `response.completed.output` only when the done item omitted it.
 
@@ -110,25 +110,25 @@ Status: **ADAPTED**. Run `scripts/compare_upstream_registry_pairs.py /workspace/
 
 ## v0.83.0 release catalog/metadata/runtime disposition fixture
 
-Source: upstream tag `845d6ff1f6643aba440341cce877ce1c43ebbc39` (`v0.83.0`), exact release-only delta `b4f293684bba718d59cc1157679bcf6157b3a7f5..845d6ff1f6643aba440341cce877ce1c43ebbc39`. rs-ai adaptation: regenerated `src/models_generated.rs`, added `Message.raw_stop_reason` provider capture, plus `src/v0830_release_test.rs`, and prior v0.82.x runtime work.
+Source: upstream tag `845d6ff1f6643aba440341cce877ce1c43ebbc39` (`v0.83.0`), exact release-only delta `b4f293684bba718d59cc1157679bcf6157b3a7f5..845d6ff1f6643aba440341cce877ce1c43ebbc39`. rs-ai adaptation: regenerated `src/models_generated.rs`, added `Message.raw_stop_reason` provider capture, plus `src/tests/release/v0830_release_test.rs`, and prior v0.82.x runtime work.
 
 Status: **ADAPTED**. The v0.81.1→v0.82.0 release span changes 96 `packages/ai` paths. Catalog/generator/model-data validation, generated image/model JSON shape, image catalog additions, Qwen Token Plan providers/env, shared text/UUIDv7 utilities, retry abort-finished/provider retry semantics, overflow phrase matching, OpenCode Go Responses support, OpenAI-completions pipe-delimited tool-call ID uniqueness, Kimi/K3/xAI/OpenRouter/OpenCode/Gemini metadata, and related deterministic tests are represented by regenerated registries and Rust tests. README/changelog/package/TS build metadata and credential/browser OAuth matrix edits are N/A for Rust runtime. Expected comparator: `PI_AI_MODEL_DATA_DIR=/workspace/tmp/pi-v0830-json scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-v0830 845d6ff1f6643aba440341cce877ce1c43ebbc39` -> text `1153/1153`, image `40/40`, missing `0`, extra `0`.
 
 ## v0.80.9 runtime refresh, Radius dynamic catalog, and xAI OAuth fixture
 
-Source: upstream tag `2d16f92973230a7e095aa984f150ba8702784f50` (`v0.80.9`), including prior `2be9efa19cd64aed40ca63f92c0c0f9a6bac7c9d` (`feat(ai): publish generated model catalogs to R2 (#6720)`) plus `5220aba6` (`feat(ai): add xAI device OAuth and route grok-4.5 through Responses (#6651)`). rs-ai adaptation: `src/models_runtime.rs`, `src/registry.rs`, `src/models_runtime_refresh_test.rs`, `src/oauth.rs`, `src/auth_providers.rs`, `src/xai_oauth_test.rs`, `src/xai_grok45_responses_test.rs`, and regenerated `src/models_generated.rs`.
+Source: upstream tag `2d16f92973230a7e095aa984f150ba8702784f50` (`v0.80.9`), including prior `2be9efa19cd64aed40ca63f92c0c0f9a6bac7c9d` (`feat(ai): publish generated model catalogs to R2 (#6720)`) plus `5220aba6` (`feat(ai): add xAI device OAuth and route grok-4.5 through Responses (#6651)`). rs-ai adaptation: `src/models_runtime.rs`, `src/registry.rs`, `src/tests/catalogs/models_runtime_refresh_test.rs`, `src/oauth.rs`, `src/auth_providers.rs`, `src/tests/auth/oauth/xai_oauth_test.rs`, `src/tests/providers/xai/xai_grok45_responses_test.rs`, and regenerated `src/models_generated.rs`.
 
 Status: **ADAPTED**. Tests cover provider-scoped model-store entries, shared runtime-backed ordinary registry lookup/list paths, public runtime provider register/remove/refresh APIs, dynamic refresh replacement/removal, concurrent refresh dedupe, cancellation, `force` propagation, cache restore/offline retention, production Radius `/v1/config` provider refresh through `registry::refresh_runtime_models`, xAI device OAuth pending/slow_down/success/terminal/timeout/cancel/refresh behavior, `verification_uri_complete` validation/preference, and an actual `xai/grok-4.5` OpenAI Responses request. Comparator expectation for v0.80.9: text `1075/1075`, image `35/35`, missing `0`, extra `0`.
 
 ## Current upstream main OpenAI Codex session-id clamp fixture
 
-Source: upstream main commit `dcfe36c79702ec240b146c45f167ab75ecddd205` (`clamp session-id to 64 chars for openai-codex (#6653)`). rs-ai adaptation: `src/provider/codex.rs` and `src/openai_codex_stream_test.rs`.
+Source: upstream main commit `dcfe36c79702ec240b146c45f167ab75ecddd205` (`clamp session-id to 64 chars for openai-codex (#6653)`). rs-ai adaptation: `src/provider/codex.rs` and `src/tests/providers/codex/openai_codex_stream_test.rs`.
 
 Status: **ADAPTED**. `clamps_prompt_cache_key_and_codex_session_headers_to_64_chars` verifies a long Codex `session_id` is clamped to the same 64-character value for `prompt_cache_key`, `session-id`, and `x-client-request-id` in the SSE path; the same clamp is applied to the WebSocket request id/session headers.
 
 ## v0.80.7 Radius OAuth helper fixture
 
-Source: upstream `packages/ai/src/utils/oauth/radius.ts` at `818d67457cdd6b60bce6b121d16b23141c252dd8`. rs-ai adaptation: `src/oauth.rs`, `src/auth_providers.rs`, and `src/radius_oauth_test.rs`.
+Source: upstream `packages/ai/src/utils/oauth/radius.ts` at `818d67457cdd6b60bce6b121d16b23141c252dd8`. rs-ai adaptation: `src/oauth.rs`, `src/auth_providers.rs`, and `src/tests/auth/oauth/radius_oauth_test.rs`.
 
 Status: **ADAPTED**. Local HTTP tests cover `/v1/oauth` discovery, PKCE authorization URL construction, authorization-code exchange, refresh through `RadiusOAuth`, device authorization request shape, `/v1/config` catalog loading/sanitization, transient config-failure fallback to cached catalog, API-key derivation, and gateway catalog model injection without duplicates. Browser launching/HTML callback rendering is treated as platform UI glue; the deterministic URL/exchange/resource-cleanup boundaries are exposed as Rust helpers.
 
@@ -143,7 +143,7 @@ all three ports use identical expected values. Source of truth:
 
 Constants: `CHARS_PER_TOKEN = 4`, `ESTIMATED_IMAGE_CHARS = 4800`.
 `estimateTextTokens(s) = ceil(s.length / 4)`; an image block counts as 4800
-chars (= 1200 tokens). rs-ai: `src/estimate.rs`, `src/estimate_test.rs`.
+chars (= 1200 tokens). rs-ai: `src/estimate.rs`, `src/tests/core/estimate_test.rs`.
 
 | case | input | expected |
 |---|---|---|
@@ -166,7 +166,7 @@ used      = estimateContextTokens(context).tokens + CONTEXT_SAFETY_TOKENS
 available = max(MIN_MAX_TOKENS, contextWindow - used)
 return min(maxTokens, available)
 ```
-rs-ai: `src/simple_options.rs`, `src/simple_options_test.rs`.
+rs-ai: `src/simple_options.rs`, `src/tests/core/simple_options_test.rs`.
 
 | case | inputs | expected |
 |---|---|---|
@@ -189,7 +189,7 @@ it folds default+clamp into every provider builder, matching each provider's
 inner gate (openai/responses truthy → omit a clamped 0; google/mistral
 `!== undefined` → always emit). The shared canon fixture (contextWindow=10000,
 `"x"*8000`, maxTokens=8000 → **3904**) is asserted on the openai-completions wire
-param (`openai_completions_empty_tools_test.rs`)._
+param (`tests/providers/openai/openai_completions_empty_tools_test.rs`)._
 
 ### C. `Usage.reasoning` — `thinking_tokens` / `reasoning_tokens` mapping
 
@@ -207,13 +207,13 @@ output**, not added to it):
 Fixtures: anthropic delta `output_tokens_details.thinking_tokens=25` →
 `reasoning=Some(25)`; openai `completion_tokens_details.reasoning_tokens=30` →
 `Some(30)`, absent → `Some(0)`; responses `output_tokens_details.reasoning_tokens=12`
-→ `Some(12)`. rs-ai: `simple_options_test.rs`, `anthropic_sse_parsing_test.rs`.
+→ `Some(12)`. rs-ai: `tests/core/simple_options_test.rs`, `tests/providers/anthropic/anthropic_sse_parsing_test.rs`.
 
 ### D. `isRetryableAssistantError` truth-table
 
 Gate: returns `false` unless `stopReason == "error"` **and** `errorMessage` is
 non-empty. Then **non-retryable (quota/billing) wins** over retryable; checked
-case-insensitively. rs-ai: `src/retry.rs`, `src/retry_classify_test.rs`.
+case-insensitively. rs-ai: `src/retry.rs`, `src/tests/transports/retry_classify_test.rs`.
 
 | errorMessage (stopReason=error) | result |
 |---|---|
@@ -247,7 +247,7 @@ available balance, insufficient_quota, out of budget, quota exceeded, billing`.
 `"{status}: {body}"`, or branded `"{prefix} ({status}): {body}"` for
 openai-responses (`"OpenAI API error"`) / azure (`"Azure OpenAI API error"`).
 Empty body → `"{status}"` (or `"{prefix} ({status})"`). rs-ai: `src/error_body.rs`,
-`src/error_body_test.rs`.
+`src/tests/core/error_body_test.rs`.
 
 | case | inputs | expected |
 |---|---|---|
@@ -273,27 +273,27 @@ item is a real upstream-conformance behavior other ports still need.
   headers (`session_id` / `x-client-request-id` / `x-session-affinity` /
   `prompt_cache_key`) must be cleared when `cacheRetention: "none"`. Fixed across
   all four affinity providers (anthropic, fireworks, openai-responses,
-  openai-completions). Tests: `src/openai_completions_prompt_cache_test.rs`,
-  `src/anthropic_cache_write_1h_cost_test.rs`, `src/codex_request_shape_test.rs`.
+  openai-completions). Tests: `src/tests/providers/openai/openai_completions_prompt_cache_test.rs`,
+  `src/tests/providers/anthropic/anthropic_cache_write_1h_cost_test.rs`, `src/tests/providers/codex/codex_request_shape_test.rs`.
 - **WS connection-limit retry-once + WS handshake header fix:** see the WS
-  section below (`src/codex_ws_connection_limit_test.rs`,
-  `src/codex_ws_protocol_test.rs`).
+  section below (`src/tests/providers/codex/codex_ws_connection_limit_test.rs`,
+  `src/tests/providers/codex/codex_ws_protocol_test.rs`).
 - **Device-code OAuth semantics:** `poll_oauth_device_code_flow` implements
   RFC8628 `slow_down` (+5s), min-interval clamp, and the
   Failed/TIMEOUT-vs-SLOW_DOWN message distinctions
-  (`src/oauth_device_code_test.rs`, `src/oauth.rs`).
+  (`src/tests/auth/oauth/oauth_device_code_test.rs`, `src/oauth.rs`).
 - **HTTP proxy:** `src/http_proxy.rs` resolves HTTP(S)/NO/ALL_PROXY with scoped
   precedence (SOCKS/PAC rejected), wired into all 6 client builders
-  (`src/http_proxy_test.rs`, 4/4).
-- **Vertex provider request path:** `src/google_vertex_request_path_test.rs`
+  (`src/tests/transports/http_proxy_test.rs`, 4/4).
+- **Vertex provider request path:** `src/tests/providers/google/google_vertex_request_path_test.rs`
   (project/location REST URL, ADC marker / gcp-vertex-credentials fallback,
   real-key path) — origin=go-ai `resolveVertexProjectLocation`.
 - **Simulated-fixture ports (faithful wire-format, no fabricated output):**
-  `src/simulated_e2e_fixtures_test.rs` (+ peers) — responseId, tokens,
+  `src/tests/core/simulated_e2e_fixtures_test.rs` (+ peers) — responseId, tokens,
   total-tokens (proves openai-completions ignores native total),
   context-overflow, unicode-surrogate reassembly, google-thinking-disable,
   cache-retention (request-shape).
-- **Live-gated E2E wrappers:** `src/stream_e2e_live_test.rs` mirrors upstream
+- **Live-gated E2E wrappers:** `src/tests/transports/stream_e2e_live_test.rs` mirrors upstream
   `stream.test.ts` `describe.skipIf(!<KEY>)` — same names/assertions, run with a
   key, skip cleanly without. Pattern other ports can copy verbatim.
 
@@ -301,37 +301,37 @@ item is a real upstream-conformance behavior other ports still need.
 
 | go-ai test | rs-ai test | Notes |
 |---|---|---|
-| `TestExtractRegionFromURL` | `src/bedrock_endpoint_test.rs::extract_region_from_url` | 6 cases incl. fips + `.com.cn`; `None == ""`. Previously rs-ai's `bedrock_standard_endpoint_region` was untested. |
-| `TestShouldUseExplicitBedrockEndpoint` | `src/bedrock_endpoint_test.rs::should_use_explicit_bedrock_endpoint` | custom→pinned, standard+clean-env→pinned, standard+`AWS_REGION`→not pinned. |
-| (bonus) ARN region | `src/bedrock_endpoint_test.rs::extract_region_from_arn_model_id` | covers `bedrock_arn_region`. |
-| `TestBuildCodexRequestMatchesPiaiShape` | `src/codex_request_shape_test.rs::build_codex_request_matches_piai_shape` | full pi-ai request-shape snapshot: stream/store, instructions, prompt_cache_key, tool_choice=auto, parallel_tool_calls, include, reasoning{effort,summary}, text{verbosity}, user-first input, tool strict:null. rs-ai shape confirmed matching. |
+| `TestExtractRegionFromURL` | `src/tests/providers/bedrock/bedrock_endpoint_test.rs::extract_region_from_url` | 6 cases incl. fips + `.com.cn`; `None == ""`. Previously rs-ai's `bedrock_standard_endpoint_region` was untested. |
+| `TestShouldUseExplicitBedrockEndpoint` | `src/tests/providers/bedrock/bedrock_endpoint_test.rs::should_use_explicit_bedrock_endpoint` | custom→pinned, standard+clean-env→pinned, standard+`AWS_REGION`→not pinned. |
+| (bonus) ARN region | `src/tests/providers/bedrock/bedrock_endpoint_test.rs::extract_region_from_arn_model_id` | covers `bedrock_arn_region`. |
+| `TestBuildCodexRequestMatchesPiaiShape` | `src/tests/providers/codex/codex_request_shape_test.rs::build_codex_request_matches_piai_shape` | full pi-ai request-shape snapshot: stream/store, instructions, prompt_cache_key, tool_choice=auto, parallel_tool_calls, include, reasoning{effort,summary}, text{verbosity}, user-first input, tool strict:null. rs-ai shape confirmed matching. |
 
 ## Coverage status by area (go-ai corpus → rs-ai)
 
 | go-ai area (count) | rs-ai status | Where |
 |---|---|---|
-| Retry helper (5: backoff/retryable/retry-after/duration) | COVERED | `src/retry.rs` tests + `src/coverage_test.rs` |
+| Retry helper (5: backoff/retryable/retry-after/duration) | COVERED | `src/retry.rs` tests + `src/tests/core/coverage_test.rs` |
 | SSE transport (4: parse/multiline/sticky-id/reader-errors) | COVERED | `src/transports/`, sse parser tests |
 | Streaming/partial JSON (3) | COVERED | `src/jsonparse.rs` tests |
-| Faux provider (10) | COVERED | `src/provider/faux.rs`, `provider_test.rs` |
+| Faux provider (10) | COVERED | `src/provider/faux.rs`, `tests/providers/other/provider_test.rs` |
 | Transforms / synthetic tool results / image downgrade | COVERED | `src/transform.rs` tests |
-| OpenAI completions payload/usage/cache (8) | COVERED | `src/provider_test.rs`, `coverage_test.rs` |
-| OpenAI Codex request/headers/ws (9) | COVERED | `src/provider_test.rs` (`build_codex_payload`, ws replay) |
-| Azure/Responses (10) | COVERED + ADAPTED | `src/azure_openai_base_url_test.rs` (11/11), `provider_test.rs` |
-| Mistral (1) | COVERED + ADAPTED | `src/mistral_reasoning_mode_test.rs` (7/7) |
-| Bedrock endpoint/region/headers (11) | PARTIAL → ADAPTED | endpoint+region now adapted; convert-messages/thinking-payload COVERED in `provider_test.rs` |
-| Anthropic messages/retry/copilot (6) | COVERED | `src/provider_test.rs`, `provider_retry_test.rs` |
+| OpenAI completions payload/usage/cache (8) | COVERED | `src/tests/providers/other/provider_test.rs`, `tests/core/coverage_test.rs` |
+| OpenAI Codex request/headers/ws (9) | COVERED | `src/tests/providers/other/provider_test.rs` (`build_codex_payload`, ws replay) |
+| Azure/Responses (10) | COVERED + ADAPTED | `src/tests/providers/openai/azure_openai_base_url_test.rs` (11/11), `tests/providers/other/provider_test.rs` |
+| Mistral (1) | COVERED + ADAPTED | `src/tests/providers/mistral/mistral_reasoning_mode_test.rs` (7/7) |
+| Bedrock endpoint/region/headers (11) | PARTIAL → ADAPTED | endpoint+region now adapted; convert-messages/thinking-payload COVERED in `tests/providers/other/provider_test.rs` |
+| Anthropic messages/retry/copilot (6) | COVERED | `src/tests/providers/other/provider_test.rs`, `tests/transports/provider_retry_test.rs` |
 | Google/Vertex (4) | PARTIAL | google SSE/url COVERED; Vertex ADC = N/A (gated) |
 | OAuth providers (8: PKCE/refresh/copilot-filtering) | PARTIAL / N/A | token helpers COVERED; interactive refresh/login = N/A (gated) |
-| Model registry/metadata (3) | COVERED | `src/registry_test.rs`, `models_generated.rs` |
+| Model registry/metadata (3) | COVERED | `src/tests/catalogs/registry_test.rs`, `models_generated.rs` |
 | Logger (5) | COVERED | `src/logger.rs` |
 | Image generation / OpenRouter images (7) | COVERED | `src/images/`, image tests |
-| Harness/context/compaction (many) | COVERED | `src/harness_test.rs`, `compaction.rs` |
+| Harness/context/compaction (many) | COVERED | `src/tests/core/harness_test.rs`, `compaction.rs` |
 
 ## Pending high-value adaptations (next cycles)
 
-1. `TestProcessSSEStreamAttachesPendingEncryptedReasoningDetails` — ADAPTED: `src/openai_encrypted_reasoning_test.rs` (encrypted `reasoning_details` attached to the matching tool call's `thought_signature`, order-independent; decoded fields asserted since the blob is opaque). All 3 originally-pending go-ai adaptations now done (codex request-shape, bedrock coalescing, SSE encrypted-reasoning).
-2. `TestConvertMessagesCoalescesConsecutiveToolResults` (bedrock) — ADAPTED: extracted a testable `build_bedrock_messages` and ported the coalescing + cache-point assertion (`src/bedrock_coalesce_test.rs`).
+1. `TestProcessSSEStreamAttachesPendingEncryptedReasoningDetails` — ADAPTED: `src/tests/providers/openai/openai_encrypted_reasoning_test.rs` (encrypted `reasoning_details` attached to the matching tool call's `thought_signature`, order-independent; decoded fields asserted since the blob is opaque). All 3 originally-pending go-ai adaptations now done (codex request-shape, bedrock coalescing, SSE encrypted-reasoning).
+2. `TestConvertMessagesCoalescesConsecutiveToolResults` (bedrock) — ADAPTED: extracted a testable `build_bedrock_messages` and ported the coalescing + cache-point assertion (`src/tests/providers/bedrock/bedrock_coalesce_test.rs`).
 3. `TestBedrockOptionPrecedenceAndRequestMetadata` — region option precedence + request metadata propagation.
 4. OAuth `TestGetAPIKeyRefreshesExpiredCredential` — blocked on credential-store seam (parity-gaps top-3 #2).
 
@@ -355,8 +355,8 @@ the RFC6455 headers itself — not a reverse gap._
 
 | # | rs-ai test | Why go-ai should adopt |
 |---|---|---|
-| RT1 | `src/codex_ws_connection_limit_test.rs` | **Real WS-server** integration test (not a mock): stands up a TcpListener that rejects attempt 1 with `websocket_connection_limit_reached` and serves a valid stream on the retry. This is the method that exposed rs-ai's silent handshake bug; if go-ai only has mock/replay WS tests it should add a real-handshake one. |
-| RT2 | `src/codex_ws_protocol_test.rs` | Real WS-server happy-path: captures the outbound `response.create` (asserts `model`) and streams created/output_item.added/delta/done/completed; asserts Start+TextDelta+Done(Stop). Locks the handshake against regressions. |
+| RT1 | `src/tests/providers/codex/codex_ws_connection_limit_test.rs` | **Real WS-server** integration test (not a mock): stands up a TcpListener that rejects attempt 1 with `websocket_connection_limit_reached` and serves a valid stream on the retry. This is the method that exposed rs-ai's silent handshake bug; if go-ai only has mock/replay WS tests it should add a real-handshake one. |
+| RT2 | `src/tests/providers/codex/codex_ws_protocol_test.rs` | Real WS-server happy-path: captures the outbound `response.create` (asserts `model`) and streams created/output_item.added/delta/done/completed; asserts Start+TextDelta+Done(Stop). Locks the handshake against regressions. |
 
 Principle (auditor-endorsed): prefer **real server integration tests over mocks**
 wherever a transport/handshake is involved — mocks can't catch a malformed
@@ -382,7 +382,7 @@ from canonical upstream** — rs-ai is ahead.
   `is_ws_connection_limit_error` + retry-once-before-SSE-fallback in
   `src/provider/codex.rs`, mirroring upstream
   `isWebSocketConnectionLimitReachedError` / `retriedWebSocketConnectionLimit`.
-  Adapted as `src/codex_ws_connection_limit_test.rs` (real WS server rejects
+  Adapted as `src/tests/providers/codex/codex_ws_connection_limit_test.rs` (real WS server rejects
   attempt 1 with the limit code, serves a valid stream on the retry).
 - **WS handshake header bug — FIXED (latent).** While building the retry test,
   found rs-ai's Codex WebSocket request was a fully-built `http::Request`, which
@@ -392,7 +392,7 @@ from canonical upstream** — rs-ai is ahead.
   to SSE. Now supplies all RFC6455 headers (fresh `generate_key()`), so the
   WebSocket transport actually connects. No prior test exercised a real handshake.
 - **WS happy-path protocol flow — ADAPTED.** `TestStreamViaWebSocketProtocolFlow`
-  -> `src/codex_ws_protocol_test.rs::stream_via_websocket_protocol_flow`: real WS
+  -> `src/tests/providers/codex/codex_ws_protocol_test.rs::stream_via_websocket_protocol_flow`: real WS
   server captures the outbound `response.create` (asserts `model`), streams
   created/output_item.added/output_text.delta/output_item.done/completed; client
   must emit Start + TextDelta("ok") + Done(Stop). This locks the handshake fix.
@@ -404,7 +404,7 @@ from canonical upstream** — rs-ai is ahead.
   plus WS debug-stats counters (`WebSocketFailures`/`SSEFallbacks`/
   `WebSocketFallbackActive`), which rs-ai does not expose. rs-ai already covers
   SSE fallback + the `provider_transport_failure` diagnostic separately
-  (`provider_test.rs`). Debug-stats counters live in the documented WS-pooling gap.
+  (`tests/providers/other/provider_test.rs`). Debug-stats counters live in the documented WS-pooling gap.
 - `TestStreamViaWebSocketAutoUsesCachedDeltaAndDebugStats` — websocket-cached
   transport + debug stats (WS-pooling gap; N/A until pooling lands).
 

@@ -20,6 +20,14 @@
   - `git config --global user.email "rui.carmo@gmail.com"`
 - Final state must be clean and synced with `origin/main`.
 
+## Source tree layout
+
+- Production crate modules live directly under `src/` and existing public module/API paths should remain stable unless an API-neutral mechanical move is explicitly requested.
+- Provider runtime implementations live under `src/provider/`; transport helpers live under `src/transports/`; image model support lives under `src/images/`.
+- Crate-root unit test modules live under `src/tests/` by domain (`core`, `providers/*`, `transports`, `auth/oauth`, `catalogs`, `release`). Keep declarations in `src/lib.rs` using `#[cfg(test)]` and explicit `#[path = "tests/.../file.rs"]` so crate-private access and module names remain stable.
+- Generated text catalog source is `src/models_generated.rs`; generated image catalog source is `src/images/models_generated.rs`. Do not hand-edit generated catalog files; regenerate them from pinned inputs.
+- SBOM outputs are generated under gitignored `artifacts/` and are not committed.
+
 ## Official release discovery and bounds
 
 For every future `@earendil-works/pi-ai` upstream release audit:
