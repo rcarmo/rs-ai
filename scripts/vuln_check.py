@@ -2,7 +2,7 @@
 """Pinned Rust vulnerability-scan wrapper with expiring exceptions.
 
 Uses `cargo audit` at the pinned version below. Known advisories may be
-accepted only with an owner, rationale, and expiry in `APPROVED_EXCEPTIONS`;
+accepted only with an owner, rationale, mitigation, and expiry in `APPROVED_EXCEPTIONS`;
 any new/unapproved advisory or warning fails the check. Scanner/runtime errors
 fail closed even if a partial JSON report is emitted.
 """
@@ -37,21 +37,25 @@ APPROVED_EXCEPTIONS: ExceptionPolicy = {
         "owner": "Rui Carmo <rui.carmo@gmail.com>",
         "expires": "2026-09-30",
         "rationale": "AWS SDK legacy hyper 0.14 transport dependency; update AWS stack when patched transitives are available.",
+        "mitigation": "Bedrock access is isolated to configured AWS endpoints; keep AWS SDK current and re-run cargo update/audit on each release or advisory review.",
     },
     ("RUSTSEC-2026-0099", "rustls-webpki", "0.101.7"): {
         "owner": "Rui Carmo <rui.carmo@gmail.com>",
         "expires": "2026-09-30",
         "rationale": "AWS SDK legacy rustls 0.21 dependency; update AWS stack when patched transitives are available.",
+        "mitigation": "Bedrock TLS is limited to AWS endpoints through the SDK; keep AWS SDK current and re-run cargo update/audit on each release or advisory review.",
     },
     ("RUSTSEC-2026-0098", "rustls-webpki", "0.101.7"): {
         "owner": "Rui Carmo <rui.carmo@gmail.com>",
         "expires": "2026-09-30",
         "rationale": "AWS SDK legacy rustls 0.21 dependency; update AWS stack when patched transitives are available.",
+        "mitigation": "Bedrock TLS is limited to AWS endpoints through the SDK; keep AWS SDK current and re-run cargo update/audit on each release or advisory review.",
     },
     ("RUSTSEC-2026-0104", "rustls-webpki", "0.101.7"): {
         "owner": "Rui Carmo <rui.carmo@gmail.com>",
         "expires": "2026-09-30",
         "rationale": "AWS SDK legacy rustls 0.21 dependency; update AWS stack when patched transitives are available.",
+        "mitigation": "Bedrock TLS is limited to AWS endpoints through the SDK; keep AWS SDK current and re-run cargo update/audit on each release or advisory review.",
     },
 }
 
@@ -103,7 +107,7 @@ def validate_exception(
         raise ValueError(f"invalid vulnerability exception expiry: {advisory_id} {package} {version}: {expiry_text!r}") from exc
     if expiry < today:
         raise ValueError(f"expired vulnerability exception: {advisory_id} {package} {version} expired {expiry}")
-    if not item.get("owner") or not item.get("rationale"):
+    if not item.get("owner") or not item.get("rationale") or not item.get("mitigation"):
         raise ValueError(f"incomplete vulnerability exception: {advisory_id} {package} {version}")
     return item
 
@@ -150,7 +154,7 @@ def review_report(
         item = validate_exception(finding, exceptions, today)
         label = f"{advisory_id} {package} {version}"
         if item:
-            accepted.append(f"{label} (owner={item['owner']}, expires={item['expires']})")
+            accepted.append(f"{label} (owner={item['owner']}, mitigation={item['mitigation']}, expires={item['expires']})")
         else:
             failures.append(f"unapproved vulnerability: {label} - {finding['advisory'].get('title', '')}")
     for warning_kind, finding in warnings:
@@ -158,7 +162,7 @@ def review_report(
         item = validate_exception(finding, exceptions, today)
         label = f"{warning_kind}: {advisory_id} {package} {version}"
         if item:
-            accepted.append(f"{label} (owner={item['owner']}, expires={item['expires']})")
+            accepted.append(f"{label} (owner={item['owner']}, mitigation={item['mitigation']}, expires={item['expires']})")
         else:
             failures.append(f"unapproved warning: {label} - {finding['advisory'].get('title', '')}")
     return failures, accepted, len(vulnerabilities) + len(warnings)

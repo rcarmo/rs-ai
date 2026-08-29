@@ -76,25 +76,50 @@ def test_unapproved_advisory_fails() -> None:
 
 def test_expired_and_incomplete_waivers_fail() -> None:
     key = ("RUSTSEC-2099-0001", "example", "1.0.0")
-    expired = {key: {"owner": "owner", "expires": "2025-01-01", "rationale": "temporary"}}
+    complete = {
+        "owner": "owner",
+        "expires": "2026-12-31",
+        "rationale": "temporary",
+        "mitigation": "bounded exposure",
+    }
+    expired = {key: {**complete, "expires": "2025-01-01"}}
     assert_raises_value_error(
         lambda: vuln_check.review_report(report([finding()]), exceptions=expired, today=date(2026, 1, 1)),
         "expired vulnerability exception",
     )
-    incomplete = {key: {"owner": "owner", "expires": "2026-12-31", "rationale": ""}}
+    missing_rationale = {key: {**complete, "rationale": ""}}
     assert_raises_value_error(
-        lambda: vuln_check.review_report(report([finding()]), exceptions=incomplete, today=date(2026, 1, 1)),
+        lambda: vuln_check.review_report(report([finding()]), exceptions=missing_rationale, today=date(2026, 1, 1)),
+        "incomplete vulnerability exception",
+    )
+    missing_mitigation = {key: {"owner": "owner", "expires": "2026-12-31", "rationale": "temporary"}}
+    assert_raises_value_error(
+        lambda: vuln_check.review_report(report([finding()]), exceptions=missing_mitigation, today=date(2026, 1, 1)),
+        "incomplete vulnerability exception",
+    )
+    empty_mitigation = {key: {**complete, "mitigation": ""}}
+    assert_raises_value_error(
+        lambda: vuln_check.review_report(report([finding()]), exceptions=empty_mitigation, today=date(2026, 1, 1)),
         "incomplete vulnerability exception",
     )
 
 
 def test_approved_advisory_passes() -> None:
     key = ("RUSTSEC-2099-0001", "example", "1.0.0")
-    exceptions = {key: {"owner": "owner", "expires": "2026-12-31", "rationale": "temporary"}}
+    exceptions = {
+        key: {
+            "owner": "owner",
+            "expires": "2026-12-31",
+            "rationale": "temporary",
+            "mitigation": "bounded exposure",
+        }
+    }
     failures, accepted, count = vuln_check.review_report(report([finding()]), exceptions=exceptions, today=date(2026, 1, 1))
     assert failures == []
     assert count == 1
-    assert accepted == ["RUSTSEC-2099-0001 example 1.0.0 (owner=owner, expires=2026-12-31)"]
+    assert accepted == [
+        "RUSTSEC-2099-0001 example 1.0.0 (owner=owner, mitigation=bounded exposure, expires=2026-12-31)"
+    ]
 
 
 def test_main_rejects_mock_scanner_error_exit_with_empty_json() -> None:
