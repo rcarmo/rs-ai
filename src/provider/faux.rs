@@ -163,6 +163,7 @@ pub struct FauxProvider {
     default_pending_fetches: usize,
     default_poll_after_ms: Option<u64>,
     telemetry_contexts: Mutex<Vec<Option<TelemetryContext>>>,
+    contexts: Mutex<Vec<Context>>,
 }
 
 impl FauxProvider {
@@ -191,6 +192,7 @@ impl FauxProvider {
             default_pending_fetches: pending_fetches,
             default_poll_after_ms: poll_after_ms,
             telemetry_contexts: Mutex::new(Vec::new()),
+            contexts: Mutex::new(Vec::new()),
         })
     }
 
@@ -224,6 +226,11 @@ impl FauxProvider {
     pub fn telemetry_contexts(&self) -> Vec<Option<TelemetryContext>> {
         self.telemetry_contexts.lock().unwrap().clone()
     }
+
+    /// Context snapshots received by each streamed request.
+    pub fn contexts(&self) -> Vec<Context> {
+        self.contexts.lock().unwrap().clone()
+    }
 }
 
 impl crate::registry::ApiProvider for FauxProvider {
@@ -247,6 +254,7 @@ impl crate::registry::ApiProvider for FauxProvider {
             .lock()
             .unwrap()
             .push(opts.telemetry_context.clone());
+        self.contexts.lock().unwrap().push(context.clone());
         let Some(resolved) = step else {
             let err = Event::Error {
                 reason: StopReason::Error,
