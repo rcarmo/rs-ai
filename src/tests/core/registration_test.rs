@@ -65,6 +65,7 @@ mod tests {
         assert!(registry::get_api_provider("anthropic-messages"));
         assert!(registry::get_api_provider("google-generative-ai"));
         assert!(registry::get_api_provider("mistral-conversations"));
+        #[cfg(feature = "bedrock")]
         assert!(registry::get_api_provider("bedrock-converse-stream"));
         assert!(registry::get_api_provider("openai-codex-responses"));
     }

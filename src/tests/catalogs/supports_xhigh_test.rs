@@ -157,6 +157,7 @@ mod tests {
         assert!(!l.iter().any(|x| x == "xhigh"), "{l:?}");
     }
 
+    #[cfg(feature = "bedrock")]
     #[test]
     fn includes_xhigh_but_not_off_for_bedrock_fable_5() {
         let l = levels(&m("amazon-bedrock", "global.anthropic.claude-fable-5"));

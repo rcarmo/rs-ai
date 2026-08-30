@@ -36965,6 +36965,8 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
 /// Returns all built-in models from the upstream pi-ai registry.
 pub fn builtin_models() -> Vec<Model> {
     let mut models = Vec::with_capacity(1290);
+    #[cfg(not(feature = "bedrock"))]
+    let bedrock_api = "bedrock-converse-stream";
     append_builtin_models_0(&mut models);
     append_builtin_models_1(&mut models);
     append_builtin_models_2(&mut models);
@@ -36991,5 +36993,8 @@ pub fn builtin_models() -> Vec<Model> {
     append_builtin_models_23(&mut models);
     append_builtin_models_24(&mut models);
     append_builtin_models_25(&mut models);
+    // Filter out Bedrock models when the bedrock feature is disabled
+    #[cfg(not(feature = "bedrock"))]
+    models.retain(|m| m.api != bedrock_api);
     models
 }

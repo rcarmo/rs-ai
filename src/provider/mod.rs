@@ -8,6 +8,7 @@ use crate::types::{Context, Model, StreamOptions};
 use tokio_stream::Stream;
 
 pub mod anthropic;
+#[cfg(feature = "bedrock")]
 pub mod bedrock;
 pub mod codex;
 pub mod faux;
@@ -126,7 +127,9 @@ impl ApiProvider for MistralProvider {
     }
 }
 
+#[cfg(feature = "bedrock")]
 struct BedrockProvider;
+#[cfg(feature = "bedrock")]
 impl ApiProvider for BedrockProvider {
     fn api(&self) -> &str {
         "bedrock-converse-stream"
@@ -180,6 +183,7 @@ pub fn register_builtin_providers() {
     registry::register_api(Arc::new(GoogleProvider));
     registry::register_api(Arc::new(GoogleVertexProvider));
     registry::register_api(Arc::new(MistralProvider));
+    #[cfg(feature = "bedrock")]
     registry::register_api(Arc::new(BedrockProvider));
     registry::register_api(Arc::new(PiMessagesProvider));
     registry::register_api(Arc::new(CodexProvider));

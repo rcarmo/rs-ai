@@ -88,25 +88,25 @@ mod azure_openai_base_url_test;
 #[cfg(test)]
 #[path = "tests/providers/openai/azure_openai_responses_reasoning_replay_test.rs"]
 mod azure_openai_responses_reasoning_replay_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/providers/bedrock/bedrock_coalesce_test.rs"]
 mod bedrock_coalesce_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/providers/bedrock/bedrock_convert_messages_test.rs"]
 mod bedrock_convert_messages_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/providers/bedrock/bedrock_custom_headers_test.rs"]
 mod bedrock_custom_headers_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/providers/bedrock/bedrock_endpoint_test.rs"]
 mod bedrock_endpoint_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/providers/bedrock/bedrock_error_metadata_test.rs"]
 mod bedrock_error_metadata_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/catalogs/bedrock_images_models_test.rs"]
 mod bedrock_images_models_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/providers/bedrock/bedrock_thinking_payload_test.rs"]
 mod bedrock_thinking_payload_test;
 #[cfg(test)]
@@ -307,7 +307,7 @@ mod registration_test;
 #[cfg(test)]
 #[path = "tests/catalogs/registry_test.rs"]
 mod registry_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/release/release_metadata_verification_test.rs"]
 mod release_metadata_verification_test;
 #[cfg(test)]
@@ -334,28 +334,28 @@ mod supports_xhigh_test;
 #[cfg(test)]
 #[path = "tests/catalogs/together_xiaomi_models_test.rs"]
 mod together_xiaomi_models_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/core/tool_call_id_normalization_test.rs"]
 mod tool_call_id_normalization_test;
 #[cfg(test)]
 #[path = "tests/core/uuid_test.rs"]
 mod uuid_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/release/v0830_release_test.rs"]
 mod v0830_release_test;
 #[cfg(test)]
 #[path = "tests/release/v0840_release_test.rs"]
 mod v0840_release_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/release/v0841_release_test.rs"]
 mod v0841_release_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/release/v0842_release_test.rs"]
 mod v0842_release_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/release/v0843_release_test.rs"]
 mod v0843_release_test;
-#[cfg(test)]
+#[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/release/v0844_release_test.rs"]
 mod v0844_release_test;
 #[cfg(test)]
