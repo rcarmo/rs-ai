@@ -158,6 +158,13 @@ mod tests {
         let (reason, _err, m) = run(body).await;
         assert!(matches!(reason, StopReason::Stop));
         assert_eq!(m.response_id.as_deref(), Some("resp_completed"));
+        assert!(
+            serde_json::to_value(&m)
+                .unwrap()
+                .get("errorMessage")
+                .is_none(),
+            "successful terminal messages must omit serialized errorMessage"
+        );
         let u = m.usage.unwrap();
         assert_eq!(
             (
@@ -184,6 +191,13 @@ mod tests {
             Some("incomplete.max_output_tokens")
         );
         assert_eq!(m.response_id.as_deref(), Some("resp_incomplete"));
+        assert!(
+            serde_json::to_value(&m)
+                .unwrap()
+                .get("errorMessage")
+                .is_none(),
+            "max_output_tokens length terminal messages must omit serialized errorMessage"
+        );
         let u = m.usage.unwrap();
         assert_eq!(
             (
@@ -210,6 +224,10 @@ mod tests {
             Some("incomplete.content_filter")
         );
         assert_eq!(err.as_deref(), Some("Response incomplete: content_filter"));
+        assert_eq!(
+            serde_json::to_value(&m).unwrap()["errorMessage"],
+            "Response incomplete: content_filter"
+        );
     }
 
     #[tokio::test]
@@ -224,6 +242,12 @@ mod tests {
         assert!(matches!(reason, StopReason::Stop));
         assert_eq!(err, None);
         assert_eq!(message.error_message, None);
+        assert!(
+            serde_json::to_value(&message)
+                .unwrap()
+                .get("errorMessage")
+                .is_none()
+        );
 
         let length_after_error = concat!(
             "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_filter\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"content_filter\"}}}\n\n",
@@ -235,6 +259,12 @@ mod tests {
         assert!(matches!(reason, StopReason::Length));
         assert_eq!(err, None);
         assert_eq!(message.error_message, None);
+        assert!(
+            serde_json::to_value(&message)
+                .unwrap()
+                .get("errorMessage")
+                .is_none()
+        );
         assert_eq!(
             message.raw_stop_reason.as_deref(),
             Some("incomplete.max_output_tokens")
@@ -254,6 +284,12 @@ mod tests {
         assert!(matches!(reason, StopReason::ToolUse));
         assert_eq!(err, None);
         assert_eq!(message.error_message, None);
+        assert!(
+            serde_json::to_value(&message)
+                .unwrap()
+                .get("errorMessage")
+                .is_none()
+        );
     }
 
     #[tokio::test]
@@ -267,6 +303,10 @@ mod tests {
         let (reason, err, message) = run(body).await;
         assert!(matches!(reason, StopReason::Error));
         assert_eq!(err.as_deref(), Some("Response incomplete: max_time_limit"));
+        assert_eq!(
+            serde_json::to_value(&message).unwrap()["errorMessage"],
+            "Response incomplete: max_time_limit"
+        );
         assert_eq!(
             message.raw_stop_reason.as_deref(),
             Some("incomplete.max_time_limit")

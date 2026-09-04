@@ -125,25 +125,41 @@ pub enum ContentBlock {
     #[serde(rename = "text")]
     Text {
         text: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(
+            rename = "textSignature",
+            alias = "text_signature",
+            skip_serializing_if = "Option::is_none"
+        )]
         text_signature: Option<String>,
     },
     #[serde(rename = "thinking")]
     Thinking {
         thinking: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(
+            rename = "thinkingSignature",
+            alias = "thinking_signature",
+            skip_serializing_if = "Option::is_none"
+        )]
         thinking_signature: Option<String>,
         #[serde(default)]
         redacted: bool,
     },
     #[serde(rename = "image")]
-    Image { data: String, mime_type: String },
+    Image {
+        data: String,
+        #[serde(rename = "mimeType", alias = "mime_type")]
+        mime_type: String,
+    },
     #[serde(rename = "toolCall")]
     ToolCall {
         id: String,
         name: String,
         arguments: HashMap<String, serde_json::Value>,
-        #[serde(skip_serializing_if = "Option::is_none")]
+        #[serde(
+            rename = "thoughtSignature",
+            alias = "thought_signature",
+            skip_serializing_if = "Option::is_none"
+        )]
         thought_signature: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         namespace: Option<String>,

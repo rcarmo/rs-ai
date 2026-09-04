@@ -121,7 +121,7 @@ fn uses_authoritative_text_end_content_and_signature() {
     );
     assert_eq!(
         as_json(reduce(frames).content),
-        json!([{"type":"text","text":"Hello world","text_signature":"sig-text"}])
+        json!([{"type":"text","text":"Hello world","textSignature":"sig-text"}])
     );
 }
 
@@ -187,7 +187,7 @@ fn preserves_initial_and_final_thinking_metadata_including_redaction() {
     );
     assert_eq!(
         as_json(reduce(frames).content[0].clone()),
-        json!({"type":"thinking","thinking":"[redacted]","thinking_signature":"encrypted-final","redacted":true})
+        json!({"type":"thinking","thinking":"[redacted]","thinkingSignature":"encrypted-final","redacted":true})
     );
 }
 
@@ -234,7 +234,7 @@ fn parses_unfinished_tool_json_and_uses_authoritative_completed_arguments() {
     ]);
     assert_eq!(
         as_json(reduce(complete_frames).content[0].clone()),
-        json!({"type":"toolCall","id":"final-id","name":"write_file","arguments":{"path":"final.md","lines":[3]},"thought_signature":"thought","namespace":"files"})
+        json!({"type":"toolCall","id":"final-id","name":"write_file","arguments":{"path":"final.md","lines":[3]},"thoughtSignature":"thought","namespace":"files"})
     );
 }
 
@@ -591,7 +591,7 @@ fn end_signature_metadata_and_tool_arguments_are_authoritative() {
         as_json(reduce(frames).content),
         json!([
             {"type":"text","text":""},
-            {"type":"thinking","thinking":"","thinking_signature":"","redacted":false},
+            {"type":"thinking","thinking":"","thinkingSignature":"","redacted":false},
             {"type":"toolCall","id":"final","name":"read_file","arguments":{"path":"final.md"}}
         ])
     );
@@ -862,6 +862,217 @@ fn returns_none_without_start_and_rejects_bad_frame_sequences() {
         .unwrap_err()
         .contains("would leave a gap")
     );
+}
+
+#[test]
+fn frame_golden_json_uses_upstream_camel_case_content_fields_and_round_trips() {
+    let mut start_partial = seed();
+    start_partial.provider_thinking_level = Some("high".into());
+    let frames = vec![
+        AssistantMessageFrame::Start {
+            partial: Box::new(start_partial),
+        },
+        AssistantMessageFrame::TextStart {
+            content_index: 0,
+            content: ContentBlock::Text {
+                text: "hi".into(),
+                text_signature: Some("text-sig".into()),
+            },
+        },
+        AssistantMessageFrame::TextDelta {
+            content_index: 0,
+            delta: "!".into(),
+        },
+        AssistantMessageFrame::TextEnd {
+            content_index: 0,
+            content: "hi!".into(),
+            text_signature: Some("text-final".into()),
+        },
+        AssistantMessageFrame::ThinkingStart {
+            content_index: 0,
+            content: ContentBlock::Thinking {
+                thinking: "think".into(),
+                thinking_signature: Some("thinking-sig".into()),
+                redacted: true,
+            },
+        },
+        AssistantMessageFrame::ThinkingDelta {
+            content_index: 0,
+            delta: " more".into(),
+        },
+        AssistantMessageFrame::ThinkingEnd {
+            content_index: 0,
+            content: "think more".into(),
+            thinking_signature: Some("thinking-final".into()),
+            redacted: Some(false),
+        },
+        AssistantMessageFrame::ToolCallStart {
+            content_index: 0,
+            tool_call: ContentBlock::ToolCall {
+                id: "call".into(),
+                name: "run".into(),
+                arguments: args(&[("path", json!("README.md"))]),
+                thought_signature: Some("thought-sig".into()),
+                namespace: Some("tools".into()),
+            },
+        },
+        AssistantMessageFrame::ToolCallCheckpoint {
+            content_index: 0,
+            json: "{\"path\":\"README.md\"}".into(),
+        },
+        AssistantMessageFrame::ToolCallDelta {
+            content_index: 0,
+            delta: "{}".into(),
+        },
+        AssistantMessageFrame::ToolCallEnd {
+            content_index: 0,
+            id: "call-final".into(),
+            name: "run_final".into(),
+            arguments: args(&[("path", json!("final.md"))]),
+            thought_signature: Some("thought-final".into()),
+            namespace: Some("files".into()),
+        },
+    ];
+    let golden = json!([
+        {"type":"start","partial":{"role":"assistant","content":[],"timestamp":1,"api":"test-api","provider":"test-provider","model":"test-model","providerThinkingLevel":"high","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"pending","isError":false}},
+        {"type":"text_start","contentIndex":0,"content":{"type":"text","text":"hi","textSignature":"text-sig"}},
+        {"type":"text_delta","contentIndex":0,"delta":"!"},
+        {"type":"text_end","contentIndex":0,"content":"hi!","textSignature":"text-final"},
+        {"type":"thinking_start","contentIndex":0,"content":{"type":"thinking","thinking":"think","thinkingSignature":"thinking-sig","redacted":true}},
+        {"type":"thinking_delta","contentIndex":0,"delta":" more"},
+        {"type":"thinking_end","contentIndex":0,"content":"think more","thinkingSignature":"thinking-final","redacted":false},
+        {"type":"toolcall_start","contentIndex":0,"toolCall":{"type":"toolCall","id":"call","name":"run","arguments":{"path":"README.md"},"thoughtSignature":"thought-sig","namespace":"tools"}},
+        {"type":"toolcall_checkpoint","contentIndex":0,"json":"{\"path\":\"README.md\"}"},
+        {"type":"toolcall_delta","contentIndex":0,"delta":"{}"},
+        {"type":"toolcall_end","contentIndex":0,"id":"call-final","name":"run_final","arguments":{"path":"final.md"},"thoughtSignature":"thought-final","namespace":"files"}
+    ]);
+    let serialized = serde_json::to_value(&frames).unwrap();
+    assert_eq!(serialized, golden);
+    let decoded: Vec<AssistantMessageFrame> = serde_json::from_value(golden).unwrap();
+    assert_eq!(as_json(decoded), serialized);
+
+    let text_reduced = reduce(vec![
+        frames[0].clone(),
+        frames[1].clone(),
+        frames[2].clone(),
+        frames[3].clone(),
+    ]);
+    assert_eq!(
+        as_json(text_reduced.content[0].clone())["textSignature"],
+        "text-final"
+    );
+    let tool_reduced = reduce(vec![
+        frames[0].clone(),
+        frames[7].clone(),
+        frames[8].clone(),
+        frames[10].clone(),
+    ]);
+    assert_eq!(
+        as_json(tool_reduced.content[0].clone())["thoughtSignature"],
+        "thought-final"
+    );
+}
+
+#[test]
+fn frame_golden_json_omits_optional_metadata_and_accepts_legacy_snake_case_content_aliases() {
+    let minimal = vec![
+        AssistantMessageFrame::TextStart {
+            content_index: 0,
+            content: ContentBlock::Text {
+                text: "hi".into(),
+                text_signature: None,
+            },
+        },
+        AssistantMessageFrame::ThinkingEnd {
+            content_index: 0,
+            content: "done".into(),
+            thinking_signature: None,
+            redacted: None,
+        },
+        AssistantMessageFrame::ToolCallEnd {
+            content_index: 0,
+            id: "call".into(),
+            name: "run".into(),
+            arguments: HashMap::new(),
+            thought_signature: None,
+            namespace: None,
+        },
+    ];
+    let encoded = serde_json::to_value(&minimal).unwrap();
+    assert!(encoded[0]["content"].get("textSignature").is_none());
+    assert!(encoded[1].get("thinkingSignature").is_none());
+    assert!(encoded[1].get("redacted").is_none());
+    assert!(encoded[2].get("thoughtSignature").is_none());
+    assert!(encoded[2].get("namespace").is_none());
+
+    let legacy = json!({"type":"text_start","contentIndex":0,"content":{"type":"text","text":"hi","text_signature":"legacy"}});
+    let decoded: AssistantMessageFrame = serde_json::from_value(legacy).unwrap();
+    assert_eq!(as_json(decoded)["content"]["textSignature"], "legacy");
+}
+
+#[test]
+fn frame_json_rejects_malformed_or_unknown_public_shapes() {
+    for bad in [
+        json!({"type":"unknown","contentIndex":0}),
+        json!({"type":"text_delta","contentIndex":0,"delta":"x","extra":true}),
+        json!({"type":"text_start","contentIndex":0,"content":{"type":"thinking","thinking":"wrong"}}),
+        json!({"type":"toolcall_start","contentIndex":0,"toolCall":{"type":"text","text":"wrong"}}),
+    ] {
+        if let Ok(frame) = serde_json::from_value::<AssistantMessageFrame>(bad.clone()) {
+            assert!(
+                reduce_assistant_message_frames(vec![
+                    AssistantMessageFrame::Start {
+                        partial: Box::new(seed())
+                    },
+                    frame,
+                ])
+                .is_err(),
+                "malformed frame should fail decode or reduce: {bad}"
+            );
+        }
+    }
+}
+
+#[test]
+fn content_block_global_wire_uses_camel_case_and_deserializes_legacy_snake_case() {
+    let blocks = vec![
+        ContentBlock::Text {
+            text: "hi".into(),
+            text_signature: Some("text-sig".into()),
+        },
+        ContentBlock::Thinking {
+            thinking: "why".into(),
+            thinking_signature: Some("thinking-sig".into()),
+            redacted: false,
+        },
+        ContentBlock::Image {
+            data: "abc".into(),
+            mime_type: "image/png".into(),
+        },
+        ContentBlock::ToolCall {
+            id: "call".into(),
+            name: "run".into(),
+            arguments: HashMap::new(),
+            thought_signature: Some("thought-sig".into()),
+            namespace: None,
+        },
+    ];
+    assert_eq!(
+        as_json(&blocks),
+        json!([
+            {"type":"text","text":"hi","textSignature":"text-sig"},
+            {"type":"thinking","thinking":"why","thinkingSignature":"thinking-sig","redacted":false},
+            {"type":"image","data":"abc","mimeType":"image/png"},
+            {"type":"toolCall","id":"call","name":"run","arguments":{},"thoughtSignature":"thought-sig"}
+        ])
+    );
+    let decoded: Vec<ContentBlock> = serde_json::from_value(json!([
+        {"type":"text","text":"hi","text_signature":"text-sig"},
+        {"type":"thinking","thinking":"why","thinking_signature":"thinking-sig","redacted":false},
+        {"type":"image","data":"abc","mime_type":"image/png"},
+        {"type":"toolCall","id":"call","name":"run","arguments":{},"thought_signature":"thought-sig"}
+    ])).unwrap();
+    assert_eq!(as_json(decoded), as_json(blocks));
 }
 
 #[test]

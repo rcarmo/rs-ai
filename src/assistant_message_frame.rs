@@ -11,7 +11,7 @@ use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum AssistantMessageFrame {
     Start {
         partial: Box<Message>,
