@@ -117,13 +117,11 @@ impl<'a> From<&'a Message> for AssistantStartPartialWire<'a> {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct AssistantStartPartialOwned {
     role: Role,
-    #[serde(default)]
     content: Vec<ContentBlock>,
-    #[serde(default)]
     timestamp: i64,
-    api: Option<Api>,
-    provider: Option<Provider>,
-    model: Option<String>,
+    api: Api,
+    provider: Provider,
+    model: String,
     #[serde(default)]
     response_id: Option<String>,
     #[serde(default)]
@@ -132,8 +130,8 @@ struct AssistantStartPartialOwned {
     provider_thinking_level: Option<String>,
     #[serde(default)]
     diagnostics: Vec<AssistantMessageDiagnostic>,
-    usage: Option<Usage>,
-    stop_reason: Option<StopReason>,
+    usage: Usage,
+    stop_reason: StopReason,
 }
 
 impl From<AssistantStartPartialOwned> for Message {
@@ -142,15 +140,15 @@ impl From<AssistantStartPartialOwned> for Message {
             role: value.role,
             content: value.content,
             timestamp: value.timestamp,
-            api: value.api,
-            provider: value.provider,
-            model: value.model,
+            api: Some(value.api),
+            provider: Some(value.provider),
+            model: Some(value.model),
             response_id: value.response_id,
             response_model: value.response_model,
             provider_thinking_level: value.provider_thinking_level,
             diagnostics: value.diagnostics,
-            usage: value.usage,
-            stop_reason: value.stop_reason,
+            usage: Some(value.usage),
+            stop_reason: Some(value.stop_reason),
             deferred: None,
             error_message: None,
             raw_stop_reason: None,
@@ -338,6 +336,15 @@ fn decode_frame_value(value: Value) -> Result<AssistantMessageFrame, String> {
             let partial = take_value(&mut object, "partial")?;
             let partial = serde_json::from_value::<AssistantStartPartialOwned>(partial)
                 .map_err(|e| e.to_string())?;
+            if partial.role != Role::Assistant {
+                return Err("start frame partial role must be assistant".into());
+            }
+            if !partial.content.is_empty() {
+                return Err("start frame partial content must be empty".into());
+            }
+            if partial.stop_reason != StopReason::Pending {
+                return Err("start frame partial stopReason must be pending".into());
+            }
             Ok(AssistantMessageFrame::Start {
                 partial: Box::new(partial.into()),
             })
@@ -345,7 +352,7 @@ fn decode_frame_value(value: Value) -> Result<AssistantMessageFrame, String> {
         "text_start" => {
             reject_unknown(&object, &["contentIndex", "content"])?;
             let content_index = take_usize(&mut object, "contentIndex")?;
-            let content = take_content(&mut object, "content")?;
+            let content = take_content(&mut object, "content", BlockKind::Text)?;
             if !matches!(content, ContentBlock::Text { .. }) {
                 return Err(format!(
                     "text_start frame contains {} content",
@@ -375,7 +382,7 @@ fn decode_frame_value(value: Value) -> Result<AssistantMessageFrame, String> {
         "thinking_start" => {
             reject_unknown(&object, &["contentIndex", "content"])?;
             let content_index = take_usize(&mut object, "contentIndex")?;
-            let content = take_content(&mut object, "content")?;
+            let content = take_content(&mut object, "content", BlockKind::Thinking)?;
             if !matches!(content, ContentBlock::Thinking { .. }) {
                 return Err(format!(
                     "thinking_start frame contains {} content",
@@ -409,7 +416,7 @@ fn decode_frame_value(value: Value) -> Result<AssistantMessageFrame, String> {
         "toolcall_start" => {
             reject_unknown(&object, &["contentIndex", "toolCall"])?;
             let content_index = take_usize(&mut object, "contentIndex")?;
-            let tool_call = take_content(&mut object, "toolCall")?;
+            let tool_call = take_content(&mut object, "toolCall", BlockKind::ToolCall)?;
             if !matches!(tool_call, ContentBlock::ToolCall { .. }) {
                 return Err(format!(
                     "toolcall_start frame contains {} content",
@@ -495,8 +502,11 @@ fn take_optional_string(
     key: &str,
 ) -> Result<Option<String>, String> {
     match object.remove(key) {
-        None | Some(Value::Null) => Ok(None),
+        None => Ok(None),
         Some(Value::String(value)) => Ok(Some(value)),
+        Some(Value::Null) => Err(format!(
+            "assistant message frame field {key} must be a string, not null"
+        )),
         Some(_) => Err(format!(
             "assistant message frame field {key} must be a string"
         )),
@@ -508,8 +518,11 @@ fn take_optional_bool(
     key: &str,
 ) -> Result<Option<bool>, String> {
     match object.remove(key) {
-        None | Some(Value::Null) => Ok(None),
+        None => Ok(None),
         Some(Value::Bool(value)) => Ok(Some(value)),
+        Some(Value::Null) => Err(format!(
+            "assistant message frame field {key} must be a boolean, not null"
+        )),
         Some(_) => Err(format!(
             "assistant message frame field {key} must be a boolean"
         )),
@@ -526,8 +539,85 @@ fn take_usize(object: &mut serde_json::Map<String, Value>, key: &str) -> Result<
 fn take_content(
     object: &mut serde_json::Map<String, Value>,
     key: &str,
+    expected: BlockKind,
 ) -> Result<ContentBlock, String> {
-    serde_json::from_value(take_value(object, key)?).map_err(|e| e.to_string())
+    let value = take_value(object, key)?;
+    validate_content_shape(&value, expected)?;
+    serde_json::from_value(value).map_err(|e| e.to_string())
+}
+
+fn validate_content_shape(value: &Value, expected: BlockKind) -> Result<(), String> {
+    let object = value
+        .as_object()
+        .ok_or_else(|| "frame content block must be an object".to_string())?;
+    let kind = object
+        .get("type")
+        .and_then(Value::as_str)
+        .ok_or_else(|| "frame content block missing string type".to_string())?;
+    let allowed = match expected {
+        BlockKind::Text => {
+            if kind != "text" {
+                return Err(format!("text_start frame contains {kind} content"));
+            }
+            &["type", "text", "textSignature", "text_signature"][..]
+        }
+        BlockKind::Thinking => {
+            if kind != "thinking" {
+                return Err(format!("thinking_start frame contains {kind} content"));
+            }
+            &[
+                "type",
+                "thinking",
+                "thinkingSignature",
+                "thinking_signature",
+                "redacted",
+            ][..]
+        }
+        BlockKind::ToolCall => {
+            if kind != "toolCall" {
+                return Err(format!("toolcall_start frame contains {kind} content"));
+            }
+            &[
+                "type",
+                "id",
+                "name",
+                "arguments",
+                "thoughtSignature",
+                "thought_signature",
+                "namespace",
+            ][..]
+        }
+    };
+    for key in object.keys() {
+        if !allowed.contains(&key.as_str()) {
+            return Err(format!("unknown frame content block field: {key}"));
+        }
+    }
+    if let Some(Value::Null) = object
+        .get("textSignature")
+        .or_else(|| object.get("text_signature"))
+    {
+        return Err("frame textSignature must be a string, not null".into());
+    }
+    if let Some(Value::Null) = object
+        .get("thinkingSignature")
+        .or_else(|| object.get("thinking_signature"))
+    {
+        return Err("frame thinkingSignature must be a string, not null".into());
+    }
+    if matches!(object.get("redacted"), Some(Value::Null)) {
+        return Err("frame redacted must be a boolean, not null".into());
+    }
+    if let Some(Value::Null) = object
+        .get("thoughtSignature")
+        .or_else(|| object.get("thought_signature"))
+    {
+        return Err("frame thoughtSignature must be a string, not null".into());
+    }
+    if matches!(object.get("namespace"), Some(Value::Null)) {
+        return Err("frame namespace must be a string, not null".into());
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone)]

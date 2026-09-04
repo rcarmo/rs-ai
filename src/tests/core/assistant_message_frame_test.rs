@@ -1012,18 +1012,46 @@ fn frame_golden_json_omits_optional_metadata_and_accepts_legacy_snake_case_conte
 
 #[test]
 fn frame_json_rejects_malformed_or_unknown_public_shapes_at_decode() {
+    let valid_start = serde_json::to_value(AssistantMessageFrame::Start {
+        partial: Box::new(seed()),
+    })
+    .unwrap();
     for bad in [
         json!({"type":"unknown","contentIndex":0}),
         json!({"type":"text_delta","contentIndex":0,"delta":"x","extra":true}),
+        json!({"type":"text_delta","contentIndex":0,"delta":"x","textSignature":null}),
+        json!({"type":"text_end","contentIndex":0,"content":"","textSignature":null}),
+        json!({"type":"thinking_end","contentIndex":0,"content":"","thinkingSignature":null}),
+        json!({"type":"thinking_end","contentIndex":0,"content":"","redacted":null}),
+        json!({"type":"toolcall_end","contentIndex":0,"id":"call","name":"run","arguments":{},"thoughtSignature":null}),
+        json!({"type":"toolcall_end","contentIndex":0,"id":"call","name":"run","arguments":{},"namespace":null}),
         json!({"type":"text_start","contentIndex":0,"content":{"type":"thinking","thinking":"wrong"}}),
+        json!({"type":"thinking_start","contentIndex":0,"content":{"type":"text","text":"wrong"}}),
         json!({"type":"toolcall_start","contentIndex":0,"toolCall":{"type":"text","text":"wrong"}}),
+        json!({"type":"text_start","contentIndex":0,"content":{"type":"text","text":"","extra":true}}),
+        json!({"type":"thinking_start","contentIndex":0,"content":{"type":"thinking","thinking":"","redacted":null}}),
+        json!({"type":"toolcall_start","contentIndex":0,"toolCall":{"type":"toolCall","id":"call","name":"run","arguments":{},"namespace":null}}),
         json!({"type":"start","partial":{"role":"assistant","content":[],"timestamp":1,"isError":false}}),
+        json!({"type":"start","partial":{"role":"assistant","content":[],"timestamp":1,"api":"test-api","provider":"test-provider","model":"test-model","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"pending","isError":false}}),
+        json!({"type":"start","partial":{"role":"user","content":[],"timestamp":1,"api":"test-api","provider":"test-provider","model":"test-model","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"pending"}}),
+        json!({"type":"start","partial":{"role":"assistant","content":[{"type":"text","text":"not allowed"}],"timestamp":1,"api":"test-api","provider":"test-provider","model":"test-model","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"pending"}}),
+        json!({"type":"start","partial":{"role":"assistant","content":[],"timestamp":1,"api":"test-api","provider":"test-provider","model":"test-model","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"stop"}}),
+        json!({"type":"start","partial":{"role":"assistant","content":[],"timestamp":1,"api":"test-api","provider":"test-provider","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"pending"}}),
     ] {
         assert!(
             serde_json::from_value::<AssistantMessageFrame>(bad.clone()).is_err(),
             "malformed frame should fail decode: {bad}"
         );
     }
+    serde_json::from_value::<AssistantMessageFrame>(valid_start).unwrap();
+    serde_json::from_value::<AssistantMessageFrame>(
+        json!({"type":"text_start","contentIndex":0,"content":{"type":"text","text":""}}),
+    )
+    .unwrap();
+    serde_json::from_value::<AssistantMessageFrame>(
+        json!({"type":"thinking_start","contentIndex":0,"content":{"type":"thinking","thinking":""}}),
+    )
+    .unwrap();
 }
 
 #[test]
