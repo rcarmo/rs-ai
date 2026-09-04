@@ -399,7 +399,7 @@ pub fn stream_anthropic<'a>(
                                 partial.content.push(ContentBlock::Thinking {
                                     thinking: std::mem::take(&mut current_thinking),
                                     thinking_signature: current_thinking_signature.take(),
-                                    redacted: false,
+                                    redacted: None,
                                 });
                             }
                             "redacted_thinking" => {
@@ -407,7 +407,7 @@ pub fn stream_anthropic<'a>(
                                 partial.content.push(ContentBlock::Thinking {
                                     thinking: "[Reasoning redacted]".to_string(),
                                     thinking_signature: current_thinking_signature.take(),
-                                    redacted: true,
+                                    redacted: Some(true),
                                 });
                             }
                             "tool_use" => {
@@ -848,7 +848,7 @@ pub(crate) fn build_anthropic_payload(
                 "source": {"type": "base64", "media_type": mime_type, "data": data}
             })),
             ContentBlock::Thinking { thinking, thinking_signature, redacted } => {
-                if *redacted {
+                if redacted.unwrap_or(false) {
                     // Send the opaque payload back as redacted_thinking.
                     return Some(json!({"type": "redacted_thinking", "data": thinking_signature.clone().unwrap_or_default()}));
                 }

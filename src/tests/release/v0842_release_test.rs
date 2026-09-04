@@ -738,7 +738,7 @@ async fn mistral_http_exact_wire_payload_matches_replay_contract() {
         content: vec![ContentBlock::Thinking {
             thinking: "plan".into(),
             thinking_signature: None,
-            redacted: false,
+            redacted: None,
         }],
         timestamp: 0,
         api: Some(crate::types::api::MISTRAL_CONVERSATIONS.into()),

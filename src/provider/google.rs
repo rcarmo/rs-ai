@@ -332,7 +332,7 @@ pub fn stream_google<'a>(
                                                 partial.content.push(ContentBlock::Thinking {
                                                     thinking: std::mem::take(&mut current_thinking),
                                                     thinking_signature: current_thinking_signature.take(),
-                                                    redacted: false,
+                                                    redacted: None,
                                                 });
                                             }
                                             _ => {}
@@ -365,7 +365,7 @@ pub fn stream_google<'a>(
                                             partial.content.push(ContentBlock::Thinking {
                                                 thinking: std::mem::take(&mut current_thinking),
                                                 thinking_signature: current_thinking_signature.take(),
-                                                redacted: false,
+                                                redacted: None,
                                             });
                                         }
                                         _ => {}
@@ -417,7 +417,7 @@ pub fn stream_google<'a>(
                                     partial.content.push(ContentBlock::Thinking {
                                         thinking: std::mem::take(&mut current_thinking),
                                         thinking_signature: current_thinking_signature.take(),
-                                        redacted: false,
+                                        redacted: None,
                                     });
                                 }
                                 _ => {}
@@ -480,7 +480,7 @@ pub fn stream_google<'a>(
                 partial.content.push(ContentBlock::Thinking {
                     thinking: std::mem::take(&mut current_thinking),
                     thinking_signature: current_thinking_signature.take(),
-                    redacted: false,
+                    redacted: None,
                 });
             }
             _ => {}

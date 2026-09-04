@@ -154,7 +154,7 @@ pub(crate) fn build_bedrock_messages(
                             thinking,
                             thinking_signature,
                             redacted,
-                        } if *redacted => {
+                        } if redacted.unwrap_or(false) => {
                             if let Some(sig) =
                                 thinking_signature.as_ref().filter(|s| !s.trim().is_empty())
                                 && let Ok(bytes) =
@@ -171,7 +171,7 @@ pub(crate) fn build_bedrock_messages(
                             thinking,
                             thinking_signature,
                             redacted,
-                        } if !redacted && !thinking.trim().is_empty() => {
+                        } if !redacted.unwrap_or(false) && !thinking.trim().is_empty() => {
                             // Only Anthropic Claude models accept the reasoning signature.
                             // For Claude with a missing signature, fall back to plain text
                             // (Bedrock rejects a replayed reasoning block without a signature).
@@ -946,7 +946,7 @@ pub fn stream_bedrock<'a>(
                                 partial.content.push(ContentBlock::Thinking {
                                     thinking: std::mem::take(&mut current_thinking),
                                     thinking_signature: current_thinking_signature.take(),
-                                    redacted: current_thinking_redacted,
+                                    redacted: current_thinking_redacted.then_some(true),
                                 });
                                 current_thinking_redacted = false;
                                 yield Event::ThinkingEnd;
@@ -1014,7 +1014,7 @@ pub fn stream_bedrock<'a>(
             partial.content.push(ContentBlock::Thinking {
                 thinking: std::mem::take(&mut current_thinking),
                 thinking_signature: current_thinking_signature.take(),
-                redacted: current_thinking_redacted,
+                redacted: current_thinking_redacted.then_some(true),
             });
             yield Event::ThinkingEnd;
         }

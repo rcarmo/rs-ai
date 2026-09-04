@@ -1609,7 +1609,7 @@ mod tests {
                     ContentBlock::Thinking {
                         thinking: "reasoned".into(),
                         thinking_signature: Some("reasoning_content".into()),
-                        redacted: false,
+                        redacted: None,
                     },
                     ContentBlock::Text {
                         text: "answer".into(),
@@ -1727,7 +1727,7 @@ mod tests {
                     ContentBlock::Thinking {
                         thinking: "reasoned".into(),
                         thinking_signature: None,
-                        redacted: false,
+                        redacted: None,
                     },
                     ContentBlock::Text {
                         text: "answer".into(),
@@ -2248,7 +2248,7 @@ mod tests {
                     ContentBlock::Thinking {
                         thinking: "r".into(),
                         thinking_signature: Some("{\"type\":\"reasoning\",\"id\":\"rs_1\"}".into()),
-                        redacted: false,
+                        redacted: None,
                     },
                     ContentBlock::Text {
                         text: "answer".into(),
@@ -4256,7 +4256,7 @@ mod tests {
                 content: vec![ContentBlock::Thinking {
                     thinking: "some reasoning".into(),
                     thinking_signature: None,
-                    redacted: false,
+                    redacted: None,
                 }],
                 timestamp: 0,
                 api: Some("anthropic-messages".into()),
@@ -4298,7 +4298,7 @@ mod tests {
                 content: vec![ContentBlock::Thinking {
                     thinking: "[Reasoning redacted]".into(),
                     thinking_signature: Some("opaque-blob".into()),
-                    redacted: true,
+                    redacted: Some(true),
                 }],
                 timestamp: 0,
                 api: Some("anthropic-messages".into()),
@@ -5613,7 +5613,7 @@ mod tests {
                     ContentBlock::Thinking {
                         thinking: "reasoning".into(),
                         thinking_signature: Some("QUJD".into()),
-                        redacted: false,
+                        redacted: None,
                     },
                     ContentBlock::Text {
                         text: "answer".into(),
@@ -5666,7 +5666,7 @@ mod tests {
                 content: vec![ContentBlock::Thinking {
                     thinking: "r".into(),
                     thinking_signature: Some("QUJD".into()),
-                    redacted: false,
+                    redacted: None,
                 }],
                 timestamp: 0,
                 api: Some("google-generative-ai".into()),
@@ -6222,7 +6222,7 @@ mod tests {
                         ContentBlock::Thinking {
                             thinking: "reasoning".into(),
                             thinking_signature: None,
-                            redacted: false,
+                            redacted: None,
                         },
                         ContentBlock::Text {
                             text: "answer".into(),

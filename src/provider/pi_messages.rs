@@ -226,7 +226,7 @@ fn convert_event(
                 ContentBlock::Thinking {
                     thinking: String::new(),
                     thinking_signature: None,
-                    redacted: false,
+                    redacted: None,
                 },
             );
             Event::ThinkingStart
@@ -254,7 +254,7 @@ fn convert_event(
                 ContentBlock::Thinking {
                     thinking: content,
                     thinking_signature: content_signature,
-                    redacted,
+                    redacted: Some(redacted),
                 },
             );
             Event::ThinkingEnd

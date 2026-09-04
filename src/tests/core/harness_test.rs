@@ -68,7 +68,7 @@ mod tests {
                 ContentBlock::Thinking {
                     thinking: "hmm".into(),
                     thinking_signature: None,
-                    redacted: false,
+                    redacted: None,
                 },
                 ContentBlock::Text {
                     text: "Answer: ".into(),

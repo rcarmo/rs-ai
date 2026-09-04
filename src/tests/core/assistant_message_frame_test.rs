@@ -158,7 +158,7 @@ fn preserves_initial_and_final_thinking_metadata_including_redaction() {
     partial.content.push(ContentBlock::Thinking {
         thinking: "[redacted]".into(),
         thinking_signature: Some("encrypted-start".into()),
-        redacted: true,
+        redacted: Some(true),
     });
     frames.push(encode(
         &mut encoder,
@@ -170,7 +170,7 @@ fn preserves_initial_and_final_thinking_metadata_including_redaction() {
     partial.content[0] = ContentBlock::Thinking {
         thinking: "[redacted]".into(),
         thinking_signature: Some("encrypted-final".into()),
-        redacted: true,
+        redacted: Some(true),
     };
     frames.push(encode(
         &mut encoder,
@@ -559,7 +559,7 @@ fn end_signature_metadata_and_tool_arguments_are_authoritative() {
             content: ContentBlock::Thinking {
                 thinking: String::new(),
                 thinking_signature: Some("stale-thinking".into()),
-                redacted: true,
+                redacted: Some(true),
             },
         },
         AssistantMessageFrame::ThinkingEnd {
@@ -625,7 +625,7 @@ fn supports_interleaved_streams_by_content_index() {
             content: ContentBlock::Thinking {
                 thinking: String::new(),
                 thinking_signature: None,
-                redacted: false,
+                redacted: None,
             },
         },
         AssistantMessageFrame::TextDelta {
@@ -665,7 +665,7 @@ fn supports_interleaved_streams_by_content_index() {
         json!([
             {"type":"text","text":"answer"},
             {"type":"toolCall","id":"call","name":"lookup","arguments":{"query":"pi"}},
-            {"type":"thinking","thinking":"check","redacted":false}
+            {"type":"thinking","thinking":"check"}
         ])
     );
 }
@@ -893,7 +893,7 @@ fn frame_golden_json_uses_upstream_camel_case_content_fields_and_round_trips() {
             content: ContentBlock::Thinking {
                 thinking: "think".into(),
                 thinking_signature: Some("thinking-sig".into()),
-                redacted: true,
+                redacted: Some(true),
             },
         },
         AssistantMessageFrame::ThinkingDelta {
@@ -934,7 +934,7 @@ fn frame_golden_json_uses_upstream_camel_case_content_fields_and_round_trips() {
         },
     ];
     let golden = json!([
-        {"type":"start","partial":{"role":"assistant","content":[],"timestamp":1,"api":"test-api","provider":"test-provider","model":"test-model","providerThinkingLevel":"high","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"pending","isError":false}},
+        {"type":"start","partial":{"role":"assistant","content":[],"timestamp":1,"api":"test-api","provider":"test-provider","model":"test-model","providerThinkingLevel":"high","usage":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0.0,"output":0.0,"cacheRead":0.0,"cacheWrite":0.0,"total":0.0}},"stopReason":"pending"}},
         {"type":"text_start","contentIndex":0,"content":{"type":"text","text":"hi","textSignature":"text-sig"}},
         {"type":"text_delta","contentIndex":0,"delta":"!"},
         {"type":"text_end","contentIndex":0,"content":"hi!","textSignature":"text-final"},
@@ -1011,25 +1011,18 @@ fn frame_golden_json_omits_optional_metadata_and_accepts_legacy_snake_case_conte
 }
 
 #[test]
-fn frame_json_rejects_malformed_or_unknown_public_shapes() {
+fn frame_json_rejects_malformed_or_unknown_public_shapes_at_decode() {
     for bad in [
         json!({"type":"unknown","contentIndex":0}),
         json!({"type":"text_delta","contentIndex":0,"delta":"x","extra":true}),
         json!({"type":"text_start","contentIndex":0,"content":{"type":"thinking","thinking":"wrong"}}),
         json!({"type":"toolcall_start","contentIndex":0,"toolCall":{"type":"text","text":"wrong"}}),
+        json!({"type":"start","partial":{"role":"assistant","content":[],"timestamp":1,"isError":false}}),
     ] {
-        if let Ok(frame) = serde_json::from_value::<AssistantMessageFrame>(bad.clone()) {
-            assert!(
-                reduce_assistant_message_frames(vec![
-                    AssistantMessageFrame::Start {
-                        partial: Box::new(seed())
-                    },
-                    frame,
-                ])
-                .is_err(),
-                "malformed frame should fail decode or reduce: {bad}"
-            );
-        }
+        assert!(
+            serde_json::from_value::<AssistantMessageFrame>(bad.clone()).is_err(),
+            "malformed frame should fail decode: {bad}"
+        );
     }
 }
 
@@ -1043,7 +1036,7 @@ fn content_block_global_wire_uses_camel_case_and_deserializes_legacy_snake_case(
         ContentBlock::Thinking {
             thinking: "why".into(),
             thinking_signature: Some("thinking-sig".into()),
-            redacted: false,
+            redacted: Some(false),
         },
         ContentBlock::Image {
             data: "abc".into(),
@@ -1076,6 +1069,101 @@ fn content_block_global_wire_uses_camel_case_and_deserializes_legacy_snake_case(
 }
 
 #[test]
+fn frame_wire_distinguishes_absent_empty_and_explicit_optional_metadata() {
+    let frames = vec![
+        AssistantMessageFrame::TextEnd {
+            content_index: 0,
+            content: "".into(),
+            text_signature: None,
+        },
+        AssistantMessageFrame::TextEnd {
+            content_index: 0,
+            content: "".into(),
+            text_signature: Some(String::new()),
+        },
+        AssistantMessageFrame::ThinkingStart {
+            content_index: 0,
+            content: ContentBlock::Thinking {
+                thinking: String::new(),
+                thinking_signature: None,
+                redacted: None,
+            },
+        },
+        AssistantMessageFrame::ThinkingStart {
+            content_index: 0,
+            content: ContentBlock::Thinking {
+                thinking: String::new(),
+                thinking_signature: Some(String::new()),
+                redacted: Some(false),
+            },
+        },
+        AssistantMessageFrame::ThinkingEnd {
+            content_index: 0,
+            content: String::new(),
+            thinking_signature: None,
+            redacted: None,
+        },
+        AssistantMessageFrame::ThinkingEnd {
+            content_index: 0,
+            content: String::new(),
+            thinking_signature: Some(String::new()),
+            redacted: Some(false),
+        },
+        AssistantMessageFrame::ToolCallEnd {
+            content_index: 0,
+            id: "call".into(),
+            name: "run".into(),
+            arguments: HashMap::new(),
+            thought_signature: Some(String::new()),
+            namespace: Some(String::new()),
+        },
+        AssistantMessageFrame::ToolCallEnd {
+            content_index: 0,
+            id: "call".into(),
+            name: "run".into(),
+            arguments: HashMap::new(),
+            thought_signature: None,
+            namespace: None,
+        },
+    ];
+    let encoded = serde_json::to_value(&frames).unwrap();
+    assert!(encoded[0].get("textSignature").is_none());
+    assert_eq!(encoded[1]["textSignature"], "");
+    assert!(encoded[2]["content"].get("thinkingSignature").is_none());
+    assert!(encoded[2]["content"].get("redacted").is_none());
+    assert_eq!(encoded[3]["content"]["thinkingSignature"], "");
+    assert_eq!(encoded[3]["content"]["redacted"], false);
+    assert!(encoded[4].get("thinkingSignature").is_none());
+    assert!(encoded[4].get("redacted").is_none());
+    assert_eq!(encoded[5]["thinkingSignature"], "");
+    assert_eq!(encoded[5]["redacted"], false);
+    assert_eq!(encoded[6]["thoughtSignature"], "");
+    assert_eq!(encoded[6]["namespace"], "");
+    assert!(encoded[7].get("thoughtSignature").is_none());
+    assert!(encoded[7].get("namespace").is_none());
+
+    let absent = reduce(vec![
+        AssistantMessageFrame::Start {
+            partial: Box::new(seed()),
+        },
+        frames[2].clone(),
+        frames[4].clone(),
+    ]);
+    assert!(as_json(absent.content[0].clone()).get("redacted").is_none());
+    let explicit_false = reduce(vec![
+        AssistantMessageFrame::Start {
+            partial: Box::new(seed()),
+        },
+        frames[3].clone(),
+        frames[5].clone(),
+    ]);
+    assert_eq!(
+        as_json(explicit_false.content[0].clone())["redacted"],
+        false
+    );
+}
+
+#[test]
 fn rejects_conversion_events_with_wrong_block_kind_or_duplicate_start() {
     let mut partial = seed();
     let mut encoder = AssistantMessageFrameEncoder::new();
@@ -1087,7 +1175,7 @@ fn rejects_conversion_events_with_wrong_block_kind_or_duplicate_start() {
     partial.content.push(ContentBlock::Thinking {
         thinking: String::new(),
         thinking_signature: None,
-        redacted: false,
+        redacted: None,
     });
     assert!(
         encoder

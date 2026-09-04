@@ -212,7 +212,7 @@ mod tests {
                 ContentBlock::Thinking {
                     thinking: "prior reasoning".into(),
                     thinking_signature: Some("reasoning_content".into()),
-                    redacted: false,
+                    redacted: None,
                 },
                 ContentBlock::ToolCall {
                     id: "call_1".into(),
@@ -831,7 +831,7 @@ mod tests {
                 ContentBlock::Thinking {
                     thinking: "think".into(),
                     thinking_signature: Some("reasoning".into()),
-                    redacted: false,
+                    redacted: None,
                 },
                 ContentBlock::ToolCall {
                     id: "call_1".into(),

@@ -357,7 +357,7 @@ pub fn stream_mistral<'a>(
             partial.content.push(ContentBlock::Thinking {
                 thinking: current_thinking,
                 thinking_signature: None,
-                redacted: false,
+                redacted: None,
             });
         }
         if !current_text.is_empty() {

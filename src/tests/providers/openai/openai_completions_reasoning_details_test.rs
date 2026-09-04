@@ -64,7 +64,7 @@ mod tests {
                 ContentBlock::Thinking {
                     thinking: "Chain\nSummary".into(),
                     thinking_signature: Some(details.to_string()),
-                    redacted: false,
+                    redacted: None,
                 },
                 ContentBlock::Text {
                     text: "done".into(),

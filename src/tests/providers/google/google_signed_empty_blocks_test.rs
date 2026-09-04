@@ -69,7 +69,7 @@ mod tests {
                         ContentBlock::Thinking {
                             thinking: "".into(),
                             thinking_signature: Some("BBBBBBBBBBBBBBBBBBBBBB==".into()),
-                            redacted: false,
+                            redacted: None,
                         },
                     ],
                     "gemini-3-pro-preview",
@@ -98,7 +98,7 @@ mod tests {
                     vec![ContentBlock::Thinking {
                         thinking: "".into(),
                         thinking_signature: Some("BBBBBBBBBBBBBBBBBBBBBB==".into()),
-                        redacted: false,
+                        redacted: None,
                     }],
                     "other-model",
                 )],

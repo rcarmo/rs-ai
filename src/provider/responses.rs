@@ -580,7 +580,7 @@ fn stream_responses_inner<'a>(
                                     partial.content.push(ContentBlock::Thinking {
                                         thinking: thinking_text,
                                         thinking_signature: Some(item.to_string()),
-                                        redacted: false,
+                                        redacted: None,
                                     });
                                     yield Event::ThinkingEnd;
                                     current_thinking.clear();

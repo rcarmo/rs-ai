@@ -103,7 +103,7 @@ mod tests {
                 ContentBlock::Thinking {
                     thinking: "think".into(),
                     thinking_signature: None,
-                    redacted: false,
+                    redacted: None,
                 }, // 5
                 ContentBlock::ToolCall {
                     id: "1".into(),

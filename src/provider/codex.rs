@@ -754,7 +754,7 @@ impl CodexWsState {
                             self.partial.content.push(ContentBlock::Thinking {
                                 thinking: thinking_text,
                                 thinking_signature: Some(item.to_string()),
-                                redacted: false,
+                                redacted: None,
                             });
                             self.events.push(Event::ThinkingEnd);
                             self.current_thinking.clear();

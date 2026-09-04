@@ -534,7 +534,7 @@ fn assemble_text_thinking(
     let thinking_block = || ContentBlock::Thinking {
         thinking: thinking.to_string(),
         thinking_signature: sig.clone(),
-        redacted: false,
+        redacted: None,
     };
     let text_block = || ContentBlock::Text {
         text: text.to_string(),

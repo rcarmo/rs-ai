@@ -741,7 +741,7 @@ mod tests {
                 ContentBlock::Thinking {
                     thinking: "pondering hard".into(),
                     thinking_signature: None,
-                    redacted: false,
+                    redacted: None,
                 },
                 ContentBlock::Text {
                     text: "the answer is 42".into(),

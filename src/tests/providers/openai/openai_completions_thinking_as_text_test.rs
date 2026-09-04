@@ -118,7 +118,7 @@ mod tests {
             ContentBlock::Thinking {
                 thinking: "internal reasoning".into(),
                 thinking_signature: None,
-                redacted: false,
+                redacted: None,
             },
             ContentBlock::Text {
                 text: "visible answer".into(),
@@ -144,7 +144,7 @@ mod tests {
         let c = ctx(assistant(vec![ContentBlock::Thinking {
             thinking: "internal reasoning".into(),
             thinking_signature: None,
-            redacted: false,
+            redacted: None,
         }]));
         let p = build_payload(&m, &c, &StreamOptions::default(), &detect_compat(&m));
         assert_eq!(
@@ -175,7 +175,7 @@ mod tests {
             ContentBlock::Thinking {
                 thinking: "internal reasoning".into(),
                 thinking_signature: None,
-                redacted: false,
+                redacted: None,
             },
             ContentBlock::Text {
                 text: "visible answer".into(),

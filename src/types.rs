@@ -141,8 +141,8 @@ pub enum ContentBlock {
             skip_serializing_if = "Option::is_none"
         )]
         thinking_signature: Option<String>,
-        #[serde(default)]
-        redacted: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        redacted: Option<bool>,
     },
     #[serde(rename = "image")]
     Image {

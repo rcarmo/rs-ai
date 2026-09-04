@@ -221,7 +221,7 @@ mod tests {
             content: vec![ContentBlock::Thinking {
                 thinking: "[Reasoning redacted]".into(),
                 thinking_signature: Some(signature.clone()),
-                redacted: true,
+                redacted: Some(true),
             }],
             timestamp: 0,
             api: Some(m.api.clone()),

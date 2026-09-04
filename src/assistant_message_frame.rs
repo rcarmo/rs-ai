@@ -5,84 +5,529 @@
 //! persisted separately.
 
 use crate::jsonparse::parse_streaming_json;
-use crate::types::{ContentBlock, Message, Role, StopReason};
-use serde::{Deserialize, Serialize};
+use crate::types::{
+    Api, AssistantMessageDiagnostic, ContentBlock, Message, Provider, Role, StopReason, Usage,
+};
+use serde::de::Error as DeError;
+use serde::ser::SerializeStruct;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+#[derive(Debug, Clone)]
 pub enum AssistantMessageFrame {
     Start {
         partial: Box<Message>,
     },
     TextStart {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         content: ContentBlock,
     },
     TextDelta {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         delta: String,
     },
     TextEnd {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         content: String,
-        #[serde(rename = "textSignature", skip_serializing_if = "Option::is_none")]
         text_signature: Option<String>,
     },
     ThinkingStart {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         content: ContentBlock,
     },
     ThinkingDelta {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         delta: String,
     },
     ThinkingEnd {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         content: String,
-        #[serde(rename = "thinkingSignature", skip_serializing_if = "Option::is_none")]
         thinking_signature: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
         redacted: Option<bool>,
     },
-    #[serde(rename = "toolcall_start")]
     ToolCallStart {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
-        #[serde(rename = "toolCall")]
         tool_call: ContentBlock,
     },
-    #[serde(rename = "toolcall_checkpoint")]
     ToolCallCheckpoint {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         json: String,
     },
-    #[serde(rename = "toolcall_delta")]
     ToolCallDelta {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         delta: String,
     },
-    #[serde(rename = "toolcall_end")]
     ToolCallEnd {
-        #[serde(rename = "contentIndex")]
         content_index: usize,
         id: String,
         name: String,
         arguments: HashMap<String, Value>,
-        #[serde(rename = "thoughtSignature", skip_serializing_if = "Option::is_none")]
         thought_signature: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
         namespace: Option<String>,
     },
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AssistantStartPartialWire<'a> {
+    role: &'a Role,
+    content: &'a [ContentBlock],
+    timestamp: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    api: &'a Option<Api>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provider: &'a Option<Provider>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    model: &'a Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_id: &'a Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response_model: &'a Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provider_thinking_level: &'a Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    diagnostics: &'a Vec<AssistantMessageDiagnostic>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    usage: &'a Option<Usage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stop_reason: &'a Option<StopReason>,
+}
+
+impl<'a> From<&'a Message> for AssistantStartPartialWire<'a> {
+    fn from(message: &'a Message) -> Self {
+        Self {
+            role: &message.role,
+            content: &message.content,
+            timestamp: message.timestamp,
+            api: &message.api,
+            provider: &message.provider,
+            model: &message.model,
+            response_id: &message.response_id,
+            response_model: &message.response_model,
+            provider_thinking_level: &message.provider_thinking_level,
+            diagnostics: &message.diagnostics,
+            usage: &message.usage,
+            stop_reason: &message.stop_reason,
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct AssistantStartPartialOwned {
+    role: Role,
+    #[serde(default)]
+    content: Vec<ContentBlock>,
+    #[serde(default)]
+    timestamp: i64,
+    api: Option<Api>,
+    provider: Option<Provider>,
+    model: Option<String>,
+    #[serde(default)]
+    response_id: Option<String>,
+    #[serde(default)]
+    response_model: Option<String>,
+    #[serde(default)]
+    provider_thinking_level: Option<String>,
+    #[serde(default)]
+    diagnostics: Vec<AssistantMessageDiagnostic>,
+    usage: Option<Usage>,
+    stop_reason: Option<StopReason>,
+}
+
+impl From<AssistantStartPartialOwned> for Message {
+    fn from(value: AssistantStartPartialOwned) -> Self {
+        Message {
+            role: value.role,
+            content: value.content,
+            timestamp: value.timestamp,
+            api: value.api,
+            provider: value.provider,
+            model: value.model,
+            response_id: value.response_id,
+            response_model: value.response_model,
+            provider_thinking_level: value.provider_thinking_level,
+            diagnostics: value.diagnostics,
+            usage: value.usage,
+            stop_reason: value.stop_reason,
+            deferred: None,
+            error_message: None,
+            raw_stop_reason: None,
+            end_turn: None,
+            tool_call_id: None,
+            tool_name: None,
+            is_error: false,
+            details: None,
+            added_tool_names: Vec::new(),
+        }
+    }
+}
+
+impl Serialize for AssistantMessageFrame {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            AssistantMessageFrame::Start { partial } => {
+                let mut s = serializer.serialize_struct("AssistantMessageFrame", 2)?;
+                s.serialize_field("type", "start")?;
+                s.serialize_field(
+                    "partial",
+                    &AssistantStartPartialWire::from(partial.as_ref()),
+                )?;
+                s.end()
+            }
+            AssistantMessageFrame::TextStart {
+                content_index,
+                content,
+            } => {
+                let mut s = serializer.serialize_struct("AssistantMessageFrame", 3)?;
+                s.serialize_field("type", "text_start")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("content", content)?;
+                s.end()
+            }
+            AssistantMessageFrame::TextDelta {
+                content_index,
+                delta,
+            } => {
+                let mut s = serializer.serialize_struct("AssistantMessageFrame", 3)?;
+                s.serialize_field("type", "text_delta")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("delta", delta)?;
+                s.end()
+            }
+            AssistantMessageFrame::TextEnd {
+                content_index,
+                content,
+                text_signature,
+            } => {
+                let mut s = serializer.serialize_struct(
+                    "AssistantMessageFrame",
+                    if text_signature.is_some() { 4 } else { 3 },
+                )?;
+                s.serialize_field("type", "text_end")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("content", content)?;
+                if let Some(sig) = text_signature {
+                    s.serialize_field("textSignature", sig)?;
+                }
+                s.end()
+            }
+            AssistantMessageFrame::ThinkingStart {
+                content_index,
+                content,
+            } => {
+                let mut s = serializer.serialize_struct("AssistantMessageFrame", 3)?;
+                s.serialize_field("type", "thinking_start")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("content", content)?;
+                s.end()
+            }
+            AssistantMessageFrame::ThinkingDelta {
+                content_index,
+                delta,
+            } => {
+                let mut s = serializer.serialize_struct("AssistantMessageFrame", 3)?;
+                s.serialize_field("type", "thinking_delta")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("delta", delta)?;
+                s.end()
+            }
+            AssistantMessageFrame::ThinkingEnd {
+                content_index,
+                content,
+                thinking_signature,
+                redacted,
+            } => {
+                let mut s = serializer.serialize_struct(
+                    "AssistantMessageFrame",
+                    3 + usize::from(thinking_signature.is_some()) + usize::from(redacted.is_some()),
+                )?;
+                s.serialize_field("type", "thinking_end")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("content", content)?;
+                if let Some(sig) = thinking_signature {
+                    s.serialize_field("thinkingSignature", sig)?;
+                }
+                if let Some(value) = redacted {
+                    s.serialize_field("redacted", value)?;
+                }
+                s.end()
+            }
+            AssistantMessageFrame::ToolCallStart {
+                content_index,
+                tool_call,
+            } => {
+                let mut s = serializer.serialize_struct("AssistantMessageFrame", 3)?;
+                s.serialize_field("type", "toolcall_start")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("toolCall", tool_call)?;
+                s.end()
+            }
+            AssistantMessageFrame::ToolCallCheckpoint {
+                content_index,
+                json,
+            } => {
+                let mut s = serializer.serialize_struct("AssistantMessageFrame", 3)?;
+                s.serialize_field("type", "toolcall_checkpoint")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("json", json)?;
+                s.end()
+            }
+            AssistantMessageFrame::ToolCallDelta {
+                content_index,
+                delta,
+            } => {
+                let mut s = serializer.serialize_struct("AssistantMessageFrame", 3)?;
+                s.serialize_field("type", "toolcall_delta")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("delta", delta)?;
+                s.end()
+            }
+            AssistantMessageFrame::ToolCallEnd {
+                content_index,
+                id,
+                name,
+                arguments,
+                thought_signature,
+                namespace,
+            } => {
+                let mut s = serializer.serialize_struct(
+                    "AssistantMessageFrame",
+                    5 + usize::from(thought_signature.is_some()) + usize::from(namespace.is_some()),
+                )?;
+                s.serialize_field("type", "toolcall_end")?;
+                s.serialize_field("contentIndex", content_index)?;
+                s.serialize_field("id", id)?;
+                s.serialize_field("name", name)?;
+                s.serialize_field("arguments", arguments)?;
+                if let Some(sig) = thought_signature {
+                    s.serialize_field("thoughtSignature", sig)?;
+                }
+                if let Some(ns) = namespace {
+                    s.serialize_field("namespace", ns)?;
+                }
+                s.end()
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for AssistantMessageFrame {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?;
+        decode_frame_value(value).map_err(D::Error::custom)
+    }
+}
+
+fn decode_frame_value(value: Value) -> Result<AssistantMessageFrame, String> {
+    let mut object = match value {
+        Value::Object(map) => map,
+        _ => return Err("assistant message frame must be an object".into()),
+    };
+    let frame_type = take_string(&mut object, "type")?;
+    match frame_type.as_str() {
+        "start" => {
+            reject_unknown(&object, &["partial"])?;
+            let partial = take_value(&mut object, "partial")?;
+            let partial = serde_json::from_value::<AssistantStartPartialOwned>(partial)
+                .map_err(|e| e.to_string())?;
+            Ok(AssistantMessageFrame::Start {
+                partial: Box::new(partial.into()),
+            })
+        }
+        "text_start" => {
+            reject_unknown(&object, &["contentIndex", "content"])?;
+            let content_index = take_usize(&mut object, "contentIndex")?;
+            let content = take_content(&mut object, "content")?;
+            if !matches!(content, ContentBlock::Text { .. }) {
+                return Err(format!(
+                    "text_start frame contains {} content",
+                    content_block_type(&content)
+                ));
+            }
+            Ok(AssistantMessageFrame::TextStart {
+                content_index,
+                content,
+            })
+        }
+        "text_delta" => {
+            reject_unknown(&object, &["contentIndex", "delta"])?;
+            Ok(AssistantMessageFrame::TextDelta {
+                content_index: take_usize(&mut object, "contentIndex")?,
+                delta: take_string(&mut object, "delta")?,
+            })
+        }
+        "text_end" => {
+            reject_unknown(&object, &["contentIndex", "content", "textSignature"])?;
+            Ok(AssistantMessageFrame::TextEnd {
+                content_index: take_usize(&mut object, "contentIndex")?,
+                content: take_string(&mut object, "content")?,
+                text_signature: take_optional_string(&mut object, "textSignature")?,
+            })
+        }
+        "thinking_start" => {
+            reject_unknown(&object, &["contentIndex", "content"])?;
+            let content_index = take_usize(&mut object, "contentIndex")?;
+            let content = take_content(&mut object, "content")?;
+            if !matches!(content, ContentBlock::Thinking { .. }) {
+                return Err(format!(
+                    "thinking_start frame contains {} content",
+                    content_block_type(&content)
+                ));
+            }
+            Ok(AssistantMessageFrame::ThinkingStart {
+                content_index,
+                content,
+            })
+        }
+        "thinking_delta" => {
+            reject_unknown(&object, &["contentIndex", "delta"])?;
+            Ok(AssistantMessageFrame::ThinkingDelta {
+                content_index: take_usize(&mut object, "contentIndex")?,
+                delta: take_string(&mut object, "delta")?,
+            })
+        }
+        "thinking_end" => {
+            reject_unknown(
+                &object,
+                &["contentIndex", "content", "thinkingSignature", "redacted"],
+            )?;
+            Ok(AssistantMessageFrame::ThinkingEnd {
+                content_index: take_usize(&mut object, "contentIndex")?,
+                content: take_string(&mut object, "content")?,
+                thinking_signature: take_optional_string(&mut object, "thinkingSignature")?,
+                redacted: take_optional_bool(&mut object, "redacted")?,
+            })
+        }
+        "toolcall_start" => {
+            reject_unknown(&object, &["contentIndex", "toolCall"])?;
+            let content_index = take_usize(&mut object, "contentIndex")?;
+            let tool_call = take_content(&mut object, "toolCall")?;
+            if !matches!(tool_call, ContentBlock::ToolCall { .. }) {
+                return Err(format!(
+                    "toolcall_start frame contains {} content",
+                    content_block_type(&tool_call)
+                ));
+            }
+            Ok(AssistantMessageFrame::ToolCallStart {
+                content_index,
+                tool_call,
+            })
+        }
+        "toolcall_checkpoint" => {
+            reject_unknown(&object, &["contentIndex", "json"])?;
+            Ok(AssistantMessageFrame::ToolCallCheckpoint {
+                content_index: take_usize(&mut object, "contentIndex")?,
+                json: take_string(&mut object, "json")?,
+            })
+        }
+        "toolcall_delta" => {
+            reject_unknown(&object, &["contentIndex", "delta"])?;
+            Ok(AssistantMessageFrame::ToolCallDelta {
+                content_index: take_usize(&mut object, "contentIndex")?,
+                delta: take_string(&mut object, "delta")?,
+            })
+        }
+        "toolcall_end" => {
+            reject_unknown(
+                &object,
+                &[
+                    "contentIndex",
+                    "id",
+                    "name",
+                    "arguments",
+                    "thoughtSignature",
+                    "namespace",
+                ],
+            )?;
+            let arguments = take_value(&mut object, "arguments")?;
+            let arguments = match arguments {
+                Value::Object(map) => map.into_iter().collect(),
+                _ => return Err("toolcall_end arguments must be an object".into()),
+            };
+            Ok(AssistantMessageFrame::ToolCallEnd {
+                content_index: take_usize(&mut object, "contentIndex")?,
+                id: take_string(&mut object, "id")?,
+                name: take_string(&mut object, "name")?,
+                arguments,
+                thought_signature: take_optional_string(&mut object, "thoughtSignature")?,
+                namespace: take_optional_string(&mut object, "namespace")?,
+            })
+        }
+        other => Err(format!("unknown assistant message frame type: {other}")),
+    }
+}
+
+fn reject_unknown(
+    object: &serde_json::Map<String, Value>,
+    allowed_without_type: &[&str],
+) -> Result<(), String> {
+    for key in object.keys() {
+        if !allowed_without_type.contains(&key.as_str()) {
+            return Err(format!("unknown assistant message frame field: {key}"));
+        }
+    }
+    Ok(())
+}
+
+fn take_value(object: &mut serde_json::Map<String, Value>, key: &str) -> Result<Value, String> {
+    object
+        .remove(key)
+        .ok_or_else(|| format!("assistant message frame missing field: {key}"))
+}
+
+fn take_string(object: &mut serde_json::Map<String, Value>, key: &str) -> Result<String, String> {
+    take_value(object, key)?
+        .as_str()
+        .map(ToString::to_string)
+        .ok_or_else(|| format!("assistant message frame field {key} must be a string"))
+}
+
+fn take_optional_string(
+    object: &mut serde_json::Map<String, Value>,
+    key: &str,
+) -> Result<Option<String>, String> {
+    match object.remove(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::String(value)) => Ok(Some(value)),
+        Some(_) => Err(format!(
+            "assistant message frame field {key} must be a string"
+        )),
+    }
+}
+
+fn take_optional_bool(
+    object: &mut serde_json::Map<String, Value>,
+    key: &str,
+) -> Result<Option<bool>, String> {
+    match object.remove(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(Value::Bool(value)) => Ok(Some(value)),
+        Some(_) => Err(format!(
+            "assistant message frame field {key} must be a boolean"
+        )),
+    }
+}
+
+fn take_usize(object: &mut serde_json::Map<String, Value>, key: &str) -> Result<usize, String> {
+    let value = take_value(object, key)?.as_u64().ok_or_else(|| {
+        format!("assistant message frame field {key} must be a non-negative integer")
+    })?;
+    usize::try_from(value).map_err(|_| format!("assistant message frame field {key} is too large"))
+}
+
+fn take_content(
+    object: &mut serde_json::Map<String, Value>,
+    key: &str,
+) -> Result<ContentBlock, String> {
+    serde_json::from_value(take_value(object, key)?).map_err(|e| e.to_string())
 }
 
 #[derive(Debug, Clone)]
@@ -329,7 +774,7 @@ impl AssistantMessageFrameEncoder {
                     content_index,
                     content,
                     thinking_signature: thinking_signature.clone(),
-                    redacted: Some(*redacted),
+                    redacted: *redacted,
                 }))
             }
             AssistantMessageEvent::ToolCallStart {
@@ -672,9 +1117,7 @@ where
                 };
                 *thinking = content;
                 *sig = thinking_signature;
-                if let Some(value) = redacted {
-                    *block_redacted = value;
-                }
+                *block_redacted = redacted;
                 if let Some(state) = states.get_mut(&content_index) {
                     state.ended = true;
                 }

@@ -37,7 +37,7 @@ fn normalize_cross_model_content(messages: Vec<Message>, model: &Model) -> Vec<M
                         thinking_signature,
                         redacted,
                     } => {
-                        if *redacted {
+                        if redacted.unwrap_or(false) {
                             // Opaque encrypted content; only valid for the same model.
                             if is_same {
                                 new_content.push(block.clone());
@@ -500,7 +500,7 @@ mod tests {
                 ContentBlock::Thinking {
                     thinking: "reasoning".into(),
                     thinking_signature: Some("sig".into()),
-                    redacted: false,
+                    redacted: None,
                 },
                 ContentBlock::ToolCall {
                     id: "tc1".into(),

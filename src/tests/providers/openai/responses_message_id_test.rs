@@ -42,7 +42,7 @@ mod tests {
                 ContentBlock::Thinking {
                     thinking: "private reasoning".into(),
                     thinking_signature: None,
-                    redacted: false,
+                    redacted: None,
                 },
                 ContentBlock::Text {
                     text: "visible answer".into(),

@@ -264,7 +264,7 @@ mod tests {
             content: vec![ContentBlock::Thinking {
                 thinking: thinking.into(),
                 thinking_signature: Some(signature.into()),
-                redacted: false,
+                redacted: None,
             }],
             timestamp: 0,
             api: Some("anthropic-messages".into()),
