@@ -213,6 +213,67 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn terminal_success_and_length_clear_stale_incomplete_error_messages() {
+        let completed_after_error = concat!(
+            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_filter\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"content_filter\"}}}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_ok\",\"status\":\"completed\"}}\n\n",
+            "data: [DONE]\n\n",
+        )
+        .to_string();
+        let (reason, err, message) = run(completed_after_error).await;
+        assert!(matches!(reason, StopReason::Stop));
+        assert_eq!(err, None);
+        assert_eq!(message.error_message, None);
+
+        let length_after_error = concat!(
+            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_filter\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"content_filter\"}}}\n\n",
+            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_len\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"max_output_tokens\"}}}\n\n",
+            "data: [DONE]\n\n",
+        )
+        .to_string();
+        let (reason, err, message) = run(length_after_error).await;
+        assert!(matches!(reason, StopReason::Length));
+        assert_eq!(err, None);
+        assert_eq!(message.error_message, None);
+        assert_eq!(
+            message.raw_stop_reason.as_deref(),
+            Some("incomplete.max_output_tokens")
+        );
+    }
+
+    #[tokio::test]
+    async fn terminal_tool_use_clears_stale_incomplete_error_message() {
+        let body = concat!(
+            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_filter\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"content_filter\"}}}\n\n",
+            "data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"call_1\",\"name\":\"lookup\",\"arguments\":\"{\\\"query\\\":\\\"pi\\\"}\"}}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_tool\",\"status\":\"completed\"}}\n\n",
+            "data: [DONE]\n\n",
+        )
+        .to_string();
+        let (reason, err, message) = run(body).await;
+        assert!(matches!(reason, StopReason::ToolUse));
+        assert_eq!(err, None);
+        assert_eq!(message.error_message, None);
+    }
+
+    #[tokio::test]
+    async fn terminal_incomplete_error_replaces_stale_error_with_provider_reason() {
+        let body = concat!(
+            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_filter\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"content_filter\"}}}\n\n",
+            "data: {\"type\":\"response.incomplete\",\"response\":{\"id\":\"resp_time\",\"status\":\"incomplete\",\"incomplete_details\":{\"reason\":\"max_time_limit\"}}}\n\n",
+            "data: [DONE]\n\n",
+        )
+        .to_string();
+        let (reason, err, message) = run(body).await;
+        assert!(matches!(reason, StopReason::Error));
+        assert_eq!(err.as_deref(), Some("Response incomplete: max_time_limit"));
+        assert_eq!(
+            message.raw_stop_reason.as_deref(),
+            Some("incomplete.max_time_limit")
+        );
+    }
+
+    #[tokio::test]
     async fn rejects_failed_terminal_events_with_the_provider_error() {
         let body = "data: {\"type\":\"response.failed\",\"response\":{\"id\":\"resp_failed\",\"status\":\"failed\",\"error\":{\"code\":\"server_error\",\"message\":\"boom\"}}}\n\n".to_string();
         let (reason, err, _m) = run(body).await;

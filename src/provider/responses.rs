@@ -675,6 +675,13 @@ fn stream_responses_inner<'a>(
                                 && partial.content.iter().any(|b| matches!(b, ContentBlock::ToolCall { .. })) {
                                 reason = StopReason::ToolUse;
                             }
+                            if matches!(reason, StopReason::Stop | StopReason::Length | StopReason::ToolUse) {
+                                // v0.85: terminal success/length/toolUse mappings are
+                                // authoritative and must clear stale partial errors left by
+                                // earlier/incomplete state. Error mappings above deliberately
+                                // retain/set their provider reason.
+                                partial.error_message = None;
+                            }
                             partial.stop_reason = Some(reason);
                         }
                     }

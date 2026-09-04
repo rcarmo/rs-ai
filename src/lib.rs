@@ -18,6 +18,7 @@
 
 #![allow(clippy::items_after_test_module)]
 
+pub mod assistant_message_frame;
 pub mod auth;
 pub mod auth_providers;
 pub mod compaction;
@@ -50,6 +51,7 @@ pub mod utils;
 pub mod validation;
 
 // Re-exports for convenience
+pub use assistant_message_frame::*;
 pub use events::*;
 pub use registry::{complete, stream};
 pub use types::provider_id;
@@ -85,6 +87,9 @@ mod anthropic_thinking_disable_test;
 #[cfg(test)]
 #[path = "tests/providers/anthropic/anthropic_tool_name_normalization_test.rs"]
 mod anthropic_tool_name_normalization_test;
+#[cfg(test)]
+#[path = "tests/core/assistant_message_frame_test.rs"]
+mod assistant_message_frame_test;
 #[cfg(test)]
 #[path = "tests/providers/openai/azure_openai_base_url_test.rs"]
 mod azure_openai_base_url_test;
@@ -286,6 +291,9 @@ mod overflow_test;
 #[cfg(test)]
 #[path = "tests/core/pi_messages_test.rs"]
 mod pi_messages_test;
+#[cfg(test)]
+#[path = "tests/providers/other/pre_generation_error_test.rs"]
+mod pre_generation_error_test;
 #[cfg(test)]
 #[path = "tests/transports/provider_retry_test.rs"]
 mod provider_retry_test;

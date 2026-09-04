@@ -9,13 +9,13 @@
 - Accepted rs-ai baseline: `180d9c216f8ba52b6d0812355fb64f62fed2ea5d`
 - Audited range: `b79e4cc834970cca69daebffab7df1da7d1e52c4..107d79f11072bbc8a3a757ed7fd69596bee7d68c`
 - Scope: `packages/ai` only; official tag/npm artifact only, no newer-main chase.
-- Scope status: **ADAPTED / completed for bounded deterministic v0.85.0 release parity; hosted CI passed for runtime candidate; auditor acceptance pending**.
+- Scope status: **ADAPTED / corrective runtime candidate locally green; replacement hosted CI pending**.
 
 ### v0.85.0 exact upstream path disposition
 
 The official range changes **51** `packages/ai` paths: 19 source/scripts paths (16 modified, 2 added, 1 deleted), 29 tests (22 modified, 6 added, 1 deleted), and 3 package/docs paths. Final corpus: **142** upstream `packages/ai/test/*.test.ts` files, recorded in `docs/v0850-142-test-crosswalk.md`.
 
-Executable validator: `python3 scripts/validate_v0850_manifests.py` asserts this exact 51-path set and the 142 unique crosswalk rows.
+Executable validator: `python3 scripts/validate_v0850_manifests.py` asserts this exact 51-path set, the 142 unique crosswalk rows, and the committed exact-content inventory hashes (`db461a56838926cf60d4ae0196ed98fcc215616dacff013ad8c235bb8ad9b83f` for changed paths; `56f8742065a4ad01d73e5aee53035324f2e7333a735222ab15db870819e29065` for the test corpus).
 
 | Status | Upstream path | rs-ai disposition |
 |---|---|---|
@@ -37,7 +37,7 @@ Executable validator: `python3 scripts/validate_v0850_manifests.py` asserts this
 | M | `packages/ai/src/providers/faux.ts` | ADAPTED by origin faux context-capture commit and tests |
 | M | `packages/ai/src/providers/openrouter.ts` | ADAPTED by regenerated catalog metadata |
 | M | `packages/ai/src/types.ts` | ADAPTED in Rust types/options/compat |
-| A | `packages/ai/src/utils/assistant-message-frame.ts` | ADAPTED via typed provider stream parsers; no JS frame wrapper in Rust |
+| A | `packages/ai/src/utils/assistant-message-frame.ts` | ADAPTED as public Rust `assistant_message_frame` encoder/reducer |
 | M | `packages/ai/src/utils/node-http-proxy.ts` | ADAPTED in Rust HTTP proxy utility |
 | M | `packages/ai/src/utils/retry.ts` | COVERED by existing retry tests |
 | M | `packages/ai/src/utils/uuid.ts` | ADAPTED in Rust uuid utility |
@@ -75,10 +75,11 @@ Executable validator: `python3 scripts/validate_v0850_manifests.py` asserts this
 
 - Regenerated the text catalog from official npm `dist/providers/data` shards: **1336 text provider/id pairs across 39 providers and 9 APIs**; official OpenRouter batch aliases are now **66**. Full-record text delta from v0.84.4: `1290→1336`, `+72/-26/79 changed`.
 - Verified image catalog remains **50 image provider/id pairs**. Full-record image delta from v0.84.4: `50→50`, `+0/-0/0`.
-- Updated release metadata verifier defaults to `@earendil-works/pi-ai@0.85.0` and pinned npm tarball SHA-256 `46188bdacb555a07466a0111f3963f20932a16199e4d6cfb8d44a7fe5fc6e342`.
+- Updated release metadata verifier defaults to `@earendil-works/pi-ai@0.85.0` and pinned npm tarball SHA-256 `46188bdacb555a07466a0111f3963f20932a16199e4d6cfb8d44a7fe5fc6e342`; added full-record v0.84.4→v0.85.0 delta verification (`text +72/-26/79 changed`, `image +0/-0/0`) with mutation fault coverage.
 - Preserved the exact v0.85.0 provider manifest shape: `schemaVersion=3`, `structureHash=a71a055905e4b12c9bb41fa6c2bf90fb2944ca76843bdfd3831377caba1be189`, `manifestSha256=61b723edeaf75dd3d55908da3530b8bf013ecffa4dc7734f4220ef0bc64442c7`.
 - Added `Message.providerThinkingLevel` serialization and Anthropic managed mid-conversation effort support: beta headers, adaptive `block_binding`, high output-config marker, and stream metadata preservation.
-- Added OpenAI-compatible `compat.vllmPriority` -> top-level `priority`, OpenAI Responses `supportsMaxOutputTokens=false` omission, explicit UUIDv7 timestamp support, NO_PROXY suffix/port coverage, pi-messages `providerThinkingLevel`, and Codex terminal SSE without trailing blank coverage.
+- Added public `AssistantMessageFrame`, `AssistantMessageFrameEncoder`, and `reduce_assistant_message_frames` support for provider-neutral assistant progress persistence/replay, with deterministic coverage for live-partial offset/prefix reconciliation, authoritative end metadata/arguments, tool JSON checkpoint/resume, interleaving, clone/purity, terminal omission/state, pre-generation error grammar, and strict kind/order/index/end rejection.
+- Added OpenAI-compatible `compat.vllmPriority` -> top-level `priority`, OpenAI Responses `supportsMaxOutputTokens=false` omission and successful/length/toolUse terminal stale-error cleanup, explicit UUIDv7 timestamp support, NO_PROXY suffix/port coverage, pi-messages `providerThinkingLevel`, and Codex terminal SSE without trailing blank coverage.
 - Reflected strict generated catalog deltas: `qwen3.8-flash` Individual allowlist plus new audited OpenRouter batch aliases `anthropic/claude-fable-5.1`, `google/gemini-3.8-flash`, and `x-ai/grok-4.3`.
 - Assessed Cloudflare Workers AI binding replacement as N/A for Rust Workers binding-object semantics; Rust HTTP/gateway/provider catalog behavior remains covered.
 
@@ -92,8 +93,11 @@ Named Rust evidence added/updated for v0.85.0:
 - `src/tests/release/v0850_release_test.rs::no_proxy_matches_uppercase_suffix_and_port_rules`
 - `src/tests/providers/anthropic/anthropic_mid_conversation_effort_test.rs`
 - `src/tests/core/pi_messages_test.rs::streams_text_tool_calls_payload_and_terminal_message`
+- `src/tests/core/assistant_message_frame_test.rs`
+- `src/tests/providers/openai/openai_responses_terminal_event_test.rs::{terminal_success_and_length_clear_stale_incomplete_error_messages,terminal_tool_use_clears_stale_incomplete_error_message,terminal_incomplete_error_replaces_stale_error_with_provider_reason}`
+- `src/tests/providers/other/pre_generation_error_test.rs::missing_auth_surfaces_first_error_from_concrete_provider_streams`
 - `src/tests/providers/codex/openai_codex_stream_test.rs::processes_terminal_sse_event_without_trailing_blank_line`
-- `src/tests/release/release_metadata_verification_test.rs::v0850_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
+- `src/tests/release/release_metadata_verification_test.rs::{v0850_manifest_validator_confirms_changed_paths_and_crosswalk_rows,v0850_manifest_validator_detects_changed_path_inventory_corruption,v0850_manifest_validator_detects_test_corpus_inventory_corruption,v0850_baseline_delta_validator_confirms_full_record_counts,v0850_baseline_delta_validator_detects_record_mutation}`
 
 ### v0.85.0 release-pinned artifact evidence
 
@@ -114,13 +118,21 @@ python3 scripts/extract_release_model_shards.py /workspace/tmp/pi-ai-0850/packag
 python3 scripts/generate_models.py /workspace/tmp/pi-v0850-json/models.json
 python3 scripts/generate_image_models.py /workspace/tmp/pi-v0850-json/image-models.json
 python3 scripts/verify_release_model_metadata.py
+python3 scripts/validate_v0850_manifests.py
+python3 scripts/validate_v0850_manifests.py --fault v0850-changed-paths
+python3 scripts/validate_v0850_manifests.py --fault v0850-test-corpus-142
+python3 scripts/verify_v0850_baseline_delta.py
+python3 scripts/verify_v0850_baseline_delta.py --fault baseline-record
 cargo test v0850_release_test -- --nocapture
 cargo test anthropic_mid_conversation_effort_test -- --nocapture
+cargo test assistant_message_frame_test -- --nocapture
+cargo test openai_responses_terminal_event_test -- --nocapture
+cargo test pre_generation_error_test -- --nocapture
 cargo test pi_messages_test -- --nocapture
 cargo test openai_codex_stream_test::tests::processes_terminal_sse_event_without_trailing_blank_line -- --nocapture
 ```
 
-Final local results: `cargo fmt --all -- --check` passed; `cargo build` passed; metadata verifier `metadata verified: text=1336 providers=39 apis=9 batchAliases=66 image=50`; deliberate `--fault text-name` and `--fault image-name` metadata gates failed with the expected text/image mismatches; provider/id comparator passed with text `upstream=1336 local=1336 missing=0 extra=0` and image `upstream=50 local=50 missing=0 extra=0`; v0.85.0 manifest validator `changedPaths=51 testRows=142`; v0.84.4 historical manifest validator still passes under the new current-release heading; focused v0.85.0 tests passed; full `cargo test --all-targets --all-features` passed three consecutive post-lock times (`947 passed`, `0 failed`, `0 ignored` each); strict `cargo clippy --all-targets --all-features -- -D warnings` passed; feature config checks `cargo check --no-default-features` and `cargo check --no-default-features --features bedrock` passed; `make sbom && make sbom-check` generated/validated gitignored `artifacts/sbom.cdx.json` with **278** dependency components and checksum `66871f13e465790bce2ae8929ebcb2240f2cfca8f2f6152b6934968eab3c9ba4`; `make license-check-selftest`/`make license-check` passed for **278** third-party packages with explicit `CDLA-Permissive-2.0` allowlist coverage; `make vuln-check-selftest`/`make vuln-check` passed with pinned `cargo-audit 0.22.2`, retaining the four owner-approved AWS legacy transitive exceptions through `2026-09-30`; `Cargo.lock` was minimally updated from yanked `chacha20 0.10.1` to `0.10.2`; `git diff --check` passed. Runtime candidate SHA `ae87c229cd0a76a3b1611279ebcb3ef4ddd4d0fa` passed hosted GitHub Actions run `33888972744`, job `build-test-lint` (`101075680548`); uploaded SBOM artifact `rs-ai-sbom-ae87c229cd0a76a3b1611279ebcb3ef4ddd4d0fa` (`9943241339`) expires `2026-10-04T15:27:11Z`. This CI evidence is recorded by a follow-up docs-only `[skip ci]` commit so the tested runtime SHA remains distinct from the final docs SHA.
+Corrective local results: `cargo fmt --all -- --check` passed; `cargo build` passed; focused suites for assistant-message-frame and Responses terminal/stale-error passed; release metadata verification suite passed (`11 passed`) including manifest hash checks, both manifest corruption self-tests, baseline full-record delta, and baseline mutation failure; metadata verifier passed (`text=1336 providers=39 apis=9 batchAliases=66 image=50`); metadata `--fault text-name` and `--fault image-name` failed closed on expected mismatches; provider/id comparator passed with text `upstream=1336 local=1336 missing=0 extra=0` and image `upstream=50 local=50 missing=0 extra=0`; manifest validator passed with `changedSha256=db461a56838926cf60d4ae0196ed98fcc215616dacff013ad8c235bb8ad9b83f` and `testCorpusSha256=56f8742065a4ad01d73e5aee53035324f2e7333a735222ab15db870819e29065`; deliberate manifest faults failed closed for both inventories; baseline delta verifier passed (`text=+72/-26/79 changed image=+0/-0/0 changed`) and `--fault baseline-record` failed closed; full `cargo test --all-targets --all-features` passed three consecutive corrective-final times (`970 passed`, `0 failed`, `0 ignored` each); strict `cargo clippy --all-targets --all-features -- -D warnings` passed; `cargo check --no-default-features` and `cargo check --no-default-features --features bedrock` passed; `cargo test --no-default-features` passed (`841 passed`, doctest `1 passed`); `cargo test --no-default-features --features bedrock` passed (`970 passed`, doctest `1 passed`); `make check` passed, generating/validating local SBOM `artifacts/sbom.cdx.json` with **278** dependency components and local checksum `4be5845f6e8c388bcd9d9d712538f6a10ef70990626aeab08c0aa0f8d4441d4d`; license self-tests/review passed for **278** third-party packages; RustSec wrapper self-tests and `cargo-audit 0.22.2` passed with the four owner-approved AWS legacy transitive exceptions through `2026-09-30`; `git diff --check` passed. Superseded candidate `ae87c229cd0a76a3b1611279ebcb3ef4ddd4d0fa` / CI run `33888972744` remains rejected and is retained only as superseded evidence; replacement hosted CI and CI SBOM digest are pending the corrective runtime push.
 
 ## Historical accepted release: v0.84.4
 
