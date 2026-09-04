@@ -41,11 +41,13 @@ QWEN_TOKEN_PLAN_INDIVIDUAL_MODEL_IDS = {
     "qwen3.6-flash",
     "qwen3.7-max",
     "qwen3.7-plus",
+    "qwen3.8-flash",
     "qwen3.8-max",
 }
 
 ALLOWED_BATCH_ALIASES = {
     "openrouter/anthropic/claude-fable-5:batch",
+    "openrouter/anthropic/claude-fable-5.1:batch",
     "openrouter/anthropic/claude-haiku-4.5:batch",
     "openrouter/anthropic/claude-opus-4.1:batch",
     "openrouter/anthropic/claude-opus-4.5:batch",
@@ -66,6 +68,7 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/google/gemini-3.5-flash:batch",
     "openrouter/google/gemini-3.6-flash:batch",
     "openrouter/google/gemini-3.7-flash:batch",
+    "openrouter/google/gemini-3.8-flash:batch",
     "openrouter/minimax/minimax-m3:batch",
     "openrouter/moonshotai/kimi-k2.7-code:batch",
     "openrouter/nvidia/nemotron-3-ultra-550b-a55b:batch",
@@ -104,6 +107,7 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/openai/o4-mini-high:batch",
     "openrouter/openai/o4-mini:batch",
     "openrouter/thinkingmachines/inkling:batch",
+    "openrouter/x-ai/grok-4.3:batch",
     "openrouter/z-ai/glm-5.2:batch",
     "openrouter/z-ai/glm-5.3-flash:batch",
     "openrouter/thinkingmachines/inkling-small:batch",

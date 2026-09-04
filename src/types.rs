@@ -295,6 +295,8 @@ pub struct Message {
     pub response_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response_model: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_thinking_level: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub diagnostics: Vec<AssistantMessageDiagnostic>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -393,7 +395,13 @@ pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub force_adaptive_thinking: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_mid_convo_effort: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_tokens_field: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_max_output_tokens: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vllm_priority: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub requires_reasoning_content_on_assistant_messages: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -574,6 +582,7 @@ pub fn user_message(text: &str) -> Message {
         model: None,
         response_id: None,
         response_model: None,
+        provider_thinking_level: None,
         diagnostics: Vec::new(),
         usage: None,
         stop_reason: None,

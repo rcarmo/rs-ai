@@ -227,6 +227,7 @@ pub fn stream_google<'a>(
             model: Some(model.id.clone()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),

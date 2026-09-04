@@ -338,6 +338,18 @@ pub fn stream_codex<'a>(
                     if done { break; }
                 }
                 if !done {
+                    if let Some(evt) = parser.finish()
+                        && evt.event != sse::EVENT_ERROR
+                        && let Ok(data) = serde_json::from_str::<Value>(&evt.data)
+                    {
+                        done = state.process_event(&data);
+                    }
+                    while emitted < state.events.len() {
+                        yield state.events[emitted].clone();
+                        emitted += 1;
+                    }
+                }
+                if !done {
                     // Codex SSE is consumed via the shared responses-stream decoder
                     // (processStream -> processResponsesStream upstream), which throws this
                     // exact message when the stream ends without a terminal response event.
@@ -509,6 +521,7 @@ impl CodexWsState {
             model: Some(model.id.clone()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),

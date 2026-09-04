@@ -68,6 +68,9 @@ mod anthropic_fallback_test;
 #[path = "tests/providers/anthropic/anthropic_force_adaptive_thinking_test.rs"]
 mod anthropic_force_adaptive_thinking_test;
 #[cfg(test)]
+#[path = "tests/providers/anthropic/anthropic_mid_conversation_effort_test.rs"]
+mod anthropic_mid_conversation_effort_test;
+#[cfg(test)]
 #[path = "tests/auth/oauth/anthropic_oauth_test.rs"]
 mod anthropic_oauth_test;
 #[cfg(test)]
@@ -358,6 +361,9 @@ mod v0843_release_test;
 #[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/release/v0844_release_test.rs"]
 mod v0844_release_test;
+#[cfg(all(test, feature = "bedrock"))]
+#[path = "tests/release/v0850_release_test.rs"]
+mod v0850_release_test;
 #[cfg(test)]
 #[path = "tests/transports/validation_upstream_test.rs"]
 mod validation_upstream_test;

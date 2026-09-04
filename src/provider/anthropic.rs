@@ -212,6 +212,12 @@ pub fn stream_anthropic<'a>(
             hook(status, &hdrs, model);
         }
 
+        let provider_thinking_level = if model.compat.supports_mid_convo_effort == Some(true) {
+            Some(map_anthropic_effort(model, opts.reasoning.as_ref()))
+        } else {
+            None
+        };
+
         let mut partial = Message {
             role: Role::Assistant,
             content: Vec::new(),
@@ -221,6 +227,7 @@ pub fn stream_anthropic<'a>(
             model: Some(model.id.clone()),
             response_id: None,
             response_model: None,
+            provider_thinking_level,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
@@ -698,6 +705,8 @@ pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
 /// Compute the Anthropic `anthropic-beta` feature list for a request (mirrors the
 /// upstream createClient beta-header logic).
 const SERVER_SIDE_FALLBACK_BETA: &str = "server-side-fallback-2026-07-01";
+const MID_CONVERSATION_OUTPUT_CONFIG_BETA: &str = "mid-conversation-output-config-2026-07-01";
+const THINKING_BINDING_CONTROLS_BETA: &str = "thinking-binding-controls-2026-08-01";
 
 pub(crate) fn anthropic_beta_features<'a>(
     model: &'a Model,
@@ -728,6 +737,10 @@ pub(crate) fn anthropic_beta_features<'a>(
         .is_some_and(|items| !items.is_empty())
     {
         beta_features.push(SERVER_SIDE_FALLBACK_BETA);
+    }
+    if model.compat.supports_mid_convo_effort == Some(true) {
+        beta_features.push(MID_CONVERSATION_OUTPUT_CONFIG_BETA);
+        beta_features.push(THINKING_BINDING_CONTROLS_BETA);
     }
     beta_features
 }
@@ -938,13 +951,22 @@ pub(crate) fn build_anthropic_payload(
     let thinking_enabled = opts.reasoning.is_some() && model.reasoning;
     if let Some(temp) = opts.temperature
         && !thinking_enabled
+        && model.compat.supports_mid_convo_effort != Some(true)
         && anthropic_compat(model).supports_temperature
     {
         payload["temperature"] = json!(temp);
     }
 
     // Thinking/reasoning: adaptive, budget-based, or explicitly disabled (mirrors buildParams).
-    if model.reasoning {
+    if model.compat.supports_mid_convo_effort == Some(true) {
+        let display = opts.thinking_display.as_deref().unwrap_or("summarized");
+        payload["thinking"] = json!({
+            "type": "adaptive",
+            "display": display,
+            "block_binding": {"prefix_mismatch_behavior": "drop_block"}
+        });
+        payload["output_config"] = json!({"effort": "high"});
+    } else if model.reasoning {
         if thinking_enabled {
             let display = opts.thinking_display.as_deref().unwrap_or("summarized");
             if model.compat.force_adaptive_thinking == Some(true) {

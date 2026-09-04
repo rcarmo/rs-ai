@@ -20,8 +20,11 @@ pub fn hash_string(s: &str) -> u64 {
     hash
 }
 
-static UUIDV7_LAST_MS: AtomicU64 = AtomicU64::new(0);
-static UUIDV7_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+static UUIDV7_LAST_ORDINARY_MS: AtomicU64 = AtomicU64::new(0);
+static UUIDV7_SEQUENCE: AtomicU64 = AtomicU64::new(u64::MAX);
+
+const MAX_UUID_V7_TIMESTAMP: u64 = 0xffff_ffff_ffff;
+const MAX_UUID_V7_SEQUENCE: u64 = (1_u64 << 41) - 1;
 
 /// Extract and join text blocks from message content (upstream `contentText`).
 pub fn content_text(content: &[crate::types::ContentBlock], separator: &str) -> String {
@@ -37,34 +40,73 @@ pub fn content_text(content: &[crate::types::ContentBlock], separator: &str) -> 
 
 /// Generate a time-ordered UUIDv7 (RFC 9562 layout; mirrors upstream utility).
 pub fn uuidv7() -> String {
+    uuidv7_inner(crate::utils::now_millis().max(0) as u64, true)
+}
+
+/// Generate a UUIDv7 for an explicit millisecond timestamp.
+pub fn uuidv7_with_timestamp(timestamp_ms: u64) -> String {
+    uuidv7_inner(timestamp_ms, false)
+}
+
+fn uuidv7_inner(timestamp_ms: u64, ordinary_timestamp: bool) -> String {
     use rand::RngCore;
+    assert!(
+        timestamp_ms <= MAX_UUID_V7_TIMESTAMP,
+        "UUIDv7 timestamp must be an integer between 0 and 281474976710655"
+    );
     let mut random = [0u8; 16];
     rand::rngs::OsRng.fill_bytes(&mut random);
-    let now = crate::utils::now_millis().max(0) as u64;
-    let mut last = UUIDV7_LAST_MS.load(Ordering::SeqCst);
+
+    // Upstream v0.85.0 preserves caller-supplied timestamps for follower ids;
+    // only ordinary Date.now()-style calls are made monotonic against the last
+    // ordinary timestamp.
+    let ts = if ordinary_timestamp {
+        let mut last = UUIDV7_LAST_ORDINARY_MS.load(Ordering::SeqCst);
+        loop {
+            let effective = timestamp_ms.max(last);
+            match UUIDV7_LAST_ORDINARY_MS.compare_exchange(
+                last,
+                effective,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+            ) {
+                Ok(_) => break effective,
+                Err(observed) => last = observed,
+            }
+        }
+    } else {
+        timestamp_ms
+    };
+
+    let seed = ((random[1] as u64) << 32)
+        | ((random[2] as u64) << 24)
+        | ((random[3] as u64) << 16)
+        | ((random[4] as u64) << 8)
+        | random[5] as u64;
     let sequence = loop {
-        if now > last {
-            let seed = ((random[6] as u64) << 24)
-                | ((random[7] as u64) << 16)
-                | ((random[8] as u64) << 8)
-                | random[9] as u64;
-            if UUIDV7_LAST_MS
-                .compare_exchange(last, now, Ordering::SeqCst, Ordering::SeqCst)
+        let current = UUIDV7_SEQUENCE.load(Ordering::SeqCst);
+        if current == u64::MAX {
+            if UUIDV7_SEQUENCE
+                .compare_exchange(current, seed, Ordering::SeqCst, Ordering::SeqCst)
                 .is_ok()
             {
-                UUIDV7_SEQUENCE.store(seed, Ordering::SeqCst);
                 break seed;
             }
-            last = UUIDV7_LAST_MS.load(Ordering::SeqCst);
-        } else {
-            let seq = UUIDV7_SEQUENCE
-                .fetch_add(1, Ordering::SeqCst)
-                .wrapping_add(1)
-                & 0xffff_ffff;
-            break seq;
+            continue;
+        }
+        assert!(
+            current < MAX_UUID_V7_SEQUENCE,
+            "UUIDv7 generator sequence exhausted"
+        );
+        let next = current + 1;
+        if UUIDV7_SEQUENCE
+            .compare_exchange(current, next, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
+        {
+            break next;
         }
     };
-    let ts = UUIDV7_LAST_MS.load(Ordering::SeqCst).max(now);
+
     let mut bytes = [0u8; 16];
     bytes[0] = ((ts >> 40) & 0xff) as u8;
     bytes[1] = ((ts >> 32) & 0xff) as u8;
@@ -72,12 +114,13 @@ pub fn uuidv7() -> String {
     bytes[3] = ((ts >> 16) & 0xff) as u8;
     bytes[4] = ((ts >> 8) & 0xff) as u8;
     bytes[5] = (ts & 0xff) as u8;
-    bytes[6] = 0x70 | (((sequence >> 28) & 0x0f) as u8);
-    bytes[7] = ((sequence >> 20) & 0xff) as u8;
-    bytes[8] = 0x80 | (((sequence >> 14) & 0x3f) as u8);
-    bytes[9] = ((sequence >> 6) & 0xff) as u8;
-    bytes[10] = (((sequence & 0x3f) << 2) as u8) | (random[10] & 0x03);
-    bytes[11..16].copy_from_slice(&random[11..16]);
+    bytes[6] = 0x70 | (((sequence >> 37) & 0x0f) as u8);
+    bytes[7] = ((sequence >> 29) & 0xff) as u8;
+    bytes[8] = 0x80 | (((sequence >> 23) & 0x3f) as u8);
+    bytes[9] = ((sequence >> 15) & 0xff) as u8;
+    bytes[10] = ((sequence >> 7) & 0xff) as u8;
+    bytes[11] = (((sequence & 0x7f) << 1) as u8) | (random[11] & 0x01);
+    bytes[12..16].copy_from_slice(&random[12..16]);
     let hex = bytes.map(|b| format!("{b:02x}"));
     format!(
         "{}{}{}{}-{}{}-{}{}-{}{}-{}{}{}{}{}{}",
@@ -580,6 +623,7 @@ mod tests {
                 model: None,
                 response_id: None,
                 response_model: None,
+                provider_thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,
@@ -639,6 +683,7 @@ mod tests {
                 model: None,
                 response_id: None,
                 response_model: None,
+                provider_thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,

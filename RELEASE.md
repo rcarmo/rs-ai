@@ -1,6 +1,128 @@
 # rs-ai upstream release parity
 
-## Current audit target: v0.84.4
+## Current audit target: v0.85.0
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v0.85.0`
+- Upstream tag/commit: `107d79f11072bbc8a3a757ed7fd69596bee7d68c`
+- Previous accepted upstream: `v0.84.4` / `b79e4cc834970cca69daebffab7df1da7d1e52c4`
+- Accepted rs-ai baseline: `180d9c216f8ba52b6d0812355fb64f62fed2ea5d`
+- Audited range: `b79e4cc834970cca69daebffab7df1da7d1e52c4..107d79f11072bbc8a3a757ed7fd69596bee7d68c`
+- Scope: `packages/ai` only; official tag/npm artifact only, no newer-main chase.
+- Scope status: **ADAPTED / completed for bounded deterministic v0.85.0 release parity; hosted CI acceptance pending**.
+
+### v0.85.0 exact upstream path disposition
+
+The official range changes **51** `packages/ai` paths: 19 source/scripts paths (16 modified, 2 added, 1 deleted), 29 tests (22 modified, 6 added, 1 deleted), and 3 package/docs paths. Final corpus: **142** upstream `packages/ai/test/*.test.ts` files, recorded in `docs/v0850-142-test-crosswalk.md`.
+
+Executable validator: `python3 scripts/validate_v0850_manifests.py` asserts this exact 51-path set and the 142 unique crosswalk rows.
+
+| Status | Upstream path | rs-ai disposition |
+|---|---|---|
+| M | `packages/ai/CHANGELOG.md` | DOCUMENTED / metadata-only |
+| M | `packages/ai/README.md` | DOCUMENTED / metadata-only |
+| M | `packages/ai/package.json` | DOCUMENTED / metadata-only |
+| M | `packages/ai/scripts/generate-models.ts` | ADAPTED via extractor/generator and regenerated catalog |
+| M | `packages/ai/src/api/anthropic-messages.ts` | ADAPTED in Rust provider/runtime code |
+| A | `packages/ai/src/api/cloudflare-ai-binding.ts` | N/A Workers binding object; Rust HTTP/gateway semantics documented |
+| D | `packages/ai/src/api/cloudflare-gateway-binding.ts` | N/A deleted upstream Workers binding object |
+| M | `packages/ai/src/api/openai-codex-responses.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/openai-completions.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/openai-responses-shared.ts` | ADAPTED / COVERED |
+| M | `packages/ai/src/api/openai-responses.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/api/pi-messages.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/index.ts` | N/A TypeScript export surface; Rust exposes modules directly |
+| M | `packages/ai/src/models.ts` | ADAPTED / COVERED by runtime registry tests |
+| M | `packages/ai/src/providers/cloudflare-ai-gateway.ts` | ADAPTED / COVERED |
+| M | `packages/ai/src/providers/faux.ts` | ADAPTED by origin faux context-capture commit and tests |
+| M | `packages/ai/src/providers/openrouter.ts` | ADAPTED by regenerated catalog metadata |
+| M | `packages/ai/src/types.ts` | ADAPTED in Rust types/options/compat |
+| A | `packages/ai/src/utils/assistant-message-frame.ts` | ADAPTED via typed provider stream parsers; no JS frame wrapper in Rust |
+| M | `packages/ai/src/utils/node-http-proxy.ts` | ADAPTED in Rust HTTP proxy utility |
+| M | `packages/ai/src/utils/retry.ts` | COVERED by existing retry tests |
+| M | `packages/ai/src/utils/uuid.ts` | ADAPTED in Rust uuid utility |
+| M | `packages/ai/test/anthropic-auth-token.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/anthropic-cache-write-1h-cost.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| A | `packages/ai/test/anthropic-mid-conversation-effort.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/anthropic-sse-parsing.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| A | `packages/ai/test/anthropic-thinking-binding-e2e.test.ts` | LIVE UNEXECUTED / deterministic binding payload covered |
+| A | `packages/ai/test/assistant-message-frame.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/baseten-models.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| A | `packages/ai/test/cloudflare-ai-binding.test.ts` | N/A Workers binding object; Rust HTTP/gateway semantics documented |
+| D | `packages/ai/test/cloudflare-gateway-binding.test.ts` | N/A deleted upstream Workers binding test |
+| M | `packages/ai/test/constrained-sampling.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/generate-models-strict.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/github-copilot-anthropic.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/github-copilot-oauth.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/node-http-proxy.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/openai-codex-stream.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/openai-completions-cache-control-format.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/openai-completions-thinking-as-text.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/openai-completions-tool-choice.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/openai-completions-tool-result-images.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| A | `packages/ai/test/openai-completions-vllm-priority.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/openai-responses-compat.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/openai-responses-namespace.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/openrouter-cache-control-models.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/pi-messages.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| A | `packages/ai/test/pre-generation-error.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/qwen-token-plan-models.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/tool-call-id-normalization.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/uuid.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/xai-responses.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+
+### v0.85.0 implementation summary
+
+- Regenerated the text catalog from official npm `dist/providers/data` shards: **1336 text provider/id pairs across 39 providers and 9 APIs**; official OpenRouter batch aliases are now **66**. Full-record text delta from v0.84.4: `1290→1336`, `+72/-26/79 changed`.
+- Verified image catalog remains **50 image provider/id pairs**. Full-record image delta from v0.84.4: `50→50`, `+0/-0/0`.
+- Updated release metadata verifier defaults to `@earendil-works/pi-ai@0.85.0` and pinned npm tarball SHA-256 `46188bdacb555a07466a0111f3963f20932a16199e4d6cfb8d44a7fe5fc6e342`.
+- Preserved the exact v0.85.0 provider manifest shape: `schemaVersion=3`, `structureHash=a71a055905e4b12c9bb41fa6c2bf90fb2944ca76843bdfd3831377caba1be189`, `manifestSha256=61b723edeaf75dd3d55908da3530b8bf013ecffa4dc7734f4220ef0bc64442c7`.
+- Added `Message.providerThinkingLevel` serialization and Anthropic managed mid-conversation effort support: beta headers, adaptive `block_binding`, high output-config marker, and stream metadata preservation.
+- Added OpenAI-compatible `compat.vllmPriority` -> top-level `priority`, OpenAI Responses `supportsMaxOutputTokens=false` omission, explicit UUIDv7 timestamp support, NO_PROXY suffix/port coverage, pi-messages `providerThinkingLevel`, and Codex terminal SSE without trailing blank coverage.
+- Reflected strict generated catalog deltas: `qwen3.8-flash` Individual allowlist plus new audited OpenRouter batch aliases `anthropic/claude-fable-5.1`, `google/gemini-3.8-flash`, and `x-ai/grok-4.3`.
+- Assessed Cloudflare Workers AI binding replacement as N/A for Rust Workers binding-object semantics; Rust HTTP/gateway/provider catalog behavior remains covered.
+
+Named Rust evidence added/updated for v0.85.0:
+
+- `src/tests/release/v0850_release_test.rs::release_pinned_catalog_counts_match_v0850`
+- `src/tests/release/v0850_release_test.rs::openai_completions_vllm_priority_serializes_top_level_priority`
+- `src/tests/release/v0850_release_test.rs::openai_responses_max_output_tokens_respects_compat_flag`
+- `src/tests/release/v0850_release_test.rs::message_serializes_provider_thinking_level_camel_case`
+- `src/tests/release/v0850_release_test.rs::uuidv7_accepts_explicit_timestamp_and_rejects_overflow`
+- `src/tests/release/v0850_release_test.rs::no_proxy_matches_uppercase_suffix_and_port_rules`
+- `src/tests/providers/anthropic/anthropic_mid_conversation_effort_test.rs`
+- `src/tests/core/pi_messages_test.rs::streams_text_tool_calls_payload_and_terminal_message`
+- `src/tests/providers/codex/openai_codex_stream_test.rs::processes_terminal_sse_event_without_trailing_blank_line`
+- `src/tests/release/release_metadata_verification_test.rs::v0850_manifest_validator_confirms_changed_paths_and_crosswalk_rows`
+
+### v0.85.0 release-pinned artifact evidence
+
+- upstream tag worktree: `/workspace/tmp/pi-mono-audit` at `107d79f11072bbc8a3a757ed7fd69596bee7d68c`
+- unpacked npm package: `/workspace/tmp/pi-ai-0850/package`
+- npm tarball SHA-256: `46188bdacb555a07466a0111f3963f20932a16199e4d6cfb8d44a7fe5fc6e342`
+- npm tarball SHA-512: `09b79e647dcd1dabfb46cd7cdad62ad1ea020167c377532f3805cace89c8178b8ddee3bdf4407c893d477f21a87c998f9007fc31e23038142daaa774ce0acf58`
+- changed-path manifest SHA-256: `db461a56838926cf60d4ae0196ed98fcc215616dacff013ad8c235bb8ad9b83f`
+- test-corpus manifest SHA-256: `56f8742065a4ad01d73e5aee53035324f2e7333a735222ab15db870819e29065`
+- extracted release JSON: `/workspace/tmp/pi-v0850-json/models.json`
+
+Commands/results run so far:
+
+```bash
+sha256sum /workspace/tmp/pi-ai-0850/pi-ai-0.85.0.tgz /workspace/tmp/pi-ai-0850/changed-paths.txt /workspace/tmp/pi-ai-0850/test-corpus-142.txt
+python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0850/package/dist/providers/data
+python3 scripts/extract_release_model_shards.py /workspace/tmp/pi-ai-0850/package /workspace/tmp/pi-v0850-json --tag-worktree /workspace/tmp/pi-mono-audit --tag-sha 107d79f11072bbc8a3a757ed7fd69596bee7d68c
+python3 scripts/generate_models.py /workspace/tmp/pi-v0850-json/models.json
+python3 scripts/generate_image_models.py /workspace/tmp/pi-v0850-json/image-models.json
+python3 scripts/verify_release_model_metadata.py
+cargo test v0850_release_test -- --nocapture
+cargo test anthropic_mid_conversation_effort_test -- --nocapture
+cargo test pi_messages_test -- --nocapture
+cargo test openai_codex_stream_test::tests::processes_terminal_sse_event_without_trailing_blank_line -- --nocapture
+```
+
+Final local results: `cargo fmt --all -- --check` passed; `cargo build` passed; metadata verifier `metadata verified: text=1336 providers=39 apis=9 batchAliases=66 image=50`; deliberate `--fault text-name` and `--fault image-name` metadata gates failed with the expected text/image mismatches; provider/id comparator passed with text `upstream=1336 local=1336 missing=0 extra=0` and image `upstream=50 local=50 missing=0 extra=0`; v0.85.0 manifest validator `changedPaths=51 testRows=142`; v0.84.4 historical manifest validator still passes under the new current-release heading; focused v0.85.0 tests passed; full `cargo test --all-targets --all-features` passed three consecutive post-lock times (`947 passed`, `0 failed`, `0 ignored` each); strict `cargo clippy --all-targets --all-features -- -D warnings` passed; feature config checks `cargo check --no-default-features` and `cargo check --no-default-features --features bedrock` passed; `make sbom && make sbom-check` generated/validated gitignored `artifacts/sbom.cdx.json` with **278** dependency components and checksum `66871f13e465790bce2ae8929ebcb2240f2cfca8f2f6152b6934968eab3c9ba4`; `make license-check-selftest`/`make license-check` passed for **278** third-party packages with explicit `CDLA-Permissive-2.0` allowlist coverage; `make vuln-check-selftest`/`make vuln-check` passed with pinned `cargo-audit 0.22.2`, retaining the four owner-approved AWS legacy transitive exceptions through `2026-09-30`; `Cargo.lock` was minimally updated from yanked `chacha20 0.10.1` to `0.10.2`; `git diff --check` passed. Hosted CI evidence pending the final candidate push.
+
+## Historical accepted release: v0.84.4
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v0.84.4`

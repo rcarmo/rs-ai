@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
 //! Source: image-models.generated.js (50 image models, 1 provider)
-//! Generated: 2026-08-29T11:42:08.737727+00:00
+//! Generated: 2026-09-04T14:27:22.859770+00:00
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;

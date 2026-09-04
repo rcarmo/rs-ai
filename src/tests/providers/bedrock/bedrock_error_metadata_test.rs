@@ -21,6 +21,7 @@ mod tests {
             model: Some("anthropic.claude".into()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Error),

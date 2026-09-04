@@ -65,7 +65,7 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("POST")).and(path("/v1/messages"))
             .respond_with(ResponseTemplate::new(200).insert_header("content-type", "text/event-stream").set_body_string(sse(vec![
-                json!({"type":"start"}),
+                json!({"type":"start","providerThinkingLevel":"high"}),
                 json!({"type":"text_start","contentIndex":0}),
                 json!({"type":"text_delta","contentIndex":0,"delta":"Hel"}),
                 json!({"type":"text_delta","contentIndex":0,"delta":"lo"}),
@@ -74,7 +74,7 @@ mod tests {
                 json!({"type":"toolcall_delta","contentIndex":1,"delta":"{\"path\":"}),
                 json!({"type":"toolcall_delta","contentIndex":1,"delta":"\"a.txt\"}"}),
                 json!({"type":"toolcall_end","contentIndex":1,"toolCall":{"type":"toolCall","id":"call_1","name":"read","arguments":{"path":"a.txt"}}}),
-                json!({"type":"done","reason":"toolUse","usage":usage(),"responseId":"resp_1"}),
+                json!({"type":"done","reason":"toolUse","usage":usage(),"responseId":"resp_1","providerThinkingLevel":"high"}),
             ]))).mount(&server).await;
 
         let mut headers = HashMap::new();
@@ -107,6 +107,7 @@ mod tests {
         };
         assert_eq!(*reason, StopReason::ToolUse);
         assert_eq!(message.response_id.as_deref(), Some("resp_1"));
+        assert_eq!(message.provider_thinking_level.as_deref(), Some("high"));
         assert_eq!(message.model.as_deref(), Some("auto"));
         assert_eq!(message.provider.as_deref(), Some("radius"));
         assert!(matches!(&message.content[0], ContentBlock::Text { text, .. } if text == "Hello"));

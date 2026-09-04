@@ -57,6 +57,7 @@ mod tests {
                 model: None,
                 response_id: None,
                 response_model: None,
+                provider_thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,
@@ -178,6 +179,17 @@ mod tests {
             err.as_deref(),
             Some("Codex SSE response headers timed out after 10ms")
         );
+    }
+
+    #[tokio::test]
+    async fn processes_terminal_sse_event_without_trailing_blank_line() {
+        let sse = concat!(
+            "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Hi\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1,\"total_tokens\":2,\"input_tokens_details\":{\"cached_tokens\":0}}}}"
+        );
+        let (text, reason, _h, _b) = run(sse, StreamOptions::default()).await;
+        assert_eq!(text, "Hi");
+        assert!(matches!(reason, StopReason::Stop));
     }
 
     #[tokio::test]

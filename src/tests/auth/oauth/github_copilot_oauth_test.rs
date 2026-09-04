@@ -92,13 +92,13 @@ mod tests {
     fn policy_updates_only_known_tool_capable_unconfigured_models() {
         let data = vec![
             json!({"id":"gpt-4.1","policy":{"state":"enabled"},"capabilities":{"supports":{"tool_calls":true}}}),
-            json!({"id":"claude-sonnet-4.5","policy":{"state":"unconfigured"},"capabilities":{"supports":{"tool_calls":true}}}),
+            json!({"id":"claude-sonnet-4.6","policy":{"state":"unconfigured"},"capabilities":{"supports":{"tool_calls":true}}}),
             json!({"id":"remote-only-model","policy":{"state":"unconfigured"},"capabilities":{"supports":{"tool_calls":true}}}),
             json!({"id":"gpt-5.4","policy":{"state":"unconfigured"},"capabilities":{"supports":{"tool_calls":false}}}),
         ];
         assert_eq!(
             copilot_policy_model_ids(&data),
-            vec!["claude-sonnet-4.5".to_string()]
+            vec!["claude-sonnet-4.6".to_string()]
         );
     }
 
@@ -117,14 +117,14 @@ mod tests {
             .mount(&server)
             .await;
         Mock::given(method("POST"))
-            .and(path("/models/claude-sonnet-4.5/policy"))
+            .and(path("/models/claude-sonnet-4.6/policy"))
             .respond_with(ResponseTemplate::new(200))
             .mount(&server)
             .await;
         enable_github_copilot_models_at(
             &server.uri(),
             "token",
-            &["gpt-4.1".into(), "claude-sonnet-4.5".into()],
+            &["gpt-4.1".into(), "claude-sonnet-4.6".into()],
         )
         .await
         .unwrap();
@@ -137,7 +137,7 @@ mod tests {
             paths,
             vec![
                 "/models/gpt-4.1/policy",
-                "/models/claude-sonnet-4.5/policy",
+                "/models/claude-sonnet-4.6/policy",
                 "/models/gpt-4.1/policy"
             ]
         );

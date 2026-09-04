@@ -77,6 +77,7 @@ mod tests {
             model: Some(m.id.clone()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: None,

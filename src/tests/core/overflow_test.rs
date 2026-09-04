@@ -40,6 +40,7 @@ mod tests {
             model: Some("qwen3.5:35b".into()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: Some(Usage::default()),
             stop_reason: Some(StopReason::Error),
@@ -65,6 +66,7 @@ mod tests {
             model: Some("mimo-v2.5-pro".into()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: Some(Usage {
                 input,

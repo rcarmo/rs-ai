@@ -37,6 +37,7 @@ mod tests {
             model: Some(model_id.into()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Stop),

@@ -57,6 +57,7 @@ mod tests {
             model: Some("faux-model".into()),
             response_id: Some("resp-1".into()),
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: Some(Usage {
                 input: 10,

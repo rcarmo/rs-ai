@@ -48,6 +48,7 @@ mod tests {
                 model: None,
                 response_id: None,
                 response_model: None,
+                provider_thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,

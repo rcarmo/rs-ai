@@ -120,6 +120,7 @@ pub fn stream_openai<'a>(
             model: Some(model.id.clone()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
@@ -977,6 +978,10 @@ pub(crate) fn build_payload(
     }
     if cache_long && compat.supports_long_cache_retention != Some(false) {
         payload["prompt_cache_retention"] = json!("24h");
+    }
+
+    if let Some(priority) = compat.vllm_priority {
+        payload["priority"] = json!(priority);
     }
 
     // streamSimple's buildBaseOptions always supplies a clamped, defaulted cap:

@@ -31,7 +31,9 @@ pub struct PiMessagesRewriteImpact {
     rename_all_fields = "camelCase"
 )]
 enum PiMessagesEvent {
-    Start,
+    Start {
+        provider_thinking_level: Option<String>,
+    },
     TextStart {
         content_index: usize,
     },
@@ -75,6 +77,7 @@ enum PiMessagesEvent {
         reason: StopReason,
         usage: Usage,
         response_id: Option<String>,
+        provider_thinking_level: Option<String>,
         rewrite: Option<PiMessagesRewriteImpact>,
     },
     Error {
@@ -82,6 +85,7 @@ enum PiMessagesEvent {
         usage: Usage,
         error_message: Option<String>,
         response_id: Option<String>,
+        provider_thinking_level: Option<String>,
         rewrite: Option<PiMessagesRewriteImpact>,
     },
 }
@@ -107,6 +111,7 @@ fn assistant_message(model: &Model) -> Message {
         model: Some(model.id.clone()),
         response_id: None,
         response_model: None,
+        provider_thinking_level: None,
         diagnostics: Vec::new(),
         usage: Some(empty_usage()),
         stop_reason: Some(StopReason::Stop),
@@ -169,9 +174,16 @@ fn convert_event(
     tool_json: &mut HashMap<usize, String>,
 ) -> Event {
     match event {
-        PiMessagesEvent::Start => Event::Start {
-            partial: partial.clone(),
-        },
+        PiMessagesEvent::Start {
+            provider_thinking_level,
+        } => {
+            if provider_thinking_level.is_some() {
+                partial.provider_thinking_level = provider_thinking_level;
+            }
+            Event::Start {
+                partial: partial.clone(),
+            }
+        }
         PiMessagesEvent::TextStart { content_index } => {
             put_content(
                 &mut partial.content,
@@ -300,11 +312,15 @@ fn convert_event(
             reason,
             usage,
             response_id,
+            provider_thinking_level,
             rewrite,
         } => {
             partial.stop_reason = Some(reason.clone());
             partial.usage = Some(usage);
             partial.response_id = response_id;
+            if provider_thinking_level.is_some() {
+                partial.provider_thinking_level = provider_thinking_level;
+            }
             append_rewrite_diagnostic(partial, rewrite);
             Event::Done {
                 reason,
@@ -316,12 +332,16 @@ fn convert_event(
             usage,
             error_message,
             response_id,
+            provider_thinking_level,
             rewrite,
         } => {
             partial.stop_reason = Some(reason.clone());
             partial.usage = Some(usage);
             partial.error_message = error_message.clone();
             partial.response_id = response_id;
+            if provider_thinking_level.is_some() {
+                partial.provider_thinking_level = provider_thinking_level;
+            }
             append_rewrite_diagnostic(partial, rewrite);
             Event::Error {
                 reason,

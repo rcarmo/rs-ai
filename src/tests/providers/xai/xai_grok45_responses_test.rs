@@ -31,6 +31,7 @@ mod tests {
                 model: None,
                 response_id: None,
                 response_model: None,
+                provider_thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,
@@ -81,16 +82,19 @@ mod tests {
                 ModelThinkingLevel::High,
             ]
         );
-        let grok_build = get_model("xai", "grok-build-0.1").expect("xai/grok-build-0.1");
-        assert_eq!(grok_build.api, crate::types::api::OPENAI_RESPONSES);
-        assert_eq!(
-            get_supported_thinking_levels(&grok_build),
-            vec![
-                ModelThinkingLevel::Low,
-                ModelThinkingLevel::Medium,
-                ModelThinkingLevel::High
-            ]
-        );
+        for retired in [
+            "grok-3",
+            "grok-3-fast",
+            "grok-4.20-0309-non-reasoning",
+            "grok-4.20-0309-reasoning",
+            "grok-build-0.1",
+            "grok-code-fast-1",
+        ] {
+            assert!(
+                get_model("xai", retired).is_none(),
+                "retired xai/{retired} must stay out of the built-in catalog"
+            );
+        }
         assert!(grok_45.compat.supports_long_cache_retention == Some(false));
     }
 

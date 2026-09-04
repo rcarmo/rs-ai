@@ -338,6 +338,7 @@ fn stream_responses_inner<'a>(
             model: Some(model.id.clone()),
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
@@ -1199,7 +1200,7 @@ pub(crate) fn build_responses_payload(
         context,
         opts.max_tokens.unwrap_or(model.max_tokens),
     );
-    if max_output != 0 {
+    if max_output != 0 && model.compat.supports_max_output_tokens != Some(false) {
         payload["max_output_tokens"] = json!(max_output.max(OPENAI_RESPONSES_MIN_OUTPUT_TOKENS));
     }
     if let Some(temp) = opts.temperature {

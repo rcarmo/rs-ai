@@ -34,6 +34,10 @@ def test_apache_or_mit() -> None:
     assert_allowed("Apache-2.0 OR MIT")
 
 
+def test_cdla_permissive() -> None:
+    assert_allowed("CDLA-Permissive-2.0")
+
+
 def test_mit_and_apache() -> None:
     assert_allowed("MIT AND Apache-2.0")
 
@@ -70,6 +74,7 @@ def main() -> int:
     tests = [
         test_mit,
         test_apache_or_mit,
+        test_cdla_permissive,
         test_mit_and_apache,
         test_mit_and_unknown_fails,
         test_mit_and_gpl_fails,

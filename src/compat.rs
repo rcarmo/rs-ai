@@ -12,6 +12,8 @@ pub struct OpenAICompletionsCompat {
     pub supports_finish_reason: Option<bool>,
     pub supports_temperature: Option<bool>,
     pub max_tokens_field: Option<String>,
+    pub supports_max_output_tokens: Option<bool>,
+    pub vllm_priority: Option<i32>,
     pub requires_tool_result_name: Option<bool>,
     pub requires_thinking_as_text: Option<bool>,
     pub requires_assistant_after_tool_result: Option<bool>,
@@ -53,6 +55,8 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         supports_finish_reason: mc.supports_finish_reason,
         supports_temperature: mc.supports_temperature,
         max_tokens_field: mc.max_tokens_field.clone(),
+        supports_max_output_tokens: mc.supports_max_output_tokens,
+        vllm_priority: mc.vllm_priority,
         requires_tool_result_name: mc.requires_tool_result_name,
         requires_thinking_as_text: mc.requires_thinking_as_text,
         requires_assistant_after_tool_result: mc.requires_assistant_after_tool_result,
@@ -99,6 +103,12 @@ pub fn detect_compat_for_model(
         }
         if o.max_tokens_field.is_some() {
             c.max_tokens_field = o.max_tokens_field.clone();
+        }
+        if o.supports_max_output_tokens.is_some() {
+            c.supports_max_output_tokens = o.supports_max_output_tokens;
+        }
+        if o.vllm_priority.is_some() {
+            c.vllm_priority = o.vllm_priority;
         }
         if o.requires_tool_result_name.is_some() {
             c.requires_tool_result_name = o.requires_tool_result_name;
@@ -242,6 +252,8 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
             }
             .to_string(),
         ),
+        supports_max_output_tokens: Some(true),
+        vllm_priority: None,
         requires_tool_result_name: Some(false),
         requires_thinking_as_text: Some(false),
         requires_assistant_after_tool_result: Some(false),

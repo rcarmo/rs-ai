@@ -118,7 +118,10 @@ def gen_model(m) -> str:
     compat_fields = {
         "allowEmptySignature": ("allow_empty_signature", "bool"),
         "forceAdaptiveThinking": ("force_adaptive_thinking", "bool"),
+        "supportsMidConvoEffort": ("supports_mid_convo_effort", "bool"),
         "maxTokensField": ("max_tokens_field", "str"),
+        "supportsMaxOutputTokens": ("supports_max_output_tokens", "bool"),
+        "vllmPriority": ("vllm_priority", "int"),
         "requiresReasoningContentOnAssistantMessages": ("requires_reasoning_content_on_assistant_messages", "bool"),
         "requiresToolResultName": ("requires_tool_result_name", "bool"),
         "requiresThinkingAsText": ("requires_thinking_as_text", "bool"),
@@ -149,6 +152,8 @@ def gen_model(m) -> str:
             v = compat[js_key]
             if kind == "bool":
                 compat_lines.append(f"                {rs_key}: Some({str(v).lower()}),")
+            elif kind == "int":
+                compat_lines.append(f"                {rs_key}: Some({int(v)}),")
             elif kind == "json":
                 compat_lines.append(f'                {rs_key}: Some(serde_json::from_str({rust_string(json.dumps(v))}).unwrap()),')
             else:

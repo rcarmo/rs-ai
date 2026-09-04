@@ -118,6 +118,7 @@ mod tests {
                     model: Some("gpt-4o".into()),
                     response_id: Some("resp-1".into()),
                     response_model: None,
+                    provider_thinking_level: None,
                     diagnostics: Vec::new(),
                     usage: Some(Usage {
                         input: 5,
@@ -189,6 +190,7 @@ mod tests {
             model: None,
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: Some(Usage {
                 input: 100,
@@ -225,6 +227,7 @@ mod tests {
             model: None,
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: Some(Usage {
                 input: 100,
@@ -257,6 +260,7 @@ mod tests {
             model: None,
             response_id: None,
             response_model: None,
+            provider_thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Error),
