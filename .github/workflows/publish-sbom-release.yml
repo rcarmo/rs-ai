@@ -1,0 +1,160 @@
+name: Publish SBOM release asset
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag that will receive the durable SBOM assets
+        required: false
+        default: upstream-v0.85.0
+      runtime_ref:
+        description: Accepted rs-ai runtime ref to check out and embed in SBOM provenance
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+
+jobs:
+  publish-sbom:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      RUNTIME_REF: ${{ inputs.runtime_ref }}
+    steps:
+      - name: Validate workflow inputs
+        run: |
+          set -euo pipefail
+          if [[ -z "${RELEASE_TAG}" ]]; then
+            echo "release_tag input must not be empty" >&2
+            exit 1
+          fi
+          if [[ -z "${RUNTIME_REF}" ]]; then
+            echo "runtime_ref input is required" >&2
+            exit 1
+          fi
+          runtime_ref_lower="$(printf '%s' "${RUNTIME_REF}" | tr '[:upper:]' '[:lower:]')"
+          if [[ ! "${runtime_ref_lower}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "runtime_ref must be a full 40-character hexadecimal commit SHA" >&2
+            exit 1
+          fi
+          echo "RUNTIME_REF_LOWER=${runtime_ref_lower}" >> "${GITHUB_ENV}"
+          case "${RELEASE_TAG}" in
+            *[!A-Za-z0-9._-]* | .* | -* | *..* | */* | *\\*)
+              echo "release_tag contains unsafe characters: ${RELEASE_TAG}" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Checkout accepted runtime ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.runtime_ref }}
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin/cargo-audit
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install pinned cargo-audit
+        run: |
+          set -euo pipefail
+          if ! command -v cargo-audit >/dev/null || ! cargo-audit --version | grep -q 'cargo-audit 0.22.2'; then
+            cargo install cargo-audit --version 0.22.2 --locked
+          fi
+
+      - name: Generate and validate SBOM/security/license gates
+        run: |
+          set -euo pipefail
+          make security-check
+
+      - name: Record resolved runtime ref
+        run: git rev-parse HEAD > .runtime-ref
+
+      - name: Verify SBOM provenance and normalize release asset names
+        run: |
+          set -euo pipefail
+          resolved_ref="$(cat .runtime-ref)"
+          if [[ "${resolved_ref}" != "${RUNTIME_REF_LOWER}" ]]; then
+            echo "Checked-out HEAD ${resolved_ref} does not match runtime_ref ${RUNTIME_REF_LOWER}" >&2
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          sbom_path = Path("artifacts/sbom.cdx.json")
+          expected = Path(".runtime-ref").read_text().strip()
+          data = json.loads(sbom_path.read_text())
+          props = data.get("metadata", {}).get("component", {}).get("properties", [])
+          revision = None
+          for prop in props:
+              if isinstance(prop, dict) and prop.get("name") == "rs-ai:vcs:revision":
+                  revision = prop.get("value")
+                  break
+          if revision != expected:
+              raise SystemExit(f"SBOM rs-ai:vcs:revision mismatch: expected {expected}, got {revision}")
+          print(f"SBOM provenance revision verified: {revision}")
+          PY
+
+          mkdir -p dist
+          cp artifacts/sbom.cdx.json dist/sbom.cdx.json
+          sha256sum dist/sbom.cdx.json | sed 's#  dist/#  #' > dist/sbom.cdx.json.sha256
+          test "$(awk '{print $2}' dist/sbom.cdx.json.sha256)" = "sbom.cdx.json"
+          (cd dist && sha256sum --check sbom.cdx.json.sha256 --strict --status)
+
+      - name: Create or update release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          title='SBOM for @earendil-works/pi-ai v0.85.0'
+          notes="CycloneDX SBOM generated from accepted rs-ai runtime ref ${RUNTIME_REF_LOWER} for @earendil-works/pi-ai v0.85.0. Assets: sbom.cdx.json and sbom.cdx.json.sha256."
+          runtime_sha="$(git rev-parse HEAD)"
+          git fetch --force --tags origin
+
+          release_exists=false
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            release_exists=true
+          fi
+
+          if git rev-parse -q --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null; then
+            tag_target="$(git rev-list -n 1 "refs/tags/${RELEASE_TAG}")"
+            if [[ "${tag_target}" != "${runtime_sha}" ]]; then
+              echo "Release tag ${RELEASE_TAG} points to ${tag_target}, not checked-out runtime ${runtime_sha}" >&2
+              exit 1
+            fi
+          elif [[ "${release_exists}" == "true" ]]; then
+            echo "Release ${RELEASE_TAG} exists but its tag was not found after fetching origin tags" >&2
+            exit 1
+          fi
+
+          if [[ "${release_exists}" == "true" ]]; then
+            gh release edit "${RELEASE_TAG}" \
+              --title "${title}" \
+              --notes "${notes}"
+          else
+            gh release create "${RELEASE_TAG}" \
+              --target "${runtime_sha}" \
+              --title "${title}" \
+              --notes "${notes}"
+          fi
+          gh release upload "${RELEASE_TAG}" \
+            dist/sbom.cdx.json \
+            dist/sbom.cdx.json.sha256 \
+            --clobber
