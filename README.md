@@ -158,7 +158,7 @@ This project is a derivative port of [@earendil-works/pi-ai](https://www.npmjs.c
 
 ## Supply-chain metadata
 
-The accepted v0.85.0 runtime is [`0eb50d428d75a0281231fcd294d768c3db9cd17c`](https://github.com/rcarmo/rs-ai/commit/0eb50d428d75a0281231fcd294d768c3db9cd17c). Its durable CycloneDX SBOM is published as immutable release asset [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.0/sbom.cdx.json), with checksum [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.0/sbom.cdx.json.sha256). Regenerate and validate the same data locally with `make sbom && make sbom-check`; the dispatch-only `Publish SBOM release asset` workflow publishes the release assets from an explicit accepted runtime ref.
+The accepted v0.85.0 runtime is [`0eb50d428d75a0281231fcd294d768c3db9cd17c`](https://github.com/rcarmo/rs-ai/commit/0eb50d428d75a0281231fcd294d768c3db9cd17c). Its durable, version-pinned CycloneDX SBOM is published as release asset [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.0/sbom.cdx.json), with checksum [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.0/sbom.cdx.json.sha256). Regenerate and validate the same data locally with `make sbom && make sbom-check`; the dispatch-only `Publish SBOM release asset` workflow publishes replaceable assets guarded by the explicit accepted runtime ref.
 
 ## License
 
