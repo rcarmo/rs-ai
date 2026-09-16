@@ -1,6 +1,83 @@
 # rs-ai upstream release parity
 
-## Current audit target: v0.85.0
+## Current audit target: v0.85.1
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v0.85.1`
+- Upstream tag/commit: `d981de1229ef899957bbe968bc8dcda02a21f477`
+- Previous accepted upstream: `v0.85.0` / `107d79f11072bbc8a3a757ed7fd69596bee7d68c`
+- Accepted rs-ai baseline: `587d7440cb4b67feeda82f81ac95fa1055ff4821`
+- Audited range: `107d79f11072bbc8a3a757ed7fd69596bee7d68c..d981de1229ef899957bbe968bc8dcda02a21f477`
+- Scope: `packages/ai` only; official tag/npm artifact only, no unreleased origin/main changes.
+- Scope status: **LOCAL GREEN / runtime candidate pending hosted CI**. README/catalog prose and durable `upstream-v0.85.1` release assets remain blocked until runtime auditor acceptance.
+
+### v0.85.1 exact upstream path disposition
+
+The official range changes **9** `packages/ai` paths, all modified, with total delta `+128/-23`: 4 source/scripts paths, 2 generated/package metadata paths, and 3 tests. The complete upstream test corpus remains **142** `packages/ai/test/*.test.ts` files, recorded in `docs/v0851-142-test-crosswalk.md`.
+
+Executable validator: `python3 scripts/validate_v0851_manifests.py` asserts this exact 9-path set, the 142 unique crosswalk rows, and the committed exact-content inventory hashes (`ee26f669d92dc77b265731165a2ff69ccb67defba92517cbbd5f97a186e187d2` for changed paths; `56f8742065a4ad01d73e5aee53035324f2e7333a735222ab15db870819e29065` for the test corpus). Changed test-path hash: `f7e274bf229c90fc22ba22384c5b89f71a5c6801f77067d099525a9cdc537610`.
+
+| Status | Upstream path | rs-ai disposition |
+|---|---|---|
+| M | `packages/ai/CHANGELOG.md` | DOCUMENTED / metadata-only |
+| M | `packages/ai/package.json` | DOCUMENTED / metadata-only |
+| M | `packages/ai/scripts/generate-models.ts` | ADAPTED via extractor/generator and regenerated catalog |
+| M | `packages/ai/src/api/openai-responses.ts` | ADAPTED in Rust provider/runtime code |
+| M | `packages/ai/src/image-models.generated.ts` | ADAPTED by regenerated image registry + metadata verifier |
+| M | `packages/ai/src/types.ts` | ADAPTED in Rust types/options/compat |
+| M | `packages/ai/test/cache-retention.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/max-thinking.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+| M | `packages/ai/test/supports-xhigh.test.ts` | ADAPTED / COVERED (see 142-test crosswalk) |
+
+### v0.85.1 implementation summary
+
+- Regenerated the text catalog from official npm `dist/providers/data` shards: **1354 text provider/id pairs across 39 providers and 9 APIs**; official OpenRouter batch aliases are now **68**. Full-record text delta from v0.85.0: `1336→1354`, `+20/-2/18 changed`.
+- Regenerated the image catalog from package `IMAGE_MODELS`: **52 image provider/id pairs**, adding `microsoft/mai-image-2.6` and `microsoft/mai-image-2.6-flash`. Full-record image delta from v0.85.0: `50→52`, `+2/-0/0 changed`.
+- Updated release metadata verifier defaults to `@earendil-works/pi-ai@0.85.1` and pinned npm tarball SHA-256 `af7d11986179445ce6fe88b37d57de22f823c0ffd3a65cae31c555b7f5e99253`; added full-record v0.85.0→v0.85.1 delta verification (`text +20/-2/18 changed`, `image +2/-0/0`) with mutation fault coverage.
+- Preserved the exact v0.85.1 provider manifest shape: `schemaVersion=3`, `generatedAt=2026-09-05T11:58:56.761Z`, `structureHash=ff87cfcb3c1decb7ceeb4a5d71282696e108d093b7098f372d6f8a442dfed40d`, `manifestSha256=30e7f58cc33d5901dbcb64f0e00d0133620005737ffb73553b358ca23572bac8`.
+- Made generated catalog headers deterministic from the release provider manifest `generatedAt` value and added `scripts/verify_generated_reproducibility.py` to prove two independent generations are byte-for-byte identical.
+- Added OpenAI Responses prompt-cache serialization parity: explicit-cache models emit `prompt_cache_options.mode = "explicit"` for `cacheRetention: "none"`, `prompt_cache_options.ttl = "30m"` for supported long retention, and never emit legacy `prompt_cache_retention` concurrently; older models retain `prompt_cache_retention = "24h"`.
+- Added GPT-6 Astra catalog/compat/thinking coverage across OpenAI Responses, Azure OpenAI Responses, OpenAI Codex, OpenCode, GitHub Copilot, OpenRouter, and Vercel AI Gateway aliases, including 272000/128000 OpenAI/Codex windows, text+image input, cost/tier metadata, tool-search/additional-tool flags, explicit prompt cache mode, and xhigh/max thinking maps.
+
+Named Rust evidence added/updated for v0.85.1:
+
+- `src/tests/providers/openai/openai_responses_prompt_cache_test.rs`
+- `src/tests/release/v0851_release_test.rs`
+- `src/tests/release/release_metadata_verification_test.rs::{generated_catalogs_are_byte_for_byte_reproducible,v0851_manifest_validator_confirms_changed_paths_and_crosswalk_rows,v0851_manifest_validator_detects_changed_path_inventory_corruption,v0851_manifest_validator_detects_test_corpus_inventory_corruption,v0851_baseline_delta_validator_confirms_full_record_counts,v0851_baseline_delta_validator_detects_record_mutation}`
+
+### v0.85.1 release-pinned artifact evidence
+
+- upstream tag worktree: `/workspace/tmp/pi-mono-audit` at `d981de1229ef899957bbe968bc8dcda02a21f477`
+- unpacked npm package: `/workspace/tmp/pi-ai-0851/package`
+- npm tarball: `/workspace/tmp/pi-ai-0851/earendil-works-pi-ai-0.85.1.tgz`
+- npm published: `2026-09-05T12:05:47.996Z`
+- npm tarball SHA-256: `af7d11986179445ce6fe88b37d57de22f823c0ffd3a65cae31c555b7f5e99253`
+- npm tarball SHA-512: `f958152090e40ced9e7d824a104aaf3d31f8ce69c8697740a6919b3bebca140f6acb93dd8458807a7b8502453ea220927ce0b874c1c3cab8dd41e2f86680b909`
+- changed-path manifest SHA-256: `ee26f669d92dc77b265731165a2ff69ccb67defba92517cbbd5f97a186e187d2`
+- changed-test manifest SHA-256: `f7e274bf229c90fc22ba22384c5b89f71a5c6801f77067d099525a9cdc537610`
+- test-corpus manifest SHA-256: `56f8742065a4ad01d73e5aee53035324f2e7333a735222ab15db870819e29065`
+- extracted release JSON: `/workspace/tmp/pi-v0851-json/models.json`
+
+Commands/results run so far:
+
+```bash
+sha256sum /workspace/tmp/pi-ai-0851/earendil-works-pi-ai-0.85.1.tgz /workspace/tmp/pi-ai-0851/changed-paths.txt
+sha512sum /workspace/tmp/pi-ai-0851/earendil-works-pi-ai-0.85.1.tgz
+git diff --stat v0.85.0 v0.85.1 -- packages/ai
+python3 scripts/validate_release_model_data.py /workspace/tmp/pi-ai-0851/package/dist/providers/data
+python3 scripts/extract_release_model_shards.py /workspace/tmp/pi-ai-0851/package /workspace/tmp/pi-v0851-json --tag-worktree /workspace/tmp/pi-mono-audit --tag-sha d981de1229ef899957bbe968bc8dcda02a21f477
+python3 scripts/generate_models.py /workspace/tmp/pi-v0851-json/models.json
+python3 scripts/generate_image_models.py /workspace/tmp/pi-v0851-json/image-models.json
+cargo test openai_responses_prompt_cache_test --all-features -- --nocapture
+cargo test v0851_release_test --all-features -- --nocapture
+cargo test simple_options_test --all-features -- --nocapture
+python3 scripts/verify_release_model_metadata.py
+python3 scripts/verify_generated_reproducibility.py
+```
+
+Final local results before candidate push: `cargo fmt --all -- --check` passed; `cargo build --all-targets` passed; focused v0.85.1 cache/max/xhigh tests passed (`openai_responses_prompt_cache_test`: 7 passed; `v0851_release_test`: 5 passed; `max_thinking_test`: 4 passed; `supports_xhigh_test`: 17 passed; `simple_options_test`: 18 passed); full `cargo test --all-targets --all-features` passed three consecutive final runs plus a fresh summary run (`993 passed`, `0 failed`, `0 ignored`); strict `cargo clippy --all-targets --all-features -- -D warnings` passed; `cargo check --no-default-features` and `cargo check --no-default-features --features bedrock` passed; `cargo test --no-default-features` passed (`853 passed`, doctest `1 passed`); `cargo test --no-default-features --features bedrock` passed (`993 passed`, doctest `1 passed`); provider data validator passed (`models=1354 providers=39 structureHash=ff87cfcb3c1decb7ceeb4a5d71282696e108d093b7098f372d6f8a442dfed40d`); metadata verifier passed (`text=1354 providers=39 apis=9 batchAliases=68 image=52`); generated catalog reproducibility passed byte-for-byte (`src/models_generated.rs` SHA-256 `50c20966d68d24f9f6442ec1257db084470e1a9ceb8b0756526c255f1a56ef6d`, `src/images/models_generated.rs` SHA-256 `36ac771fe36f2da472a4c8a879b881f2d6f21d7a2049abd84828512230937f23`); v0.85.0 and v0.85.1 manifest validators passed clean; v0.85.1 baseline delta verifier passed (`text=+20/-2/18 changed image=+2/-0/0 changed`); v0.85.0 historical manifest corruption modes and v0.85.1 changed-path/test-corpus corruption modes failed closed; text/image metadata fault gates failed closed; v0.85.1 baseline-record mutation failed closed; provider/id comparator passed with text `upstream=1354 local=1354 missing=0 extra=0` and image `upstream=52 local=52 missing=0 extra=0`; `make security-check` passed, generating/validating local SBOM with **278** dependency components and local pre-commit checksum `5835ad095386f77c4e355b19aa4b94ffd7719774546b8380e0d6b5df1598e756`; license self-tests/review and RustSec wrapper/cargo-audit passed with existing temporary advisory exceptions; `git diff --check` passed. Hosted CI/SHA-specific SBOM evidence is pending candidate push.
+
+## Historical accepted release: v0.85.0
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v0.85.0`

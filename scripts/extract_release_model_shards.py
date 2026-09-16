@@ -98,6 +98,8 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/openai/gpt-5.6-sol:batch",
     "openrouter/openai/gpt-5.6-terra-pro:batch",
     "openrouter/openai/gpt-5.6-terra:batch",
+    "openrouter/openai/gpt-6-astra-pro:batch",
+    "openrouter/openai/gpt-6-astra:batch",
     "openrouter/openai/gpt-5:batch",
     "openrouter/openai/o1:batch",
     "openrouter/openai/o3-mini-high:batch",

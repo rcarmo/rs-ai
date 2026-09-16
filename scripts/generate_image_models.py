@@ -10,7 +10,6 @@ Usage:
 
 import json
 import sys
-import datetime
 from pathlib import Path
 
 
@@ -61,6 +60,16 @@ def rust_string(s):
     return json.dumps(s)
 
 
+def generation_timestamp(input_path: Path) -> str:
+    metadata_path = input_path.parent / "source-metadata.json"
+    if metadata_path.exists():
+        metadata = json.loads(metadata_path.read_text())
+        generated_at = (metadata.get("manifest") or {}).get("generatedAt")
+        if isinstance(generated_at, str) and generated_at:
+            return generated_at
+    return "deterministic"
+
+
 def gen_model(m) -> str:
     lines = []
     lines.append("        ImagesModel {")
@@ -88,7 +97,8 @@ def main():
         print("Usage: python3 scripts/generate_image_models.py /tmp/image_models.json", file=sys.stderr)
         sys.exit(1)
 
-    models = json.loads(Path(sys.argv[1]).read_text())
+    input_path = Path(sys.argv[1])
+    models = json.loads(input_path.read_text())
 
     all_models = []
     for provider in sorted(models.keys()):
@@ -97,13 +107,13 @@ def main():
 
     total = len(all_models)
     providers = len(models)
-    now = datetime.datetime.now(datetime.UTC).isoformat()
+    generated = generation_timestamp(input_path)
 
     out = []
     out.append("//! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.")
     out.append("//!")
     out.append(f"//! Source: image-models.generated.js ({total} image models, {providers} provider)")
-    out.append(f"//! Generated: {now}")
+    out.append(f"//! Generated: {generated}")
     out.append("")
     out.append("use crate::images::types::ImagesModel;")
     out.append("use crate::types::ModelCost;")

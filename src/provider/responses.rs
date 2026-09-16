@@ -211,6 +211,7 @@ fn stream_responses_inner<'a>(
         format!("{}/responses", base)
     };
 
+    let compat = detect_compat(model);
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert("accept", HeaderValue::from_static("text/event-stream"));
@@ -245,10 +246,20 @@ fn stream_responses_inner<'a>(
             && let Some(session_id) = opts.session_id.as_deref().filter(|s| !s.is_empty())
             && let Ok(val) = HeaderValue::from_str(session_id)
         {
-            if model.compat.send_session_id_header.unwrap_or(true) {
-                headers.insert("session_id", val.clone());
+            match compat.session_affinity_format.as_deref() {
+                Some("openrouter") => {
+                    headers.insert("x-session-id", val);
+                }
+                Some("openai-nosession") => {
+                    headers.insert("x-client-request-id", val);
+                }
+                _ => {
+                    if model.compat.send_session_id_header.unwrap_or(true) {
+                        headers.insert("session_id", val.clone());
+                    }
+                    headers.insert("x-client-request-id", val);
+                }
             }
-            headers.insert("x-client-request-id", val);
         }
     }
 
@@ -1177,7 +1188,11 @@ pub(crate) fn build_responses_payload(
     // is derived from the (resolved) retention.
     let retention = crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref());
     match retention {
-        CacheRetention::None => {}
+        CacheRetention::None => {
+            if compat.supports_explicit_prompt_cache_mode == Some(true) {
+                payload["prompt_cache_options"] = json!({"mode": "explicit"});
+            }
+        }
         CacheRetention::Short => {
             if let Some(ref session_id) = opts.session_id {
                 payload["prompt_cache_key"] = json!(
@@ -1192,7 +1207,11 @@ pub(crate) fn build_responses_payload(
                 );
             }
             if compat.supports_long_cache_retention != Some(false) {
-                payload["prompt_cache_retention"] = json!("24h");
+                if compat.supports_explicit_prompt_cache_mode == Some(true) {
+                    payload["prompt_cache_options"] = json!({"ttl": "30m"});
+                } else {
+                    payload["prompt_cache_retention"] = json!("24h");
+                }
             }
         }
     }

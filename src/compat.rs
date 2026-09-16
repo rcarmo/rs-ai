@@ -21,8 +21,10 @@ pub struct OpenAICompletionsCompat {
     pub thinking_format: Option<String>,
     pub supports_strict_mode: Option<bool>,
     pub supports_openai_grammar_tools: Option<bool>,
+    pub supports_explicit_prompt_cache_mode: Option<bool>,
     pub supports_long_cache_retention: Option<bool>,
     pub supports_session_affinity_headers: Option<bool>,
+    pub session_affinity_format: Option<String>,
     pub supports_thinking_token_budget: Option<bool>,
     pub zai_tool_stream: Option<bool>,
     pub cache_control_format: Option<String>,
@@ -65,8 +67,10 @@ fn model_compat_overrides(model: &Model) -> Option<OpenAICompletionsCompat> {
         thinking_format: mc.thinking_format.clone(),
         supports_strict_mode: mc.supports_strict_mode,
         supports_openai_grammar_tools: mc.supports_openai_grammar_tools,
+        supports_explicit_prompt_cache_mode: mc.supports_explicit_prompt_cache_mode,
         supports_long_cache_retention: mc.supports_long_cache_retention,
         supports_session_affinity_headers: mc.send_session_affinity_headers,
+        session_affinity_format: mc.session_affinity_format.clone(),
         supports_thinking_token_budget: mc.supports_thinking_token_budget,
         zai_tool_stream: mc.zai_tool_stream,
         cache_control_format: mc.cache_control_format.clone(),
@@ -132,11 +136,17 @@ pub fn detect_compat_for_model(
         if o.supports_openai_grammar_tools.is_some() {
             c.supports_openai_grammar_tools = o.supports_openai_grammar_tools;
         }
+        if o.supports_explicit_prompt_cache_mode.is_some() {
+            c.supports_explicit_prompt_cache_mode = o.supports_explicit_prompt_cache_mode;
+        }
         if o.supports_long_cache_retention.is_some() {
             c.supports_long_cache_retention = o.supports_long_cache_retention;
         }
         if o.supports_session_affinity_headers.is_some() {
             c.supports_session_affinity_headers = o.supports_session_affinity_headers;
+        }
+        if o.session_affinity_format.is_some() {
+            c.session_affinity_format = o.session_affinity_format.clone();
         }
         if o.supports_thinking_token_budget.is_some() {
             c.supports_thinking_token_budget = o.supports_thinking_token_budget;
@@ -265,6 +275,14 @@ fn detect_compat_inner(provider: &str, model_id: &str, base_url: &str) -> OpenAI
         ),
         cache_control_format,
         supports_session_affinity_headers: Some(false),
+        session_affinity_format: Some(
+            if is_openrouter {
+                "openrouter"
+            } else {
+                "openai"
+            }
+            .to_string(),
+        ),
         supports_long_cache_retention: Some(
             !(is_together
                 || is_cloudflare_workers_ai

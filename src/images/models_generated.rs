@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (50 image models, 1 provider)
-//! Generated: 2026-09-04T14:27:22.859770+00:00
+//! Source: image-models.generated.js (52 image models, 1 provider)
+//! Generated: 2026-09-05T11:58:56.761Z
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
@@ -307,6 +307,38 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             output: vec!["image".into()],
             cost: ModelCost {
                 input: 5_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "microsoft/mai-image-2.6".into(),
+            name: "Microsoft: MAI-Image-2.6".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 5_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "microsoft/mai-image-2.6-flash".into(),
+            name: "Microsoft: MAI-Image-2.6 Flash".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 1.75_f64,
                 output: 0_f64,
                 cache_read: 0_f64,
                 cache_write: 0_f64,

@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: models.generated.js (1336 models, 39 providers)
-//! Generated: 2026-09-04T14:37:35.081515Z
+//! Source: models.generated.js (1354 models, 39 providers)
+//! Generated: 2026-09-05T11:58:56.761Z
 
 #![allow(clippy::approx_constant)]
 
@@ -4410,6 +4410,40 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
+        id: "gpt-6-astra".into(),
+        name: "GPT-6 Astra".into(),
+        api: "azure-openai-responses".into(),
+        provider: "azure-openai-responses".into(),
+        base_url: "".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 10_f64,
+            output: 50_f64,
+            cache_read: 1_f64,
+            cache_write: 12.5_f64,
+            tiers: vec![],
+        },
+        context_window: 272000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_openai_grammar_tools: Some(true),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
         id: "gpt-realtime-2.1".into(),
         name: "GPT-Realtime-2.1".into(),
         api: "azure-openai-responses".into(),
@@ -5527,6 +5561,9 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_4(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "claude-fable-5.1".into(),
@@ -5554,9 +5591,6 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_4(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "claude-haiku-4.5".into(),
@@ -6941,6 +6975,9 @@ fn append_builtin_models_4(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_5(models: &mut Vec<Model>) {
     models.push(Model {
         id: "@cf/deepseek-ai/deepseek-v4-pro-0813".into(),
         name: "DeepSeek V4 Pro 0813".into(),
@@ -6979,9 +7016,6 @@ fn append_builtin_models_4(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_5(models: &mut Vec<Model>) {
     models.push(Model {
         id: "@cf/google/gemma-4-26b-a4b-it".into(),
         name: "Gemma 4 26B A4B IT".into(),
@@ -8141,6 +8175,35 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
+        id: "accounts/fireworks/models/qwen3p8-2p4t-a95b".into(),
+        name: "Qwen3.8 2.4T A95B".into(),
+        api: "anthropic-messages".into(),
+        provider: "fireworks".into(),
+        base_url: "https://api.fireworks.ai/inference".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        cost: ModelCost {
+            input: 2_f64,
+            output: 6_f64,
+            cache_read: 0.25_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 262144,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            send_session_affinity_headers: Some(true),
+            supports_cache_control_on_tools: Some(false),
+            supports_eager_tool_input_streaming: Some(false),
+            supports_long_cache_retention: Some(false),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
         id: "accounts/fireworks/models/qwen3p8-max".into(),
         name: "Qwen3.8 Max".into(),
         api: "anthropic-messages".into(),
@@ -8588,6 +8651,9 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_6(models: &mut Vec<Model>) {
     models.push(Model {
         id: "gemini-3.7-flash".into(),
         name: "Gemini 3.7 Flash".into(),
@@ -8654,9 +8720,6 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_6(models: &mut Vec<Model>) {
     models.push(Model {
         id: "gpt-5-mini".into(),
         name: "GPT-5 Mini".into(),
@@ -8962,16 +9025,16 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
         ])),
         input: vec!["text".into(), "image".into()],
         cost: ModelCost {
-            input: 2_f64,
-            output: 10_f64,
-            cache_read: 0.2_f64,
-            cache_write: 2.5_f64,
+            input: 4_f64,
+            output: 20_f64,
+            cache_read: 0.4_f64,
+            cache_write: 5_f64,
             tiers: vec![ModelCostTier {
                 input_tokens_above: 272000_u64,
-                input: 4_f64,
-                output: 15_f64,
-                cache_read: 0.4_f64,
-                cache_write: 5_f64,
+                input: 8_f64,
+                output: 30_f64,
+                cache_read: 0.8_f64,
+                cache_write: 10_f64,
             }],
         },
         context_window: 1050000,
@@ -9031,6 +9094,48 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat {
             supports_openai_grammar_tools: Some(true),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "gpt-6-astra".into(),
+        name: "GPT-6 Astra".into(),
+        api: "openai-completions".into(),
+        provider: "github-copilot".into(),
+        base_url: "https://api.individual.githubcopilot.com".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("max".into(), Some("max".into())),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 10_f64,
+            output: 50_f64,
+            cache_read: 1_f64,
+            cache_write: 12.5_f64,
+            tiers: vec![ModelCostTier {
+                input_tokens_above: 272000_u64,
+                input: 20_f64,
+                output: 75_f64,
+                cache_read: 2_f64,
+                cache_write: 25_f64,
+            }],
+        },
+        context_window: 1050000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: Some(HashMap::from([
+            ("Copilot-Integration-Id".into(), "vscode-chat".into()),
+            ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()),
+            ("Editor-Version".into(), "vscode/1.107.0".into()),
+            ("User-Agent".into(), "GitHubCopilotChat/0.35.0".into()),
+        ])),
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(false),
+            supports_store: Some(false),
             ..Default::default()
         },
     });
@@ -10028,6 +10133,9 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
+}
+
+fn append_builtin_models_7(models: &mut Vec<Model>) {
     models.push(Model {
         id: "gemini-3.7-flash".into(),
         name: "Gemini 3.7 Flash".into(),
@@ -10097,9 +10205,6 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_7(models: &mut Vec<Model>) {
     models.push(Model {
         id: "gemini-flash-lite-latest".into(),
         name: "Gemini Flash-Lite Latest".into(),
@@ -11402,6 +11507,9 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_8(models: &mut Vec<Model>) {
     models.push(Model {
         id: "deepseek-ai/DeepSeek-V4-Pro".into(),
         name: "DeepSeek V4 Pro".into(),
@@ -11496,9 +11604,6 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_8(models: &mut Vec<Model>) {
     models.push(Model {
         id: "google/gemma-4-31B-it".into(),
         name: "Gemma 4 31B IT".into(),
@@ -12761,6 +12866,9 @@ fn append_builtin_models_8(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
+}
+
+fn append_builtin_models_9(models: &mut Vec<Model>) {
     models.push(Model {
         id: "magistral-medium-latest".into(),
         name: "Magistral Medium (latest)".into(),
@@ -12830,9 +12938,6 @@ fn append_builtin_models_8(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_9(models: &mut Vec<Model>) {
     models.push(Model {
         id: "ministral-8b-latest".into(),
         name: "Ministral 8B (latest)".into(),
@@ -14156,6 +14261,9 @@ fn append_builtin_models_9(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_10(models: &mut Vec<Model>) {
     models.push(Model {
         id: "meta/muse-glimmer-30b".into(),
         name: "Muse Glimmer 30B".into(),
@@ -14249,9 +14357,6 @@ fn append_builtin_models_9(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_10(models: &mut Vec<Model>) {
     models.push(Model {
         id: "moonshotai/kimi-k2.6".into(),
         name: "Kimi K2.6".into(),
@@ -15299,6 +15404,7 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             supports_strict_mode: Some(true),
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15335,6 +15441,7 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             supports_strict_mode: Some(true),
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15412,6 +15519,7 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             supports_strict_mode: Some(true),
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15454,6 +15562,7 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             supports_strict_mode: Some(true),
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15534,9 +15643,11 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            supports_explicit_prompt_cache_mode: Some(true),
             supports_strict_mode: Some(true),
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15576,9 +15687,11 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            supports_explicit_prompt_cache_mode: Some(true),
             supports_strict_mode: Some(true),
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15618,9 +15731,55 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            supports_explicit_prompt_cache_mode: Some(true),
             supports_strict_mode: Some(true),
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "gpt-6-astra".into(),
+        name: "GPT-6 Astra".into(),
+        api: "openai-responses".into(),
+        provider: "openai".into(),
+        base_url: "https://api.openai.com/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 10_f64,
+            output: 50_f64,
+            cache_read: 1_f64,
+            cache_write: 12.5_f64,
+            tiers: vec![ModelCostTier {
+                input_tokens_above: 272000_u64,
+                input: 20_f64,
+                output: 75_f64,
+                cache_read: 2_f64,
+                cache_write: 25_f64,
+            }],
+        },
+        context_window: 272000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_explicit_prompt_cache_mode: Some(true),
+            supports_strict_mode: Some(true),
+            supports_openai_grammar_tools: Some(true),
+            supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15760,6 +15919,9 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_11(models: &mut Vec<Model>) {
     models.push(Model {
         id: "o3-mini".into(),
         name: "o3-mini".into(),
@@ -15891,9 +16053,6 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_11(models: &mut Vec<Model>) {
     models.push(Model {
         id: "gpt-5.4".into(),
         name: "GPT-5.4".into(),
@@ -15926,6 +16085,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat {
             supports_openai_grammar_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15955,6 +16115,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat {
             supports_openai_grammar_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -15990,6 +16151,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat {
             supports_openai_grammar_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -16027,6 +16189,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         compat: ModelCompat {
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -16064,6 +16227,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         compat: ModelCompat {
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -16101,6 +16265,49 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         compat: ModelCompat {
             supports_openai_grammar_tools: Some(true),
             supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "gpt-6-astra".into(),
+        name: "GPT-6 Astra".into(),
+        api: "openai-codex-responses".into(),
+        provider: "openai-codex".into(),
+        base_url: "https://chatgpt.com/backend-api".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), Some("low".into())),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 10_f64,
+            output: 50_f64,
+            cache_read: 1_f64,
+            cache_write: 12.5_f64,
+            tiers: vec![ModelCostTier {
+                input_tokens_above: 272000_u64,
+                input: 20_f64,
+                output: 75_f64,
+                cache_read: 2_f64,
+                cache_write: 25_f64,
+            }],
+        },
+        context_window: 272000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_openai_grammar_tools: Some(true),
+            supports_additional_tools: Some(true),
+            supports_tool_search: Some(true),
             ..Default::default()
         },
     });
@@ -16494,6 +16701,43 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
+        id: "deepseek-v4-flash-vision-exp".into(),
+        name: "DeepSeek V4 Flash Vision Exp".into(),
+        api: "openai-completions".into(),
+        provider: "opencode".into(),
+        base_url: "https://opencode.ai/zen/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 0.14_f64,
+            output: 0.28_f64,
+            cache_read: 0.028_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            max_tokens_field: Some("max_tokens".into()),
+            requires_reasoning_content_on_assistant_messages: Some(true),
+            supports_developer_role: Some(false),
+            supports_store: Some(false),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
         id: "deepseek-v4-pro".into(),
         name: "DeepSeek V4 Pro".into(),
         api: "openai-completions".into(),
@@ -16791,6 +17035,78 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
+        id: "glm-5.3".into(),
+        name: "GLM-5.3".into(),
+        api: "openai-completions".into(),
+        provider: "opencode".into(),
+        base_url: "https://opencode.ai/zen/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        cost: ModelCost {
+            input: 1.4_f64,
+            output: 4.4_f64,
+            cache_read: 0.26_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            max_tokens_field: Some("max_tokens".into()),
+            supports_developer_role: Some(false),
+            supports_store: Some(false),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "glm-5.3-flash".into(),
+        name: "GLM-5.3-Flash".into(),
+        api: "openai-completions".into(),
+        provider: "opencode".into(),
+        base_url: "https://opencode.ai/zen/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 0.15_f64,
+            output: 0.5_f64,
+            cache_read: 0.03_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            max_tokens_field: Some("max_tokens".into()),
+            supports_developer_role: Some(false),
+            supports_store: Some(false),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
         id: "gpt-5".into(),
         name: "GPT-5".into(),
         api: "openai-responses".into(),
@@ -16820,6 +17136,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -16854,6 +17171,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -16888,6 +17206,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -16922,6 +17241,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -16956,6 +17276,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -16990,6 +17311,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17024,6 +17346,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17058,6 +17381,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17092,6 +17416,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17126,6 +17451,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17160,10 +17486,14 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_12(models: &mut Vec<Model>) {
     models.push(Model {
         id: "gpt-5.4-mini".into(),
         name: "GPT-5.4 Mini".into(),
@@ -17194,6 +17524,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17228,6 +17559,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17262,6 +17594,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17296,6 +17629,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17330,6 +17664,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17364,6 +17699,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17398,6 +17734,7 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
@@ -17432,13 +17769,46 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_openai_grammar_tools: Some(true),
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_12(models: &mut Vec<Model>) {
+    models.push(Model {
+        id: "gpt-6-astra".into(),
+        name: "GPT-6 Astra".into(),
+        api: "openai-responses".into(),
+        provider: "opencode".into(),
+        base_url: "https://opencode.ai/zen/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 10_f64,
+            output: 50_f64,
+            cache_read: 1_f64,
+            cache_write: 12.5_f64,
+            tiers: vec![],
+        },
+        context_window: 1050000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            supports_openai_grammar_tools: Some(true),
+            ..Default::default()
+        },
+    });
     models.push(Model {
         id: "grok-4.5".into(),
         name: "Grok 4.5".into(),
@@ -17468,7 +17838,10 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
     models.push(Model {
         id: "grok-4.6".into(),
@@ -17499,7 +17872,10 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
     models.push(Model {
         id: "grok-build-0.1".into(),
@@ -17528,6 +17904,7 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         headers: None,
         api_key: None,
         compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
             supports_reasoning_effort: Some(false),
             ..Default::default()
         },
@@ -17826,7 +18203,10 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
     models.push(Model {
         id: "muse-spark-1.2-contributor-free".into(),
@@ -17857,7 +18237,44 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "muse-spark-1.3".into(),
+        name: "Muse Spark 1.3".into(),
+        api: "openai-responses".into(),
+        provider: "opencode".into(),
+        base_url: "https://opencode.ai/zen/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), Some("minimal".into())),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 1.25_f64,
+            output: 4.25_f64,
+            cache_read: 0.15_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1048576,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
     models.push(Model {
         id: "muse-spark-1.3-contributor-free".into(),
@@ -17888,7 +18305,10 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
     models.push(Model {
         id: "nemotron-3-ultra-free".into(),
@@ -18265,7 +18685,10 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
     models.push(Model {
         id: "grok-4.6".into(),
@@ -18296,7 +18719,10 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
     models.push(Model {
         id: "hy3".into(),
@@ -18633,7 +19059,10 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
     models.push(Model {
         id: "muse-spark-1.3-contributor".into(),
@@ -18664,8 +19093,14 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
         sampling_params: None,
         headers: None,
         api_key: None,
-        compat: ModelCompat::default(),
+        compat: ModelCompat {
+            session_affinity_format: Some("openai-nosession".into()),
+            ..Default::default()
+        },
     });
+}
+
+fn append_builtin_models_13(models: &mut Vec<Model>) {
     models.push(Model {
         id: "omen-alpha".into(),
         name: "Omen Alpha".into(),
@@ -18954,9 +19389,6 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_13(models: &mut Vec<Model>) {
     models.push(Model {
         id: "amazon/nova-lite-v1".into(),
         name: "Amazon: Nova Lite 1.0".into(),
@@ -20158,6 +20590,9 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_14(models: &mut Vec<Model>) {
     models.push(Model {
         id: "cohere/command-r-plus-08-2024".into(),
         name: "Cohere: Command R+ (08-2024)".into(),
@@ -20428,9 +20863,6 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_14(models: &mut Vec<Model>) {
     models.push(Model {
         id: "deepseek/deepseek-v4-flash".into(),
         name: "DeepSeek: DeepSeek V4 Flash 0423".into(),
@@ -20449,9 +20881,9 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
         ])),
         input: vec!["text".into()],
         cost: ModelCost {
-            input: 0.088606_f64,
-            output: 0.177212_f64,
-            cache_read: 0.017721_f64,
+            input: 0.08526_f64,
+            output: 0.17052_f64,
+            cache_read: 0.017052_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -20557,9 +20989,9 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
         ])),
         input: vec!["text".into(), "image".into()],
         cost: ModelCost {
-            input: 0.44_f64,
-            output: 1.32_f64,
-            cache_read: 0.014_f64,
+            input: 0.22_f64,
+            output: 0.66_f64,
+            cache_read: 0.007_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -20593,9 +21025,9 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
         ])),
         input: vec!["text".into()],
         cost: ModelCost {
-            input: 1.04226_f64,
-            output: 2.08452_f64,
-            cache_read: 0.086855_f64,
+            input: 0.890358_f64,
+            output: 1.780716_f64,
+            cache_read: 0.074196_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -20629,9 +21061,9 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
         ])),
         input: vec!["text".into()],
         cost: ModelCost {
-            input: 1.1154_f64,
-            output: 3.3462_f64,
-            cache_read: 0.03718_f64,
+            input: 1.12068_f64,
+            output: 3.36204_f64,
+            cache_read: 0.037356_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -21718,6 +22150,9 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_15(models: &mut Vec<Model>) {
     models.push(Model {
         id: "google/gemma-4-31b-it:batch".into(),
         name: "Google: Gemma 4 31B (batch)".into(),
@@ -21763,33 +22198,6 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
         },
         context_window: 262144,
         max_tokens: 32768,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            thinking_format: Some("openrouter".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "ibm-granite/granite-4.1-8b".into(),
-        name: "IBM: Granite 4.1 8B".into(),
-        api: "openai-completions".into(),
-        provider: "openrouter".into(),
-        base_url: "https://openrouter.ai/api/v1".into(),
-        reasoning: false,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        cost: ModelCost {
-            input: 0.05_f64,
-            output: 0.1_f64,
-            cache_read: 0.05_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 131072,
-        max_tokens: 117964,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -21906,7 +22314,7 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
     });
     models.push(Model {
         id: "inclusionai/ling-3.0-flash".into(),
-        name: "Ling-3.0-flash".into(),
+        name: "inclusionAI: Ling 3.0 Flash".into(),
         api: "openai-completions".into(),
         provider: "openrouter".into(),
         base_url: "https://openrouter.ai/api/v1".into(),
@@ -21933,7 +22341,7 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
     });
     models.push(Model {
         id: "inclusionai/ling-3.0-flash-fin".into(),
-        name: "Ling 3.0 Flash Fin".into(),
+        name: "inclusionAI: Ling 3.0 Flash Fin".into(),
         api: "openai-completions".into(),
         provider: "openrouter".into(),
         base_url: "https://openrouter.ai/api/v1".into(),
@@ -21960,7 +22368,34 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
     });
     models.push(Model {
         id: "inclusionai/ling-3.0-flash-fin:free".into(),
-        name: "Ling 3.0 Flash Fin (free)".into(),
+        name: "inclusionAI: Ling 3.0 Flash Fin (free)".into(),
+        api: "openai-completions".into(),
+        provider: "openrouter".into(),
+        base_url: "https://openrouter.ai/api/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 262144,
+        max_tokens: 32768,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            thinking_format: Some("openrouter".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "inclusionai/ling-3.0-flash-sante:free".into(),
+        name: "inclusionAI: Ling 3.0 Flash Sante (free)".into(),
         api: "openai-completions".into(),
         provider: "openrouter".into(),
         base_url: "https://openrouter.ai/api/v1".into(),
@@ -22012,9 +22447,6 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_15(models: &mut Vec<Model>) {
     models.push(Model {
         id: "kwaipilot/kat-coder-pro-v2.5".into(),
         name: "Kwaipilot: KAT-Coder-Pro V2.5".into(),
@@ -22416,7 +22848,7 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
         thinking_level_map: Some(HashMap::from([
             ("high".into(), Some("high".into())),
             ("low".into(), Some("low".into())),
-            ("max".into(), None),
+            ("max".into(), Some("max".into())),
             ("medium".into(), Some("medium".into())),
             ("minimal".into(), Some("minimal".into())),
             ("off".into(), None),
@@ -22451,7 +22883,7 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
         thinking_level_map: Some(HashMap::from([
             ("high".into(), Some("high".into())),
             ("low".into(), Some("low".into())),
-            ("max".into(), None),
+            ("max".into(), Some("max".into())),
             ("medium".into(), Some("medium".into())),
             ("minimal".into(), Some("minimal".into())),
             ("off".into(), None),
@@ -23175,6 +23607,9 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_16(models: &mut Vec<Model>) {
     models.push(Model {
         id: "mistralai/mixtral-8x22b-instruct".into(),
         name: "Mistral: Mixtral 8x22B Instruct".into(),
@@ -23462,9 +23897,6 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_16(models: &mut Vec<Model>) {
     models.push(Model {
         id: "nex-agi/nex-n2-mini".into(),
         name: "Nex AGI: Nex-N2-Mini".into(),
@@ -24611,6 +25043,9 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_17(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/gpt-5.1-codex".into(),
         name: "OpenAI: GPT-5.1-Codex".into(),
@@ -24943,9 +25378,6 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_17(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/gpt-5.3-codex".into(),
         name: "OpenAI: GPT-5.3-Codex".into(),
@@ -25831,6 +26263,142 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
+        id: "openai/gpt-6-astra".into(),
+        name: "OpenAI: GPT-6 Astra".into(),
+        api: "openai-completions".into(),
+        provider: "openrouter".into(),
+        base_url: "https://openrouter.ai/api/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 10_f64,
+            output: 50_f64,
+            cache_read: 1_f64,
+            cache_write: 12.5_f64,
+            tiers: vec![],
+        },
+        context_window: 1050000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            thinking_format: Some("openrouter".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "openai/gpt-6-astra-pro".into(),
+        name: "OpenAI: GPT-6 Astra Pro".into(),
+        api: "openai-completions".into(),
+        provider: "openrouter".into(),
+        base_url: "https://openrouter.ai/api/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 10_f64,
+            output: 50_f64,
+            cache_read: 1_f64,
+            cache_write: 12.5_f64,
+            tiers: vec![],
+        },
+        context_window: 1050000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            thinking_format: Some("openrouter".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "openai/gpt-6-astra-pro:batch".into(),
+        name: "OpenAI: GPT-6 Astra Pro (batch)".into(),
+        api: "openai-completions".into(),
+        provider: "openrouter".into(),
+        base_url: "https://openrouter.ai/api/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 5_f64,
+            output: 25_f64,
+            cache_read: 0.5_f64,
+            cache_write: 6.25_f64,
+            tiers: vec![],
+        },
+        context_window: 1050000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            thinking_format: Some("openrouter".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "openai/gpt-6-astra:batch".into(),
+        name: "OpenAI: GPT-6 Astra (batch)".into(),
+        api: "openai-completions".into(),
+        provider: "openrouter".into(),
+        base_url: "https://openrouter.ai/api/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), Some("xhigh".into())),
+        ])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 5_f64,
+            output: 25_f64,
+            cache_read: 0.5_f64,
+            cache_write: 6.25_f64,
+            tiers: vec![],
+        },
+        context_window: 1050000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            thinking_format: Some("openrouter".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
         id: "openai/gpt-audio".into(),
         name: "OpenAI: GPT Audio".into(),
         api: "openai-completions".into(),
@@ -26114,6 +26682,9 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_18(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/o3-mini-high".into(),
         name: "OpenAI: o3 Mini High".into(),
@@ -26501,9 +27072,6 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_18(models: &mut Vec<Model>) {
     models.push(Model {
         id: "poolside/laguna-xs-2.1:free".into(),
         name: "Poolside: Laguna XS 2.1 (free)".into(),
@@ -26703,14 +27271,14 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
         thinking_level_map: None,
         input: vec!["text".into()],
         cost: ModelCost {
-            input: 0.0875_f64,
-            output: 0.35_f64,
-            cache_read: 0.0175_f64,
+            input: 0.09_f64,
+            output: 0.55_f64,
+            cache_read: 0_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
         context_window: 262144,
-        max_tokens: 235929,
+        max_tokens: 16384,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -27378,14 +27946,14 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
         thinking_level_map: None,
         input: vec!["text".into(), "image".into()],
         cost: ModelCost {
-            input: 0.25_f64,
-            output: 1.25_f64,
-            cache_read: 0.25_f64,
+            input: 0.08_f64,
+            output: 0.75_f64,
+            cache_read: 0_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
         context_window: 262144,
-        max_tokens: 235929,
+        max_tokens: 16384,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -27476,6 +28044,9 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_19(models: &mut Vec<Model>) {
     models.push(Model {
         id: "qwen/qwen3.5-flash-02-23".into(),
         name: "Qwen: Qwen3.5-Flash".into(),
@@ -27567,14 +28138,14 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
         thinking_level_map: None,
         input: vec!["text".into(), "image".into()],
         cost: ModelCost {
-            input: 0.6_f64,
-            output: 3.6_f64,
-            cache_read: 0.12_f64,
+            input: 0.3_f64,
+            output: 2_f64,
+            cache_read: 0.03_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
         context_window: 262144,
-        max_tokens: 235929,
+        max_tokens: 65536,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -27878,9 +28449,6 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_19(models: &mut Vec<Model>) {
     models.push(Model {
         id: "qwen/qwen3.8-flash".into(),
         name: "Qwen: Qwen3.8 Flash".into(),
@@ -27909,8 +28477,8 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
-        id: "qwen/qwen3.8-max".into(),
-        name: "Qwen: Qwen3.8 Max".into(),
+        id: "qwen/qwen3.8-max-0902".into(),
+        name: "Qwen: Qwen3.8 Max (0902)".into(),
         api: "openai-completions".into(),
         provider: "openrouter".into(),
         base_url: "https://openrouter.ai/api/v1".into(),
@@ -28989,6 +29557,9 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_20(models: &mut Vec<Model>) {
     models.push(Model {
         id: "z-ai/glm-5".into(),
         name: "Z.ai: GLM 5".into(),
@@ -29426,14 +29997,14 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
         ])),
         input: vec!["text".into()],
         cost: ModelCost {
-            input: 0.05_f64,
-            output: 0.16_f64,
-            cache_read: 0.013_f64,
+            input: 0.04998_f64,
+            output: 0.09996_f64,
+            cache_read: 0.009996_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
         context_window: 1048576,
-        max_tokens: 393216,
+        max_tokens: 131072,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -29444,9 +30015,6 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_20(models: &mut Vec<Model>) {
     models.push(Model {
         id: "~google/gemini-flash-latest".into(),
         name: "Google Gemini Flash Latest".into(),
@@ -29535,9 +30103,9 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
         ])),
         input: vec!["text".into(), "image".into()],
         cost: ModelCost {
-            input: 2.5_f64,
-            output: 14_f64,
-            cache_read: 0.29_f64,
+            input: 2.55_f64,
+            output: 12.75_f64,
+            cache_read: 0.256_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -30663,6 +31231,9 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_21(models: &mut Vec<Model>) {
     models.push(Model {
         id: "kimi-k2.6".into(),
         name: "Kimi K2.6".into(),
@@ -31117,9 +31688,6 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_21(models: &mut Vec<Model>) {
     models.push(Model {
         id: "qwen3.7-plus".into(),
         name: "Qwen3.7 Plus".into(),
@@ -32253,6 +32821,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
+}
+
+fn append_builtin_models_22(models: &mut Vec<Model>) {
     models.push(Model {
         id: "alibaba/qwen3-max-thinking".into(),
         name: "Qwen 3 Max Thinking".into(),
@@ -32575,9 +33146,6 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_22(models: &mut Vec<Model>) {
     models.push(Model {
         id: "alibaba/qwen3.8-27b".into(),
         name: "Qwen3.8 27B".into(),
@@ -33467,6 +34035,9 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
+}
+
+fn append_builtin_models_23(models: &mut Vec<Model>) {
     models.push(Model {
         id: "deepseek/deepseek-v4-flash-vision-exp".into(),
         name: "DeepSeek V4 Flash Vision Exp".into(),
@@ -33789,9 +34360,6 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_23(models: &mut Vec<Model>) {
     models.push(Model {
         id: "google/gemma-4-26b-a4b-it".into(),
         name: "Google Gemma 4 26B A4B".into(),
@@ -33933,6 +34501,52 @@ fn append_builtin_models_23(models: &mut Vec<Model>) {
     models.push(Model {
         id: "inclusionai/ling-3.0-flash-fin-free".into(),
         name: "Ling 3.0 Flash Fin (Free)".into(),
+        api: "anthropic-messages".into(),
+        provider: "vercel-ai-gateway".into(),
+        base_url: "https://ai-gateway.vercel.sh".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 256000,
+        max_tokens: 32000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat::default(),
+    });
+    models.push(Model {
+        id: "inclusionai/ling-3.0-flash-sante".into(),
+        name: "Ling 3.0 Flash Sante".into(),
+        api: "anthropic-messages".into(),
+        provider: "vercel-ai-gateway".into(),
+        base_url: "https://ai-gateway.vercel.sh".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 256000,
+        max_tokens: 32000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat::default(),
+    });
+    models.push(Model {
+        id: "inclusionai/ling-3.0-flash-sante-free".into(),
+        name: "Ling 3.0 Flash Sante (Free)".into(),
         api: "anthropic-messages".into(),
         provider: "vercel-ai-gateway".into(),
         base_url: "https://ai-gateway.vercel.sh".into(),
@@ -34574,6 +35188,9 @@ fn append_builtin_models_23(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
+}
+
+fn append_builtin_models_24(models: &mut Vec<Model>) {
     models.push(Model {
         id: "mistral/devstral-2".into(),
         name: "Devstral 2".into(),
@@ -34942,9 +35559,6 @@ fn append_builtin_models_23(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_24(models: &mut Vec<Model>) {
     models.push(Model {
         id: "moonshotai/kimi-k2.7-code-highspeed".into(),
         name: "Kimi K2.7 Code High Speed".into(),
@@ -35727,6 +36341,9 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
+}
+
+fn append_builtin_models_25(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/gpt-5.2-codex".into(),
         name: "GPT 5.2 Codex".into(),
@@ -36090,7 +36707,7 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             input: 0.4_f64,
             output: 2.4_f64,
             cache_read: 0.04_f64,
-            cache_write: 0.25_f64,
+            cache_write: 0.5_f64,
             tiers: vec![],
         },
         context_window: 1050000,
@@ -36100,9 +36717,6 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_25(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/gpt-5.6-sol".into(),
         name: "GPT 5.6 Sol".into(),
@@ -36139,7 +36753,7 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
             input: 4_f64,
             output: 20_f64,
             cache_read: 0.4_f64,
-            cache_write: 2.5_f64,
+            cache_write: 5_f64,
             tiers: vec![],
         },
         context_window: 1050000,
@@ -36185,7 +36799,53 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
             input: 4_f64,
             output: 24_f64,
             cache_read: 0.4_f64,
-            cache_write: 2.5_f64,
+            cache_write: 5_f64,
+            tiers: vec![],
+        },
+        context_window: 1050000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat::default(),
+    });
+    models.push(Model {
+        id: "openai/gpt-6-astra".into(),
+        name: "GPT-6 Astra".into(),
+        api: "anthropic-messages".into(),
+        provider: "vercel-ai-gateway".into(),
+        base_url: "https://ai-gateway.vercel.sh".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([("xhigh".into(), Some("xhigh".into()))])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 10_f64,
+            output: 50_f64,
+            cache_read: 1_f64,
+            cache_write: 12.5_f64,
+            tiers: vec![],
+        },
+        context_window: 1050000,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat::default(),
+    });
+    models.push(Model {
+        id: "openai/gpt-6-astra-fast".into(),
+        name: "GPT-6 Astra (Fast)".into(),
+        api: "anthropic-messages".into(),
+        provider: "vercel-ai-gateway".into(),
+        base_url: "https://ai-gateway.vercel.sh".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([("xhigh".into(), Some("xhigh".into()))])),
+        input: vec!["text".into(), "image".into()],
+        cost: ModelCost {
+            input: 20_f64,
+            output: 100_f64,
+            cache_read: 2_f64,
+            cache_write: 25_f64,
             tiers: vec![],
         },
         context_window: 1050000,
@@ -36839,6 +37499,9 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
+}
+
+fn append_builtin_models_26(models: &mut Vec<Model>) {
     models.push(Model {
         id: "stepfun/step-3.7-flash".into(),
         name: "Step 3.7 Flash".into(),
@@ -37253,9 +37916,6 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_26(models: &mut Vec<Model>) {
     models.push(Model {
         id: "zai/glm-5.2".into(),
         name: "GLM 5.2".into(),
@@ -38221,6 +38881,9 @@ fn append_builtin_models_26(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_27(models: &mut Vec<Model>) {
     models.push(Model {
         id: "glm-5.3".into(),
         name: "GLM-5.3".into(),
@@ -38373,7 +39036,7 @@ fn append_builtin_models_26(models: &mut Vec<Model>) {
 
 /// Returns all built-in models from the upstream pi-ai registry.
 pub fn builtin_models() -> Vec<Model> {
-    let mut models = Vec::with_capacity(1336);
+    let mut models = Vec::with_capacity(1354);
     append_builtin_models_0(&mut models);
     append_builtin_models_1(&mut models);
     append_builtin_models_2(&mut models);
@@ -38401,5 +39064,6 @@ pub fn builtin_models() -> Vec<Model> {
     append_builtin_models_24(&mut models);
     append_builtin_models_25(&mut models);
     append_builtin_models_26(&mut models);
+    append_builtin_models_27(&mut models);
     models
 }

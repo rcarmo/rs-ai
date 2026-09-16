@@ -27,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TIMESTAMP_RE = re.compile(r"//! Generated: .*", re.MULTILINE)
-DEFAULT_PACKAGE_SHA256 = "46188bdacb555a07466a0111f3963f20932a16199e4d6cfb8d44a7fe5fc6e342"
+DEFAULT_PACKAGE_SHA256 = "af7d11986179445ce6fe88b37d57de22f823c0ffd3a65cae31c555b7f5e99253"
 
 
 def run(cmd: list[str], cwd: Path | None = None, env: dict[str, str] | None = None) -> str:
@@ -160,7 +160,7 @@ def maybe_fault(path: Path, fault: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--package", default="@earendil-works/pi-ai@0.85.0")
+    ap.add_argument("--package", default="@earendil-works/pi-ai@0.85.1")
     ap.add_argument("--package-sha256", default=DEFAULT_PACKAGE_SHA256)
     ap.add_argument("--upstream", default="", help="ignored compatibility option; npm artifact is authoritative")
     ap.add_argument("--tag-sha", default="", help="ignored compatibility option; npm artifact is authoritative")
@@ -182,7 +182,7 @@ def main() -> int:
 
         generated_root = copy_project_for_generation(work)
         run([sys.executable, "scripts/generate_models.py", str(extracted / "models.json")], cwd=generated_root)
-        image_json = work / "image-models.json"
+        image_json = extracted / "image-models.json"
         image_count = package_image_json(package_dir, image_json)
         run([sys.executable, "scripts/generate_image_models.py", str(image_json)], cwd=generated_root)
 

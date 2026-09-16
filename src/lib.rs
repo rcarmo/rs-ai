@@ -274,6 +274,9 @@ mod openai_responses_empty_tool_result_test;
 #[path = "tests/providers/openai/openai_responses_partial_json_cleanup_test.rs"]
 mod openai_responses_partial_json_cleanup_test;
 #[cfg(test)]
+#[path = "tests/providers/openai/openai_responses_prompt_cache_test.rs"]
+mod openai_responses_prompt_cache_test;
+#[cfg(test)]
 #[path = "tests/providers/openai/openai_responses_terminal_event_test.rs"]
 mod openai_responses_terminal_event_test;
 #[cfg(test)]
@@ -372,6 +375,9 @@ mod v0844_release_test;
 #[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/release/v0850_release_test.rs"]
 mod v0850_release_test;
+#[cfg(all(test, feature = "bedrock"))]
+#[path = "tests/release/v0851_release_test.rs"]
+mod v0851_release_test;
 #[cfg(test)]
 #[path = "tests/transports/validation_upstream_test.rs"]
 mod validation_upstream_test;

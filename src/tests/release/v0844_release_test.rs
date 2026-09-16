@@ -59,19 +59,19 @@ fn release_pinned_catalog_counts_match_v0844() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1336);
+    assert_eq!(pairs.len(), 1354);
     assert_eq!(providers.len(), 39);
     assert_eq!(apis.len(), 9);
     assert_eq!(
         pairs.iter().filter(|(_, id)| id.contains(":batch")).count(),
-        66
+        68
     );
 
     let image_pairs = crate::images::list_image_models(None)
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 50);
+    assert_eq!(image_pairs.len(), 52);
     assert!(image_pairs.contains(&("openrouter".to_string(), "meta/muse-image".to_string())));
     assert!(image_pairs.contains(&(
         "openrouter".to_string(),

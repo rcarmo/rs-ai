@@ -25,17 +25,17 @@ mod tests {
             String::from_utf8_lossy(&output.stderr)
         );
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("text=1336"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("text=1354"), "unexpected stdout: {stdout}");
         assert!(
             stdout.contains("providers=39"),
             "unexpected stdout: {stdout}"
         );
         assert!(stdout.contains("apis=9"), "unexpected stdout: {stdout}");
         assert!(
-            stdout.contains("batchAliases=66"),
+            stdout.contains("batchAliases=68"),
             "unexpected stdout: {stdout}"
         );
-        assert!(stdout.contains("image=50"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("image=52"), "unexpected stdout: {stdout}");
     }
 
     fn run_fault(fault: &str) -> String {
@@ -256,6 +256,141 @@ mod tests {
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(
             stderr.contains("v0850-test-corpus-142.txt sha256 mismatch"),
+            "unexpected stderr: {stderr}"
+        );
+    }
+
+    #[test]
+    fn generated_catalogs_are_byte_for_byte_reproducible() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/verify_generated_reproducibility.py")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "reproducibility verifier failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("generated catalog reproducibility verified byte-for-byte"),
+            "unexpected stdout: {stdout}"
+        );
+    }
+
+    #[test]
+    fn v0851_baseline_delta_validator_confirms_full_record_counts() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/verify_v0851_baseline_delta.py")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "baseline delta validator failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("text=+20/-2/18 changed image=+2/-0/0 changed"),
+            "unexpected stdout: {stdout}"
+        );
+    }
+
+    #[test]
+    fn v0851_baseline_delta_validator_detects_record_mutation() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/verify_v0851_baseline_delta.py")
+            .arg("--fault")
+            .arg("baseline-record")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "fault unexpectedly passed");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains("text full-record delta mismatch"),
+            "unexpected stderr: {stderr}"
+        );
+    }
+
+    #[test]
+    fn v0851_manifest_validator_confirms_changed_paths_and_crosswalk_rows() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/validate_v0851_manifests.py")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "manifest validator failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("changedPaths=9 testRows=142"),
+            "unexpected stdout: {stdout}"
+        );
+        assert!(
+            stdout.contains(
+                "changedSha256=ee26f669d92dc77b265731165a2ff69ccb67defba92517cbbd5f97a186e187d2"
+            ),
+            "unexpected stdout: {stdout}"
+        );
+        assert!(
+            stdout.contains(
+                "testCorpusSha256=56f8742065a4ad01d73e5aee53035324f2e7333a735222ab15db870819e29065"
+            ),
+            "unexpected stdout: {stdout}"
+        );
+    }
+
+    #[test]
+    fn v0851_manifest_validator_detects_changed_path_inventory_corruption() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/validate_v0851_manifests.py")
+            .arg("--fault")
+            .arg("v0851-changed-paths")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "fault unexpectedly passed");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains("v0851-changed-paths.txt sha256 mismatch"),
+            "unexpected stderr: {stderr}"
+        );
+    }
+
+    #[test]
+    fn v0851_manifest_validator_detects_test_corpus_inventory_corruption() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .arg("-B")
+            .arg("scripts/validate_v0851_manifests.py")
+            .arg("--fault")
+            .arg("v0851-test-corpus-142")
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "fault unexpectedly passed");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains("v0851-test-corpus-142.txt sha256 mismatch"),
             "unexpected stderr: {stderr}"
         );
     }

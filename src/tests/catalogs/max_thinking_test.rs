@@ -103,45 +103,49 @@ mod tests {
 
     #[test]
     fn sends_max_to_the_codex_responses_api() {
-        let model = get_model("openai-codex", "gpt-5.6-sol").expect("openai-codex/gpt-5.6-sol");
-        let context = Context {
-            system_prompt: Some("You are a helpful assistant.".into()),
-            tools: Vec::new(),
-            messages: vec![Message {
-                role: Role::User,
-                content: vec![ContentBlock::Text {
-                    text: "Hello".into(),
-                    text_signature: None,
+        for model_id in ["gpt-5.6-sol", "gpt-6-astra"] {
+            let model = get_model("openai-codex", model_id)
+                .unwrap_or_else(|| panic!("openai-codex/{model_id}"));
+            let context = Context {
+                system_prompt: Some("You are a helpful assistant.".into()),
+                tools: Vec::new(),
+                messages: vec![Message {
+                    role: Role::User,
+                    content: vec![ContentBlock::Text {
+                        text: "Hello".into(),
+                        text_signature: None,
+                    }],
+                    timestamp: 0,
+                    api: None,
+                    provider: None,
+                    model: None,
+                    response_id: None,
+                    response_model: None,
+                    provider_thinking_level: None,
+                    diagnostics: Vec::new(),
+                    usage: None,
+                    stop_reason: None,
+                    deferred: None,
+                    error_message: None,
+                    raw_stop_reason: None,
+                    end_turn: None,
+                    tool_call_id: None,
+                    tool_name: None,
+                    is_error: false,
+                    details: None,
+                    added_tool_names: Vec::new(),
                 }],
-                timestamp: 0,
-                api: None,
-                provider: None,
-                model: None,
-                response_id: None,
-                response_model: None,
-                provider_thinking_level: None,
-                diagnostics: Vec::new(),
-                usage: None,
-                stop_reason: None,
-                deferred: None,
-                error_message: None,
-                raw_stop_reason: None,
-                end_turn: None,
-                tool_call_id: None,
-                tool_name: None,
-                is_error: false,
-                details: None,
-                added_tool_names: Vec::new(),
-            }],
-        };
-        let opts = StreamOptions {
-            reasoning: Some(ThinkingLevel::Max),
-            ..Default::default()
-        };
-        let payload = build_codex_payload(&model, &context, &opts);
-        assert_eq!(
-            payload["reasoning"],
-            serde_json::json!({ "effort": "max", "summary": "auto" })
-        );
+            };
+            let opts = StreamOptions {
+                reasoning: Some(ThinkingLevel::Max),
+                ..Default::default()
+            };
+            let payload = build_codex_payload(&model, &context, &opts);
+            assert_eq!(
+                payload["reasoning"],
+                serde_json::json!({ "effort": "max", "summary": "auto" }),
+                "{model_id}"
+            );
+        }
     }
 }

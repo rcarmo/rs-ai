@@ -48,12 +48,12 @@ fn release_pinned_catalog_counts_match_v0850() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1336);
+    assert_eq!(pairs.len(), 1354);
     assert_eq!(providers.len(), 39);
     assert_eq!(apis.len(), 9);
     assert_eq!(
         pairs.iter().filter(|(_, id)| id.contains(":batch")).count(),
-        66
+        68
     );
     assert!(pairs.contains(&("openrouter", "anthropic/claude-fable-5.1")));
     assert!(pairs.contains(&("openrouter", "anthropic/claude-fable-5.1:batch")));
@@ -65,7 +65,7 @@ fn release_pinned_catalog_counts_match_v0850() {
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 50);
+    assert_eq!(image_pairs.len(), 52);
 }
 
 #[test]

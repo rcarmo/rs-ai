@@ -59,13 +59,14 @@ mod tests {
     }
 
     #[test]
-    fn includes_xhigh_for_codex_gpt_5_4_and_5_5() {
+    fn includes_xhigh_for_codex_gpt_5_4_5_5_and_gpt_6_astra() {
         for id in [
             "gpt-5.4",
             "gpt-5.5",
             "gpt-5.6-sol",
             "gpt-5.6-terra",
             "gpt-5.6-luna",
+            "gpt-6-astra",
         ] {
             assert!(
                 levels(&m("openai-codex", id)).iter().any(|l| l == "xhigh"),
@@ -75,9 +76,14 @@ mod tests {
     }
 
     #[test]
-    fn includes_xhigh_and_max_for_openai_gpt_5_6_models() {
-        // v0.80.6: gpt-5.6 tiers (luna/sol/terra) expose both native xhigh and max.
-        for id in ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] {
+    fn includes_xhigh_and_max_for_openai_gpt_5_6_models_and_gpt_6_astra() {
+        // v0.85.1: gpt-5.6 tiers and gpt-6-astra expose both native xhigh and max.
+        for id in [
+            "gpt-5.6-sol",
+            "gpt-5.6-terra",
+            "gpt-5.6-luna",
+            "gpt-6-astra",
+        ] {
             let l = levels(&m("openai", id));
             assert!(l.iter().any(|x| x == "xhigh"), "model {id}: {l:?}");
             assert!(l.iter().any(|x| x == "max"), "model {id}: {l:?}");

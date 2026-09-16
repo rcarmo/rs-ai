@@ -10,7 +10,6 @@ Usage:
 
 import json
 import sys
-import datetime
 from pathlib import Path
 
 VERIFIED_REASONING_EFFORTS = {"none", "low", "medium", "high", "xhigh", "max"}
@@ -48,6 +47,17 @@ def get_effort_thinking_level_map(controls):
 
 def rust_string(s):
     return json.dumps(s)
+
+
+def generation_timestamp(input_path: Path) -> str:
+    metadata_path = input_path.parent / "source-metadata.json"
+    if metadata_path.exists():
+        metadata = json.loads(metadata_path.read_text())
+        generated_at = (metadata.get("manifest") or {}).get("generatedAt")
+        if isinstance(generated_at, str) and generated_at:
+            return generated_at
+    return "deterministic"
+
 
 def gen_model(m) -> str:
     lines = []
@@ -129,9 +139,11 @@ def gen_model(m) -> str:
         "requiresAssistantAfterToolResult": ("requires_assistant_after_tool_result", "bool"),
         "sendSessionAffinityHeaders": ("send_session_affinity_headers", "bool"),
         "sendSessionIdHeader": ("send_session_id_header", "bool"),
+        "sessionAffinityFormat": ("session_affinity_format", "str"),
         "supportsCacheControlOnTools": ("supports_cache_control_on_tools", "bool"),
         "supportsDeveloperRole": ("supports_developer_role", "bool"),
         "supportsEagerToolInputStreaming": ("supports_eager_tool_input_streaming", "bool"),
+        "supportsExplicitPromptCacheMode": ("supports_explicit_prompt_cache_mode", "bool"),
         "supportsLongCacheRetention": ("supports_long_cache_retention", "bool"),
         "supportsReasoningEffort": ("supports_reasoning_effort", "bool"),
         "supportsStore": ("supports_store", "bool"),
@@ -142,6 +154,7 @@ def gen_model(m) -> str:
         "supportsAdditionalTools": ("supports_additional_tools", "bool"),
         "supportsTemperature": ("supports_temperature", "bool"),
         "supportsThinkingTokenBudget": ("supports_thinking_token_budget", "bool"),
+        "supportsToolSearch": ("supports_tool_search", "bool"),
         "thinkingFormat": ("thinking_format", "str"),
         "zaiToolStream": ("zai_tool_stream", "bool"),
         "allowedFallbackModels": ("allowed_fallback_models", "json"),
@@ -189,13 +202,13 @@ def main():
     
     total = len(all_models)
     providers = len(models)
-    now = datetime.datetime.utcnow().isoformat()
+    generated = generation_timestamp(input_path)
     
     out = []
     out.append(f"//! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.")
     out.append(f"//!")
     out.append(f"//! Source: models.generated.js ({total} models, {providers} providers)")
-    out.append(f"//! Generated: {now}Z")
+    out.append(f"//! Generated: {generated}")
     out.append("")
     out.append("#![allow(clippy::approx_constant)]")
     out.append("")

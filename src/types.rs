@@ -435,11 +435,15 @@ pub struct ModelCompat {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub send_session_id_header: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_affinity_format: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_cache_control_on_tools: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_developer_role: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_eager_tool_input_streaming: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_explicit_prompt_cache_mode: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_long_cache_retention: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
