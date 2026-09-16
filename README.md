@@ -1,24 +1,24 @@
 # rs-ai
 
 [![CI](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml)
-[![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.0/sbom.cdx.json)
+[![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.1/sbom.cdx.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Rust port of [@earendil-works/pi-ai](https://www.npmjs.com/package/@earendil-works/pi-ai) with model discovery, streaming events, tool calls, OAuth helpers, image generation, and multi-provider request plumbing.
 
-> **Experimental.** This crate is still pre-`v1` and is not published to crates.io. The accepted v0.85.0 runtime audit embeds 1336 text/chat models across 39 providers, 9 text/chat API protocols, and 50 image models.
+> **Experimental.** This crate is still pre-`v1` and is not published to crates.io. The accepted v0.85.1 runtime audit embeds 1354 text/chat models across 39 providers, 9 text/chat API protocols, and 52 image models.
 
 ## Documentation
 
 - [RELEASE.md](RELEASE.md) records upstream release bounds, catalog counts, runtime evidence, CI/SBOM evidence, and rollback notes.
 - [docs/upstream-parity-gaps.md](docs/upstream-parity-gaps.md) tracks current parity decisions, adapted surfaces, and documented N/A cases.
 - [docs/local-tests-shared.md](docs/local-tests-shared.md) records local gate history and shared test evidence.
-- [docs/v0850-142-test-crosswalk.md](docs/v0850-142-test-crosswalk.md), [docs/manifests/v0850-changed-paths.txt](docs/manifests/v0850-changed-paths.txt), and [docs/manifests/v0850-test-corpus-142.txt](docs/manifests/v0850-test-corpus-142.txt) capture the accepted v0.85.0 audit inventory.
+- [docs/v0851-142-test-crosswalk.md](docs/v0851-142-test-crosswalk.md), [docs/manifests/v0851-changed-paths.txt](docs/manifests/v0851-changed-paths.txt), and [docs/manifests/v0851-test-corpus-142.txt](docs/manifests/v0851-test-corpus-142.txt) capture the accepted v0.85.1 audit inventory.
 
 ## Features
 
 - Public `stream` and `complete` entry points over registered provider implementations.
-- Generated text/chat and image model registries regenerated from the pinned upstream v0.85.0 release data.
+- Generated text/chat and image model registries regenerated from the pinned upstream v0.85.1 release data.
 - JSON-compatible message, context, tool, usage, diagnostics, assistant-frame, deferred-tool, and stream-option types for cross-language transcript hand-off.
 - Tool calling with JSON Schema parameters, strict/constrained sampling helpers where providers expose them, partial JSON parsing for streamed arguments, and deferred tool loading metadata.
 - Reasoning/thinking support, including provider thinking levels, signed/redacted thinking replay, raw stop reasons, and provider-specific compatibility flags.
@@ -148,7 +148,7 @@ The generated catalog also includes provider metadata for OpenRouter, xAI, Groq,
 
 ## Compatibility/versioning
 
-The current accepted runtime tracks upstream `@earendil-works/pi-ai` v0.85.0. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
+The current accepted runtime tracks upstream `@earendil-works/pi-ai` v0.85.1. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
 
 Release audits update `RELEASE.md`, regenerated catalogs, and the per-release manifests in `docs/`. Repository tags should be treated as upstream-aligned checkpoints for the audited Rust port rather than a guarantee that every upstream JavaScript runtime surface exists unchanged in Rust.
 
@@ -158,7 +158,7 @@ This project is a derivative port of [@earendil-works/pi-ai](https://www.npmjs.c
 
 ## Supply-chain metadata
 
-The accepted v0.85.0 runtime is [`0eb50d428d75a0281231fcd294d768c3db9cd17c`](https://github.com/rcarmo/rs-ai/commit/0eb50d428d75a0281231fcd294d768c3db9cd17c). Its durable, version-pinned CycloneDX SBOM is published as release asset [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.0/sbom.cdx.json), with checksum [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.0/sbom.cdx.json.sha256). Regenerate and validate the same data locally with `make sbom && make sbom-check`; the dispatch-only `Publish SBOM release asset` workflow publishes replaceable assets guarded by the explicit accepted runtime ref.
+The accepted v0.85.1 runtime is [`e74bfc2c3dc1e12c8b4cedf8e2f8e26c13f299de`](https://github.com/rcarmo/rs-ai/commit/e74bfc2c3dc1e12c8b4cedf8e2f8e26c13f299de). Its durable, version-pinned CycloneDX SBOM is published as release asset [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.1/sbom.cdx.json), with checksum [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.1/sbom.cdx.json.sha256). Regenerate and validate the same data locally with `make sbom && make sbom-check`; the dispatch-only `Publish SBOM release asset` workflow publishes replaceable assets guarded by the explicit accepted runtime ref.
 
 ## License
 
