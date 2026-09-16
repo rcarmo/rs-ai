@@ -6,7 +6,7 @@ on:
       release_tag:
         description: Release tag that will receive the durable SBOM assets
         required: false
-        default: upstream-v0.85.0
+        default: upstream-v0.85.1
       runtime_ref:
         description: Accepted rs-ai runtime ref to check out and embed in SBOM provenance
         required: true
@@ -42,12 +42,12 @@ jobs:
             exit 1
           fi
           echo "RUNTIME_REF_LOWER=${runtime_ref_lower}" >> "${GITHUB_ENV}"
-          case "${RELEASE_TAG}" in
-            *[!A-Za-z0-9._-]* | .* | -* | *..* | */* | *\\*)
-              echo "release_tag contains unsafe characters: ${RELEASE_TAG}" >&2
-              exit 1
-              ;;
-          esac
+          if [[ ! "${RELEASE_TAG}" =~ ^upstream-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "release_tag must match upstream-vX.Y.Z: ${RELEASE_TAG}" >&2
+            exit 1
+          fi
+          upstream_version="${RELEASE_TAG#upstream-v}"
+          echo "UPSTREAM_VERSION=${upstream_version}" >> "${GITHUB_ENV}"
 
       - name: Checkout accepted runtime ref
         uses: actions/checkout@v4
@@ -123,8 +123,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          title='SBOM for @earendil-works/pi-ai v0.85.0'
-          notes="CycloneDX SBOM generated from accepted rs-ai runtime ref ${RUNTIME_REF_LOWER} for @earendil-works/pi-ai v0.85.0. Assets: sbom.cdx.json and sbom.cdx.json.sha256."
+          title="SBOM for @earendil-works/pi-ai v${UPSTREAM_VERSION}"
+          notes="CycloneDX SBOM generated from accepted rs-ai runtime ref ${RUNTIME_REF_LOWER} for @earendil-works/pi-ai v${UPSTREAM_VERSION}. Assets: sbom.cdx.json and sbom.cdx.json.sha256."
           runtime_sha="$(git rev-parse HEAD)"
           git fetch --force --tags origin
 

@@ -9,7 +9,7 @@
 - Accepted rs-ai baseline: `587d7440cb4b67feeda82f81ac95fa1055ff4821`
 - Audited range: `107d79f11072bbc8a3a757ed7fd69596bee7d68c..d981de1229ef899957bbe968bc8dcda02a21f477`
 - Scope: `packages/ai` only; official tag/npm artifact only, no unreleased origin/main changes.
-- Scope status: **ACCEPTED / completed for bounded deterministic v0.85.1 release parity**. Runtime candidate `e74bfc2c3dc1e12c8b4cedf8e2f8e26c13f299de` passed hosted CI; README/catalog prose is updated in a post-acceptance docs-only commit; durable `upstream-v0.85.1` release assets are handled by the guarded publisher workflow.
+- Scope status: **ACCEPTED / completed for bounded deterministic v0.85.1 release parity**. Runtime candidate `e74bfc2c3dc1e12c8b4cedf8e2f8e26c13f299de` passed hosted CI; README/catalog prose is updated in a post-acceptance docs-only commit; durable `upstream-v0.85.1` release assets are handled by the guarded publisher workflow, whose release title/notes now derive strictly from `release_tag = upstream-vX.Y.Z`.
 
 ### v0.85.1 exact upstream path disposition
 
@@ -213,7 +213,7 @@ Strict frame-decode corrective local results: `cargo fmt --all -- --check` passe
 
 ### Durable SBOM release assets
 
-A dispatch-only workflow, `.github/workflows/publish-sbom-release.yml`, publishes durable, version-pinned release assets for the accepted v0.85.0 runtime without changing runtime code. It requires an explicit full 40-hex `runtime_ref`, checks out that runtime, runs `make security-check` (SBOM generation/validation, license self-test/review, vulnerability self-test/review), verifies `metadata.component.properties[rs-ai:vcs:revision]` equals the checked-out runtime SHA, normalizes assets to `dist/sbom.cdx.json` and `dist/sbom.cdx.json.sha256` with checksum filename `sbom.cdx.json`, and uploads replaceable assets to release tag `upstream-v0.85.0` with `--clobber` only after proving any existing release tag points to the same runtime. README links use fixed `https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.85.0/...` asset URLs; no `/latest` indirection is used.
+The dispatch-only workflow `.github/workflows/publish-sbom-release.yml` publishes durable, version-pinned release assets without changing runtime code. It requires an explicit full 40-hex `runtime_ref`, requires `release_tag` to match `upstream-vX.Y.Z`, derives release title/notes from that tag, checks out the runtime, runs `make security-check` (SBOM generation/validation, license self-test/review, vulnerability self-test/review), verifies `metadata.component.properties[rs-ai:vcs:revision]` equals the checked-out runtime SHA, normalizes assets to `dist/sbom.cdx.json` and `dist/sbom.cdx.json.sha256` with checksum filename `sbom.cdx.json`, and uploads replaceable assets with `--clobber` only after proving any existing release tag points to the same runtime. Fixed README links use `https://github.com/rcarmo/rs-ai/releases/download/upstream-vX.Y.Z/...` asset URLs for the accepted release; no `/latest` indirection is used. The previous `upstream-v0.85.0` release remains preserved; the workflow default now advances to `upstream-v0.85.1` for the accepted v0.85.1 runtime.
 
 ## Historical accepted release: v0.84.4
 
