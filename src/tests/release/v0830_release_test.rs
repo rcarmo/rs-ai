@@ -26,7 +26,7 @@ mod tests {
             .map(|m| m.provider.as_str())
             .collect::<HashSet<_>>()
             .len();
-        assert_eq!(provider_count, 39);
+        assert_eq!(provider_count, 41);
         for model in &all {
             assert!(!model.id.is_empty(), "empty id: {model:?}");
             assert!(!model.provider.is_empty(), "empty provider: {model:?}");

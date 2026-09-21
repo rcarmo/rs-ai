@@ -190,7 +190,7 @@ fn gpt_6_astra_generated_alias_compat_is_release_pinned() {
     assert_eq!(opencode.compat.supports_openai_grammar_tools, Some(true));
 
     let copilot = crate::registry::get_model(provider_id::GITHUB_COPILOT, "gpt-6-astra").unwrap();
-    assert_eq!(copilot.api, crate::types::api::OPENAI_COMPLETIONS);
+    assert_eq!(copilot.api, crate::types::api::OPENAI_RESPONSES);
     assert_eq!(copilot.context_window, 1050000);
     assert_eq!(copilot.max_tokens, 128000);
     assert_eq!(copilot.compat.supports_store, Some(false));
