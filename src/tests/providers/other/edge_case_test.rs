@@ -19,6 +19,11 @@ mod tests {
             reasoning: true,
             thinking_level_map: None,
             input: vec!["text".into(), "image".into()],
+            input_limits: None,
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
             cost: ModelCost::default(),
             context_window: 128000,
             max_tokens: 4096,
@@ -116,6 +121,11 @@ mod tests {
     fn test_transform_multiple_images_downgraded() {
         let text_model = Model {
             input: vec!["text".into()],
+            input_limits: None,
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
             ..faux_model()
         };
         let messages = vec![Message {

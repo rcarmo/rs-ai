@@ -19,6 +19,11 @@ mod tests {
             reasoning: false,
             thinking_level_map: None,
             input: vec!["text".into()],
+            input_limits: None,
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
             cost: ModelCost {
                 input: 3.0,
                 output: 15.0,

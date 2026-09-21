@@ -379,6 +379,9 @@ mod v0850_release_test;
 #[path = "tests/release/v0851_release_test.rs"]
 mod v0851_release_test;
 #[cfg(test)]
+#[path = "tests/release/v0870_catalog_test.rs"]
+mod v0870_catalog_test;
+#[cfg(test)]
 #[path = "tests/transports/validation_upstream_test.rs"]
 mod validation_upstream_test;
 #[cfg(test)]

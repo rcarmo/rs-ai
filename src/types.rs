@@ -38,6 +38,7 @@ pub mod provider_id {
     pub const AZURE_OPENAI: &str = "azure-openai-responses";
     pub const OPENAI_CODEX: &str = "openai-codex";
     pub const RADIUS: &str = "radius";
+    pub const META: &str = "meta";
     pub const GITHUB_COPILOT: &str = "github-copilot";
     pub const AMAZON_BEDROCK: &str = "amazon-bedrock";
     pub const MISTRAL: &str = "mistral";
@@ -378,6 +379,16 @@ pub struct Model {
     pub thinking_level_map: Option<HashMap<String, Option<String>>>,
     #[serde(default)]
     pub input: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input_limits: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prompt_cache: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enabled: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lab: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub providers: Option<serde_json::Value>,
     pub cost: ModelCost,
     pub context_window: u32,
     pub max_tokens: u32,
@@ -412,6 +423,12 @@ pub struct ModelCompat {
     pub force_adaptive_thinking: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_mid_convo_effort: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_mid_convo_system_messages: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_mid_convo_tool_additions: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_mid_convo_tool_changes: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_tokens_field: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -456,6 +473,8 @@ pub struct ModelCompat {
     pub supports_finish_reason: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_strict_mode: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_strict_tools: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_openai_grammar_tools: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

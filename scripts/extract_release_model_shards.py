@@ -112,6 +112,7 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/x-ai/grok-4.3:batch",
     "openrouter/z-ai/glm-5.2:batch",
     "openrouter/z-ai/glm-5.3-flash:batch",
+    "openrouter/z-ai/glm-5.3:batch",
     "openrouter/thinkingmachines/inkling-small:batch",
     "openrouter/qwen/qwen3.8-2.4t-a95b:batch",
     "openrouter/qwen/qwen3.5-9b:batch",
@@ -126,6 +127,7 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/meta/muse-glimmer-30b:batch",
     "openrouter/google/gemma-4-31b-it:batch",
     "openrouter/deepseek/deepseek-v4-pro-0813:batch",
+    "openrouter/deepseek/deepseek-v4-flash-vision-exp:batch",
     "openrouter/deepseek/deepseek-v4-flash-0731:batch",
 }
 

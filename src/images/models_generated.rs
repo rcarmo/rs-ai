@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (52 image models, 1 provider)
-//! Generated: 2026-09-05T11:58:56.761Z
+//! Source: image-models.generated.js (54 image models, 1 provider)
+//! Generated: 2026-09-21T16:36:07.176Z
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
@@ -283,7 +283,7 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         },
         ImagesModel {
             id: "microsoft/mai-image-2.5".into(),
-            name: "Microsoft: MAI-Image-2.5".into(),
+            name: "Microsoft AI: MAI-Image-2.5".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),
@@ -299,7 +299,7 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         },
         ImagesModel {
             id: "microsoft/mai-image-2.5-pro".into(),
-            name: "Microsoft: MAI-Image-2.5 Pro".into(),
+            name: "Microsoft AI: MAI-Image-2.5 Pro".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),
@@ -315,7 +315,7 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         },
         ImagesModel {
             id: "microsoft/mai-image-2.6".into(),
-            name: "Microsoft: MAI-Image-2.6".into(),
+            name: "Microsoft AI: MAI-Image-2.6".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),
@@ -331,7 +331,7 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         },
         ImagesModel {
             id: "microsoft/mai-image-2.6-flash".into(),
-            name: "Microsoft: MAI-Image-2.6 Flash".into(),
+            name: "Microsoft AI: MAI-Image-2.6 Flash".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),
@@ -428,6 +428,38 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
         ImagesModel {
             id: "openai/gpt-image-2".into(),
             name: "OpenAI: GPT Image 2".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 8_f64,
+                output: 8_f64,
+                cache_read: 2_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "openai/gpt-image-2.5-flare".into(),
+            name: "OpenAI: GPT Image 2.5 Flare".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 8_f64,
+                output: 8_f64,
+                cache_read: 2_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "openai/gpt-image-2.5-sunburst".into(),
+            name: "OpenAI: GPT Image 2.5 Sunburst".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),

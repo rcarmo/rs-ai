@@ -86,6 +86,17 @@ def gen_model(m) -> str:
     inputs = m.get("input", [])
     input_str = ", ".join(f'{rust_string(i)}.into()' for i in inputs)
     lines.append(f"            input: vec![{input_str}],")
+    for js_key, rs_key in [
+        ("inputLimits", "input_limits"),
+        ("promptCache", "prompt_cache"),
+        ("enabled", "enabled"),
+        ("lab", "lab"),
+        ("providers", "providers"),
+    ]:
+        if js_key in m and m[js_key] is not None:
+            lines.append(f'            {rs_key}: Some(serde_json::from_str({rust_string(json.dumps(m[js_key]))}).unwrap()),')
+        else:
+            lines.append(f"            {rs_key}: None,")
     
     cost = m.get("cost", {})
     ci = cost.get("input", 0)
@@ -129,6 +140,9 @@ def gen_model(m) -> str:
         "allowEmptySignature": ("allow_empty_signature", "bool"),
         "forceAdaptiveThinking": ("force_adaptive_thinking", "bool"),
         "supportsMidConvoEffort": ("supports_mid_convo_effort", "bool"),
+        "supportsMidConvoSystemMessages": ("supports_mid_convo_system_messages", "bool"),
+        "supportsMidConvoToolAdditions": ("supports_mid_convo_tool_additions", "bool"),
+        "supportsMidConvoToolChanges": ("supports_mid_convo_tool_changes", "bool"),
         "maxTokensField": ("max_tokens_field", "str"),
         "supportsMaxOutputTokens": ("supports_max_output_tokens", "bool"),
         "vllmPriority": ("vllm_priority", "int"),
@@ -150,6 +164,7 @@ def gen_model(m) -> str:
         "supportsUsageInStreaming": ("supports_usage_in_streaming", "bool"),
         "supportsFinishReason": ("supports_finish_reason", "bool"),
         "supportsStrictMode": ("supports_strict_mode", "bool"),
+        "supportsStrictTools": ("supports_strict_tools", "bool"),
         "supportsOpenAIGrammarTools": ("supports_openai_grammar_tools", "bool"),
         "supportsAdditionalTools": ("supports_additional_tools", "bool"),
         "supportsTemperature": ("supports_temperature", "bool"),
