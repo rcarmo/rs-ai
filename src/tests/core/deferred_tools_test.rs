@@ -429,7 +429,7 @@ mod tests {
         assert!(response_tool_search_output(&additional).is_none());
 
         let supported = build_codex_payload(
-            &get_model("openai-codex", "gpt-5.4").unwrap(),
+            &get_model("openai-codex", "gpt-5.5").unwrap(),
             &ctx,
             &StreamOptions::default(),
         );

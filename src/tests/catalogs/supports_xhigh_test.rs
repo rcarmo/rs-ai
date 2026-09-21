@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn deepseek_v4_flash_off_low_high_max_on_deepseek() {
         assert_eq!(
-            levels(&m("deepseek", "deepseek-v4-flash")),
+            levels(&m("deepseek", "deepseek-flash")),
             vec!["off", "low", "high", "max"]
         );
     }

@@ -384,7 +384,7 @@ mod tests {
     #[test]
     fn stores_zai_glm_5_2_effort_metadata() {
         for provider in ["zai", "zai-coding-cn"] {
-            let m = cat(provider, "glm-5.2");
+            let m = cat(provider, "glm-5.3");
             assert_eq!(m.compat.supports_reasoning_effort, Some(true));
         }
     }

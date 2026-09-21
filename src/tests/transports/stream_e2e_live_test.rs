@@ -126,7 +126,7 @@ mod tests {
         deepseek_basic_text_generation,
         "DEEPSEEK_API_KEY",
         "deepseek",
-        "deepseek-v4-flash"
+        "deepseek-v4-pro"
     );
     live_basic_generation!(
         anthropic_basic_text_generation,
@@ -143,7 +143,7 @@ mod tests {
             ("google", "gemini-2.5-flash"),
             ("openai", "gpt-4o-mini"),
             ("openai", "gpt-5.4"),
-            ("deepseek", "deepseek-v4-flash"),
+            ("deepseek", "deepseek-v4-pro"),
             ("anthropic", "claude-haiku-4-5"),
         ] {
             assert!(

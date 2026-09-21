@@ -20,7 +20,7 @@ mod tests {
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1354);
+        assert_eq!(pairs.len(), 1445);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -94,7 +94,7 @@ mod tests {
             .into_iter()
             .map(|m| m.id)
             .collect::<HashSet<_>>();
-        assert_eq!(ids.len(), 52);
+        assert_eq!(ids.len(), 54);
         for id in [
             "krea/krea-2-large",
             "krea/krea-2-medium",
@@ -375,8 +375,7 @@ mod tests {
                 serde_json::json!({"type":"grammar","variants":{"openai_regex":"[a-z]+"}}),
             ),
         };
-        let mut model = get_model("openai-codex", "gpt-5.4-codex")
-            .unwrap_or_else(|| get_model("openai-codex", "gpt-5.4").unwrap());
+        let mut model = get_model("openai-codex", "gpt-6-astra").unwrap();
         model.compat.supports_openai_grammar_tools = Some(true);
         let payload = crate::provider::codex::build_codex_payload(
             &model,

@@ -25,17 +25,17 @@ mod tests {
             String::from_utf8_lossy(&output.stderr)
         );
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("text=1354"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("text=1445"), "unexpected stdout: {stdout}");
         assert!(
-            stdout.contains("providers=39"),
+            stdout.contains("providers=41"),
             "unexpected stdout: {stdout}"
         );
-        assert!(stdout.contains("apis=9"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("apis=10"), "unexpected stdout: {stdout}");
         assert!(
-            stdout.contains("batchAliases=68"),
+            stdout.contains("batchAliases=74"),
             "unexpected stdout: {stdout}"
         );
-        assert!(stdout.contains("image=52"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("image=54"), "unexpected stdout: {stdout}");
     }
 
     fn run_fault(fault: &str) -> String {

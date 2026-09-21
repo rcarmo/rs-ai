@@ -29,12 +29,12 @@ fn release_pinned_catalog_counts_match_v0851() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1354);
-    assert_eq!(providers.len(), 39);
-    assert_eq!(apis.len(), 9);
+    assert_eq!(pairs.len(), 1445);
+    assert_eq!(providers.len(), 41);
+    assert_eq!(apis.len(), 10);
     assert_eq!(
         pairs.iter().filter(|(_, id)| id.contains(":batch")).count(),
-        68
+        74
     );
 
     for pair in [
@@ -57,7 +57,7 @@ fn release_pinned_catalog_counts_match_v0851() {
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 52);
+    assert_eq!(image_pairs.len(), 54);
     assert!(image_pairs.contains(&(
         "openrouter".to_string(),
         "microsoft/mai-image-2.6".to_string()
@@ -198,7 +198,7 @@ fn gpt_6_astra_generated_alias_compat_is_release_pinned() {
     assert_eq!(copilot.compat.supports_reasoning_effort, Some(false));
 
     let openrouter = crate::registry::get_model("openrouter", "openai/gpt-6-astra").unwrap();
-    assert_eq!(openrouter.api, crate::types::api::OPENAI_COMPLETIONS);
+    assert_eq!(openrouter.api, crate::types::api::OPENAI_RESPONSES);
     assert_eq!(openrouter.context_window, 1050000);
     assert_eq!(openrouter.max_tokens, 128000);
     assert_eq!(

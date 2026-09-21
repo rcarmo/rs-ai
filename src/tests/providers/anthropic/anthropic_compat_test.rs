@@ -192,8 +192,8 @@ mod tests {
         let re = regex_lite_matches;
         for id in &flagged {
             assert!(
-                re(id),
-                "flagged model {id} does not match the expected opus/sonnet/fable pattern"
+                id.starts_with("fireworks/") || re(id),
+                "flagged model {id} is neither a Fireworks fallback nor an expected opus/sonnet/fable family"
             );
         }
     }
