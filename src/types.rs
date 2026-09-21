@@ -82,6 +82,7 @@ pub enum ModelThinkingLevel {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Role {
+    System,
     User,
     Assistant,
     ToolResult,
@@ -340,6 +341,21 @@ pub struct Message {
     pub details: Option<serde_json::Value>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub added_tool_names: Vec<String>,
+
+    // System-message transcript fields (v0.87.0).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sections: Option<indexmap::IndexMap<String, Option<String>>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tools_added: Vec<Tool>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tools_removed: Vec<ToolReference>,
+}
+
+/// A name-only tool reference used by transcript system-message removals.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolReference {
+    pub name: String,
 }
 
 /// Tool definition with JSON Schema parameters.
@@ -634,5 +650,8 @@ pub fn user_message(text: &str) -> Message {
         is_error: false,
         details: None,
         added_tool_names: Vec::new(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     }
 }

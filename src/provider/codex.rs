@@ -534,6 +534,9 @@ impl CodexWsState {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         let events = vec![Event::Start {
             partial: partial.clone(),
@@ -1066,7 +1069,17 @@ pub(crate) fn parse_codex_error_response(body: &str, status: u16) -> String {
 
 pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &StreamOptions) -> Value {
     // Reuse the Responses input/tool conversion, then restructure for Codex:
-    // the system prompt moves to `instructions` and is removed from `input`.
+    // the leading replayed system prompt moves to `instructions`, while supported
+    // later system updates and tool additions remain in `input`.
+    let normalized = crate::transcript::normalize_context(context);
+    let resolved = crate::transcript::resolve_transcript(
+        &normalized,
+        model.compat.supports_mid_convo_system_messages,
+    );
+    let instructions = crate::transcript::get_initial_system_message(&resolved.messages)
+        .map(crate::transcript::get_system_message_text)
+        .filter(|prompt| !prompt.is_empty())
+        .unwrap_or_else(|| "You are a helpful assistant.".to_string());
     let base = responses::build_responses_payload(model, context, opts);
     let mut input = base.get("input").cloned().unwrap_or_else(|| json!([]));
     if let Some(arr) = input.as_array_mut() {
@@ -1081,11 +1094,6 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
         });
     }
 
-    let instructions = context
-        .system_prompt
-        .clone()
-        .filter(|p| !p.is_empty())
-        .unwrap_or_else(|| "You are a helpful assistant.".to_string());
     let mut body = json!({
         "model": model.id,
         "store": false,
@@ -1109,7 +1117,10 @@ pub(crate) fn build_codex_payload(model: &Model, context: &Context, opts: &Strea
     if let Some(ref service_tier) = opts.service_tier {
         body["service_tier"] = json!(service_tier);
     }
-    if !context.tools.is_empty()
+    if base
+        .get("tools")
+        .and_then(Value::as_array)
+        .is_some_and(|tools| !tools.is_empty())
         && let Some(tools) = base.get("tools")
     {
         // Codex uses strict: null (not false) on tool definitions.

@@ -421,13 +421,16 @@ mod tests {
                 models: vec![
                     RadiusGatewayModel {
                         id: "existing".into(),
-                        name: "Existing ignored".into(),
-                        reasoning: false,
+                        name: "Existing refreshed".into(),
+                        reasoning: true,
                         thinking_level_map: None,
-                        input: vec!["text".into()],
+                        input: vec!["text", "image"]
+                            .into_iter()
+                            .map(str::to_string)
+                            .collect(),
                         cost: ModelCost::default(),
-                        context_window: 1,
-                        max_tokens: 1,
+                        context_window: 2,
+                        max_tokens: 2,
                     },
                     RadiusGatewayModel {
                         id: "new".into(),
@@ -444,6 +447,10 @@ mod tests {
         };
         let models = radius.modify_models(&[base_model()], "radius", &creds);
         assert_eq!(models.len(), 2);
+        let replaced = models.iter().find(|m| m.id == "existing").unwrap();
+        assert_eq!(replaced.name, "Existing refreshed");
+        assert_eq!(replaced.context_window, 2);
+        assert!(replaced.reasoning);
         let added = models.iter().find(|m| m.id == "new").unwrap();
         assert_eq!(added.api, "pi-messages");
         assert_eq!(added.provider, "radius");

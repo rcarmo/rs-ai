@@ -61,6 +61,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }
     }
 
@@ -136,6 +139,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         let msgs = build(vec![assistant]);
         assert_eq!(msgs.len(), 0, "assistant with only blank text is dropped");
@@ -165,6 +171,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         let msgs = build(vec![tool_result]);
         assert_eq!(msgs.len(), 1);

@@ -178,6 +178,7 @@ pub fn stream_google<'a>(
             }
         }
     }
+    crate::utils::add_opencode_session_header(&mut headers, model, opts);
 
     Box::pin(async_stream::stream! {
         let client = crate::http_proxy::client_for_target(&url, None);
@@ -240,6 +241,9 @@ pub fn stream_google<'a>(
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
 
         yield Event::Start { partial: partial.clone() };
@@ -670,12 +674,17 @@ fn build_google_payload(
     context: &Context,
     opts: &StreamOptions,
 ) -> Result<Value, String> {
+    // Gemini carries instructions outside the conversation, so replay all transcript
+    // updates into one current system message before conversion.
+    let prepared = crate::transcript::prepare_transcript(context, None, false);
+    let context = &prepared.context;
     let mut contents: Vec<Value> = Vec::new();
 
     let transformed_messages = crate::transform::transform_messages(&context.messages, model);
 
     for msg in &transformed_messages {
         match msg.role {
+            Role::System => unreachable!("Google transcript preparation collapses system messages"),
             Role::ToolResult => {
                 // Tool results must be sent as functionResponse parts, and consecutive
                 // tool results must be merged into a single user turn (Cloud Code Assist).

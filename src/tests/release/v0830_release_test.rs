@@ -171,6 +171,9 @@ mod tests {
             is_error: true,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         assert!(crate::retry::is_retryable_assistant_error(&err_msg));
         err_msg.error_message = Some("Range of input length should be [1, 100000]".into());
@@ -240,6 +243,9 @@ mod tests {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             }],
         }
     }
@@ -610,6 +616,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         crate::provider::bedrock::apply_bedrock_raw_stop_reason(&mut msg, "guardrail_intervened");
         assert_eq!(msg.raw_stop_reason.as_deref(), Some("guardrail_intervened"));

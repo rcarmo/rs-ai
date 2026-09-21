@@ -57,6 +57,9 @@ fn tool_result_marker(added: &[&str]) -> Message {
         is_error: false,
         details: None,
         added_tool_names: added.iter().map(|s| s.to_string()).collect(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     }
 }
 
@@ -361,6 +364,9 @@ fn responses_replays_namespace_only_when_additional_tools_supported() {
         is_error: false,
         details: None,
         added_tool_names: Vec::new(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     };
     let ctx = Context {
         system_prompt: None,
@@ -764,6 +770,9 @@ async fn mistral_http_exact_wire_payload_matches_replay_contract() {
         is_error: false,
         details: None,
         added_tool_names: Vec::new(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     });
     let seen_response = Arc::new(Mutex::new(Vec::new()));
     let seen_response_cb = seen_response.clone();
@@ -846,6 +855,9 @@ fn retry_classifier_matches_request_buffer_exhaustion_wording() {
         is_error: false,
         details: None,
         added_tool_names: Vec::new(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     };
     assert!(crate::retry::is_retryable_assistant_error(&message));
 }

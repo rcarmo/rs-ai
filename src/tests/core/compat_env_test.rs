@@ -54,6 +54,9 @@ mod tests {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             };
             Box::pin(futures::stream::iter(vec![
                 Event::Start {
@@ -124,6 +127,9 @@ mod tests {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             }],
         };
         let opts = StreamOptions {

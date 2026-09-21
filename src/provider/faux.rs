@@ -59,6 +59,7 @@ fn assistant_content_to_text(content: &[ContentBlock]) -> String {
 
 fn message_to_text(msg: &Message) -> String {
     match msg.role {
+        Role::System => crate::transcript::get_system_message_text(msg),
         Role::User => content_to_text(&msg.content),
         Role::Assistant => assistant_content_to_text(&msg.content),
         Role::ToolResult => {
@@ -77,6 +78,7 @@ fn serialize_context(context: &Context) -> String {
     }
     for m in &context.messages {
         let role = match m.role {
+            Role::System => "system",
             Role::User => "user",
             Role::Assistant => "assistant",
             Role::ToolResult => "toolResult",
@@ -334,6 +336,9 @@ impl crate::registry::ApiProvider for FauxProvider {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             };
             let err = Event::Error {
                 reason: StopReason::Error,
@@ -369,6 +374,9 @@ impl crate::registry::ApiProvider for FauxProvider {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             };
             let err = Event::Error {
                 reason: StopReason::Error,
@@ -403,6 +411,9 @@ impl crate::registry::ApiProvider for FauxProvider {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             };
             let err = msg.error_message.clone().unwrap_or_default();
             return Box::pin(tokio_stream::once(Event::Error {
@@ -496,6 +507,9 @@ fn stream_message_owned(
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         yield Event::Start { partial: partial.clone() };
         for block in &resolved.content {
@@ -558,6 +572,9 @@ fn deferred_message(model: &Model, handle: DeferredHandle) -> Message {
         is_error: false,
         details: None,
         added_tool_names: Vec::new(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     }
 }
 
@@ -618,6 +635,9 @@ pub fn stream_faux_text<'a>(
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         yield Event::Start { partial: partial.clone() };
         yield Event::TextStart;
@@ -686,6 +706,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }
     }
 
@@ -782,6 +805,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }]);
         assert_eq!(faux.pending_response_count(), 1);
         let model = faux_model();
@@ -849,6 +875,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         faux.set_responses(vec![resp(), resp()]);
         let model = faux_model();

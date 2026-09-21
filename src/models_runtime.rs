@@ -470,6 +470,10 @@ fn builtin_provider_auth(provider_id: &str) -> ProviderAuth {
             api_key: None,
             oauth: Some(Box::new(crate::auth_providers::XaiOAuth::new())),
         },
+        "meta" => ProviderAuth {
+            api_key: None,
+            oauth: Some(Box::new(crate::auth_providers::MetaOAuth::new())),
+        },
         "openai-codex" => ProviderAuth {
             api_key: None,
             oauth: Some(Box::new(crate::auth_providers::CodexOAuth::new())),

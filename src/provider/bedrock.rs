@@ -91,6 +91,9 @@ pub(crate) fn build_bedrock_messages(
     while i < transformed.len() {
         let msg = &transformed[i];
         match msg.role {
+            Role::System => {
+                unreachable!("Bedrock transcript preparation collapses system messages")
+            }
             Role::User => {
                 let mut content: Vec<BedrockContent> = Vec::new();
                 for b in &msg.content {
@@ -653,6 +656,8 @@ pub fn stream_bedrock<'a>(
         let config = loader.load().await;
         let client = BedrockClient::new(&config);
 
+        let prepared = crate::transcript::prepare_transcript(context, None, false);
+        let context = &prepared.context;
         let messages = match build_bedrock_messages(&context.messages, model, opts) {
             Ok(m) => m,
             Err(msg) => {
@@ -821,6 +826,9 @@ pub fn stream_bedrock<'a>(
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
 
         yield Event::Start { partial: partial.clone() };
@@ -1077,6 +1085,9 @@ fn bedrock_error_message(model: &Model, error_message: String) -> Message {
         is_error: false,
         details: None,
         added_tool_names: Vec::new(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     }
 }
 
@@ -1557,6 +1568,9 @@ mod tests {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             }
         }
         // Supported formats -> None.

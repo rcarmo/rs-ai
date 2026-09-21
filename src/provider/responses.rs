@@ -291,6 +291,7 @@ fn stream_responses_inner<'a>(
             }
         }
     }
+    crate::utils::add_opencode_session_header(&mut headers, model, opts);
 
     Box::pin(async_stream::stream! {
         let client = crate::http_proxy::client_for_target(&url, None);
@@ -362,6 +363,9 @@ fn stream_responses_inner<'a>(
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
 
         yield Event::Start { partial: partial.clone() };
@@ -965,6 +969,12 @@ pub(crate) fn build_responses_payload(
     let supports_tool_search =
         !supports_additional_tools && crate::deferred_tools::openai_supports_tool_search(model);
     let supports_deferred_tools = supports_additional_tools || supports_tool_search;
+    let prepared = crate::transcript::prepare_transcript(
+        context,
+        model.compat.supports_mid_convo_system_messages,
+        supports_deferred_tools,
+    );
+    let context = &prepared.context;
     let mut input = Vec::new();
 
     if let Some(prompt) = context.system_prompt.as_deref().filter(|p| !p.is_empty()) {
@@ -984,6 +994,66 @@ pub(crate) fn build_responses_payload(
 
     for (msg_index, msg) in transformed_messages.iter().enumerate() {
         match msg.role {
+            Role::System => {
+                if prepared.anchors_additions && !msg.tools_added.is_empty() {
+                    let supports_grammar =
+                        model.compat.supports_openai_grammar_tools.unwrap_or(false);
+                    let additions = msg
+                        .tools_added
+                        .iter()
+                        .map(|tool| {
+                            crate::utils::openai_tool_value(tool, supports_grammar, true, false)
+                                .unwrap()
+                        })
+                        .collect::<Vec<_>>();
+                    if supports_additional_tools {
+                        input.push(json!({
+                            "type": "additional_tools",
+                            "role": "developer",
+                            "tools": additions,
+                        }));
+                    } else if supports_tool_search {
+                        let names = msg
+                            .tools_added
+                            .iter()
+                            .map(|tool| tool.name.as_str())
+                            .collect::<Vec<_>>();
+                        let call_id = format!(
+                            "pi_tool_load_{}",
+                            crate::utils::short_hash(&format!(
+                                "system:{msg_index}:{}",
+                                names.join(",")
+                            ))
+                        );
+                        input.push(json!({
+                            "type": "tool_search_call",
+                            "call_id": call_id,
+                            "execution": "client",
+                            "status": "completed",
+                            "arguments": {"query": names.join(" "), "limit": names.len()},
+                        }));
+                        input.push(json!({
+                            "type": "tool_search_output",
+                            "call_id": call_id,
+                            "execution": "client",
+                            "status": "completed",
+                            "tools": additions,
+                        }));
+                    }
+                }
+                let text = crate::transcript::render_system_message_update(msg);
+                if !text.is_empty() {
+                    let role = if model.reasoning
+                        && (model.provider == crate::types::provider_id::XAI
+                            || compat.supports_developer_role != Some(false))
+                    {
+                        "developer"
+                    } else {
+                        "system"
+                    };
+                    input.push(json!({"role": role, "content": text}));
+                }
+            }
             Role::User => {
                 // Mirror upstream convertResponsesMessages: user content is always an
                 // array of input_text/input_image parts; skip when it ends up empty.

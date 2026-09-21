@@ -145,6 +145,9 @@ fn insert_synthetic_tool_results(messages: Vec<Message>) -> Vec<Message> {
                     is_error: true,
                     details: None,
                     added_tool_names: Vec::new(),
+                    sections: None,
+                    tools_added: Vec::new(),
+                    tools_removed: Vec::new(),
                 });
             }
         }
@@ -182,7 +185,7 @@ fn insert_synthetic_tool_results(messages: Vec<Message>) -> Vec<Message> {
                 }
                 result.push(msg);
             }
-            Role::User => {
+            Role::System | Role::User => {
                 flush(&mut result, &mut pending, &mut existing);
                 result.push(msg);
             }
@@ -238,7 +241,7 @@ fn downgrade_unsupported_images(messages: &[Message], model: &Model) -> (Vec<Mes
             let placeholder = match msg.role {
                 Role::User => NON_VISION_USER_IMAGE_PLACEHOLDER,
                 Role::ToolResult => NON_VISION_TOOL_IMAGE_PLACEHOLDER,
-                Role::Assistant => return msg.clone(),
+                Role::System | Role::Assistant => return msg.clone(),
             };
             let (new_content, n) = replace_images_with_placeholder(&msg.content, placeholder);
             downgrades += n;
@@ -327,6 +330,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }];
         let result = transform_messages(&messages, &vision_model());
         assert_eq!(result[0].content.len(), 2);
@@ -366,6 +372,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }];
         let result = transform_messages(&messages, &text_only_model());
         assert_eq!(result[0].content.len(), 2);
@@ -402,6 +411,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }
     }
 

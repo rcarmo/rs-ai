@@ -63,6 +63,9 @@ mod tests {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             }],
         };
         let opts = StreamOptions {
@@ -242,6 +245,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         let msgs = build_bedrock_messages(&[assistant], &m, &StreamOptions::default()).unwrap();
         let content = msgs[0].content();
@@ -288,6 +294,9 @@ mod tests {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             }],
         };
         // Default (short) retention -> caching on for a supported Claude model.

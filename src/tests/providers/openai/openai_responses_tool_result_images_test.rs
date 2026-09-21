@@ -70,6 +70,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         let tool_text = "A red circle with a diameter of 100 pixels.";
         let tool_result = Message {
@@ -103,6 +106,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         let ctx = Context {
             system_prompt: Some("You are a helpful assistant.".into()),
@@ -133,6 +139,9 @@ mod tests {
                     is_error: false,
                     details: None,
                     added_tool_names: Vec::new(),
+                    sections: None,
+                    tools_added: Vec::new(),
+                    tools_removed: Vec::new(),
                 },
                 assistant,
                 tool_result,

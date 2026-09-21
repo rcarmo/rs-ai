@@ -1481,6 +1481,218 @@ pub async fn login_xai_device_code() -> Result<crate::auth::OAuthCredential, Str
     .await
 }
 
+pub const META_CLIENT_ID: &str = "1031625952748946";
+pub const META_DEVICE_AUTHORIZATION_URL: &str = "https://auth.meta.com/oidc/device/authorization/";
+pub const META_DEVICE_TOKEN_URL: &str = "https://auth.meta.com/oidc/device/token/";
+pub const META_API_KEY_MINT_URL: &str = "https://api.meta.ai/muse-code/key";
+const META_API_KEY_LIFETIME_MS: i64 = 24 * 60 * 60 * 1000;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MetaDeviceAuthorization {
+    pub device_code: String,
+    pub user_code: String,
+    pub verification_uri: String,
+    pub interval_seconds: u64,
+    pub expires_in_seconds: u64,
+}
+
+fn oauth_json_error_detail(value: &serde_json::Value) -> String {
+    ["error_description", "detail", "message", "error"]
+        .into_iter()
+        .find_map(|key| {
+            value
+                .get(key)
+                .and_then(|item| item.as_str())
+                .map(str::trim)
+                .filter(|item| !item.is_empty())
+                .map(|item| format!(": {item}"))
+        })
+        .unwrap_or_default()
+}
+
+pub async fn request_meta_device_authorization_at(
+    url: &str,
+) -> Result<MetaDeviceAuthorization, String> {
+    let response = crate::http_proxy::client_for_target(url, None)
+        .post(url)
+        .header("accept", "application/json")
+        .form(&[("client_id", META_CLIENT_ID)])
+        .send()
+        .await
+        .map_err(|error| error.to_string())?;
+    let status = response.status();
+    let value = response
+        .json::<serde_json::Value>()
+        .await
+        .unwrap_or_else(|_| serde_json::json!({}));
+    if !status.is_success() {
+        return Err(format!(
+            "Meta device authorization failed with status {}{}",
+            status.as_u16(),
+            oauth_json_error_detail(&value)
+        ));
+    }
+    let string = |name: &str| {
+        value
+            .get(name)
+            .and_then(|item| item.as_str())
+            .filter(|item| !item.is_empty())
+            .map(str::to_string)
+    };
+    let verification_uri = string("verification_uri_complete")
+        .and_then(|uri| trusted_http_url(&uri))
+        .or_else(|| string("verification_uri").and_then(|uri| trusted_http_url(&uri)));
+    Ok(MetaDeviceAuthorization {
+        device_code: string("device_code")
+            .ok_or_else(|| format!("Invalid Meta device authorization response: {value}"))?,
+        user_code: string("user_code")
+            .ok_or_else(|| format!("Invalid Meta device authorization response: {value}"))?,
+        verification_uri: verification_uri
+            .ok_or_else(|| format!("Invalid Meta device authorization response: {value}"))?,
+        interval_seconds: value
+            .get("interval")
+            .and_then(|item| item.as_u64())
+            .filter(|seconds| *seconds > 0)
+            .unwrap_or(5),
+        expires_in_seconds: value
+            .get("expires_in")
+            .and_then(|item| item.as_u64())
+            .filter(|seconds| *seconds > 0)
+            .unwrap_or(15 * 60),
+    })
+}
+
+pub async fn poll_meta_identity_token_at(
+    url: &str,
+    device: &MetaDeviceAuthorization,
+    cancel: impl std::future::Future<Output = ()>,
+) -> Result<String, String> {
+    poll_oauth_device_code_flow(
+        device.interval_seconds,
+        device.expires_in_seconds,
+        true,
+        || async {
+            let response = match crate::http_proxy::client_for_target(url, None)
+                .post(url)
+                .header("accept", "application/json")
+                .form(&[
+                    ("grant_type", "urn:ietf:params:oauth:grant-type:device_code"),
+                    ("device_code", device.device_code.as_str()),
+                    ("client_id", META_CLIENT_ID),
+                ])
+                .send()
+                .await
+            {
+                Ok(response) => response,
+                Err(error) => return DevicePollOutcome::Failed(error.to_string()),
+            };
+            let status = response.status();
+            let value = response
+                .json::<serde_json::Value>()
+                .await
+                .unwrap_or_else(|_| serde_json::json!({}));
+            if status.is_success()
+                && let Some(access) = value
+                    .get("access_token")
+                    .and_then(|item| item.as_str())
+                    .filter(|item| !item.is_empty())
+            {
+                return DevicePollOutcome::Complete(access.to_string());
+            }
+            match value.get("error").and_then(|item| item.as_str()) {
+                Some("authorization_pending") => DevicePollOutcome::Pending,
+                Some("slow_down") => DevicePollOutcome::SlowDown(
+                    value.get("interval").and_then(|item| item.as_u64()),
+                ),
+                Some("access_denied") => {
+                    DevicePollOutcome::Failed("Meta login was denied.".to_string())
+                }
+                Some("expired_token") => DevicePollOutcome::Failed(
+                    "Meta device authorization expired. Please restart login.".to_string(),
+                ),
+                _ => DevicePollOutcome::Failed(format!(
+                    "Meta device token request failed with status {}{}",
+                    status.as_u16(),
+                    oauth_json_error_detail(&value)
+                )),
+            }
+        },
+        cancel,
+    )
+    .await
+}
+
+pub async fn mint_meta_api_key_at(
+    url: &str,
+    identity_token: &str,
+) -> Result<crate::auth::OAuthCredential, String> {
+    let response = crate::http_proxy::client_for_target(url, None)
+        .post(url)
+        .header("accept", "application/json")
+        .header("authorization", format!("Bearer {identity_token}"))
+        .header("content-type", "application/json")
+        .header("x-api-version", "1.0.0")
+        .body("{}")
+        .send()
+        .await
+        .map_err(|error| error.to_string())?;
+    let status = response.status();
+    let value = response
+        .json::<serde_json::Value>()
+        .await
+        .unwrap_or_else(|_| serde_json::json!({}));
+    if matches!(status.as_u16(), 401 | 403) {
+        return Err(format!(
+            "Meta session expired (status {}). Run `/login meta` to sign in again.{}",
+            status.as_u16(),
+            oauth_json_error_detail(&value)
+        ));
+    }
+    if !status.is_success() {
+        return Err(format!(
+            "Meta API key mint failed with status {}{}",
+            status.as_u16(),
+            oauth_json_error_detail(&value)
+        ));
+    }
+    let api_key = value
+        .get("api_key")
+        .and_then(|item| item.as_str())
+        .filter(|item| !item.is_empty());
+    let Some(api_key) = api_key else {
+        let action = value
+            .get("action_url")
+            .and_then(|item| item.as_str())
+            .and_then(trusted_http_url)
+            .map(|url| format!(" Complete setup at {url}"))
+            .unwrap_or_default();
+        return Err(format!("Meta did not issue an API key.{action}"));
+    };
+    Ok(crate::auth::OAuthCredential {
+        access: api_key.to_string(),
+        refresh: Some(identity_token.to_string()),
+        expires: crate::utils::now_millis() + META_API_KEY_LIFETIME_MS,
+        account_id: None,
+    })
+}
+
+pub async fn request_meta_device_authorization() -> Result<MetaDeviceAuthorization, String> {
+    request_meta_device_authorization_at(META_DEVICE_AUTHORIZATION_URL).await
+}
+
+pub async fn poll_meta_identity_token(
+    device: &MetaDeviceAuthorization,
+    cancel: impl std::future::Future<Output = ()>,
+) -> Result<String, String> {
+    poll_meta_identity_token_at(META_DEVICE_TOKEN_URL, device, cancel).await
+}
+
+pub async fn mint_meta_api_key(
+    identity_token: &str,
+) -> Result<crate::auth::OAuthCredential, String> {
+    mint_meta_api_key_at(META_API_KEY_MINT_URL, identity_token).await
+}
+
 pub const DEFAULT_RADIUS_GATEWAY: &str = "https://radius.pi.dev";
 pub const RADIUS_REDIRECT_URI: &str = "http://127.0.0.1:1456/oauth/callback";
 const RADIUS_TOKEN_EXPIRY_SKEW_MS: i64 = 60_000;

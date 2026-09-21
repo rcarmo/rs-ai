@@ -284,6 +284,23 @@ pub fn resolve_grammar_constrained_sampling(
     }))
 }
 
+/// Add OpenCode's session correlation header without overriding caller/model headers.
+/// HeaderMap names are case-insensitive, matching upstream's explicit-header check.
+pub fn add_opencode_session_header(
+    headers: &mut reqwest::header::HeaderMap,
+    model: &crate::types::Model,
+    options: &crate::types::StreamOptions,
+) {
+    if model.provider != "opencode" || headers.contains_key("x-opencode-session") {
+        return;
+    }
+    if let Some(session_id) = options.session_id.as_deref()
+        && let Ok(value) = reqwest::header::HeaderValue::from_str(session_id)
+    {
+        headers.insert("x-opencode-session", value);
+    }
+}
+
 pub fn openai_tool_value(
     tool: &crate::types::Tool,
     supports_grammar: bool,
@@ -636,6 +653,9 @@ mod tests {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             }
         }
         // Last message from user -> initiator user, no vision.
@@ -696,6 +716,9 @@ mod tests {
                 is_error: false,
                 details: None,
                 added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
             }
         }
         // empty -> user

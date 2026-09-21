@@ -34,6 +34,7 @@ static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyL
         ("groq", &["GROQ_API_KEY"][..]),
         ("cerebras", &["CEREBRAS_API_KEY"][..]),
         ("xai", &["XAI_API_KEY"][..]),
+        ("meta", &["META_API_KEY"][..]),
         ("radius", &["RADIUS_API_KEY", "PI_GATEWAY_API_KEY"][..]),
         ("openrouter", &["OPENROUTER_API_KEY"][..]),
         ("vercel-ai-gateway", &["AI_GATEWAY_API_KEY"][..]),

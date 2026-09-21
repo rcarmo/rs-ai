@@ -133,6 +133,9 @@ pub fn stream_openai<'a>(
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
 
         yield Event::Start { partial: partial.clone() };
@@ -637,6 +640,7 @@ pub(crate) fn build_openai_request_parts(
             }
         }
     }
+    crate::utils::add_opencode_session_header(&mut headers, model, opts);
 
     Ok((url, headers))
 }
@@ -647,6 +651,14 @@ pub(crate) fn build_payload(
     opts: &StreamOptions,
     compat: &crate::compat::OpenAICompletionsCompat,
 ) -> Value {
+    let supports_tool_additions = model.compat.supports_mid_convo_system_messages == Some(true)
+        && model.compat.supports_mid_convo_tool_additions == Some(true);
+    let prepared = crate::transcript::prepare_transcript(
+        context,
+        model.compat.supports_mid_convo_system_messages,
+        supports_tool_additions,
+    );
+    let context = &prepared.context;
     let mut messages = Vec::new();
 
     // System prompt
@@ -769,7 +781,34 @@ pub(crate) fn build_payload(
             continue;
         }
 
+        if msg.role == Role::System {
+            if prepared.anchors_additions && !msg.tools_added.is_empty() {
+                let include_strict = compat.supports_strict_mode != Some(false);
+                messages.push(json!({
+                    "role": "system",
+                    "tools": converted_tools(
+                        &msg.tools_added,
+                        include_strict,
+                        compat.supports_openai_grammar_tools.unwrap_or(false),
+                    ),
+                }));
+            }
+            let text = crate::transcript::render_system_message_update(msg);
+            if !text.is_empty() {
+                let role = if model.reasoning && compat.supports_developer_role == Some(true) {
+                    "developer"
+                } else {
+                    "system"
+                };
+                messages.push(json!({"role": role, "content": text}));
+            }
+            last_role = Some(Role::System);
+            idx += 1;
+            continue;
+        }
+
         let role_str = match msg.role {
+            Role::System => unreachable!("system messages are handled above"),
             Role::User => "user",
             Role::Assistant => "assistant",
             Role::ToolResult => unreachable!(),

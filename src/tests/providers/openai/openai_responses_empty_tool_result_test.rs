@@ -68,6 +68,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         let tool_result = Message {
             role: Role::ToolResult,
@@ -94,6 +97,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
         let ctx = Context {
             system_prompt: None,
@@ -124,6 +130,9 @@ mod tests {
                     is_error: false,
                     details: None,
                     added_tool_names: Vec::new(),
+                    sections: None,
+                    tools_added: Vec::new(),
+                    tools_removed: Vec::new(),
                 },
                 assistant,
                 tool_result,

@@ -108,6 +108,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }];
         let result = transform_messages(&messages, &model);
         assert_eq!(result[0].content.len(), 2);
@@ -163,6 +166,9 @@ mod tests {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }];
         let result = transform_messages(&messages, &text_model);
         // Consecutive images collapse to a single placeholder (matches upstream).
@@ -231,6 +237,9 @@ mod tests {
                     is_error: false,
                     details: None,
                     added_tool_names: Vec::new(),
+                    sections: None,
+                    tools_added: Vec::new(),
+                    tools_removed: Vec::new(),
                 },
             ],
             tools: vec![Tool {
@@ -288,6 +297,9 @@ mod tests {
                     is_error: false,
                     details: None,
                     added_tool_names: Vec::new(),
+                    sections: None,
+                    tools_added: Vec::new(),
+                    tools_removed: Vec::new(),
                 },
             ],
             tools: vec![Tool {

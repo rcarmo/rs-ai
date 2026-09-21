@@ -158,6 +158,9 @@ impl From<AssistantStartPartialOwned> for Message {
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }
     }
 }
@@ -1402,6 +1405,9 @@ fn clone_start_message(message: &Message) -> Message {
         is_error: false,
         details: None,
         added_tool_names: Vec::new(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     }
 }
 

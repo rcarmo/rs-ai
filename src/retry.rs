@@ -187,7 +187,31 @@ mod tests {
             is_error: err.is_some(),
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         }
+    }
+
+    #[test]
+    fn v0870_retries_high_demand_and_http_520_messages() {
+        for error in [
+            "The model is currently experiencing high demand. Please try again later.",
+            "520 status code (no body)",
+            "API error (520): <html>Unknown Error</html>",
+        ] {
+            assert!(
+                is_retryable_assistant_error(&assistant_msg(
+                    crate::types::StopReason::Error,
+                    Some(error),
+                )),
+                "expected retryable error: {error}"
+            );
+        }
+        assert!(!is_retryable_assistant_error(&assistant_msg(
+            crate::types::StopReason::Error,
+            Some("429 quota exceeded"),
+        )));
     }
 
     #[tokio::test(start_paused = true)]
@@ -549,6 +573,7 @@ const NON_RETRYABLE_PROVIDER_LIMIT: &[ErrPat] = &[
 /// Transient provider / transport / stream errors that may be retried.
 const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Plain("overloaded"),
+    ErrPat::Plain("currently experiencing high demand"),
     ErrPat::Gap(&["rate", "limit"]),
     ErrPat::Plain("too many requests"),
     ErrPat::Plain("429"),
@@ -556,6 +581,7 @@ const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Plain("502"),
     ErrPat::Plain("503"),
     ErrPat::Plain("504"),
+    ErrPat::Plain("520"),
     ErrPat::Plain("524"),
     ErrPat::Gap(&["service", "unavailable"]),
     ErrPat::Gap(&["server", "error"]),

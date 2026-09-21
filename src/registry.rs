@@ -139,15 +139,24 @@ pub async fn refresh_runtime_models(
     RUNTIME.refresh(options).await
 }
 
-pub fn register_radius_runtime_provider(gateway: &str) {
-    ensure_builtins_registered();
-    let baseline = MODELS
+pub(crate) fn radius_baseline_models(gateway: &str) -> Vec<Model> {
+    let gateway = crate::oauth::normalize_radius_gateway_url(gateway);
+    if gateway != crate::oauth::DEFAULT_RADIUS_GATEWAY {
+        return Vec::new();
+    }
+    MODELS
         .read()
         .unwrap()
         .values()
-        .filter(|m| m.provider == crate::types::provider_id::RADIUS)
+        .filter(|model| model.provider == crate::types::provider_id::RADIUS)
         .cloned()
-        .collect::<Vec<_>>();
+        .collect()
+}
+
+pub fn register_radius_runtime_provider(gateway: &str) {
+    ensure_builtins_registered();
+    let gateway = crate::oauth::normalize_radius_gateway_url(gateway);
+    let baseline = radius_baseline_models(&gateway);
     RUNTIME.set_provider(crate::models_runtime::RuntimeProvider::radius(
         crate::types::provider_id::RADIUS,
         "Radius",

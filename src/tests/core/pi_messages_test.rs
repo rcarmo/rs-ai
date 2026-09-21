@@ -121,6 +121,82 @@ mod tests {
         );
     }
 
+    fn lookup_tool() -> Tool {
+        Tool {
+            name: "lookup".into(),
+            description: "Look up a value".into(),
+            parameters: json!({"type":"object","properties":{}}),
+            constrained_sampling: None,
+        }
+    }
+
+    async fn capture_context_payload(context: &Context) -> serde_json::Value {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/messages"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(sse(vec![json!({
+                        "type":"done","reason":"stop","usage":usage()
+                    })])),
+            )
+            .mount(&server)
+            .await;
+        let options = StreamOptions {
+            api_key: Some("test-key".into()),
+            ..Default::default()
+        };
+        let model = model(&format!("{}/v1", server.uri()));
+        let events = collect(stream_pi_messages(&model, context, &options)).await;
+        assert!(matches!(events.last(), Some(Event::Done { .. })));
+        let request = server.received_requests().await.unwrap().pop().unwrap();
+        serde_json::from_slice(&request.body).unwrap()
+    }
+
+    fn assert_normalized_context(body: &serde_json::Value) {
+        let context = &body["context"];
+        assert!(context.get("systemPrompt").is_none());
+        assert!(context.get("tools").is_none());
+        let messages = context["messages"].as_array().unwrap();
+        assert_eq!(messages.len(), 2);
+        assert_eq!(messages[0]["role"], "system");
+        assert_eq!(messages[0]["content"][0]["text"], "be brief");
+        assert_eq!(messages[0]["toolsAdded"][0]["name"], "lookup");
+        assert_eq!(messages[1]["role"], "user");
+    }
+
+    #[tokio::test]
+    async fn payload_normalizes_legacy_prompt_and_tools_into_leading_system_message() {
+        let legacy = Context {
+            system_prompt: Some("be brief".into()),
+            messages: vec![user_message("Hello")],
+            tools: vec![lookup_tool()],
+        };
+        assert_normalized_context(&capture_context_payload(&legacy).await);
+    }
+
+    #[tokio::test]
+    async fn payload_preserves_already_normalized_transcript_without_duplicate_system_message() {
+        let legacy = Context {
+            system_prompt: Some("be brief".into()),
+            messages: vec![user_message("Hello")],
+            tools: vec![lookup_tool()],
+        };
+        let normalized = crate::transcript::normalize_context(&legacy);
+        let body = capture_context_payload(&normalized).await;
+        assert_normalized_context(&body);
+        assert_eq!(
+            body["context"]["messages"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|message| message["role"] == "system")
+                .count(),
+            1
+        );
+    }
+
     #[tokio::test]
     async fn debug_on_response_and_server_error_are_reported() {
         let server = MockServer::start().await;

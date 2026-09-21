@@ -124,6 +124,9 @@ fn assistant_message(model: &Model) -> Message {
         is_error: false,
         details: None,
         added_tool_names: Vec::new(),
+        sections: None,
+        tools_added: Vec::new(),
+        tools_removed: Vec::new(),
     }
 }
 
@@ -405,7 +408,11 @@ pub fn stream_pi_messages<'a>(
             _ => None,
         }
     });
-    let mut payload = json!({ "model": model.id, "context": context, "options": { "temperature": opts.temperature, "maxTokens": opts.max_tokens, "reasoning": opts.reasoning, "cacheRetention": cache_retention, "sessionId": opts.session_id, "toolChoice": opts.tool_choice } });
+    // Public model dispatch normalizes legacy prompt/tool fields before every API.
+    // pi-messages transports the TranscriptContext unchanged, so normalize locally
+    // while the owned value can safely live for payload serialization.
+    let transcript = crate::transcript::normalize_context(context);
+    let mut payload = json!({ "model": model.id, "context": transcript, "options": { "temperature": opts.temperature, "maxTokens": opts.max_tokens, "reasoning": opts.reasoning, "cacheRetention": cache_retention, "sessionId": opts.session_id, "toolChoice": opts.tool_choice } });
     if let Some(hook) = &opts.on_payload {
         match hook(payload.clone(), model) {
             Ok(v) => payload = v,

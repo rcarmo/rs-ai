@@ -44,6 +44,7 @@ pub mod registry;
 pub mod retry;
 pub mod session_resources;
 pub mod simple_options;
+pub mod transcript;
 pub mod transform;
 pub mod transports;
 pub mod types;
@@ -214,6 +215,9 @@ mod lax_message_content_test;
 #[path = "tests/catalogs/max_thinking_test.rs"]
 mod max_thinking_test;
 #[cfg(test)]
+#[path = "tests/auth/oauth/meta_oauth_test.rs"]
+mod meta_oauth_test;
+#[cfg(test)]
 #[path = "tests/providers/mistral/mistral_reasoning_mode_test.rs"]
 mod mistral_reasoning_mode_test;
 #[cfg(test)]
@@ -283,6 +287,9 @@ mod openai_responses_terminal_event_test;
 #[path = "tests/providers/openai/openai_responses_tool_result_images_test.rs"]
 mod openai_responses_tool_result_images_test;
 #[cfg(test)]
+#[path = "tests/providers/other/opencode_headers_test.rs"]
+mod opencode_headers_test;
+#[cfg(test)]
 #[path = "tests/catalogs/openrouter_cache_control_models_test.rs"]
 mod openrouter_cache_control_models_test;
 #[cfg(test)]
@@ -351,6 +358,12 @@ mod together_xiaomi_models_test;
 #[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/core/tool_call_id_normalization_test.rs"]
 mod tool_call_id_normalization_test;
+#[cfg(test)]
+#[path = "tests/providers/other/transcript_provider_test.rs"]
+mod transcript_provider_test;
+#[cfg(test)]
+#[path = "tests/core/transcript_test.rs"]
+mod transcript_test;
 #[cfg(test)]
 #[path = "tests/core/uuid_test.rs"]
 mod uuid_test;

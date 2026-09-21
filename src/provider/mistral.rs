@@ -150,6 +150,9 @@ pub fn stream_mistral<'a>(
             is_error: false,
             details: None,
             added_tool_names: Vec::new(),
+            sections: None,
+            tools_added: Vec::new(),
+            tools_removed: Vec::new(),
         };
 
         yield Event::Start { partial: partial.clone() };
@@ -463,6 +466,12 @@ pub(crate) fn build_mistral_payload(
     context: &Context,
     opts: &StreamOptions,
 ) -> Value {
+    let prepared = crate::transcript::prepare_transcript(
+        context,
+        model.compat.supports_mid_convo_system_messages,
+        false,
+    );
+    let context = &prepared.context;
     let mut messages = Vec::new();
     let mut id_normalizer = MistralIdNormalizer::default();
 
@@ -475,6 +484,12 @@ pub(crate) fn build_mistral_payload(
 
     for msg in &transformed_messages {
         match msg.role {
+            Role::System => {
+                let text = crate::transcript::render_system_message_update(msg);
+                if !text.is_empty() {
+                    messages.push(json!({"role": "system", "content": text}));
+                }
+            }
             Role::User => {
                 let text_only: Vec<&str> = msg
                     .content

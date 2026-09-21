@@ -325,6 +325,65 @@ impl OAuthAuth for XaiOAuth {
     }
 }
 
+/// Meta Muse subscription OAuth. The stored refresh token is Meta's identity token;
+/// refresh re-mints the short-lived Model API key because the identity token itself is
+/// not renewable.
+pub struct MetaOAuth {
+    pub mint_url: Option<String>,
+}
+
+impl MetaOAuth {
+    pub fn new() -> Self {
+        Self { mint_url: None }
+    }
+}
+
+impl Default for MetaOAuth {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait::async_trait]
+impl OAuthAuth for MetaOAuth {
+    async fn refresh(&self, credential: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+        let identity = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("meta credential is missing an identity token"))?;
+        match self.mint_url.as_deref() {
+            Some(url) => crate::oauth::mint_meta_api_key_at(url, identity).await,
+            None => crate::oauth::mint_meta_api_key(identity).await,
+        }
+        .map_err(oauth_err)
+    }
+
+    async fn refresh_with_cancel(
+        &self,
+        credential: &OAuthCredential,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        let identity = credential
+            .refresh
+            .as_deref()
+            .ok_or_else(|| oauth_err("meta credential is missing an identity token"))?;
+        let call = async move {
+            match self.mint_url.as_deref() {
+                Some(url) => crate::oauth::mint_meta_api_key_at(url, identity).await,
+                None => crate::oauth::mint_meta_api_key(identity).await,
+            }
+        };
+        cancelable_oauth_call(call, cancel).await
+    }
+
+    async fn to_auth(&self, credential: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+        Ok(ModelAuth {
+            api_key: Some(credential.access.clone()),
+            ..Default::default()
+        })
+    }
+}
+
 /// Radius gateway OAuth. The refresh path discovers the gateway OAuth metadata,
 /// refreshes the stored token, and exposes the access token as the request API key.
 pub struct RadiusOAuth {
@@ -367,16 +426,8 @@ impl RadiusOAuth {
             return models.to_vec();
         };
         let mut out = models.to_vec();
-        let existing: std::collections::HashSet<String> = out
-            .iter()
-            .filter(|m| m.provider == provider_id)
-            .map(|m| m.id.clone())
-            .collect();
         for model in &config.models {
-            if existing.contains(&model.id) {
-                continue;
-            }
-            out.push(crate::types::Model {
+            let replacement = crate::types::Model {
                 id: model.id.clone(),
                 name: model.name.clone(),
                 api: crate::types::api::PI_MESSAGES.to_string(),
@@ -397,7 +448,15 @@ impl RadiusOAuth {
                 headers: None,
                 api_key: None,
                 compat: Default::default(),
-            });
+            };
+            if let Some(index) = out
+                .iter()
+                .position(|candidate| candidate.provider == provider_id && candidate.id == model.id)
+            {
+                out[index] = replacement;
+            } else {
+                out.push(replacement);
+            }
         }
         out
     }
