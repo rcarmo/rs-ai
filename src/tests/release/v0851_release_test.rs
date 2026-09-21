@@ -198,7 +198,7 @@ fn gpt_6_astra_generated_alias_compat_is_release_pinned() {
     assert_eq!(copilot.compat.supports_reasoning_effort, None);
 
     let openrouter = crate::registry::get_model("openrouter", "openai/gpt-6-astra").unwrap();
-    assert_eq!(openrouter.api, crate::types::api::OPENAI_RESPONSES);
+    assert_eq!(openrouter.api, crate::types::api::OPENAI_COMPLETIONS);
     assert_eq!(openrouter.context_window, 1050000);
     assert_eq!(openrouter.max_tokens, 128000);
     assert_eq!(
