@@ -1,6 +1,16 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.85.1
+## Current parity audit: `@earendil-works/pi-ai` v0.87.0
+
+The accepted scope is npm `@earendil-works/pi-ai@0.87.0` and tag `16787ad5b2dc748047f314ca1bfe7708f30f54f3`, covering `d981de1229ef899957bbe968bc8dcda02a21f477..16787ad5b2dc748047f314ca1bfe7708f30f54f3`. The range contains 127 changed paths and 82 changed tests; the final corpus contains 150 test basenames.
+
+Status: **ACCEPTED**. Runtime `6096fe39de3128b8371718ceef5d9ce2c8e56705` passed hosted CI run `35660592647` with 1015 tests, strict Clippy, format/build checks, manifest and metadata fault gates, reproducible generation, and SBOM/licence/RustSec review. The signed catalogs contain 1445 text/chat models across 41 providers and 10 APIs, 74 batch aliases, and 54 image models across one provider and one image API.
+
+Runtime adaptations cover ordered transcript/system-message replay, provider-native and collapsed tool changes, OpenAI Responses additions, Anthropic native tool-change blocks, Codex and pi-messages transcript handling, retry classification for high-demand and HTTP 520 errors, OpenCode session headers, Meta OAuth/provider support, Radius catalog overlays, and exact image-limit metadata. `docs/v0870-150-test-crosswalk.md` and `docs/manifests/v0870-*` hold the bounded inventory.
+
+Hosted artifact `10667527616` is named `rs-ai-sbom-6096fe39de3128b8371718ceef5d9ce2c8e56705`. Its ZIP SHA-256 is `739c973b3910716228be42f5caebd8515346bc973b0ffdf8f0beaf0804a1de1f`; the embedded 278-component SBOM SHA-256 is `91b155954d3aa86776b410f8649ea7e02cd52ba0b0abb57288c581fee394ccf4`, with the full accepted runtime revision embedded.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.85.1
 
 Authoritative package/tag: npm `@earendil-works/pi-ai@0.85.1`, package/tag SHA `d981de1229ef899957bbe968bc8dcda02a21f477` (`github.com/earendil-works/pi` tag `v0.85.1`). Pinned scope is exactly `107d79f11072bbc8a3a757ed7fd69596bee7d68c..d981de1229ef899957bbe968bc8dcda02a21f477`; do not chase newer main. README/SBOM release updates for `upstream-v0.85.1` remain blocked until runtime acceptance.
 

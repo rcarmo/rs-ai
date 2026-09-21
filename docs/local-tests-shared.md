@@ -1,5 +1,15 @@
 # Shared local-test adaptation tracker (rs-ai)
 
+## v0.87.0 bounded release evidence
+
+Source: upstream tag `16787ad5b2dc748047f314ca1bfe7708f30f54f3` (`v0.87.0`), exact release-only delta `d981de1229ef899957bbe968bc8dcda02a21f477..16787ad5b2dc748047f314ca1bfe7708f30f54f3`.
+
+Status: **ACCEPTED**. The audit covers 127 changed paths, 82 changed tests and a 150-test corpus. The signed registries contain 1445 text/chat models, 41 providers, 10 APIs and 74 batch aliases, plus 54 image models across one provider and one API.
+
+Runtime `6096fe39de3128b8371718ceef5d9ce2c8e56705` passed the complete local matrix and hosted CI `35660592647`: 1015 all-target/all-feature tests, no-default and Bedrock configurations, strict Clippy, format/build checks, manifest/metadata/baseline fault gates, byte-for-byte catalog generation, licence review, RustSec policy and SBOM validation. Focused tests cover transcript replay and provider payloads, pi-messages normalization, high-demand/520 retry classification, OpenCode headers, Meta OAuth, Radius overlays and image-limit metadata.
+
+The SHA-specific 278-component artifact is `10667527616`; ZIP SHA-256 `739c973b3910716228be42f5caebd8515346bc973b0ffdf8f0beaf0804a1de1f`, inner SBOM SHA-256 `91b155954d3aa86776b410f8649ea7e02cd52ba0b0abb57288c581fee394ccf4`, embedded revision `6096fe39de3128b8371718ceef5d9ce2c8e56705`.
+
 ## v0.85.1 bounded release evidence
 
 Source: upstream tag `d981de1229ef899957bbe968bc8dcda02a21f477` (`v0.85.1`), exact release-only delta `107d79f11072bbc8a3a757ed7fd69596bee7d68c..d981de1229ef899957bbe968bc8dcda02a21f477`.

@@ -1,6 +1,40 @@
 # rs-ai upstream release parity
 
-## Current audit target: v0.85.1
+## Current audit target: v0.87.0
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v0.87.0`
+- Upstream tag/commit: `16787ad5b2dc748047f314ca1bfe7708f30f54f3`
+- Previous accepted upstream: `v0.85.1` / `d981de1229ef899957bbe968bc8dcda02a21f477`
+- Accepted rs-ai runtime: `6096fe39de3128b8371718ceef5d9ce2c8e56705`
+- Audited range: `d981de1229ef899957bbe968bc8dcda02a21f477..16787ad5b2dc748047f314ca1bfe7708f30f54f3`
+- Scope: `packages/ai` only; official tag and signed npm artifact.
+- Scope status: **ACCEPTED**. The runtime passed GitHub Actions run `35660592647`, job `106534622292`, with 1015 tests plus format, build, strict Clippy, SBOM, licence and vulnerability gates.
+
+### v0.87.0 release inventory
+
+The bounded range contains **127 changed paths** and **82 changed test paths**. The final upstream corpus contains **150 test basenames**. `scripts/validate_v0870_manifests.py` checks the exact inventories and hashes recorded under `docs/manifests/`; `docs/v0870-150-test-crosswalk.md` records their accepted Rust dispositions.
+
+The signed catalog contains **1445 text/chat models across 41 providers and 10 APIs**, including **74 batch aliases**. The image catalog contains **54 models across one provider and one image API**. The pinned npm tarball SHA-256 is `f2adf9de809d035f76f8dadf3d148720ebeef4606a848ab36ee834d895ae812f`.
+
+### v0.87.0 runtime scope
+
+The accepted runtime adds transcript normalization and ordered system-message replay, provider-native and collapsed tool changes, terminal/retry handling for high-demand and HTTP 520 failures, the OpenCode session header, Meta device OAuth and API-key minting, Radius baseline/dynamic catalog overlay, pi-messages transcript transport, and exact model image-limit metadata. Provider payload tests cover Anthropic native/fallback tool changes, OpenAI Responses additions/fallback, Codex instructions, and legacy transcript normalization.
+
+### v0.87.0 CI and SBOM evidence
+
+- Runtime commit: `6096fe39de3128b8371718ceef5d9ce2c8e56705`
+- GitHub Actions run: `35660592647`
+- Successful job: `build-test-lint` (`106534622292`), all 18 steps green
+- SHA-specific artifact: `rs-ai-sbom-6096fe39de3128b8371718ceef5d9ce2c8e56705` (`10667527616`)
+- Artifact ZIP SHA-256: `739c973b3910716228be42f5caebd8515346bc973b0ffdf8f0beaf0804a1de1f`
+- Embedded `sbom.cdx.json` SHA-256: `91b155954d3aa86776b410f8649ea7e02cd52ba0b0abb57288c581fee394ccf4`
+- Embedded VCS revision: `6096fe39de3128b8371718ceef5d9ce2c8e56705`
+- SBOM components: **278**
+
+The guarded publisher uses tag `upstream-v0.87.0`, checks out the accepted runtime SHA, reruns the security gates, verifies the embedded revision, and publishes `sbom.cdx.json` plus `sbom.cdx.json.sha256`. The existing v0.85.1 section and assets remain historical records.
+
+## Historical accepted release: v0.85.1
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v0.85.1`
