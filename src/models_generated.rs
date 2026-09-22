@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: models.generated.js (1445 models, 41 providers)
-//! Generated: 2026-09-21T16:36:07.176Z
+//! Source: models.generated.js (1495 models, 41 providers)
+//! Generated: 2026-09-22T19:31:44.346Z
 
 #![allow(clippy::approx_constant)]
 
@@ -328,6 +328,33 @@ fn append_builtin_models_0(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "anthropic.claude-opus-5-5".into(),
+            name: "Claude Opus 5.5".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
             id: "anthropic.claude-sonnet-4-5-20250929-v1:0".into(),
             name: "Claude Sonnet 4.5".into(),
             api: "bedrock-converse-stream".into(),
@@ -638,6 +665,33 @@ fn append_builtin_models_0(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 5.5_f64, output: 27.5_f64, cache_read: 0.55_f64, cache_write: 6.875_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
+            id: "au.anthropic.claude-opus-5-5".into(),
+            name: "Claude Opus 5.5 (AU)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4.4_f64, output: 22_f64, cache_read: 0.22_f64, cache_write: 5.5_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 128000,
             sampling_params: None,
@@ -1109,6 +1163,33 @@ fn append_builtin_models_0(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "eu.anthropic.claude-opus-5-5".into(),
+            name: "Claude Opus 5.5 (EU)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.eu-central-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4.4_f64, output: 22_f64, cache_read: 0.22_f64, cache_write: 5.5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
             id: "eu.anthropic.claude-sonnet-4-20250514-v1:0".into(),
             name: "Claude Sonnet 4 (EU)".into(),
             api: "bedrock-converse-stream".into(),
@@ -1262,6 +1343,9 @@ fn append_builtin_models_0(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
+}
+
+fn append_builtin_models_1(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "global.anthropic.claude-fable-5".into(),
@@ -1345,9 +1429,6 @@ fn append_builtin_models_0(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_1(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "global.anthropic.claude-opus-4-5-20251101-v1:0".into(),
@@ -1477,6 +1558,33 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
+            id: "global.anthropic.claude-opus-5-5".into(),
+            name: "Claude Opus 5.5 (Global)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 128000,
             sampling_params: None,
@@ -1986,6 +2094,33 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 5.5_f64, output: 27.5_f64, cache_read: 0.55_f64, cache_write: 6.875_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
+            id: "jp.anthropic.claude-opus-5-5".into(),
+            name: "Claude Opus 5.5 (JP)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4.4_f64, output: 22_f64, cache_read: 0.22_f64, cache_write: 5.5_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 128000,
             sampling_params: None,
@@ -2585,6 +2720,9 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_2(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "moonshotai.kimi-k2.5".into(),
@@ -2732,9 +2870,6 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_2(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai.gpt-5.4".into(),
@@ -3740,6 +3875,33 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "us.anthropic.claude-opus-5-5".into(),
+            name: "Claude Opus 5.5 (US)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4.4_f64, output: 22_f64, cache_read: 0.22_f64, cache_write: 5.5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
             id: "us.anthropic.claude-sonnet-4-20250514-v1:0".into(),
             name: "Claude Sonnet 4 (US)".into(),
             api: "bedrock-converse-stream".into(),
@@ -3977,6 +4139,9 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
+}
+
+fn append_builtin_models_3(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "us.mistral.pixtral-large-2502-v1:0".into(),
@@ -4139,9 +4304,6 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_3(models: &mut Vec<Model>) {
     models.push(Model {
         id: "us.writer.palmyra-x5-v1:0".into(),
         name: "Palmyra X5 (US)".into(),
@@ -4827,6 +4989,46 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "claude-opus-5-5".into(),
+            name: "Claude Opus 5.5".into(),
+            api: "anthropic-messages".into(),
+            provider: "anthropic".into(),
+            base_url: "https://api.anthropic.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerRequest\": 600, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}, \"maxRequestBytes\": 33554432}").unwrap()),
+            prompt_cache: Some(serde_json::from_str("{\"long\": 3600, \"short\": 300}").unwrap()),
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_mid_convo_effort: Some(true),
+                supports_mid_convo_system_messages: Some(true),
+                supports_mid_convo_tool_changes: Some(true),
+                supports_strict_tools: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
             id: "claude-sonnet-4-5".into(),
             name: "Claude Sonnet 4.5 (latest)".into(),
             api: "anthropic-messages".into(),
@@ -5388,6 +5590,9 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_4(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-5.2-chat-latest".into(),
@@ -5598,9 +5803,6 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_4(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-5.4-nano".into(),
@@ -5840,6 +6042,76 @@ fn append_builtin_models_4(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![] },
+            context_window: 272000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-luna".into(),
+            name: "GPT-6 Luna".into(),
+            api: "azure-openai-responses".into(),
+            provider: "azure-openai-responses".into(),
+            base_url: "".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![] },
+            context_window: 272000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_openai_grammar_tools: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-sol".into(),
+            name: "GPT-6 Sol".into(),
+            api: "azure-openai-responses".into(),
+            provider: "azure-openai-responses".into(),
+            base_url: "".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![] },
             context_window: 272000,
             max_tokens: 128000,
             sampling_params: None,
@@ -7168,6 +7440,9 @@ fn append_builtin_models_4(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_5(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "claude-opus-4.5".into(),
@@ -7436,9 +7711,6 @@ fn append_builtin_models_4(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_5(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-4.1-mini".into(),
@@ -7966,7 +8238,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.25_f64, cache_write: 3.125_f64, tiers: vec![] },
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.4_f64, cache_write: 5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 8_f64, output: 30_f64, cache_read: 0.8_f64, cache_write: 10_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -8038,7 +8310,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12_f64, tiers: vec![] },
+            cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 20_f64, output: 75_f64, cache_read: 2_f64, cache_write: 25_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -8836,6 +9108,9 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_6(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "@cf/google/gemma-4-26b-a4b-it".into(),
@@ -9172,9 +9447,6 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_6(models: &mut Vec<Model>) {
     models.push(Model {
         id: "@cf/openai/gpt-oss-20b".into(),
         name: "GPT OSS 20B".into(),
@@ -10831,6 +11103,9 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_7(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "accounts/fireworks/routers/qwen-max-latest".into(),
@@ -11053,6 +11328,43 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "claude-opus-5.5".into(),
+            name: "Claude Opus 5.5".into(),
+            api: "anthropic-messages".into(),
+            provider: "github-copilot".into(),
+            base_url: "https://api.individual.githubcopilot.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: Some(HashMap::from([("Copilot-Integration-Id".into(), "vscode-chat".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("User-Agent".into(), "GitHubCopilotChat/0.35.0".into())])),
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_mid_convo_system_messages: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
             id: "claude-sonnet-4.6".into(),
             name: "Claude Sonnet 4.6".into(),
             api: "anthropic-messages".into(),
@@ -11111,9 +11423,6 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_7(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gemini-3.5-flash".into(),
@@ -11581,7 +11890,81 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 20_f64, output: 75_f64, cache_read: 2_f64, cache_write: 25_f64 }] },
-            context_window: 1050000,
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: Some(HashMap::from([("Copilot-Integration-Id".into(), "vscode-chat".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("User-Agent".into(), "GitHubCopilotChat/0.35.0".into())])),
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                supports_openai_grammar_tools: Some(true),
+                supports_additional_tools: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-luna".into(),
+            name: "GPT-6 Luna".into(),
+            api: "openai-responses".into(),
+            provider: "github-copilot".into(),
+            base_url: "https://api.individual.githubcopilot.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.2_f64, output: 0.75_f64, cache_read: 0.02_f64, cache_write: 0.25_f64 }] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: Some(HashMap::from([("Copilot-Integration-Id".into(), "vscode-chat".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("User-Agent".into(), "GitHubCopilotChat/0.35.0".into())])),
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                supports_openai_grammar_tools: Some(true),
+                supports_additional_tools: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-sol".into(),
+            name: "GPT-6 Sol".into(),
+            api: "openai-responses".into(),
+            provider: "github-copilot".into(),
+            base_url: "https://api.individual.githubcopilot.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4_f64, output: 15_f64, cache_read: 0.4_f64, cache_write: 5_f64 }] },
+            context_window: 1000000,
             max_tokens: 128000,
             sampling_params: None,
             headers: Some(HashMap::from([("Copilot-Integration-Id".into(), "vscode-chat".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("User-Agent".into(), "GitHubCopilotChat/0.35.0".into())])),
@@ -11630,6 +12013,38 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
         Model {
             id: "grok-4.6".into(),
             name: "Grok 4.6".into(),
+            api: "openai-responses".into(),
+            provider: "github-copilot".into(),
+            base_url: "https://api.individual.githubcopilot.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 200000_u64, input: 4_f64, output: 12_f64, cache_read: 1_f64, cache_write: 0_f64 }] },
+            context_window: 500000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: Some(HashMap::from([("Copilot-Integration-Id".into(), "vscode-chat".into()), ("Editor-Plugin-Version".into(), "copilot-chat/0.35.0".into()), ("Editor-Version".into(), "vscode/1.107.0".into()), ("User-Agent".into(), "GitHubCopilotChat/0.35.0".into())])),
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
+            id: "grok-4.7".into(),
+            name: "Grok 4.7".into(),
             api: "openai-responses".into(),
             provider: "github-copilot".into(),
             base_url: "https://api.individual.githubcopilot.com".into(),
@@ -12288,6 +12703,9 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
+}
+
+fn append_builtin_models_8(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gemini-3.8-flash".into(),
@@ -12676,9 +13094,6 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
-}
-
-fn append_builtin_models_8(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gemini-3.5-flash-lite".into(),
@@ -13868,6 +14283,9 @@ fn append_builtin_models_8(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_9(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "Qwen/Qwen3.6-35B-A3B".into(),
@@ -14308,9 +14726,6 @@ fn append_builtin_models_8(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_9(models: &mut Vec<Model>) {
     models.push(Model {
         id: "deepseek-ai/DeepSeek-V4-Flash-0731".into(),
         name: "DeepSeek V4 Flash 0731".into(),
@@ -15527,6 +15942,9 @@ fn append_builtin_models_9(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_10(models: &mut Vec<Model>) {
     models.push(Model {
         id: "zai-org/GLM-5.3".into(),
         name: "GLM-5.3".into(),
@@ -15953,9 +16371,6 @@ fn append_builtin_models_9(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_10(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "MiniMax-M3".into(),
@@ -16932,6 +17347,9 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
+}
+
+fn append_builtin_models_11(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "kimi-k2.6".into(),
@@ -17384,9 +17802,6 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_11(models: &mut Vec<Model>) {
     models.push(Model {
         id: "mistralai/mistral-7b-instruct-v0.3".into(),
         name: "Mistral-7B-Instruct-v0.3".into(),
@@ -18605,6 +19020,9 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_12(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-5.4-mini".into(),
@@ -18956,6 +19374,86 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "gpt-6-luna".into(),
+            name: "GPT-6 Luna".into(),
+            api: "openai-responses".into(),
+            provider: "openai".into(),
+            base_url: "https://api.openai.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerRequest\": 1500, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}, \"maxRequestBytes\": 536870912}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.2_f64, output: 0.75_f64, cache_read: 0.02_f64, cache_write: 0.25_f64 }] },
+            context_window: 272000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                supports_explicit_prompt_cache_mode: Some(true),
+                supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
+                supports_additional_tools: Some(true),
+                supports_tool_search: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-sol".into(),
+            name: "GPT-6 Sol".into(),
+            api: "openai-responses".into(),
+            provider: "openai".into(),
+            base_url: "https://api.openai.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerRequest\": 1500, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}, \"maxRequestBytes\": 536870912}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4_f64, output: 15_f64, cache_read: 0.4_f64, cache_write: 5_f64 }] },
+            context_window: 272000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                supports_explicit_prompt_cache_mode: Some(true),
+                supports_strict_mode: Some(true),
+                supports_openai_grammar_tools: Some(true),
+                supports_additional_tools: Some(true),
+                supports_tool_search: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
             id: "gpt-realtime-2.1".into(),
             name: "GPT-Realtime-2.1".into(),
             api: "openai-responses".into(),
@@ -19094,9 +19592,6 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_12(models: &mut Vec<Model>) {
     models.push(Model {
         id: "o3-mini".into(),
         name: "o3-mini".into(),
@@ -19325,7 +19820,7 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 5_f64, output: 30_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 10_f64, output: 45_f64, cache_read: 1_f64, cache_write: 12.5_f64 }] },
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.4_f64, cache_write: 5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 8_f64, output: 30_f64, cache_read: 0.8_f64, cache_write: 10_f64 }] },
             context_window: 272000,
             max_tokens: 128000,
             sampling_params: None,
@@ -19398,6 +19893,82 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 20_f64, output: 75_f64, cache_read: 2_f64, cache_write: 25_f64 }] },
+            context_window: 272000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                supports_openai_grammar_tools: Some(true),
+                supports_additional_tools: Some(true),
+                supports_tool_search: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-luna".into(),
+            name: "GPT-6 Luna".into(),
+            api: "openai-codex-responses".into(),
+            provider: "openai-codex".into(),
+            base_url: "https://chatgpt.com/backend-api".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), Some("low".into())),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.2_f64, output: 0.75_f64, cache_read: 0.02_f64, cache_write: 0.25_f64 }] },
+            context_window: 272000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                supports_openai_grammar_tools: Some(true),
+                supports_additional_tools: Some(true),
+                supports_tool_search: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-sol".into(),
+            name: "GPT-6 Sol".into(),
+            api: "openai-codex-responses".into(),
+            provider: "openai-codex".into(),
+            base_url: "https://chatgpt.com/backend-api".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), Some("low".into())),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4_f64, output: 15_f64, cache_read: 0.4_f64, cache_write: 5_f64 }] },
             context_window: 272000,
             max_tokens: 128000,
             sampling_params: None,
@@ -19669,6 +20240,38 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_mid_convo_system_messages: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "claude-opus-5-5".into(),
+            name: "Claude Opus 5.5".into(),
+            api: "anthropic-messages".into(),
+            provider: "opencode".into(),
+            base_url: "https://opencode.ai/zen".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 128000,
             sampling_params: None,
@@ -20147,6 +20750,9 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
+}
+
+fn append_builtin_models_13(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gemini-3.8-flash".into(),
@@ -20805,9 +21411,6 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_13(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-5.4-nano".into(),
@@ -21110,6 +21713,82 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "gpt-6-luna".into(),
+            name: "GPT-6 Luna".into(),
+            api: "openai-responses".into(),
+            provider: "opencode".into(),
+            base_url: "https://opencode.ai/zen/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                session_affinity_format: Some("openai-nosession".into()),
+                supports_openai_grammar_tools: Some(true),
+                supports_additional_tools: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-sol".into(),
+            name: "GPT-6 Sol".into(),
+            api: "openai-responses".into(),
+            provider: "opencode".into(),
+            base_url: "https://opencode.ai/zen/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                session_affinity_format: Some("openai-nosession".into()),
+                supports_openai_grammar_tools: Some(true),
+                supports_additional_tools: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
             id: "grok-4.5".into(),
             name: "Grok 4.5".into(),
             api: "openai-responses".into(),
@@ -21381,8 +22060,8 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
     });
     models.push(
         Model {
-            id: "mimo-v2.5-free".into(),
-            name: "MiMo V2.5 Free".into(),
+            id: "mimo-v2.6-flash-free".into(),
+            name: "MiMo-V2.6-Flash Free".into(),
             api: "openai-completions".into(),
             provider: "opencode".into(),
             base_url: "https://opencode.ai/zen/v1".into(),
@@ -21830,6 +22509,9 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_14(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "deepseek-v4-flash-vision-exp".into(),
@@ -22502,6 +23184,66 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+    models.push(
+        Model {
+            id: "mimo-v2.6-flash".into(),
+            name: "MiMo-V2.6-Flash".into(),
+            api: "openai-completions".into(),
+            provider: "opencode-go".into(),
+            base_url: "https://opencode.ai/zen/go/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.14_f64, output: 0.28_f64, cache_read: 0.0028_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                supports_developer_role: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "mimo-v2.6-pro".into(),
+            name: "MiMo-V2.6-Pro".into(),
+            api: "openai-completions".into(),
+            provider: "opencode-go".into(),
+            base_url: "https://opencode.ai/zen/go/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.435_f64, output: 0.87_f64, cache_read: 0.003625_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                supports_developer_role: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                ..Default::default()
+            },
+        }
+    );
     models.push(Model {
         id: "minimax-m2.7".into(),
         name: "MiniMax-M2.7".into(),
@@ -22560,9 +23302,6 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
-}
-
-fn append_builtin_models_14(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "muse-spark-1.2-contributor".into(),
@@ -22811,7 +23550,7 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 131072,
+        context_window: 1048576,
         max_tokens: 32768,
         sampling_params: None,
         headers: None,
@@ -22845,7 +23584,7 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 131072,
+        context_window: 1048576,
         max_tokens: 32768,
         sampling_params: None,
         headers: None,
@@ -22879,7 +23618,7 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 131072,
+        context_window: 1048576,
         max_tokens: 32768,
         sampling_params: None,
         headers: None,
@@ -23452,6 +24191,9 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_15(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "anthropic/claude-opus-4.7".into(),
@@ -23632,6 +24374,81 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             compat: ModelCompat {
                 force_adaptive_thinking: Some(true),
                 supports_temperature: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "anthropic/claude-opus-5.5".into(),
+            name: "Anthropic: Claude Opus 5.5".into(),
+            api: "anthropic-messages".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                force_adaptive_thinking: Some(true),
+                supports_mid_convo_effort: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "anthropic/claude-opus-5.5:batch".into(),
+            name: "Anthropic: Claude Opus 5.5 (batch)".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.1_f64, cache_write: 2.5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                cache_control_format: Some("anthropic".into()),
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
                 ..Default::default()
             },
         }
@@ -24200,9 +25017,6 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_15(models: &mut Vec<Model>) {
     models.push(Model {
         id: "cohere/command-r-plus-08-2024".into(),
         name: "Cohere: Command R+ (08-2024)".into(),
@@ -24566,9 +25380,9 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.05544_f64,
-            output: 0.11088_f64,
-            cache_read: 0.011088_f64,
+            input: 0.049_f64,
+            output: 0.098_f64,
+            cache_read: 0.0098_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -24610,51 +25424,8 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
         providers: None,
         cost: ModelCost {
             input: 0.04_f64,
-            output: 0.16_f64,
+            output: 0.64_f64,
             cache_read: 0.016_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1048576,
-        max_tokens: 943718,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            requires_reasoning_content_on_assistant_messages: Some(true),
-            send_session_affinity_headers: Some(true),
-            supports_developer_role: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("openrouter".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek/deepseek-v4-flash-0731:batch".into(),
-        name: "DeepSeek: DeepSeek V4 Flash 0731 (batch)".into(),
-        api: "openai-completions".into(),
-        provider: "openrouter".into(),
-        base_url: "https://openrouter.ai/api/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), Some("low".into())),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), Some("none".into())),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0.11_f64,
-            output: 0.33_f64,
-            cache_read: 0.0035_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -24711,45 +25482,6 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             },
         }
     );
-    models.push(
-        Model {
-            id: "deepseek/deepseek-v4-flash-vision-exp:batch".into(),
-            name: "DeepSeek: DeepSeek V4 Flash Vision Exp (batch)".into(),
-            api: "openai-completions".into(),
-            provider: "openrouter".into(),
-            base_url: "https://openrouter.ai/api/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), Some("high".into())),
-                ("low".into(), Some("low".into())),
-                ("max".into(), Some("max".into())),
-                ("medium".into(), None),
-                ("minimal".into(), None),
-                ("off".into(), Some("none".into())),
-                ("xhigh".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0.11_f64, output: 0.33_f64, cache_read: 0.0035_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1048576,
-            max_tokens: 943718,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                requires_reasoning_content_on_assistant_messages: Some(true),
-                send_session_affinity_headers: Some(true),
-                supports_developer_role: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("openrouter".into()),
-                ..Default::default()
-            },
-        }
-    );
     models.push(Model {
         id: "deepseek/deepseek-v4-pro".into(),
         name: "DeepSeek: DeepSeek V4 Pro 0423".into(),
@@ -24773,9 +25505,9 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.936294_f64,
-            output: 1.872588_f64,
-            cache_read: 0.078024_f64,
+            input: 0.895578_f64,
+            output: 1.791156_f64,
+            cache_read: 0.074632_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -24816,49 +25548,6 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.57288_f64,
-            output: 1.71864_f64,
-            cache_read: 0.019096_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1024000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            requires_reasoning_content_on_assistant_messages: Some(true),
-            send_session_affinity_headers: Some(true),
-            supports_developer_role: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("openrouter".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek/deepseek-v4-pro-0813:batch".into(),
-        name: "DeepSeek: DeepSeek V4 Pro 0813 (batch)".into(),
-        api: "openai-completions".into(),
-        provider: "openrouter".into(),
-        base_url: "https://openrouter.ai/api/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), Some("low".into())),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), Some("none".into())),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
             input: 0.66_f64,
             output: 1.98_f64,
             cache_read: 0.022_f64,
@@ -24866,7 +25555,7 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             tiers: vec![],
         },
         context_window: 1048576,
-        max_tokens: 943718,
+        max_tokens: 384000,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -24905,6 +25594,45 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             cost: ModelCost { input: 0.15_f64, output: 0.6_f64, cache_read: 0.003_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 384000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                send_session_affinity_headers: Some(true),
+                supports_developer_role: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "deepseek/deepseek-v4.1-flash:batch".into(),
+            name: "DeepSeek: DeepSeek V4.1 Flash (batch)".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), None),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.112_f64, output: 0.336_f64, cache_read: 0.00336_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -25202,6 +25930,9 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_16(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "google/gemini-3-flash-preview:batch".into(),
@@ -26000,9 +26731,6 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_16(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "google/gemma-4-31b-it".into(),
@@ -26086,9 +26814,9 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.1_f64,
-            output: 0.15_f64,
-            cache_read: 0.05_f64,
+            input: 0.06_f64,
+            output: 0.25_f64,
+            cache_read: 0.015_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -26386,40 +27114,6 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
         }
     );
     models.push(Model {
-        id: "kwaipilot/kat-coder-pro-v2".into(),
-        name: "Kwaipilot: KAT-Coder-Pro V2".into(),
-        api: "openai-completions".into(),
-        provider: "openrouter".into(),
-        base_url: "https://openrouter.ai/api/v1".into(),
-        reasoning: false,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0.3_f64,
-            output: 1.2_f64,
-            cache_read: 0.06_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 262144,
-        max_tokens: 144000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            send_session_affinity_headers: Some(true),
-            supports_developer_role: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("openrouter".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
         id: "kwaipilot/kat-coder-pro-v2.5".into(),
         name: "Kwaipilot: KAT-Coder-Pro V2.5".into(),
         api: "openai-completions".into(),
@@ -26638,8 +27332,8 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.2_f64, output: 0.8_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1048576,
+            cost: ModelCost { input: 0.1875_f64, output: 0.6525_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 128000,
             max_tokens: 16384,
             sampling_params: None,
             headers: None,
@@ -26709,44 +27403,6 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.04_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 131072,
             max_tokens: 16384,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                send_session_affinity_headers: Some(true),
-                supports_developer_role: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("openrouter".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "meta/muse-glimmer-30b:batch".into(),
-            name: "Meta: Muse Glimmer 30B (batch)".into(),
-            api: "openai-completions".into(),
-            provider: "openrouter".into(),
-            base_url: "https://openrouter.ai/api/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), Some("high".into())),
-                ("low".into(), Some("low".into())),
-                ("max".into(), None),
-                ("medium".into(), Some("medium".into())),
-                ("minimal".into(), None),
-                ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0.175_f64, output: 0.75_f64, cache_read: 0.02_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 131072,
-            max_tokens: 117964,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -27051,6 +27707,9 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_17(models: &mut Vec<Model>) {
     models.push(Model {
         id: "minimax/minimax-m2.5".into(),
         name: "MiniMax: MiniMax M2.5".into(),
@@ -27137,36 +27796,6 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.06_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 524288,
             max_tokens: 512000,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                send_session_affinity_headers: Some(true),
-                supports_developer_role: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("openrouter".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "minimax/minimax-m3:batch".into(),
-            name: "MiniMax: MiniMax M3 (batch)".into(),
-            api: "openai-completions".into(),
-            provider: "openrouter".into(),
-            base_url: "https://openrouter.ai/api/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.06_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 524288,
-            max_tokens: 471859,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -27699,9 +28328,6 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_17(models: &mut Vec<Model>) {
     models.push(Model {
         id: "mistralai/mistral-saba".into(),
         name: "Mistral: Saba".into(),
@@ -28120,7 +28746,7 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.7062_f64, output: 3.21_f64, cache_read: 0.18_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.7062_f64, output: 3.3_f64, cache_read: 0.18_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 235929,
             sampling_params: None,
@@ -28158,7 +28784,7 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 1.7_f64, output: 8.5_f64, cache_read: 0.17_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 3_f64, output: 15_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             sampling_params: None,
@@ -28196,9 +28822,9 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 3_f64, output: 15_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.28_f64, output: 11.4_f64, cache_read: 0.228_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
-            max_tokens: 943718,
+            max_tokens: 16384,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -28235,6 +28861,44 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 235929,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_developer_role: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "nex-agi/nex-n2.5-pro".into(),
+            name: "Nex AGI: Nex-N2.5-Pro".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), None),
+                ("max".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.075_f64, output: 0.25_f64, cache_read: 0.015_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 235929,
             sampling_params: None,
@@ -28302,9 +28966,9 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.06_f64,
-            output: 0.24_f64,
-            cache_read: 0_f64,
+            input: 0.05_f64,
+            output: 0.2_f64,
+            cache_read: 0.03_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -28752,6 +29416,9 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_18(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-4-turbo".into(),
@@ -29364,9 +30031,6 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_18(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-5-nano:batch".into(),
@@ -30476,6 +31140,9 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_19(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-5.6-luna:batch".into(),
@@ -30997,6 +31664,304 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             },
         }
     );
+    models.push(
+        Model {
+            id: "openai/gpt-6-luna".into(),
+            name: "OpenAI: GPT-6 Luna".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-luna-pro".into(),
+            name: "OpenAI: GPT-6 Luna Pro".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-luna-pro:batch".into(),
+            name: "OpenAI: GPT-6 Luna Pro (batch)".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.05_f64, output: 0.25_f64, cache_read: 0.005_f64, cache_write: 0.0625_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-luna:batch".into(),
+            name: "OpenAI: GPT-6 Luna (batch)".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.05_f64, output: 0.25_f64, cache_read: 0.005_f64, cache_write: 0.0625_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-sol".into(),
+            name: "OpenAI: GPT-6 Sol".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_mid_convo_system_messages: Some(true),
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-sol-pro".into(),
+            name: "OpenAI: GPT-6 Sol Pro".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-sol-pro:batch".into(),
+            name: "OpenAI: GPT-6 Sol Pro (batch)".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 1_f64, output: 5_f64, cache_read: 0.1_f64, cache_write: 1.25_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-sol:batch".into(),
+            name: "OpenAI: GPT-6 Sol (batch)".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 1_f64, output: 5_f64, cache_read: 0.1_f64, cache_write: 1.25_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
     models.push(Model {
         id: "openai/gpt-audio".into(),
         name: "OpenAI: GPT Audio".into(),
@@ -31134,47 +32099,6 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
-        id: "openai/gpt-oss-120b:batch".into(),
-        name: "OpenAI: gpt-oss-120b (batch)".into(),
-        api: "openai-completions".into(),
-        provider: "openrouter".into(),
-        base_url: "https://openrouter.ai/api/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), Some("low".into())),
-            ("max".into(), None),
-            ("medium".into(), Some("medium".into())),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0.15_f64,
-            output: 0.6_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 131072,
-        max_tokens: 117964,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            send_session_affinity_headers: Some(true),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("openrouter".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
         id: "openai/gpt-oss-20b".into(),
         name: "OpenAI: gpt-oss-20b".into(),
         api: "openai-completions".into(),
@@ -31197,9 +32121,50 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.03_f64,
-            output: 0.13_f64,
-            cache_read: 0.03_f64,
+            input: 0.018_f64,
+            output: 0.09_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 131072,
+        max_tokens: 32768,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            send_session_affinity_headers: Some(true),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("openrouter".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "openai/gpt-oss-20b:batch".into(),
+        name: "OpenAI: gpt-oss-20b (batch)".into(),
+        api: "openai-completions".into(),
+        provider: "openrouter".into(),
+        base_url: "https://openrouter.ai/api/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), None),
+            ("medium".into(), Some("medium".into())),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0.024_f64,
+            output: 0.112_f64,
+            cache_read: 0_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -31215,9 +32180,6 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_19(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/gpt-oss-safeguard-20b".into(),
         name: "OpenAI: gpt-oss-safeguard-20b".into(),
@@ -31935,6 +32897,9 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_20(models: &mut Vec<Model>) {
     models.push(Model {
         id: "qwen/qwen-plus".into(),
         name: "Qwen: Qwen-Plus".into(),
@@ -32602,8 +33567,8 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 131072,
-        max_tokens: 32768,
+        context_window: 262144,
+        max_tokens: 235929,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -32861,9 +33826,6 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_20(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "qwen/qwen3.5-27b".into(),
@@ -32986,36 +33948,6 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "qwen/qwen3.5-9b:batch".into(),
-            name: "Qwen: Qwen3.5-9B (batch)".into(),
-            api: "openai-completions".into(),
-            provider: "openrouter".into(),
-            base_url: "https://openrouter.ai/api/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0.17_f64, output: 0.25_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 235929,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                send_session_affinity_headers: Some(true),
-                supports_developer_role: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("openrouter".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
             id: "qwen/qwen3.5-flash-02-23".into(),
             name: "Qwen: Qwen3.5-Flash".into(),
             api: "openai-completions".into(),
@@ -33119,9 +34051,9 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.3_f64, output: 2_f64, cache_read: 0.03_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.32_f64, output: 2.7_f64, cache_read: 0.15_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 65536,
+            max_tokens: 262140,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -33394,48 +34326,6 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-    models.push(Model {
-        id: "qwen/qwen3.8-2.4t-a95b:batch".into(),
-        name: "Qwen: Qwen3.8 2.4T A95B (batch)".into(),
-        api: "openai-completions".into(),
-        provider: "openrouter".into(),
-        base_url: "https://openrouter.ai/api/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), None),
-            ("low".into(), Some("low".into())),
-            ("max".into(), None),
-            ("medium".into(), Some("medium".into())),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), Some("xhigh".into())),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 2_f64,
-            output: 6_f64,
-            cache_read: 0.25_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1010000,
-        max_tokens: 909000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            send_session_affinity_headers: Some(true),
-            supports_developer_role: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("openrouter".into()),
-            ..Default::default()
-        },
-    });
     models.push(
         Model {
             id: "qwen/qwen3.8-27b".into(),
@@ -33459,8 +34349,8 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.2_f64, output: 2.5_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
+            cost: ModelCost { input: 0.42_f64, output: 3_f64, cache_read: 0.085_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
             max_tokens: 131072,
             sampling_params: None,
             headers: None,
@@ -33582,6 +34472,36 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "qwen/qwen3.8-omni-flash".into(),
+            name: "Qwen: Qwen3.8 Omni Flash".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.15_f64, output: 0.47_f64, cache_read: 0.016_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_developer_role: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
             id: "rekaai/reka-edge".into(),
             name: "Reka Edge".into(),
             api: "openai-completions".into(),
@@ -33610,6 +34530,9 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_21(models: &mut Vec<Model>) {
     models.push(Model {
         id: "relace/relace-search".into(),
         name: "Relace: Relace Search".into(),
@@ -34144,44 +35067,6 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "thinkingmachines/inkling:batch".into(),
-            name: "Thinking Machines: Inkling (batch)".into(),
-            api: "openai-completions".into(),
-            provider: "openrouter".into(),
-            base_url: "https://openrouter.ai/api/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), Some("high".into())),
-                ("low".into(), Some("low".into())),
-                ("max".into(), Some("max".into())),
-                ("medium".into(), Some("medium".into())),
-                ("minimal".into(), Some("minimal".into())),
-                ("off".into(), Some("none".into())),
-                ("xhigh".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 1_f64, output: 4.05_f64, cache_read: 0.17_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 524288,
-            max_tokens: 471859,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                send_session_affinity_headers: Some(true),
-                supports_developer_role: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("openrouter".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
             id: "thinkingmachines/inkling:free".into(),
             name: "Thinking Machines: Inkling (free)".into(),
             api: "openai-completions".into(),
@@ -34614,9 +35499,6 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_21(models: &mut Vec<Model>) {
     models.push(Model {
         id: "xiaomi/mimo-v2.5-pro".into(),
         name: "Xiaomi: MiMo-V2.5-Pro".into(),
@@ -34651,6 +35533,96 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+    models.push(
+        Model {
+            id: "xiaomi/mimo-v2.6-flash".into(),
+            name: "Xiaomi: MiMo-V2.6-Flash".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.14_f64, output: 0.28_f64, cache_read: 0.0028_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_developer_role: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "xiaomi/mimo-v2.6-pro".into(),
+            name: "Xiaomi: MiMo-V2.6-Pro".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.435_f64, output: 0.87_f64, cache_read: 0.0036_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_developer_role: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "xiaomi/mimo-v2.6-pro-ultraspeed".into(),
+            name: "Xiaomi: MiMo-V2.6-Pro-UltraSpeed".into(),
+            api: "openai-completions".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4.35_f64, output: 8.7_f64, cache_read: 0.036_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                send_session_affinity_headers: Some(true),
+                supports_developer_role: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("openrouter".into()),
+                ..Default::default()
+            },
+        }
+    );
     models.push(Model {
         id: "z-ai/glm-4.5".into(),
         name: "Z.ai: GLM 4.5".into(),
@@ -35026,48 +35998,6 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
-        id: "z-ai/glm-5.2:batch".into(),
-        name: "Z.ai: GLM 5.2 (batch)".into(),
-        api: "openai-completions".into(),
-        provider: "openrouter".into(),
-        base_url: "https://openrouter.ai/api/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), None),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), Some("none".into())),
-            ("xhigh".into(), Some("xhigh".into())),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0.7_f64,
-            output: 2.2_f64,
-            cache_read: 0.07_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1048576,
-        max_tokens: 943718,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            send_session_affinity_headers: Some(true),
-            supports_developer_role: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("openrouter".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
         id: "z-ai/glm-5.3".into(),
         name: "Z.ai: GLM 5.3".into(),
         api: "openai-completions".into(),
@@ -35090,9 +36020,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.91_f64,
-            output: 2.86_f64,
-            cache_read: 0.169_f64,
+            input: 0.6538_f64,
+            output: 2.0548_f64,
+            cache_read: 0.12142_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -35132,9 +36062,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.09_f64, output: 0.3_f64, cache_read: 0.018_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.15_f64, output: 0.5_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
-            max_tokens: 131072,
+            max_tokens: 943718,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -35170,9 +36100,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.075_f64, output: 0.25_f64, cache_read: 0.015_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.06_f64, output: 0.2_f64, cache_read: 0.012_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
-            max_tokens: 943718,
+            max_tokens: 131072,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -35246,14 +36176,14 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.7_f64,
-            output: 2.2_f64,
-            cache_read: 0.13_f64,
+            input: 0.72_f64,
+            output: 2.4_f64,
+            cache_read: 0.12_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
         context_window: 1048576,
-        max_tokens: 943718,
+        max_tokens: 131072,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -35379,7 +36309,7 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
                 ("max".into(), Some("max".into())),
                 ("medium".into(), Some("medium".into())),
                 ("minimal".into(), None),
-                ("off".into(), Some("none".into())),
+                ("off".into(), None),
                 ("xhigh".into(), Some("xhigh".into()))
             ])),
             input: vec!["text".into(), "image".into()],
@@ -35388,7 +36318,7 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 5_f64, output: 25_f64, cache_read: 0.5_f64, cache_write: 6.25_f64, tiers: vec![] },
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 128000,
             sampling_params: None,
@@ -35404,6 +36334,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_22(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "~anthropic/claude-sonnet-latest".into(),
@@ -35504,14 +36437,14 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.57288_f64,
-            output: 1.71864_f64,
-            cache_read: 0.019096_f64,
+            input: 0.39996_f64,
+            output: 1.19988_f64,
+            cache_read: 0.012726_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 1024000,
-        max_tokens: 384000,
+        context_window: 1048576,
+        max_tokens: 393216,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -35546,9 +36479,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.04_f64,
-            output: 0.16_f64,
-            cache_read: 0.016_f64,
+            input: 0.03_f64,
+            output: 0.8_f64,
+            cache_read: 0.008_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -35665,7 +36598,7 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 1.7_f64, output: 8.5_f64, cache_read: 0.17_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 1.4989_f64, output: 10.758_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             sampling_params: None,
@@ -35741,7 +36674,7 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.2_f64, output: 1.2_f64, cache_read: 0.02_f64, cache_write: 0.25_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -35969,9 +36902,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.7728_f64,
-            output: 2.4288_f64,
-            cache_read: 0.14352_f64,
+            input: 0.6538_f64,
+            output: 2.0548_f64,
+            cache_read: 0.12142_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -36501,9 +37434,6 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_22(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "kimi-k2.7-code".into(),
@@ -37316,6 +38246,9 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_23(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "qwen3.6-plus".into(),
@@ -38063,6 +38996,38 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "claude-opus-5-5".into(),
+            name: "Claude Opus 5.5".into(),
+            api: "pi-messages".into(),
+            provider: "radius".into(),
+            base_url: "https://radius.pi.dev/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: Some(serde_json::from_str("true").unwrap()),
+            lab: Some(serde_json::from_str("\"Anthropic\"").unwrap()),
+            providers: Some(serde_json::from_str("[{\"credential\": \"radius\", \"id\": \"anthropic\", \"name\": \"Anthropic\", \"source\": \"radius\"}]").unwrap()),
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
             id: "claude-sonnet-4-5".into(),
             name: "Claude Sonnet 4.5".into(),
             api: "pi-messages".into(),
@@ -38238,9 +39203,6 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
-}
-
-fn append_builtin_models_23(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "glm-5.3".into(),
@@ -38554,6 +39516,70 @@ fn append_builtin_models_23(models: &mut Vec<Model>) {
             providers: Some(serde_json::from_str("[{\"credential\": \"radius\", \"id\": \"openai\", \"name\": \"OpenAI\", \"source\": \"radius\"}]").unwrap()),
             cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 20_f64, output: 75_f64, cache_read: 2_f64, cache_write: 25_f64 }] },
             context_window: 272000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-luna".into(),
+            name: "GPT 6 Luna".into(),
+            api: "pi-messages".into(),
+            provider: "radius".into(),
+            base_url: "https://radius.pi.dev/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: Some(serde_json::from_str("true").unwrap()),
+            lab: Some(serde_json::from_str("\"OpenAI\"").unwrap()),
+            providers: Some(serde_json::from_str("[{\"credential\": \"radius\", \"id\": \"openai\", \"name\": \"OpenAI\", \"source\": \"radius\"}]").unwrap()),
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.2_f64, output: 0.75_f64, cache_read: 0.02_f64, cache_write: 0.25_f64 }] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
+            id: "gpt-6-sol".into(),
+            name: "GPT 6 Sol".into(),
+            api: "pi-messages".into(),
+            provider: "radius".into(),
+            base_url: "https://radius.pi.dev/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), Some("none".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: Some(serde_json::from_str("true").unwrap()),
+            lab: Some(serde_json::from_str("\"OpenAI\"").unwrap()),
+            providers: Some(serde_json::from_str("[{\"credential\": \"radius\", \"id\": \"openai\", \"name\": \"OpenAI\", \"source\": \"radius\"}]").unwrap()),
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4_f64, output: 15_f64, cache_read: 0.4_f64, cache_write: 5_f64 }] },
+            context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
             headers: None,
@@ -38881,6 +39907,9 @@ fn append_builtin_models_23(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_24(models: &mut Vec<Model>) {
     models.push(Model {
         id: "deepseek-ai/DeepSeek-V4-Flash-0731".into(),
         name: "DeepSeek V4 Flash 0731".into(),
@@ -39980,9 +41009,6 @@ fn append_builtin_models_23(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_24(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "alibaba/qwen3-vl-235b-a22b-instruct".into(),
@@ -40504,6 +41530,9 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_25(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "amazon/nova-pro".into(),
@@ -40880,6 +41909,70 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                force_adaptive_thinking: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "anthropic/claude-opus-5.5".into(),
+            name: "Claude Opus 5.5".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.2_f64, cache_write: 5_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                force_adaptive_thinking: Some(true),
+                supports_temperature: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "anthropic/claude-opus-5.5-fast".into(),
+            name: "Claude Opus 5.5 (Fast)".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 8_f64, output: 40_f64, cache_read: 0.4_f64, cache_write: 10_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 128000,
             sampling_params: None,
@@ -41426,9 +42519,6 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_25(models: &mut Vec<Model>) {
     models.push(Model {
         id: "deepseek/deepseek-v4-pro-0813".into(),
         name: "DeepSeek V4 Pro 0813".into(),
@@ -41475,7 +42565,7 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.03_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.007_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 32768,
             sampling_params: None,
@@ -41900,6 +42990,9 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_26(models: &mut Vec<Model>) {
     models.push(Model {
         id: "inception/mercury-coder-small".into(),
         name: "Mercury Coder Small Beta".into(),
@@ -42859,9 +43952,6 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_26(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "mistral/mistral-medium-3.5".into(),
@@ -43353,6 +44443,9 @@ fn append_builtin_models_26(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_27(models: &mut Vec<Model>) {
     models.push(Model {
         id: "nvidia/nemotron-nano-9b-v2".into(),
         name: "Nvidia Nemotron Nano 9B V2".into(),
@@ -44268,9 +45361,6 @@ fn append_builtin_models_26(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_27(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-5.4-mini".into(),
@@ -44698,6 +45788,125 @@ fn append_builtin_models_27(models: &mut Vec<Model>) {
             lab: None,
             providers: None,
             cost: ModelCost { input: 20_f64, output: 100_f64, cache_read: 2_f64, cache_write: 25_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-luna".into(),
+            name: "GPT-6 Luna".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-luna-fast".into(),
+            name: "GPT-6 Luna (Fast)".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.2_f64, output: 1_f64, cache_read: 0.02_f64, cache_write: 0.25_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+}
+
+fn append_builtin_models_28(models: &mut Vec<Model>) {
+    models.push(
+        Model {
+            id: "openai/gpt-6-sol".into(),
+            name: "GPT-6 Sol".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![] },
+            context_window: 1050000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "openai/gpt-6-sol-fast".into(),
+            name: "GPT-6 Sol (Fast)".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.4_f64, cache_write: 5_f64, tiers: vec![] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -45686,9 +46895,6 @@ fn append_builtin_models_27(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_28(models: &mut Vec<Model>) {
     models.push(Model {
         id: "tencent/hy4-preview".into(),
         name: "Tencent Hy4 Preview".into(),
@@ -45832,6 +47038,87 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+    models.push(
+        Model {
+            id: "xiaomi/mimo-v2.6-flash".into(),
+            name: "MiMo V2.6 Flash".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.14_f64, output: 0.28_f64, cache_read: 0.0028_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "xiaomi/mimo-v2.6-pro".into(),
+            name: "MiMo V2.6 Pro".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.435_f64, output: 0.87_f64, cache_read: 0.0036_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "xiaomi/mimo-v2.6-pro-ultraspeed".into(),
+            name: "MiMo V2.6 Pro UltraSpeed".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4.35_f64, output: 8.7_f64, cache_read: 0.036_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                ..Default::default()
+            },
+        }
+    );
     models.push(Model {
         id: "zai/glm-4.5".into(),
         name: "GLM 4.5".into(),
@@ -45983,6 +47270,9 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_29(models: &mut Vec<Model>) {
     models.push(Model {
         id: "zai/glm-4.7-flash".into(),
         name: "GLM 4.7 Flash".into(),
@@ -46366,7 +47656,7 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 1.25_f64, output: 2.5_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 1.25_f64, output: 2.5_f64, cache_read: 0.2_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 200000_u64, input: 2.5_f64, output: 5_f64, cache_read: 0.4_f64, cache_write: 0_f64 }] },
             context_window: 1000000,
             max_tokens: 30000,
             sampling_params: None,
@@ -46401,7 +47691,7 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.3_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 200000_u64, input: 4_f64, output: 12_f64, cache_read: 0.6_f64, cache_write: 0_f64 }] },
             context_window: 500000,
             max_tokens: 500000,
             sampling_params: None,
@@ -46436,7 +47726,42 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 200000_u64, input: 4_f64, output: 12_f64, cache_read: 1_f64, cache_write: 0_f64 }] },
+            context_window: 500000,
+            max_tokens: 500000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_long_cache_retention: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "grok-4.7".into(),
+            name: "Grok 4.7".into(),
+            api: "openai-responses".into(),
+            provider: "xai".into(),
+            base_url: "https://api.x.ai/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2_f64, output: 6_f64, cache_read: 0.5_f64, cache_write: 0_f64, tiers: vec![ModelCostTier { input_tokens_above: 200000_u64, input: 4_f64, output: 12_f64, cache_read: 1_f64, cache_write: 0_f64 }] },
             context_window: 500000,
             max_tokens: 500000,
             sampling_params: None,
@@ -46545,6 +47870,93 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
     });
     models.push(
         Model {
+            id: "mimo-v2.6-flash".into(),
+            name: "MiMo-V2.6-Flash".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi".into(),
+            base_url: "https://api.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.14_f64, output: 0.28_f64, cache_read: 0.0028_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "mimo-v2.6-pro".into(),
+            name: "MiMo-V2.6-Pro".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi".into(),
+            base_url: "https://api.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.435_f64, output: 0.87_f64, cache_read: 0.0036_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "mimo-v2.6-pro-ultraspeed".into(),
+            name: "MiMo-V2.6-Pro-UltraSpeed".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi".into(),
+            base_url: "https://api.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 4.35_f64, output: 8.7_f64, cache_read: 0.036_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
             id: "mimo-v2.5".into(),
             name: "MiMo-V2.5".into(),
             api: "openai-completions".into(),
@@ -46605,6 +48017,64 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+    models.push(
+        Model {
+            id: "mimo-v2.6-flash".into(),
+            name: "MiMo-V2.6-Flash".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi-token-plan-ams".into(),
+            base_url: "https://token-plan-ams.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "mimo-v2.6-pro".into(),
+            name: "MiMo-V2.6-Pro".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi-token-plan-ams".into(),
+            base_url: "https://token-plan-ams.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
     models.push(
         Model {
             id: "mimo-v2.5".into(),
@@ -46669,6 +48139,64 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
     });
     models.push(
         Model {
+            id: "mimo-v2.6-flash".into(),
+            name: "MiMo-V2.6-Flash".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi-token-plan-cn".into(),
+            base_url: "https://token-plan-cn.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "mimo-v2.6-pro".into(),
+            name: "MiMo-V2.6-Pro".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi-token-plan-cn".into(),
+            base_url: "https://token-plan-cn.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
             id: "mimo-v2.5".into(),
             name: "MiMo-V2.5".into(),
             api: "openai-completions".into(),
@@ -46729,6 +48257,64 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+    models.push(
+        Model {
+            id: "mimo-v2.6-flash".into(),
+            name: "MiMo-V2.6-Flash".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi-token-plan-sgp".into(),
+            base_url: "https://token-plan-sgp.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "mimo-v2.6-pro".into(),
+            name: "MiMo-V2.6-Pro".into(),
+            api: "openai-completions".into(),
+            provider: "xiaomi-token-plan-sgp".into(),
+            base_url: "https://token-plan-sgp.xiaomimimo.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
     models.push(Model {
         id: "glm-4.7".into(),
         name: "GLM-4.7".into(),
@@ -47192,7 +48778,7 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
 
 /// Returns all built-in models from the upstream pi-ai registry.
 pub fn builtin_models() -> Vec<Model> {
-    let mut models = Vec::with_capacity(1445);
+    let mut models = Vec::with_capacity(1495);
     append_builtin_models_0(&mut models);
     append_builtin_models_1(&mut models);
     append_builtin_models_2(&mut models);
@@ -47222,5 +48808,6 @@ pub fn builtin_models() -> Vec<Model> {
     append_builtin_models_26(&mut models);
     append_builtin_models_27(&mut models);
     append_builtin_models_28(&mut models);
+    append_builtin_models_29(&mut models);
     models
 }

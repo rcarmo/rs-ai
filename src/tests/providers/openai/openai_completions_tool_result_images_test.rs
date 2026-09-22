@@ -166,6 +166,131 @@ mod tests {
     }
 
     #[test]
+    fn omits_empty_text_parts_from_image_only_user_messages() {
+        let model = image_model();
+        let context = Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: vec![Message {
+                role: Role::User,
+                content: vec![
+                    ContentBlock::Text {
+                        text: String::new(),
+                        text_signature: None,
+                    },
+                    ContentBlock::Image {
+                        data: "ZmFrZQ==".into(),
+                        mime_type: "image/png".into(),
+                    },
+                ],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                provider_thinking_level: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                deferred: None,
+                error_message: None,
+                raw_stop_reason: None,
+                end_turn: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
+                added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
+            }],
+        };
+
+        let payload = build_payload(
+            &model,
+            &context,
+            &StreamOptions::default(),
+            &detect_compat(&model),
+        );
+        assert_eq!(
+            payload["messages"],
+            serde_json::json!([{
+                "role": "user",
+                "content": [{
+                    "type": "image_url",
+                    "image_url": {"url": "data:image/png;base64,ZmFrZQ=="}
+                }]
+            }])
+        );
+    }
+
+    #[test]
+    fn preserves_whitespace_text_parts_in_multimodal_user_messages() {
+        let model = image_model();
+        let context = Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: vec![Message {
+                role: Role::User,
+                content: vec![
+                    ContentBlock::Text {
+                        text: "   ".into(),
+                        text_signature: None,
+                    },
+                    ContentBlock::Image {
+                        data: "ZmFrZQ==".into(),
+                        mime_type: "image/png".into(),
+                    },
+                ],
+                timestamp: 0,
+                api: None,
+                provider: None,
+                model: None,
+                response_id: None,
+                response_model: None,
+                provider_thinking_level: None,
+                diagnostics: Vec::new(),
+                usage: None,
+                stop_reason: None,
+                deferred: None,
+                error_message: None,
+                raw_stop_reason: None,
+                end_turn: None,
+                tool_call_id: None,
+                tool_name: None,
+                is_error: false,
+                details: None,
+                added_tool_names: Vec::new(),
+                sections: None,
+                tools_added: Vec::new(),
+                tools_removed: Vec::new(),
+            }],
+        };
+
+        let payload = build_payload(
+            &model,
+            &context,
+            &StreamOptions::default(),
+            &detect_compat(&model),
+        );
+        assert_eq!(
+            payload["messages"],
+            serde_json::json!([{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "   "},
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": "data:image/png;base64,ZmFrZQ=="}
+                    }
+                ]
+            }])
+        );
+    }
+
+    #[test]
     fn uses_no_tool_output_placeholder_for_empty_tool_results_without_images() {
         // v0.80.5: a blank text-only tool result (no images) serializes as the
         // "(no tool output)" placeholder, not the image placeholder.

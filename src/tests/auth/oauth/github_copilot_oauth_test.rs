@@ -131,15 +131,22 @@ mod tests {
         let requests = server.received_requests().await.unwrap();
         let paths = requests
             .iter()
-            .map(|r| r.url.path().to_string())
+            .map(|request| request.url.path())
             .collect::<Vec<_>>();
+        assert_eq!(paths.len(), 3);
         assert_eq!(
-            paths,
-            vec![
-                "/models/gpt-4.1/policy",
-                "/models/claude-sonnet-4.6/policy",
-                "/models/gpt-4.1/policy"
-            ]
+            paths
+                .iter()
+                .filter(|path| **path == "/models/gpt-4.1/policy")
+                .count(),
+            2
+        );
+        assert_eq!(
+            paths
+                .iter()
+                .filter(|path| **path == "/models/claude-sonnet-4.6/policy")
+                .count(),
+            1
         );
     }
 
@@ -167,7 +174,7 @@ mod tests {
         let mut first_wave = 0;
         for _ in 0..20 {
             first_wave = server.received_requests().await.unwrap().len();
-            if first_wave > 0 {
+            if first_wave == COPILOT_POLICY_CONCURRENCY {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(10)).await;

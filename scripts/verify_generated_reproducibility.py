@@ -10,8 +10,8 @@ from pathlib import Path
 import verify_release_model_metadata as meta
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PACKAGE = "@earendil-works/pi-ai@0.87.0"
-DEFAULT_PACKAGE_SHA256 = "f2adf9de809d035f76f8dadf3d148720ebeef4606a848ab36ee834d895ae812f"
+DEFAULT_PACKAGE = "@earendil-works/pi-ai@0.87.1"
+DEFAULT_PACKAGE_SHA256 = "35b4432f27cc2665f86beebb9af6a39b1251970883c3044bd8be4f4e8c731ca0"
 
 
 def generate_once(label: str, work: Path, extracted: Path, image_json: Path) -> Path:

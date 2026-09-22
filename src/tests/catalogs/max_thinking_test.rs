@@ -56,8 +56,14 @@ mod tests {
     }
 
     #[test]
-    fn exposes_xhigh_and_max_for_openai_codex_gpt_5_6_variants() {
-        for model_id in ["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"] {
+    fn exposes_xhigh_and_max_for_openai_codex_current_variants() {
+        for model_id in [
+            "gpt-5.6-luna",
+            "gpt-5.6-sol",
+            "gpt-5.6-terra",
+            "gpt-6-luna",
+            "gpt-6-sol",
+        ] {
             let model = get_model("openai-codex", model_id)
                 .unwrap_or_else(|| panic!("openai-codex/{model_id}"));
             let map = model.thinking_level_map.as_ref().expect("thinkingLevelMap");
@@ -108,7 +114,7 @@ mod tests {
 
     #[test]
     fn sends_max_to_the_codex_responses_api() {
-        for model_id in ["gpt-5.6-sol", "gpt-6-astra"] {
+        for model_id in ["gpt-5.6-sol", "gpt-6-astra", "gpt-6-luna", "gpt-6-sol"] {
             let model = get_model("openai-codex", model_id)
                 .unwrap_or_else(|| panic!("openai-codex/{model_id}"));
             let context = Context {

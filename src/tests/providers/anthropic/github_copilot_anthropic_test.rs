@@ -81,6 +81,14 @@ mod tests {
         let l = levels(&sonnet46);
         assert!(l.iter().any(|x| x == "max"), "{l:?}");
         assert!(!l.iter().any(|x| x == "xhigh"), "{l:?}");
+
+        let opus55 = get_model("github-copilot", "claude-opus-5.5").unwrap();
+        assert_eq!(opus55.api, "anthropic-messages");
+        assert_eq!(opus55.context_window, 1_000_000);
+        assert_eq!(
+            levels(&opus55),
+            vec!["low", "medium", "high", "xhigh", "max"]
+        );
     }
 
     async fn run(opts: StreamOptions) -> (Value, std::collections::HashMap<String, String>) {

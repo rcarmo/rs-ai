@@ -881,13 +881,25 @@ pub(crate) fn build_payload(
             } else {
                 json!(assistant_text)
             }
-        } else if msg.content.len() == 1 {
-            match &msg.content[0] {
-                ContentBlock::Text { text, .. } => json!(text),
-                _ => json!(format_content_blocks(&msg.content)),
-            }
         } else {
-            json!(format_content_blocks(&msg.content))
+            // v0.87.1: OpenAI-compatible multimodal user messages must not contain
+            // empty text parts. Preserve the single non-empty text fast path, but
+            // filter only exactly-empty text (not whitespace) before array conversion.
+            let user_content = msg
+                .content
+                .iter()
+                .filter(
+                    |block| !matches!(block, ContentBlock::Text { text, .. } if text.is_empty()),
+                )
+                .collect::<Vec<_>>();
+            if user_content.len() == 1 {
+                match user_content[0] {
+                    ContentBlock::Text { text, .. } => json!(text),
+                    _ => json!(format_content_blocks(&user_content)),
+                }
+            } else {
+                json!(format_content_blocks(&user_content))
+            }
         };
 
         // Mirror upstream convertMessages: skip a user message whose converted content
@@ -1522,17 +1534,27 @@ pub(crate) fn normalize_tool_call_id(id: &str, provider: &str) -> String {
     id.to_string()
 }
 
-fn format_content_blocks(blocks: &[ContentBlock]) -> Vec<Value> {
-    blocks.iter().map(|b| match b {
-        ContentBlock::Text { text, .. } => json!({"type": "text", "text": text}),
-        ContentBlock::Image { data, mime_type } => json!({
-            "type": "image_url",
-            "image_url": {"url": format!("data:{};base64,{}", mime_type, data)}
-        }),
-        ContentBlock::Thinking { thinking, .. } => json!({"type": "text", "text": thinking}),
-        ContentBlock::ToolCall { id: _, name, arguments, .. } => json!({
-            "type": "text",
-            "text": format!("[tool_call: {} {}]", name, serde_json::to_string(arguments).unwrap_or_default())
-        }),
-    }).collect()
+fn format_content_blocks(blocks: &[&ContentBlock]) -> Vec<Value> {
+    blocks
+        .iter()
+        .map(|b| match b {
+            ContentBlock::Text { text, .. } => json!({"type": "text", "text": text}),
+            ContentBlock::Image { data, mime_type } => json!({
+                "type": "image_url",
+                "image_url": {"url": format!("data:{};base64,{}", mime_type, data)}
+            }),
+            ContentBlock::Thinking { thinking, .. } => {
+                json!({"type": "text", "text": thinking})
+            }
+            ContentBlock::ToolCall {
+                id: _,
+                name,
+                arguments,
+                ..
+            } => json!({
+                "type": "text",
+                "text": format!("[tool_call: {} {}]", name, serde_json::to_string(arguments).unwrap_or_default())
+            }),
+        })
+        .collect()
 }

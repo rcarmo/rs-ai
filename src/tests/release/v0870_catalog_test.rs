@@ -151,12 +151,12 @@ mod tests {
             .iter()
             .map(|m| m.api.as_str())
             .collect::<std::collections::HashSet<_>>();
-        assert_eq!(models.len(), 1445);
+        assert_eq!(models.len(), 1495);
         assert_eq!(providers.len(), 41);
         assert_eq!(apis.len(), 10);
         assert_eq!(
             crate::images::models_generated::builtin_image_models().len(),
-            54
+            55
         );
     }
 

@@ -29,12 +29,12 @@ fn release_pinned_catalog_counts_match_v0851() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1445);
+    assert_eq!(pairs.len(), 1495);
     assert_eq!(providers.len(), 41);
     assert_eq!(apis.len(), 10);
     assert_eq!(
         pairs.iter().filter(|(_, id)| id.contains(":batch")).count(),
-        74
+        71
     );
 
     for pair in [
@@ -57,7 +57,7 @@ fn release_pinned_catalog_counts_match_v0851() {
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 54);
+    assert_eq!(image_pairs.len(), 55);
     assert!(image_pairs.contains(&(
         "openrouter".to_string(),
         "microsoft/mai-image-2.6".to_string()
@@ -191,7 +191,7 @@ fn gpt_6_astra_generated_alias_compat_is_release_pinned() {
 
     let copilot = crate::registry::get_model(provider_id::GITHUB_COPILOT, "gpt-6-astra").unwrap();
     assert_eq!(copilot.api, crate::types::api::OPENAI_RESPONSES);
-    assert_eq!(copilot.context_window, 1050000);
+    assert_eq!(copilot.context_window, 1000000);
     assert_eq!(copilot.max_tokens, 128000);
     assert_eq!(copilot.compat.supports_store, None);
     assert_eq!(copilot.compat.supports_developer_role, None);

@@ -20,7 +20,7 @@ mod tests {
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1445);
+        assert_eq!(pairs.len(), 1495);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -94,7 +94,7 @@ mod tests {
             .into_iter()
             .map(|m| m.id)
             .collect::<HashSet<_>>();
-        assert_eq!(ids.len(), 54);
+        assert_eq!(ids.len(), 55);
         for id in [
             "krea/krea-2-large",
             "krea/krea-2-medium",

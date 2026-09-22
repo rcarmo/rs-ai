@@ -34,12 +34,15 @@ mod tests {
     }
 
     #[test]
-    fn includes_xhigh_for_anthropic_opus_4_8() {
-        assert!(
-            levels(&m("anthropic", "claude-opus-4-8"))
-                .iter()
-                .any(|l| l == "xhigh")
-        );
+    fn includes_xhigh_for_current_anthropic_opus_models() {
+        for id in ["claude-opus-4-8", "claude-opus-5-5"] {
+            assert!(
+                levels(&m("anthropic", id))
+                    .iter()
+                    .any(|level| level == "xhigh"),
+                "model {id}"
+            );
+        }
     }
 
     #[test]
@@ -67,6 +70,8 @@ mod tests {
             "gpt-5.6-terra",
             "gpt-5.6-luna",
             "gpt-6-astra",
+            "gpt-6-sol",
+            "gpt-6-luna",
         ] {
             assert!(
                 levels(&m("openai-codex", id)).iter().any(|l| l == "xhigh"),
@@ -76,13 +81,14 @@ mod tests {
     }
 
     #[test]
-    fn includes_xhigh_and_max_for_openai_gpt_5_6_models_and_gpt_6_astra() {
-        // v0.85.1: gpt-5.6 tiers and gpt-6-astra expose both native xhigh and max.
+    fn includes_xhigh_and_max_for_current_openai_models() {
         for id in [
             "gpt-5.6-sol",
             "gpt-5.6-terra",
             "gpt-5.6-luna",
             "gpt-6-astra",
+            "gpt-6-sol",
+            "gpt-6-luna",
         ] {
             let l = levels(&m("openai", id));
             assert!(l.iter().any(|x| x == "xhigh"), "model {id}: {l:?}");

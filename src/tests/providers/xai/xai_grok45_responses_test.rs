@@ -63,10 +63,10 @@ mod tests {
                 ModelThinkingLevel::High,
             ]
         );
-        let grok_46 = get_model("xai", "grok-4.6").expect("xai/grok-4.6");
-        assert_eq!(grok_46.api, crate::types::api::OPENAI_RESPONSES);
+        let grok_47 = get_model("xai", "grok-4.7").expect("xai/grok-4.7");
+        assert_eq!(grok_47.api, crate::types::api::OPENAI_RESPONSES);
         assert_eq!(
-            get_supported_thinking_levels(&grok_46),
+            get_supported_thinking_levels(&grok_47),
             vec![
                 ModelThinkingLevel::Low,
                 ModelThinkingLevel::Medium,
@@ -170,7 +170,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn xai_grok_46_uses_responses_xhigh_encrypted_reasoning_and_user_agent_override() {
+    async fn xai_grok_47_uses_responses_xhigh_encrypted_reasoning_and_user_agent_override() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .respond_with(
@@ -180,7 +180,7 @@ mod tests {
             )
             .mount(&server)
             .await;
-        let mut model = get_model("xai", "grok-4.6").expect("xai/grok-4.6");
+        let mut model = get_model("xai", "grok-4.7").expect("xai/grok-4.7");
         model.base_url = server.uri();
         model.api_key = Some("xai-token".into());
         let c = ctx();
@@ -206,7 +206,7 @@ mod tests {
             "custom-agent"
         );
         let body: Value = serde_json::from_slice(&reqs[0].body).unwrap();
-        assert_eq!(body["model"], "grok-4.6");
+        assert_eq!(body["model"], "grok-4.7");
         assert_eq!(body["store"], false);
         assert_eq!(body["stream"], true);
         assert_eq!(

@@ -104,7 +104,7 @@ pub fn stream_anthropic<'a>(
             reqwest::header::AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
         );
-        headers.insert("user-agent", HeaderValue::from_static("claude-cli/2.1.75"));
+        headers.insert("user-agent", HeaderValue::from_static("claude-cli/2.1.280"));
         headers.insert("x-app", HeaderValue::from_static("cli"));
     } else {
         headers.insert("x-api-key", HeaderValue::from_str(&api_key).unwrap());

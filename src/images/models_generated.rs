@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (54 image models, 1 provider)
-//! Generated: 2026-09-21T16:36:07.176Z
+//! Source: image-models.generated.js (55 image models, 1 provider)
+//! Generated: 2026-09-22T19:31:44.346Z
 
 use crate::images::types::ImagesModel;
 use crate::types::ModelCost;
@@ -212,6 +212,22 @@ pub fn builtin_image_models() -> Vec<ImagesModel> {
             cost: ModelCost {
                 input: 0.25_f64,
                 output: 1.5_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+        },
+        ImagesModel {
+            id: "inclusionai/ming-image-0.1-design".into(),
+            name: "inclusionAI: Ming Image 0.1 Design".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into()],
+            output: vec!["image".into()],
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
                 cache_read: 0_f64,
                 cache_write: 0_f64,
                 tiers: vec![],

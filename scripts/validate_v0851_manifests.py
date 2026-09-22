@@ -82,8 +82,14 @@ def manifest_test_files(lines: list[str]) -> set[str]:
 
 def current_release_section() -> str:
     text = RELEASE.read_text()
-    start = text.index("## Current audit target: v0.85.1")
-    end = text.find("## Historical accepted release:", start)
+    headings = (
+        "## Current audit target: v0.85.1",
+        "## Historical accepted release: v0.85.1",
+    )
+    start = next((text.find(heading) for heading in headings if text.find(heading) >= 0), -1)
+    if start < 0:
+        raise ValueError("v0.85.1 release section not found")
+    end = text.find("\n## ", start + 4)
     return text[start:] if end == -1 else text[start:end]
 
 
