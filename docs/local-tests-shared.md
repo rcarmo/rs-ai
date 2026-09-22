@@ -1,5 +1,15 @@
 # Shared local-test adaptation tracker (rs-ai)
 
+## v0.87.1 bounded release evidence
+
+Source: upstream tag/npm gitHead `f07218c4d4bbc12bef056a7058c3dd49dfe41abe` (`v0.87.1`), exact release-only delta `16787ad5b2dc748047f314ca1bfe7708f30f54f3..f07218c4d4bbc12bef056a7058c3dd49dfe41abe`.
+
+Status: **ACCEPTED**. The audit covers 16 changed paths, 9 changed tests and an unchanged 150-test corpus. The signed registries contain 1495 text/chat models, 41 providers, 10 APIs and 71 batch aliases, plus 55 image models across one provider and one API. Full-record deltas are text `+62/-12/35` and images `+1/-0/0`.
+
+Runtime `f7c257bf240ae979cd5962513e1e5d167dd9fe2f` passed 1027 all-target/all-feature tests, 882 no-default tests, explicit Bedrock configuration, strict Clippy, format/build checks, manifest/metadata/baseline fault gates, byte-for-byte catalog generation, licence review, RustSec policy and SBOM validation. Hosted CI `35793644589`, job `106967752166`, passed all 18 steps. Focused production-path tests cover exactly-empty multimodal text omission and whitespace preservation, Claude Code `2.1.280`, Grok 4.7 Responses/xhigh/encrypted reasoning, Opus 5.5 metadata, Sol/Luna cache/default reasoning/Codex max effort, and Copilot aliases.
+
+The SHA-specific 278-component CycloneDX 1.5 artifact is `10723765029`; ZIP SHA-256 `7a788b0a4eeebe46ef4fea94380a3298bf90625f3ed54b864d95825a40997447`, inner SBOM SHA-256 `41b09272fbb1d30046d384ed8b14f73f6705f36f27d0f015a5672cbe7c592dc6`, embedded revision `f7c257bf240ae979cd5962513e1e5d167dd9fe2f`.
+
 ## v0.87.0 bounded release evidence
 
 Source: upstream tag `16787ad5b2dc748047f314ca1bfe7708f30f54f3` (`v0.87.0`), exact release-only delta `d981de1229ef899957bbe968bc8dcda02a21f477..16787ad5b2dc748047f314ca1bfe7708f30f54f3`.

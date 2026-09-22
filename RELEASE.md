@@ -1,6 +1,41 @@
 # rs-ai upstream release parity
 
-## Current audit target: v0.87.0
+## Current audit target: v0.87.1
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v0.87.1`
+- Upstream tag/npm gitHead: `f07218c4d4bbc12bef056a7058c3dd49dfe41abe`
+- Previous accepted upstream: `v0.87.0` / `16787ad5b2dc748047f314ca1bfe7708f30f54f3`
+- Accepted rs-ai runtime: `f7c257bf240ae979cd5962513e1e5d167dd9fe2f`
+- Audited range: `16787ad5b2dc748047f314ca1bfe7708f30f54f3..f07218c4d4bbc12bef056a7058c3dd49dfe41abe`
+- Scope: `packages/ai` only; official tag and signed npm artifact.
+- Scope status: **ACCEPTED**. GitHub Actions run `35793644589`, job `106967752166`, passed all 18 steps with 1027 tests plus format, build, strict Clippy, SBOM, licence and vulnerability gates.
+
+### v0.87.1 release inventory
+
+The bounded range contains **16 changed paths**, `+386/-78`, and **9 changed test paths**. The final upstream corpus remains **150 test basenames**. `scripts/validate_v0871_manifests.py` checks the exact inventories and hashes recorded under `docs/manifests/`; `docs/v0871-150-test-crosswalk.md` records all path and test dispositions.
+
+The signed catalog contains **1495 text/chat models across 41 providers and 10 APIs**, including **71 batch aliases**. The image catalog contains **55 models across one provider and one image API**. The full-record deltas are text `+62/-12/35 changed` and images `+1/-0/0 changed`. The pinned npm tarball SHA-256 is `35b4432f27cc2665f86beebb9af6a39b1251970883c3044bd8be4f4e8c731ca0`.
+
+### v0.87.1 runtime scope
+
+The accepted runtime omits exactly-empty text parts from OpenAI-compatible multimodal user messages while preserving whitespace, updates the Claude Code OAuth user agent to `claude-cli/2.1.280`, and regenerates exact catalog metadata for Grok 4.7, Claude Opus 5.5, GPT-6 Sol/Luna, GitHub Copilot aliases and OpenRouter Ming Image. Deterministic production-path tests cover Grok 4.7 Responses routing, xhigh effort and encrypted reasoning, Opus 5.5 effort/context/pricing, Sol/Luna cache/default reasoning/Codex max effort, and Copilot aliases.
+
+### v0.87.1 CI and SBOM evidence
+
+- Runtime commit: `f7c257bf240ae979cd5962513e1e5d167dd9fe2f`
+- GitHub Actions run: `35793644589`
+- Successful job: `build-test-lint` (`106967752166`), all 18 steps green
+- SHA-specific artifact: `rs-ai-sbom-f7c257bf240ae979cd5962513e1e5d167dd9fe2f` (`10723765029`)
+- Artifact ZIP SHA-256: `7a788b0a4eeebe46ef4fea94380a3298bf90625f3ed54b864d95825a40997447`
+- Embedded `sbom.cdx.json` SHA-256: `41b09272fbb1d30046d384ed8b14f73f6705f36f27d0f015a5672cbe7c592dc6`
+- Embedded VCS revision: `f7c257bf240ae979cd5962513e1e5d167dd9fe2f`
+- CycloneDX version: **1.5**
+- SBOM components: **278**
+
+The guarded publisher uses tag `upstream-v0.87.1`, checks out the accepted runtime SHA, reruns the security gates, verifies the embedded revision, and publishes `sbom.cdx.json` plus `sbom.cdx.json.sha256`. The v0.87.0 and v0.85.1 sections and assets remain historical records.
+
+## Historical accepted release: v0.87.0
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v0.87.0`

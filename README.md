@@ -1,24 +1,24 @@
 # rs-ai
 
 [![CI](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml)
-[![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.87.0/sbom.cdx.json)
+[![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.87.1/sbom.cdx.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Rust port of [@earendil-works/pi-ai](https://www.npmjs.com/package/@earendil-works/pi-ai) with model discovery, streaming events, tool calls, OAuth helpers, image generation, and multi-provider request plumbing.
 
-> **Experimental.** This crate is still pre-`v1` and is not published to crates.io. The accepted v0.87.0 runtime audit embeds 1445 text/chat models across 41 providers and 10 text/chat API protocols, plus 54 image models across one provider and one image API.
+> **Experimental.** This crate is still pre-`v1` and is not published to crates.io. The accepted v0.87.1 runtime audit embeds 1495 text/chat models across 41 providers and 10 text/chat API protocols, plus 55 image models across one provider and one image API.
 
 ## Documentation
 
 - [RELEASE.md](RELEASE.md) records upstream release bounds, catalog counts, runtime evidence, CI/SBOM evidence, and rollback notes.
 - [docs/upstream-parity-gaps.md](docs/upstream-parity-gaps.md) tracks current parity decisions, adapted surfaces, and documented N/A cases.
 - [docs/local-tests-shared.md](docs/local-tests-shared.md) records local gate history and shared test evidence.
-- [docs/v0870-150-test-crosswalk.md](docs/v0870-150-test-crosswalk.md), [docs/manifests/v0870-changed-paths-127.txt](docs/manifests/v0870-changed-paths-127.txt), and [docs/manifests/v0870-test-corpus-basename-150.txt](docs/manifests/v0870-test-corpus-basename-150.txt) capture the accepted v0.87.0 audit inventory. The v0.85.1 crosswalk and manifests remain in `docs/` as historical evidence.
+- [docs/v0871-150-test-crosswalk.md](docs/v0871-150-test-crosswalk.md), [docs/manifests/v0871-changed-paths-16.txt](docs/manifests/v0871-changed-paths-16.txt), and [docs/manifests/v0871-test-corpus-basename-150.txt](docs/manifests/v0871-test-corpus-basename-150.txt) capture the accepted v0.87.1 audit inventory. The v0.87.0 and v0.85.1 crosswalks and manifests remain in `docs/` as historical evidence.
 
 ## Features
 
 - Public `stream` and `complete` entry points over registered provider implementations.
-- Generated text/chat and image model registries regenerated from the pinned upstream v0.87.0 release data.
+- Generated text/chat and image model registries regenerated from the pinned upstream v0.87.1 release data.
 - JSON-compatible message, context, tool, usage, diagnostics, assistant-frame, deferred-tool, and stream-option types for cross-language transcript hand-off.
 - Tool calling with JSON Schema parameters, strict/constrained sampling helpers where providers expose them, partial JSON parsing for streamed arguments, and deferred tool loading metadata.
 - Reasoning/thinking support, including provider thinking levels, signed/redacted thinking replay, raw stop reasons, and provider-specific compatibility flags.
@@ -148,7 +148,7 @@ The generated catalog also includes provider metadata for OpenRouter, xAI, Groq,
 
 ## Compatibility/versioning
 
-The current accepted runtime tracks upstream `@earendil-works/pi-ai` v0.87.0. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
+The current accepted runtime tracks upstream `@earendil-works/pi-ai` v0.87.1. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
 
 Release audits update `RELEASE.md`, regenerated catalogs, and the per-release manifests in `docs/`. Repository tags should be treated as upstream-aligned checkpoints for the audited Rust port rather than a guarantee that every upstream JavaScript runtime surface exists unchanged in Rust.
 
@@ -158,7 +158,7 @@ This project is a derivative port of [@earendil-works/pi-ai](https://www.npmjs.c
 
 ## Supply-chain metadata
 
-The accepted v0.87.0 runtime is [`6096fe39de3128b8371718ceef5d9ce2c8e56705`](https://github.com/rcarmo/rs-ai/commit/6096fe39de3128b8371718ceef5d9ce2c8e56705). GitHub Actions run [`35660592647`](https://github.com/rcarmo/rs-ai/actions/runs/35660592647) produced the accepted 278-component SBOM artifact `10667527616`; the archive SHA-256 is `739c973b3910716228be42f5caebd8515346bc973b0ffdf8f0beaf0804a1de1f`, and the embedded `sbom.cdx.json` SHA-256 is `91b155954d3aa86776b410f8649ea7e02cd52ba0b0abb57288c581fee394ccf4`. Durable version-pinned assets use [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.87.0/sbom.cdx.json) and [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.87.0/sbom.cdx.json.sha256). Regenerate and validate the same data locally with `make sbom && make sbom-check`; the dispatch-only publisher checks the explicit accepted runtime ref before creating or replacing assets.
+The accepted v0.87.1 runtime is [`f7c257bf240ae979cd5962513e1e5d167dd9fe2f`](https://github.com/rcarmo/rs-ai/commit/f7c257bf240ae979cd5962513e1e5d167dd9fe2f). GitHub Actions run [`35793644589`](https://github.com/rcarmo/rs-ai/actions/runs/35793644589) produced the accepted 278-component CycloneDX 1.5 SBOM artifact `10723765029`; the archive SHA-256 is `7a788b0a4eeebe46ef4fea94380a3298bf90625f3ed54b864d95825a40997447`, and the embedded `sbom.cdx.json` SHA-256 is `41b09272fbb1d30046d384ed8b14f73f6705f36f27d0f015a5672cbe7c592dc6`. Durable version-pinned assets use [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.87.1/sbom.cdx.json) and [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.87.1/sbom.cdx.json.sha256). Regenerate and validate the same data locally with `make sbom && make sbom-check`; the dispatch-only publisher checks the explicit accepted runtime ref before creating or replacing assets.
 
 ## License
 

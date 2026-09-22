@@ -1,6 +1,16 @@
 # Upstream parity gap analysis
 
-## Current parity audit: `@earendil-works/pi-ai` v0.87.0
+## Current parity audit: `@earendil-works/pi-ai` v0.87.1
+
+The accepted scope is npm `@earendil-works/pi-ai@0.87.1` and tag/npm gitHead `f07218c4d4bbc12bef056a7058c3dd49dfe41abe`, covering `16787ad5b2dc748047f314ca1bfe7708f30f54f3..f07218c4d4bbc12bef056a7058c3dd49dfe41abe`. The range contains 16 changed paths and 9 changed tests; the final corpus remains 150 test basenames.
+
+Status: **ACCEPTED**. Runtime `f7c257bf240ae979cd5962513e1e5d167dd9fe2f` passed hosted CI run `35793644589` with 1027 tests, strict Clippy, format/build checks, manifest and metadata fault gates, reproducible generation, and SBOM/licence/RustSec review. The signed catalogs contain 1495 text/chat models across 41 providers and 10 APIs, 71 batch aliases, and 55 image models across one provider and one image API.
+
+Runtime adaptations cover exactly-empty text omission in OpenAI-compatible multimodal user messages, whitespace preservation, the Claude Code `2.1.280` OAuth identity, and generated metadata for Grok 4.7, Claude Opus 5.5, GPT-6 Sol/Luna, Copilot aliases and Ming Image. `docs/v0871-150-test-crosswalk.md` and `docs/manifests/v0871-*` hold the bounded path/test inventory and exact dispositions.
+
+Hosted artifact `10723765029` is named `rs-ai-sbom-f7c257bf240ae979cd5962513e1e5d167dd9fe2f`. Its ZIP SHA-256 is `7a788b0a4eeebe46ef4fea94380a3298bf90625f3ed54b864d95825a40997447`; the embedded CycloneDX 1.5 SBOM has 278 components, SHA-256 `41b09272fbb1d30046d384ed8b14f73f6705f36f27d0f015a5672cbe7c592dc6`, and the full accepted runtime revision.
+
+## Historical parity audit: `@earendil-works/pi-ai` v0.87.0
 
 The accepted scope is npm `@earendil-works/pi-ai@0.87.0` and tag `16787ad5b2dc748047f314ca1bfe7708f30f54f3`, covering `d981de1229ef899957bbe968bc8dcda02a21f477..16787ad5b2dc748047f314ca1bfe7708f30f54f3`. The range contains 127 changed paths and 82 changed tests; the final corpus contains 150 test basenames.
 
