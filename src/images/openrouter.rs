@@ -345,12 +345,14 @@ mod tests {
 
     fn img_model() -> ImagesModel {
         ImagesModel {
+            model_type: crate::types::ModelType::Image,
             id: "m".into(),
             name: "M".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://example.com".into(),
             input: vec!["text".into()],
+            input_limits: None,
             output: vec!["image".into()],
             cost: ModelCost {
                 input: 3.0,
@@ -359,6 +361,7 @@ mod tests {
                 cache_write: 0.0,
                 tiers: vec![],
             },
+            headers: None,
         }
     }
 

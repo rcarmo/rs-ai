@@ -139,7 +139,8 @@ fn stream_responses_inner<'a>(
     }
     let api_key = api_key.unwrap();
 
-    let mut payload = build_responses_payload(model, context, opts);
+    let chatgpt_sign_in = !is_azure && is_chatgpt_sign_in(model, &api_key);
+    let mut payload = build_responses_payload_with_auth(model, context, opts, chatgpt_sign_in);
     if is_azure {
         // Azure's request `model` field is the deployment name (mapped via
         // AZURE_OPENAI_DEPLOYMENT_NAME_MAP, else the model id). Mirrors resolveDeploymentName.
@@ -321,11 +322,12 @@ fn stream_responses_inner<'a>(
             // openai-responses brands errors "OpenAI API error"; azure-openai-responses
             // brands "Azure OpenAI API error" (mirrors formatProviderError prefixes).
             let prefix = if is_azure { "Azure OpenAI API error" } else { "OpenAI API error" };
+            let message = decorate_chatgpt_usage_error(
+                crate::error_body::format_provider_http_error(status, &body, Some(prefix)),
+            );
             yield Event::Error {
                 reason: StopReason::Error,
-                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                    crate::error_body::format_provider_http_error(status, &body, Some(prefix)),
-                )),
+                error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(message)),
                 message: None,
             };
             return;
@@ -351,6 +353,7 @@ fn stream_responses_inner<'a>(
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: opts.reasoning.as_ref().map(ModelThinkingLevel::from),
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
@@ -362,6 +365,7 @@ fn stream_responses_inner<'a>(
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -380,6 +384,11 @@ fn stream_responses_inner<'a>(
         let mut current_tool_item_id: Option<String> = None;
         let mut current_tool_name: Option<String> = None;
         let mut current_tool_args = String::new();
+        // Track every started tool item until its matching output_item.done. The
+        // normalizer still uses the current item for deltas, but terminal success
+        // must never expose truncated or ambiguously mixed calls to the agent.
+        let mut unfinished_tool_calls = indexmap::IndexMap::<String, (String, String, String)>::new();
+        let mut ambiguous_unindexed_tool_call: Option<(String, String, String)> = None;
         let grammar_props: std::collections::HashMap<String, String> = context.tools.iter().filter_map(|t| {
             crate::utils::resolve_grammar_constrained_sampling(t, model.compat.supports_openai_grammar_tools.unwrap_or(false)).ok().flatten().map(|g| (t.name.clone(), g.input_property))
         }).collect();
@@ -414,6 +423,18 @@ fn stream_responses_inner<'a>(
                     Ok(v) => v,
                     Err(_) => continue,
                 };
+                if let Some(hook) = &opts.on_provider_stream_event
+                    && let Err(error) = hook(data.clone(), model)
+                {
+                    partial.stop_reason = Some(StopReason::Error);
+                    partial.error_message = Some(error.to_string());
+                    yield Event::Error {
+                        reason: StopReason::Error,
+                        error: Arc::from(error),
+                        message: Some(partial.clone()),
+                    };
+                    return;
+                }
 
                 let event_type = data.get("type").and_then(|v| v.as_str()).unwrap_or("");
                 match event_type {
@@ -431,6 +452,16 @@ fn stream_responses_inner<'a>(
                                     current_tool_call_id = item.get("call_id").and_then(|v| v.as_str()).map(|s| s.to_string());
                                     current_tool_item_id = item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string());
                                     current_tool_name = item.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+                                    let pending = (
+                                        current_tool_name.clone().unwrap_or_default(),
+                                        current_tool_call_id.clone().unwrap_or_default(),
+                                        current_tool_item_id.clone().unwrap_or_default(),
+                                    );
+                                    if data.get("output_index").is_none() && !unfinished_tool_calls.is_empty() {
+                                        ambiguous_unindexed_tool_call = unfinished_tool_calls.first().map(|(_, value)| value.clone());
+                                    }
+                                    let key = current_tool_item_id.clone().or_else(|| current_tool_call_id.clone()).unwrap_or_default();
+                                    unfinished_tool_calls.insert(key, pending);
                                     current_tool_args = item.get("input").and_then(|v| v.as_str()).unwrap_or("").to_string();
                                     current_custom_buffer = crate::utils::GrammarToolInputJsonBuffer::default();
                                     if let (Some(id), Some(name)) = (current_tool_call_id.clone(), current_tool_name.clone()) {
@@ -441,6 +472,16 @@ fn stream_responses_inner<'a>(
                                     current_tool_call_id = item.get("call_id").and_then(|v| v.as_str()).map(|s| s.to_string());
                                     current_tool_item_id = item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string());
                                     current_tool_name = item.get("name").and_then(|v| v.as_str()).map(|s| s.to_string());
+                                    let pending = (
+                                        current_tool_name.clone().unwrap_or_default(),
+                                        current_tool_call_id.clone().unwrap_or_default(),
+                                        current_tool_item_id.clone().unwrap_or_default(),
+                                    );
+                                    if data.get("output_index").is_none() && !unfinished_tool_calls.is_empty() {
+                                        ambiguous_unindexed_tool_call = unfinished_tool_calls.first().map(|(_, value)| value.clone());
+                                    }
+                                    let key = current_tool_item_id.clone().or_else(|| current_tool_call_id.clone()).unwrap_or_default();
+                                    unfinished_tool_calls.insert(key, pending);
                                     current_tool_args = item.get("arguments").and_then(|v| v.as_str()).unwrap_or("").to_string();
                                     if let (Some(id), Some(name)) = (current_tool_call_id.clone(), current_tool_name.clone()) {
                                         yield Event::ToolCallStart { id, name };
@@ -538,6 +579,11 @@ fn stream_responses_inner<'a>(
                             match item.get("type").and_then(|v| v.as_str()) {
                                 Some("custom_tool_call") => {
                                     let id = item.get("call_id").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| current_tool_call_id.clone()).unwrap_or_default();
+                                    if let Some(item_id) = item.get("id").and_then(|v| v.as_str()) {
+                                        unfinished_tool_calls.shift_remove(item_id);
+                                    } else {
+                                        unfinished_tool_calls.shift_remove(&id);
+                                    }
                                     let item_id = item.get("id").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| current_tool_item_id.clone());
                                     let name = item.get("name").and_then(|v| v.as_str()).map(|s| s.to_string()).or_else(|| current_tool_name.clone()).unwrap_or_default();
                                     let input = item.get("input").and_then(|v| v.as_str()).unwrap_or(&current_tool_args);
@@ -550,6 +596,15 @@ fn stream_responses_inner<'a>(
                                     current_tool_call_id = None; current_tool_item_id = None; current_tool_name = None; current_tool_args.clear();
                                 }
                                 Some("function_call") => {
+                                    let id = item.get("call_id").and_then(|v| v.as_str())
+                                        .map(|s| s.to_string())
+                                        .or_else(|| current_tool_call_id.clone())
+                                        .unwrap_or_default();
+                                    if let Some(item_id) = item.get("id").and_then(|v| v.as_str()) {
+                                        unfinished_tool_calls.shift_remove(item_id);
+                                    } else {
+                                        unfinished_tool_calls.shift_remove(&id);
+                                    }
                                     let id = item.get("call_id").and_then(|v| v.as_str())
                                         .map(|s| s.to_string())
                                         .or_else(|| current_tool_call_id.clone())
@@ -625,6 +680,30 @@ fn stream_responses_inner<'a>(
                     }
                     "response.completed" | "response.incomplete" => {
                         if let Some(response) = data.get("response") {
+                            if response.get("status").and_then(|v| v.as_str()) == Some("completed") {
+                                let unfinished = ambiguous_unindexed_tool_call
+                                    .as_ref()
+                                    .or_else(|| unfinished_tool_calls.first().map(|(_, value)| value));
+                                if let Some((name, call_id, item_id)) = unfinished {
+                                    let combined_id = match (call_id.is_empty(), item_id.is_empty()) {
+                                        (false, false) => format!("{call_id}|{item_id}"),
+                                        (false, true) => call_id.clone(),
+                                        (true, false) => item_id.clone(),
+                                        (true, true) => String::new(),
+                                    };
+                                    let message = format!(
+                                        "OpenAI Responses stream completed with an unfinished tool call: {name} ({combined_id})"
+                                    );
+                                    partial.stop_reason = Some(StopReason::Error);
+                                    partial.error_message = Some(message.clone());
+                                    yield Event::Error {
+                                        reason: StopReason::Error,
+                                        error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(message)),
+                                        message: Some(partial.clone()),
+                                    };
+                                    return;
+                                }
+                            }
                             // Capture the terminal response id (mirrors upstream
                             // handleTerminalResponse: `output.responseId = response.id`),
                             // covering streams that omit a prior response.created.
@@ -712,6 +791,7 @@ fn stream_responses_inner<'a>(
                         } else {
                             "Unknown error (no error details in response)".to_string()
                         };
+                        let msg = decorate_chatgpt_usage_error(msg);
                         partial.stop_reason = Some(StopReason::Error);
                         partial.error_message = Some(msg.clone());
                         yield Event::Error {
@@ -963,6 +1043,32 @@ pub(crate) fn build_responses_payload(
     model: &Model,
     context: &Context,
     opts: &StreamOptions,
+) -> Value {
+    build_responses_payload_with_auth(model, context, opts, false)
+}
+
+pub(crate) fn is_chatgpt_sign_in(model: &Model, api_key: &str) -> bool {
+    model.provider == crate::types::provider_id::OPENAI
+        && model.base_url.trim_end_matches('/') == "https://api.openai.com/v1"
+        && !api_key.starts_with("sk-")
+}
+
+const CHATGPT_USAGE_URL: &str = "https://chatgpt.com/settings/usage";
+const CHATGPT_USAGE_LIMIT_CODE: &str = "subscription_sharing_usage_limit_exceeded";
+
+fn decorate_chatgpt_usage_error(message: String) -> String {
+    if message.contains(CHATGPT_USAGE_LIMIT_CODE) && !message.contains(CHATGPT_USAGE_URL) {
+        format!("{message}\nCheck your ChatGPT usage: {CHATGPT_USAGE_URL}")
+    } else {
+        message
+    }
+}
+
+fn build_responses_payload_with_auth(
+    model: &Model,
+    context: &Context,
+    opts: &StreamOptions,
+    chatgpt_sign_in: bool,
 ) -> Value {
     let compat = detect_compat(model);
     let supports_additional_tools = crate::deferred_tools::openai_supports_additional_tools(model);
@@ -1254,33 +1360,34 @@ pub(crate) fn build_responses_payload(
         "store": false,
     });
 
-    // Prompt caching: session id is sent via headers, not the body. The cache key
-    // is derived from the (resolved) retention.
+    // Prompt caching: ChatGPT direct-token sharing rejects cache retention fields.
     let retention = crate::prompt_cache::resolve_cache_retention(opts.cache_retention.as_ref());
-    match retention {
-        CacheRetention::None => {
-            if compat.supports_explicit_prompt_cache_mode == Some(true) {
-                payload["prompt_cache_options"] = json!({"mode": "explicit"});
-            }
-        }
-        CacheRetention::Short => {
-            if let Some(ref session_id) = opts.session_id {
-                payload["prompt_cache_key"] = json!(
-                    crate::prompt_cache::clamp_openai_prompt_cache_key(session_id)
-                );
-            }
-        }
-        CacheRetention::Long => {
-            if let Some(ref session_id) = opts.session_id {
-                payload["prompt_cache_key"] = json!(
-                    crate::prompt_cache::clamp_openai_prompt_cache_key(session_id)
-                );
-            }
-            if compat.supports_long_cache_retention != Some(false) {
+    if !chatgpt_sign_in {
+        match retention {
+            CacheRetention::None => {
                 if compat.supports_explicit_prompt_cache_mode == Some(true) {
-                    payload["prompt_cache_options"] = json!({"ttl": "30m"});
-                } else {
-                    payload["prompt_cache_retention"] = json!("24h");
+                    payload["prompt_cache_options"] = json!({"mode": "explicit"});
+                }
+            }
+            CacheRetention::Short => {
+                if let Some(ref session_id) = opts.session_id {
+                    payload["prompt_cache_key"] = json!(
+                        crate::prompt_cache::clamp_openai_prompt_cache_key(session_id)
+                    );
+                }
+            }
+            CacheRetention::Long => {
+                if let Some(ref session_id) = opts.session_id {
+                    payload["prompt_cache_key"] = json!(
+                        crate::prompt_cache::clamp_openai_prompt_cache_key(session_id)
+                    );
+                }
+                if compat.supports_long_cache_retention != Some(false) {
+                    if compat.supports_explicit_prompt_cache_mode == Some(true) {
+                        payload["prompt_cache_options"] = json!({"ttl": "30m"});
+                    } else {
+                        payload["prompt_cache_retention"] = json!("24h");
+                    }
                 }
             }
         }
@@ -1296,10 +1403,11 @@ pub(crate) fn build_responses_payload(
         context,
         opts.max_tokens.unwrap_or(model.max_tokens),
     );
-    if max_output != 0 && model.compat.supports_max_output_tokens != Some(false) {
+    if !chatgpt_sign_in && max_output != 0 && model.compat.supports_max_output_tokens != Some(false)
+    {
         payload["max_output_tokens"] = json!(max_output.max(OPENAI_RESPONSES_MIN_OUTPUT_TOKENS));
     }
-    if let Some(temp) = opts.temperature {
+    if !chatgpt_sign_in && let Some(temp) = opts.temperature {
         payload["temperature"] = json!(temp);
     }
     let mut sampling_params = model.sampling_params.clone();

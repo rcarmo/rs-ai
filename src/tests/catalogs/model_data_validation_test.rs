@@ -359,7 +359,7 @@ mod tests {
             "OpenAI GPT-5 Batch",
         );
         let stdout = run_extractor(&package_root, &out_root).unwrap();
-        assert!(stdout.contains("(1 models, 1 providers, 1 apis)"));
+        assert!(stdout.contains("(1 chat models, 1 providers, 1 apis)"));
         let metadata: serde_json::Value = serde_json::from_str(
             &fs::read_to_string(out_root.join("source-metadata.json")).unwrap(),
         )

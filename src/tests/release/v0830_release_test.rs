@@ -20,7 +20,7 @@ mod tests {
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1495);
+        assert_eq!(pairs.len(), 1523);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -94,7 +94,7 @@ mod tests {
             .into_iter()
             .map(|m| m.id)
             .collect::<HashSet<_>>();
-        assert_eq!(ids.len(), 55);
+        assert_eq!(ids.len(), 57);
         for id in [
             "krea/krea-2-large",
             "krea/krea-2-medium",
@@ -159,6 +159,7 @@ mod tests {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(crate::types::StopReason::Error),
@@ -170,6 +171,7 @@ mod tests {
             tool_name: None,
             is_error: true,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -231,6 +233,7 @@ mod tests {
                 response_id: None,
                 response_model: None,
                 provider_thinking_level: None,
+                thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,
@@ -242,6 +245,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                nested_calls: None,
                 added_tool_names: Vec::new(),
                 sections: None,
                 tools_added: Vec::new(),
@@ -604,6 +608,7 @@ mod tests {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(crate::types::StopReason::Pending),
@@ -615,6 +620,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),

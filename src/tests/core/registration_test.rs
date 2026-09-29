@@ -112,14 +112,17 @@ mod tests {
         images::clear_images_api_providers();
         images::register_builtin_image_providers();
         let model = images::ImagesModel {
+            model_type: crate::types::ModelType::Image,
             id: "dummy".into(),
             name: "Dummy".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "http://localhost:1".into(),
             input: vec!["text".into()],
+            input_limits: None,
             output: vec!["image".into()],
             cost: ModelCost::default(),
+            headers: None,
         };
         // generate_images should find a provider and not hit the missing-provider fallback
         let ctx = images::ImagesContext { input: vec![] };

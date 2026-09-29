@@ -101,7 +101,7 @@ fn now_ms() -> i64 {
         .unwrap_or(0)
 }
 
-fn assistant_message(model: &Model) -> Message {
+fn assistant_message(model: &Model, opts: &StreamOptions) -> Message {
     Message {
         role: Role::Assistant,
         content: Vec::new(),
@@ -112,6 +112,7 @@ fn assistant_message(model: &Model) -> Message {
         response_id: None,
         response_model: None,
         provider_thinking_level: None,
+        thinking_level: opts.reasoning.as_ref().map(ModelThinkingLevel::from),
         diagnostics: Vec::new(),
         usage: Some(empty_usage()),
         stop_reason: Some(StopReason::Stop),
@@ -123,6 +124,7 @@ fn assistant_message(model: &Model) -> Message {
         tool_name: None,
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: Vec::new(),
         sections: None,
         tools_added: Vec::new(),
@@ -456,7 +458,7 @@ pub fn stream_pi_messages<'a>(
         let headers_map: HashMap<String, String> = resp.headers().iter().filter_map(|(k,v)| Some((k.as_str().to_string(), v.to_str().ok()?.to_string()))).collect();
         if let Some(cb) = &opts.on_response { cb(status, &headers_map, model); }
         if !resp.status().is_success() { let body = resp.text().await.unwrap_or_default(); yield Event::Error { reason: StopReason::Error, error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(crate::error_body::format_provider_http_error(status, &body, None))), message: None }; return; }
-        let mut partial = assistant_message(model);
+        let mut partial = assistant_message(model, opts);
         let mut parser = SseParser::default();
         let mut tool_json = HashMap::new();
         let mut bytes = resp.bytes_stream();
@@ -464,7 +466,19 @@ pub fn stream_pi_messages<'a>(
             let chunk = match chunk { Ok(c) => c, Err(e) => { yield Event::Error { reason: StopReason::Error, error: Arc::new(e), message: Some(partial.clone()) }; return; } };
             for ev in parser.feed_bytes(&chunk) {
                 if ev.data.trim() == "[DONE]" { continue; }
-                match serde_json::from_str::<PiMessagesEvent>(&ev.data) {
+                let raw: Value = match serde_json::from_str(&ev.data) {
+                    Ok(value) => value,
+                    Err(error) => { yield Event::Error { reason: StopReason::Error, error: Arc::new(error), message: Some(partial.clone()) }; return; }
+                };
+                if let Some(hook) = &opts.on_provider_stream_event
+                    && let Err(error) = hook(raw.clone(), model)
+                {
+                    partial.stop_reason = Some(StopReason::Error);
+                    partial.error_message = Some(error.to_string());
+                    yield Event::Error { reason: StopReason::Error, error: Arc::from(error), message: Some(partial.clone()) };
+                    return;
+                }
+                match serde_json::from_value::<PiMessagesEvent>(raw) {
                     Ok(pi_ev) => { let out = convert_event(model, &mut partial, pi_ev, &mut tool_json); let terminal = matches!(out, Event::Done { .. } | Event::Error { .. }); yield out; if terminal { return; } }
                     Err(e) => { yield Event::Error { reason: StopReason::Error, error: Arc::new(e), message: Some(partial.clone()) }; return; }
                 }

@@ -72,7 +72,8 @@ def generation_timestamp(input_path: Path) -> str:
 
 def gen_model(m) -> str:
     lines = []
-    lines.append("        ImagesModel {")
+    lines.append("        ImageModel {")
+    lines.append("            model_type: ModelType::Image,")
     lines.append(f'            id: {rust_string(m["id"])}.into(),')
     lines.append(f'            name: {rust_string(m["name"])}.into(),')
     lines.append(f'            api: {rust_string(m["api"])}.into(),')
@@ -80,6 +81,13 @@ def gen_model(m) -> str:
     lines.append(f'            base_url: {rust_string(m.get("baseUrl", ""))}.into(),')
     inputs = ", ".join(f'{rust_string(i)}.into()' for i in m.get("input", []))
     lines.append(f"            input: vec![{inputs}],")
+    if m.get("inputLimits") is not None:
+        encoded = json.dumps(m["inputLimits"], separators=(",", ":"), sort_keys=True)
+        lines.append(
+            f'            input_limits: Some(serde_json::from_str({rust_string(encoded)}).unwrap()),'
+        )
+    else:
+        lines.append("            input_limits: None,")
     outputs = ", ".join(f'{rust_string(o)}.into()' for o in m.get("output", []))
     lines.append(f"            output: vec![{outputs}],")
     cost = m.get("cost", {})
@@ -88,6 +96,15 @@ def gen_model(m) -> str:
     cr = cost.get("cacheRead", 0)
     cw = cost.get("cacheWrite", 0)
     lines.append(f"            cost: ModelCost {{ input: {ci}_f64, output: {co}_f64, cache_read: {cr}_f64, cache_write: {cw}_f64, tiers: vec![] }},")
+    headers = m.get("headers")
+    if headers:
+        entries = ", ".join(
+            f'({rust_string(k)}.into(), {rust_string(v)}.into())'
+            for k, v in sorted(headers.items())
+        )
+        lines.append(f"            headers: Some(std::collections::HashMap::from([{entries}])),")
+    else:
+        lines.append("            headers: None,")
     lines.append("        }")
     return "\n".join(lines)
 
@@ -115,11 +132,11 @@ def main():
     out.append(f"//! Source: image-models.generated.js ({total} image models, {providers} provider)")
     out.append(f"//! Generated: {generated}")
     out.append("")
-    out.append("use crate::images::types::ImagesModel;")
-    out.append("use crate::types::ModelCost;")
+    out.append("use crate::images::types::ImageModel;")
+    out.append("use crate::types::{ModelCost, ModelType};")
     out.append("")
     out.append("/// Returns all built-in image models from the upstream pi-ai registry.")
-    out.append("pub fn builtin_image_models() -> Vec<ImagesModel> {")
+    out.append("pub fn builtin_image_models() -> Vec<ImageModel> {")
     out.append("    vec![")
     for m in all_models:
         out.append(gen_model(m) + ",")

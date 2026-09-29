@@ -63,6 +63,7 @@ mod tests {
             response_id: Some("resp-1".into()),
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: Some(Usage {
                 input: 10,
@@ -79,6 +80,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),

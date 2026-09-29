@@ -16,8 +16,8 @@ mod tests {
     }
 
     #[test]
-    fn together_registers_default_kimi_k2_6_via_openai_completions() {
-        let m = get_model("together", "moonshotai/Kimi-K2.6").expect("together kimi");
+    fn together_registers_default_kimi_k3_via_openai_completions() {
+        let m = get_model("together", "moonshotai/Kimi-K3").expect("together kimi");
         assert_eq!(m.api, "openai-completions");
         assert_eq!(m.provider, "together");
         assert_eq!(m.base_url, "https://api.together.ai/v1");
@@ -27,11 +27,11 @@ mod tests {
             Some(tlm(&[("minimal", None), ("low", None), ("medium", None)]))
         );
         assert_eq!(m.input, vec!["text".to_string(), "image".to_string()]);
-        assert_eq!(m.context_window, 262144);
-        assert_eq!(m.max_tokens, 131000);
-        assert_eq!(m.cost.input, 1.2);
-        assert_eq!(m.cost.output, 4.5);
-        assert_eq!(m.cost.cache_read, 0.2);
+        assert_eq!(m.context_window, 1_048_576);
+        assert_eq!(m.max_tokens, 131_072);
+        assert_eq!(m.cost.input, 3.0);
+        assert_eq!(m.cost.output, 15.0);
+        assert_eq!(m.cost.cache_read, 0.3);
         assert_eq!(m.cost.cache_write, 0.0);
         assert_eq!(m.compat.supports_developer_role, Some(false));
         assert_eq!(m.compat.supports_reasoning_effort, Some(false));

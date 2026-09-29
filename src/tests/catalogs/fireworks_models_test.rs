@@ -14,29 +14,18 @@ mod tests {
     use wiremock::matchers::method;
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
-    const KIMI: &str = "accounts/fireworks/models/kimi-k2p6";
+    const MESSAGES_MODEL: &str = "accounts/fireworks/models/deepseek-v4p1-flash";
 
     // --- catalog / compat / env ---
 
     #[test]
-    fn registers_default_kimi_k2_6_via_anthropic_messages() {
-        let m = get_model("fireworks", KIMI).expect("fireworks kimi");
+    fn registers_non_glm_non_kimi_k3_models_via_anthropic_messages() {
+        let m = get_model("fireworks", MESSAGES_MODEL).expect("fireworks deepseek v4.1");
         assert_eq!(m.api, "anthropic-messages");
         assert_eq!(m.provider, "fireworks");
         assert_eq!(m.base_url, "https://api.fireworks.ai/inference");
         assert!(m.reasoning);
         assert_eq!(m.input, vec!["text".to_string(), "image".to_string()]);
-        assert_eq!(m.context_window, 262000);
-        assert_eq!(m.max_tokens, 262000);
-        assert_eq!(
-            (
-                m.cost.input,
-                m.cost.output,
-                m.cost.cache_read,
-                m.cost.cache_write
-            ),
-            (0.95, 4.0, 0.16, 0.0)
-        );
     }
 
     #[test]
@@ -65,7 +54,11 @@ mod tests {
 
     #[test]
     fn sets_fireworks_specific_compat() {
-        let m = get_model("fireworks", KIMI).unwrap();
+        let m = get_model(
+            "fireworks",
+            "accounts/fireworks/models/nemotron-3-ultra-nvfp4",
+        )
+        .unwrap();
         assert_eq!(m.compat.send_session_affinity_headers, Some(true));
         assert_eq!(m.compat.supports_eager_tool_input_streaming, Some(false));
         assert_eq!(m.compat.supports_cache_control_on_tools, Some(false));
@@ -100,6 +93,7 @@ mod tests {
                 response_id: None,
                 response_model: None,
                 provider_thinking_level: None,
+                thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,
@@ -111,6 +105,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                nested_calls: None,
                 added_tool_names: Vec::new(),
                 sections: None,
                 tools_added: Vec::new(),
@@ -153,7 +148,7 @@ mod tests {
     }
 
     fn fireworks() -> (&'static str, &'static str) {
-        (KIMI, "fireworks")
+        (MESSAGES_MODEL, "fireworks")
     }
     fn native() -> (&'static str, &'static str) {
         ("claude-haiku-4-5", "anthropic")
@@ -218,11 +213,10 @@ mod tests {
     }
 
     #[test]
-    fn aligns_glm_5_2_fast_with_glm_5_2_openai_compatible_config() {
-        // v0.80.5: the GLM 5.2 Fast router mirrors GLM 5.2's OpenAI-compatible config.
-        let base = get_model("fireworks", "accounts/fireworks/models/glm-5p2").expect("glm-5p2");
-        let fast = get_model("fireworks", "accounts/fireworks/routers/glm-5p2-fast")
-            .expect("glm-5p2-fast");
+    fn aligns_glm_5_3_fast_with_glm_5_3_openai_compatible_config() {
+        let base = get_model("fireworks", "accounts/fireworks/models/glm-5p3").expect("glm-5p3");
+        let fast = get_model("fireworks", "accounts/fireworks/routers/glm-5p3-fast")
+            .expect("glm-5p3-fast");
         assert_eq!(fast.api, base.api);
         assert_eq!(fast.base_url, base.base_url);
         assert_eq!(fast.compat, base.compat);

@@ -6,6 +6,15 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 
+/// Model catalog discriminator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ModelType {
+    Chat,
+    Image,
+    Classifier,
+}
+
 /// Wire protocol identifier.
 pub type Api = String;
 
@@ -21,6 +30,10 @@ pub mod api {
     pub const GOOGLE_VERTEX: &str = "google-vertex";
     pub const MISTRAL_CONVERSATIONS: &str = "mistral-conversations";
     pub const PI_MESSAGES: &str = "pi-messages";
+    pub const OPENROUTER_IMAGES: &str = "openrouter-images";
+    pub const TYPESAFE_SYSTEM_ONE: &str = "typesafe-system-one";
+    pub const CLOUDFLARE_WORKERS_AI_SYSTEM_ONE: &str = "cloudflare-workers-ai-system-one";
+    pub const LLAMA_CPP_CLASSIFY: &str = "llama-cpp-classify";
 }
 
 /// Provider identifier.
@@ -49,6 +62,7 @@ pub mod provider_id {
     pub const DEEPSEEK: &str = "deepseek";
     pub const ANT_LING: &str = "ant-ling";
     pub const NVIDIA: &str = "nvidia";
+    pub const TYPESAFE: &str = "typesafe";
 }
 
 /// Thinking/reasoning level.
@@ -76,6 +90,19 @@ pub enum ModelThinkingLevel {
     #[serde(rename = "xhigh")]
     XHigh,
     Max,
+}
+
+impl From<&ThinkingLevel> for ModelThinkingLevel {
+    fn from(level: &ThinkingLevel) -> Self {
+        match level {
+            ThinkingLevel::Minimal => Self::Minimal,
+            ThinkingLevel::Low => Self::Low,
+            ThinkingLevel::Medium => Self::Medium,
+            ThinkingLevel::High => Self::High,
+            ThinkingLevel::XHigh => Self::XHigh,
+            ThinkingLevel::Max => Self::Max,
+        }
+    }
 }
 
 /// Message sender role.
@@ -244,6 +271,39 @@ pub struct AssistantMessageDiagnostic {
     pub details: Option<HashMap<String, serde_json::Value>>,
 }
 
+/// One bounded record of a tool call made by another tool while it ran.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct NestedToolCallRecord {
+    pub id: String,
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arguments: Option<serde_json::Map<String, serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arguments_bytes: Option<usize>,
+    pub status: NestedToolCallStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum NestedToolCallStatus {
+    Ok,
+    Error,
+    Unfinished,
+}
+
+/// Bounded nested-call metadata retained in the session record but not sent to models.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct NestedToolCalls {
+    pub calls: Vec<NestedToolCallRecord>,
+    pub complete: bool,
+}
+
 /// Per-million-token cost rates (base tier or a request-wide pricing tier).
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -315,6 +375,8 @@ pub struct Message {
     pub response_model: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider_thinking_level: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub thinking_level: Option<ModelThinkingLevel>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub diagnostics: Vec<AssistantMessageDiagnostic>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -339,6 +401,8 @@ pub struct Message {
     pub is_error: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub nested_calls: Option<NestedToolCalls>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub added_tool_names: Vec<String>,
 
@@ -378,6 +442,140 @@ pub struct Context {
     pub messages: Vec<Message>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tools: Vec<Tool>,
+}
+
+/// A typed classification question.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum ClassifierQuestion {
+    Choice {
+        instructions: String,
+        criteria: indexmap::IndexMap<String, String>,
+    },
+    Score {
+        instructions: String,
+        criteria: Vec<String>,
+    },
+    Bool {
+        instructions: String,
+        criteria: ClassifierBoolCriteria,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClassifierBoolCriteria {
+    #[serde(rename = "true")]
+    pub true_value: String,
+    #[serde(rename = "false")]
+    pub false_value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClassifierContext {
+    pub state: serde_json::Map<String, serde_json::Value>,
+    pub questions: indexmap::IndexMap<String, ClassifierQuestion>,
+}
+
+/// A typed classification answer.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum ClassifierAnswer {
+    Choice {
+        choice: String,
+        probabilities: indexmap::IndexMap<String, f64>,
+        confidence: f64,
+    },
+    Score {
+        score: f64,
+        confidence: f64,
+    },
+    Bool {
+        probability: f64,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ClassifierStopReason {
+    Stop,
+    Error,
+    Aborted,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassifierResult {
+    pub api: Api,
+    pub provider: Provider,
+    pub model: String,
+    pub answers: indexmap::IndexMap<String, ClassifierAnswer>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usage: Option<Usage>,
+    pub stop_reason: ClassifierStopReason,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error_message: Option<String>,
+    pub timestamp: i64,
+}
+
+/// Classifier model definition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassifierModel {
+    #[serde(rename = "type")]
+    pub model_type: ModelType,
+    pub id: String,
+    pub name: String,
+    pub api: Api,
+    pub provider: Provider,
+    pub base_url: String,
+    #[serde(default)]
+    pub input: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input_limits: Option<serde_json::Value>,
+    pub cost: ModelCost,
+    pub context_window: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub headers: Option<HashMap<String, String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub api_key: Option<String>,
+}
+
+/// A typed model from the unified v0.99 catalog.
+///
+/// Image and classifier records carry required discriminators. Chat is the
+/// backwards-compatible default and therefore keeps the upstream optional type.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AnyModel {
+    Image(crate::images::ImageModel),
+    Classifier(ClassifierModel),
+    Chat(Box<Model>),
+}
+
+impl AnyModel {
+    pub fn model_type(&self) -> ModelType {
+        match self {
+            Self::Chat(_) => ModelType::Chat,
+            Self::Image(_) => ModelType::Image,
+            Self::Classifier(_) => ModelType::Classifier,
+        }
+    }
+
+    pub fn id(&self) -> &str {
+        match self {
+            Self::Chat(model) => &model.id,
+            Self::Image(model) => &model.id,
+            Self::Classifier(model) => &model.id,
+        }
+    }
+
+    pub fn provider(&self) -> &str {
+        match self {
+            Self::Chat(model) => &model.provider,
+            Self::Image(model) => &model.provider,
+            Self::Classifier(model) => &model.provider,
+        }
+    }
 }
 
 /// Model definition.
@@ -540,6 +738,11 @@ pub type PayloadHook = Arc<
         + Sync,
 >;
 pub type ResponseHook = Arc<dyn Fn(u16, &HashMap<String, String>, &Model) + Send + Sync>;
+pub type ProviderStreamEventHook = Arc<
+    dyn Fn(serde_json::Value, &Model) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+        + Send
+        + Sync,
+>;
 
 #[derive(Clone, Default)]
 pub struct StreamOptions {
@@ -576,6 +779,8 @@ pub struct StreamOptions {
     pub thinking_display: Option<String>,
     pub on_payload: Option<PayloadHook>,
     pub on_response: Option<ResponseHook>,
+    /// Observe each parsed provider event before rs-ai normalization.
+    pub on_provider_stream_event: Option<ProviderStreamEventHook>,
     /// Google Vertex AI project ID (overrides GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT).
     pub project: Option<String>,
     /// Google Vertex AI location (overrides GOOGLE_CLOUD_LOCATION).
@@ -613,6 +818,10 @@ impl std::fmt::Debug for StreamOptions {
             .field("interleaved_thinking", &self.interleaved_thinking)
             .field("thinking_display", &self.thinking_display)
             .field(
+                "on_provider_stream_event",
+                &self.on_provider_stream_event.as_ref().map(|_| "<hook>"),
+            )
+            .field(
                 "thinking_budgets",
                 &self.thinking_budgets.as_ref().map(|_| "..."),
             )
@@ -638,6 +847,7 @@ pub fn user_message(text: &str) -> Message {
         response_id: None,
         response_model: None,
         provider_thinking_level: None,
+        thinking_level: None,
         diagnostics: Vec::new(),
         usage: None,
         stop_reason: None,
@@ -649,6 +859,7 @@ pub fn user_message(text: &str) -> Message {
         tool_name: None,
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: Vec::new(),
         sections: None,
         tools_added: Vec::new(),

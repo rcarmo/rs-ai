@@ -35,7 +35,7 @@ mod tests {
             .iter()
             .map(|model| model.api.as_str())
             .collect::<HashSet<_>>();
-        assert_eq!(models.len(), 1495);
+        assert_eq!(models.len(), 1523);
         assert_eq!(providers.len(), 41);
         assert_eq!(apis.len(), 10);
         assert_eq!(
@@ -43,11 +43,11 @@ mod tests {
                 .iter()
                 .filter(|model| model.id.contains(":batch"))
                 .count(),
-            71
+            75
         );
 
         let images = crate::images::models_generated::builtin_image_models();
-        assert_eq!(images.len(), 55);
+        assert_eq!(images.len(), 57);
         assert!(images.iter().any(|model| {
             model.provider == "openrouter" && model.id == "inclusionai/ming-image-0.1-design"
         }));

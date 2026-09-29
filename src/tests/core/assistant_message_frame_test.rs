@@ -21,6 +21,7 @@ fn seed() -> Message {
         response_id: None,
         response_model: None,
         provider_thinking_level: None,
+        thinking_level: None,
         diagnostics: Vec::new(),
         usage: Some(Usage {
             input: 0,
@@ -42,6 +43,7 @@ fn seed() -> Message {
         tool_name: None,
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: Vec::new(),
         sections: None,
         tools_added: Vec::new(),

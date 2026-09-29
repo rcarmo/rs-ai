@@ -59,6 +59,7 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/anthropic/claude-sonnet-4.5:batch",
     "openrouter/anthropic/claude-sonnet-4.6:batch",
     "openrouter/anthropic/claude-sonnet-5:batch",
+    "openrouter/anthropic/claude-sonnet-5.5:batch",
     "openrouter/google/gemini-2.5-flash-lite:batch",
     "openrouter/google/gemini-2.5-flash:batch",
     "openrouter/google/gemini-2.5-pro:batch",
@@ -103,6 +104,8 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/openai/gpt-6-astra:batch",
     "openrouter/openai/gpt-6-luna-pro:batch",
     "openrouter/openai/gpt-6-luna:batch",
+    "openrouter/openai/gpt-6.1-sol-pro:batch",
+    "openrouter/openai/gpt-6.1-sol:batch",
     "openrouter/openai/gpt-6-sol-pro:batch",
     "openrouter/openai/gpt-6-sol:batch",
     "openrouter/openai/gpt-5:batch",
@@ -183,7 +186,11 @@ def main() -> int:
     manifest_path = data_dir / ".manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 
-    models = {}
+    schema_version = manifest.get("schemaVersion", 3)
+    if schema_version not in {3, 6}:
+        raise SystemExit(f"unsupported provider shard schema: {schema_version}")
+
+    by_type = {"chat": {}, "image": {}, "classifier": {}}
     shard_hashes = {}
     batch_ids = []
     for path in sorted(data_dir.glob("*.json")):
@@ -191,12 +198,36 @@ def main() -> int:
             continue
         provider = path.stem
         shard_hashes[path.name] = sha256(path)
-        entries = {m["id"]: m for m in flatten(json.loads(path.read_text()))}
-        for model_id in entries:
-            if ":batch" in model_id:
-                batch_ids.append(f"{provider}/{model_id}")
-        models[provider] = dict(sorted(entries.items()))
+        provider_types = {"chat": {}, "image": {}, "classifier": {}}
+        grouped = json.loads(path.read_text())
+        for api, stored in grouped.items():
+            for stored_key, model in stored.items():
+                if schema_version == 6:
+                    if ":" not in stored_key:
+                        raise SystemExit(f"typed model key lacks discriminator: {provider}/{stored_key}")
+                    model_type, expected_id = stored_key.split(":", 1)
+                else:
+                    model_type, expected_id = "chat", stored_key
+                if model_type not in provider_types:
+                    raise SystemExit(f"unknown model type: {model_type}")
+                if model.get("id") != expected_id:
+                    raise SystemExit(
+                        f"typed model key/id mismatch: {provider}/{stored_key} != {model.get('id')}"
+                    )
+                if model.get("provider") != provider or model.get("api") != api:
+                    raise SystemExit(f"typed model provider/API mismatch: {provider}/{stored_key}")
+                if schema_version == 6 and model.get("type") != model_type:
+                    raise SystemExit(f"typed model discriminator mismatch: {provider}/{stored_key}")
+                provider_types[model_type][expected_id] = model
+                if model_type == "chat" and ":batch" in expected_id:
+                    batch_ids.append(f"{provider}/{expected_id}")
+        for model_type, entries in provider_types.items():
+            if entries:
+                by_type[model_type][provider] = dict(sorted(entries.items()))
 
+    models = by_type["chat"]
+    image_models = by_type["image"]
+    classifier_models = by_type["classifier"]
     batch_ids = sorted(batch_ids)
     unexpected_batch_ids = sorted(set(batch_ids) - ALLOWED_BATCH_ALIASES)
     if unexpected_batch_ids:
@@ -213,6 +244,12 @@ def main() -> int:
 
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "models.json").write_text(json.dumps(models, indent=2, sort_keys=True) + "\n")
+    (out_dir / "image-models.json").write_text(
+        json.dumps(image_models, indent=2, sort_keys=True) + "\n"
+    )
+    (out_dir / "classifier-models.json").write_text(
+        json.dumps(classifier_models, indent=2, sort_keys=True) + "\n"
+    )
     package_json = package_dir / "package.json"
     metadata = {
         "source": "npm-dist-provider-shards",
@@ -222,9 +259,24 @@ def main() -> int:
         "manifest": manifest,
         "manifestSha256": sha256(manifest_path) if manifest_path.exists() else None,
         "providerShardSha256": shard_hashes,
+        "schemaVersion": schema_version,
+        "providerFileCount": len(shard_hashes),
         "providerCount": len(models),
         "modelCount": sum(len(v) for v in models.values()),
         "apiCount": len({m["api"] for mods in models.values() for m in mods.values()}),
+        "imageProviderCount": len(image_models),
+        "imageModelCount": sum(len(v) for v in image_models.values()),
+        "imageApiCount": len(
+            {m["api"] for mods in image_models.values() for m in mods.values()}
+        ),
+        "classifierProviderCount": len(classifier_models),
+        "classifierModelCount": sum(len(v) for v in classifier_models.values()),
+        "classifierApiCount": len(
+            {m["api"] for mods in classifier_models.values() for m in mods.values()}
+        ),
+        "totalRecordCount": sum(
+            len(v) for catalogs in by_type.values() for v in catalogs.values()
+        ),
         "batchAliasCount": len(batch_ids),
         "batchAliases": batch_ids,
         "allowedBatchAliasPolicySha256": hashlib.sha256(
@@ -241,7 +293,21 @@ def main() -> int:
             if metadata.get("tagHead") != args.tag_sha:
                 raise SystemExit(f"tag worktree HEAD mismatch: {metadata.get('tagHead')} != {args.tag_sha}")
     (out_dir / "source-metadata.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n")
-    print(f"wrote {out_dir / 'models.json'} ({metadata['modelCount']} models, {metadata['providerCount']} providers, {metadata['apiCount']} apis)")
+    print(
+        f"wrote {out_dir / 'models.json'} "
+        f"({metadata['modelCount']} chat models, {metadata['providerCount']} providers, "
+        f"{metadata['apiCount']} apis)"
+    )
+    print(
+        f"wrote {out_dir / 'image-models.json'} "
+        f"({metadata['imageModelCount']} image models, {metadata['imageProviderCount']} providers, "
+        f"{metadata['imageApiCount']} apis)"
+    )
+    print(
+        f"wrote {out_dir / 'classifier-models.json'} "
+        f"({metadata['classifierModelCount']} classifier models, "
+        f"{metadata['classifierProviderCount']} providers, {metadata['classifierApiCount']} apis)"
+    )
     print(f"wrote {out_dir / 'source-metadata.json'}")
     return 0
 

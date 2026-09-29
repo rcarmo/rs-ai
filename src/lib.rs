@@ -21,6 +21,8 @@
 pub mod assistant_message_frame;
 pub mod auth;
 pub mod auth_providers;
+pub mod classifier_models_generated;
+pub mod classifiers;
 pub mod compaction;
 pub mod compat;
 pub mod context;
@@ -35,9 +37,12 @@ pub mod http_proxy;
 pub mod images;
 pub mod jsonparse;
 pub mod logger;
+pub mod model_catalog;
 pub mod models_generated;
 pub mod models_runtime;
 pub mod oauth;
+pub mod oauth_callback;
+pub mod openai_chatgpt_oauth;
 pub mod prompt_cache;
 pub mod provider;
 pub mod registry;
@@ -118,6 +123,9 @@ mod bedrock_images_models_test;
 #[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/providers/bedrock/bedrock_thinking_payload_test.rs"]
 mod bedrock_thinking_payload_test;
+#[cfg(test)]
+#[path = "tests/providers/other/classifier_system_one_test.rs"]
+mod classifier_system_one_test;
 #[cfg(test)]
 #[path = "tests/transports/cloudflare_stream_test.rs"]
 mod cloudflare_stream_test;
@@ -212,8 +220,14 @@ mod integration_test;
 #[path = "tests/core/lax_message_content_test.rs"]
 mod lax_message_content_test;
 #[cfg(test)]
+#[path = "tests/providers/other/llama_cpp_classify_test.rs"]
+mod llama_cpp_classify_test;
+#[cfg(test)]
 #[path = "tests/catalogs/max_thinking_test.rs"]
 mod max_thinking_test;
+#[cfg(test)]
+#[path = "tests/core/message_metadata_v0991_test.rs"]
+mod message_metadata_v0991_test;
 #[cfg(test)]
 #[path = "tests/auth/oauth/meta_oauth_test.rs"]
 mod meta_oauth_test;
@@ -224,6 +238,9 @@ mod mistral_reasoning_mode_test;
 #[path = "tests/catalogs/model_data_validation_test.rs"]
 mod model_data_validation_test;
 #[cfg(test)]
+#[path = "tests/catalogs/model_types_v0991_test.rs"]
+mod model_types_v0991_test;
+#[cfg(test)]
 #[path = "tests/auth/oauth/models_runtime_auth_test.rs"]
 mod models_runtime_auth_test;
 #[cfg(test)]
@@ -233,8 +250,14 @@ mod models_runtime_refresh_test;
 #[path = "tests/auth/oauth/oauth_auth_test.rs"]
 mod oauth_auth_test;
 #[cfg(test)]
+#[path = "tests/auth/oauth/oauth_callback_server_test.rs"]
+mod oauth_callback_server_test;
+#[cfg(test)]
 #[path = "tests/auth/oauth/oauth_device_code_test.rs"]
 mod oauth_device_code_test;
+#[cfg(test)]
+#[path = "tests/auth/oauth/openai_chatgpt_oauth_test.rs"]
+mod openai_chatgpt_oauth_test;
 #[cfg(test)]
 #[path = "tests/auth/oauth/openai_codex_oauth_test.rs"]
 mod openai_codex_oauth_test;
@@ -250,6 +273,9 @@ mod openai_completions_empty_tools_test;
 #[cfg(test)]
 #[path = "tests/providers/openai/openai_completions_prompt_cache_test.rs"]
 mod openai_completions_prompt_cache_test;
+#[cfg(test)]
+#[path = "tests/providers/openai/openai_completions_provider_stream_event_test.rs"]
+mod openai_completions_provider_stream_event_test;
 #[cfg(test)]
 #[path = "tests/providers/openai/openai_completions_reasoning_details_test.rs"]
 mod openai_completions_reasoning_details_test;
@@ -268,6 +294,9 @@ mod openai_completions_tool_result_images_test;
 #[cfg(test)]
 #[path = "tests/providers/openai/openai_encrypted_reasoning_test.rs"]
 mod openai_encrypted_reasoning_test;
+#[cfg(test)]
+#[path = "tests/providers/openai/openai_responses_chatgpt_sign_in_test.rs"]
+mod openai_responses_chatgpt_sign_in_test;
 #[cfg(test)]
 #[path = "tests/providers/openai/openai_responses_copilot_provider_test.rs"]
 mod openai_responses_copilot_provider_test;

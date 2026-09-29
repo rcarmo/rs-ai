@@ -86,6 +86,8 @@ struct AssistantStartPartialWire<'a> {
     response_model: &'a Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     provider_thinking_level: &'a Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thinking_level: &'a Option<crate::types::ModelThinkingLevel>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     diagnostics: &'a Vec<AssistantMessageDiagnostic>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -106,6 +108,7 @@ impl<'a> From<&'a Message> for AssistantStartPartialWire<'a> {
             response_id: &message.response_id,
             response_model: &message.response_model,
             provider_thinking_level: &message.provider_thinking_level,
+            thinking_level: &message.thinking_level,
             diagnostics: &message.diagnostics,
             usage: &message.usage,
             stop_reason: &message.stop_reason,
@@ -129,6 +132,8 @@ struct AssistantStartPartialOwned {
     #[serde(default)]
     provider_thinking_level: Option<String>,
     #[serde(default)]
+    thinking_level: Option<crate::types::ModelThinkingLevel>,
+    #[serde(default)]
     diagnostics: Vec<AssistantMessageDiagnostic>,
     usage: Usage,
     stop_reason: StopReason,
@@ -146,6 +151,7 @@ impl From<AssistantStartPartialOwned> for Message {
             response_id: value.response_id,
             response_model: value.response_model,
             provider_thinking_level: value.provider_thinking_level,
+            thinking_level: value.thinking_level,
             diagnostics: value.diagnostics,
             usage: Some(value.usage),
             stop_reason: Some(value.stop_reason),
@@ -157,6 +163,7 @@ impl From<AssistantStartPartialOwned> for Message {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -1393,6 +1400,7 @@ fn clone_start_message(message: &Message) -> Message {
         response_id: message.response_id.clone(),
         response_model: message.response_model.clone(),
         provider_thinking_level: message.provider_thinking_level.clone(),
+        thinking_level: message.thinking_level.clone(),
         diagnostics: message.diagnostics.clone(),
         usage: message.usage.clone(),
         stop_reason: Some(StopReason::Pending),
@@ -1404,6 +1412,7 @@ fn clone_start_message(message: &Message) -> Message {
         tool_name: None,
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: Vec::new(),
         sections: None,
         tools_added: Vec::new(),

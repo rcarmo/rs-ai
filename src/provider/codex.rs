@@ -66,6 +66,16 @@ pub(crate) fn is_ws_connection_limit_error(err: &str) -> bool {
     err.starts_with(WS_CONNECTION_LIMIT_CODE)
 }
 
+const PROVIDER_STREAM_CALLBACK_ERROR_PREFIX: &str = "provider_stream_event_callback:";
+
+fn provider_stream_callback_error(error: &(dyn std::error::Error + Send + Sync)) -> String {
+    format!("{PROVIDER_STREAM_CALLBACK_ERROR_PREFIX}{error}")
+}
+
+fn is_provider_stream_callback_error(error: &str) -> bool {
+    error.starts_with(PROVIDER_STREAM_CALLBACK_ERROR_PREFIX)
+}
+
 fn codex_ws_cache_key(account_id: Option<&str>, session_id: Option<&str>) -> Option<String> {
     let session = session_id.filter(|s| !s.is_empty())?;
     Some(format!("{}\0{}", account_id.unwrap_or(""), session))
@@ -180,6 +190,16 @@ pub fn stream_codex<'a>(
                     break;
                 }
                 Err(ws_err) => {
+                    if is_provider_stream_callback_error(&ws_err) {
+                        yield Event::Error {
+                            reason: StopReason::Error,
+                            error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
+                                ws_err.trim_start_matches(PROVIDER_STREAM_CALLBACK_ERROR_PREFIX).to_string(),
+                            )),
+                            message: None,
+                        };
+                        return;
+                    }
                     if !retried_connection_limit && is_ws_connection_limit_error(&ws_err) {
                         retried_connection_limit = true;
                         continue;
@@ -304,7 +324,7 @@ pub fn stream_codex<'a>(
 
                 use futures::StreamExt;
                 let mut parser = sse::SseParser::default();
-                let mut state = CodexWsState::new(model);
+                let mut state = CodexWsState::new(model, opts.reasoning.as_ref());
                 state.service_tier = opts.service_tier.clone();
                 if let Some(d) = transport_diagnostic {
                     state.partial.diagnostics.push(d);
@@ -327,6 +347,16 @@ pub fn stream_codex<'a>(
                     for evt in parser.feed_bytes(&chunk) {
                         if evt.event == sse::EVENT_ERROR { continue; }
                         if let Ok(data) = serde_json::from_str::<Value>(&evt.data) {
+                            if let Some(hook) = &opts.on_provider_stream_event
+                                && let Err(error) = hook(data.clone(), model)
+                            {
+                                yield Event::Error {
+                                    reason: StopReason::Error,
+                                    error: Arc::from(error),
+                                    message: Some(state.partial.clone()),
+                                };
+                                return;
+                            }
                             done = state.process_event(&data);
                             if done { break; }
                         }
@@ -342,6 +372,16 @@ pub fn stream_codex<'a>(
                         && evt.event != sse::EVENT_ERROR
                         && let Ok(data) = serde_json::from_str::<Value>(&evt.data)
                     {
+                        if let Some(hook) = &opts.on_provider_stream_event
+                            && let Err(error) = hook(data.clone(), model)
+                        {
+                            yield Event::Error {
+                                reason: StopReason::Error,
+                                error: Arc::from(error),
+                                message: Some(state.partial.clone()),
+                            };
+                            return;
+                        }
                         done = state.process_event(&data);
                     }
                     while emitted < state.events.len() {
@@ -448,7 +488,7 @@ async fn try_websocket(
     .map_err(|e| e.to_string())?;
 
     use futures::StreamExt;
-    let mut state = CodexWsState::new(model);
+    let mut state = CodexWsState::new(model, opts.reasoning.as_ref());
     state.service_tier = opts.service_tier.clone();
 
     let mut saw_terminal = false;
@@ -461,6 +501,10 @@ async fn try_websocket(
         };
 
         let data: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+        if let Some(hook) = &opts.on_provider_stream_event {
+            hook(data.clone(), model)
+                .map_err(|error| provider_stream_callback_error(error.as_ref()))?;
+        }
         // A `websocket_connection_limit_reached` error event means the server rejected
         // this connection because too many are open; upstream treats it as a retryable
         // pre-start transport failure (retry the WS once, then fall back to SSE) rather
@@ -511,7 +555,7 @@ struct CodexWsState {
 }
 
 impl CodexWsState {
-    fn new(model: &Model) -> Self {
+    fn new(model: &Model, thinking_level: Option<&ThinkingLevel>) -> Self {
         let partial = Message {
             role: Role::Assistant,
             content: Vec::new(),
@@ -522,6 +566,7 @@ impl CodexWsState {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: thinking_level.map(ModelThinkingLevel::from),
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
@@ -533,6 +578,7 @@ impl CodexWsState {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -1163,7 +1209,7 @@ pub(crate) fn replay_codex_ws_events_with_tier(
     events: &[Value],
     service_tier: Option<&str>,
 ) -> Vec<Event> {
-    let mut state = CodexWsState::new(model);
+    let mut state = CodexWsState::new(model, None);
     state.service_tier = service_tier.map(|s| s.to_string());
     for event in events {
         if state.process_event(event) {

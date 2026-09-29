@@ -129,8 +129,8 @@ mod tests {
     }
 
     #[test]
-    fn opencode_go_kimi_k2_6_off_high() {
-        assert_eq!(levels(&m("opencode-go", "kimi-k2.6")), vec!["off", "high"]);
+    fn opencode_go_kimi_k3_only_max() {
+        assert_eq!(levels(&m("opencode-go", "kimi-k3")), vec!["max"]);
     }
 
     #[test]

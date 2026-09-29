@@ -55,6 +55,7 @@ mod tests {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: None,
@@ -66,6 +67,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -232,6 +234,7 @@ mod tests {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: None,
@@ -243,6 +246,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -261,6 +265,7 @@ mod tests {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: None,
@@ -272,6 +277,7 @@ mod tests {
             tool_name: Some("read".into()),
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -306,9 +312,9 @@ mod tests {
     }
 
     #[test]
-    fn sends_thinking_disabled_for_opencode_go_kimi_when_off() {
+    fn sends_thinking_disabled_for_opencode_kimi_when_off() {
         let p = payload(
-            &cat("opencode-go", "kimi-k2.6"),
+            &cat("opencode", "kimi-k2.6"),
             &user_ctx(),
             &StreamOptions::default(),
         );
@@ -317,9 +323,9 @@ mod tests {
     }
 
     #[test]
-    fn sends_thinking_enabled_for_opencode_go_kimi_when_enabled() {
+    fn sends_thinking_enabled_for_opencode_kimi_when_enabled() {
         let p = payload(
-            &cat("opencode-go", "kimi-k2.6"),
+            &cat("opencode", "kimi-k2.6"),
             &user_ctx(),
             &reasoning(ThinkingLevel::High),
         );
@@ -339,10 +345,7 @@ mod tests {
 
     #[test]
     fn sends_max_tokens_for_opencode_completions_models() {
-        for model in [
-            cat("opencode-go", "kimi-k2.6"),
-            cat("opencode", "grok-build-0.1"),
-        ] {
+        for model in [cat("opencode-go", "kimi-k3"), cat("opencode", "kimi-k2.6")] {
             assert_eq!(
                 crate::compat::detect_compat(&model)
                     .max_tokens_field
@@ -821,7 +824,7 @@ mod tests {
             "data: {\"id\":\"x\",\"choices\":[{\"delta\":{\"reasoning\":\"think\"},\"finish_reason\":\"stop\"}]}\n\n",
             "data: [DONE]\n\n",
         ).to_string();
-        let (_r, _e, m) = run_openai_chunks(cat("opencode-go", "kimi-k2.6"), body).await;
+        let (_r, _e, m) = run_openai_chunks(cat("opencode-go", "kimi-k3"), body).await;
         assert_eq!(thinking_block(&m), ("think", Some("reasoning_content")));
     }
 
@@ -858,10 +861,11 @@ mod tests {
             timestamp: 0,
             api: Some("openai-completions".into()),
             provider: Some("opencode-go".into()),
-            model: Some("kimi-k2.6".into()),
+            model: Some("kimi-k3".into()),
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(crate::types::StopReason::Stop),
@@ -873,6 +877,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -884,7 +889,7 @@ mod tests {
             messages: vec![assistant],
         };
         let p = payload(
-            &cat("opencode-go", "kimi-k2.6"),
+            &cat("opencode-go", "kimi-k3"),
             &ctx,
             &StreamOptions::default(),
         );
@@ -923,6 +928,7 @@ mod tests {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(crate::types::StopReason::ToolUse),
@@ -934,6 +940,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -952,6 +959,7 @@ mod tests {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: None,
@@ -963,6 +971,7 @@ mod tests {
             tool_name: Some("read".into()),
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),

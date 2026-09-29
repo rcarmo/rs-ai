@@ -46,10 +46,10 @@ def flatten_json_models(value) -> list[dict]:
     return out
 
 
-def upstream_pairs_from_json(data_dir: Path) -> set[tuple[str, str]]:
-    models_path = data_dir / "models.json"
+def upstream_pairs_from_json(data_dir: Path, filename: str) -> set[tuple[str, str]]:
+    models_path = data_dir / filename
     if not models_path.exists():
-        raise SystemExit(f"PI_AI_MODEL_DATA_DIR is set but models.json is missing: {models_path}")
+        raise SystemExit(f"PI_AI_MODEL_DATA_DIR is set but {filename} is missing: {models_path}")
     return {(m["provider"], m["id"]) for m in flatten_json_models(json.loads(models_path.read_text()))}
 
 
@@ -134,14 +134,23 @@ def main() -> int:
             return 2
 
     data_dir = os.environ.get("PI_AI_MODEL_DATA_DIR")
-    text_up = upstream_pairs_from_json(Path(data_dir).resolve()) if data_dir else upstream_pairs(upstream, "packages/ai/src/models.generated.ts", "MODELS")
-    image_up = upstream_pairs(upstream, "packages/ai/src/image-models.generated.ts", "IMAGE_MODELS")
+    if data_dir:
+        extracted = Path(data_dir).resolve()
+        text_up = upstream_pairs_from_json(extracted, "models.json")
+        image_up = upstream_pairs_from_json(extracted, "image-models.json")
+        classifier_up = upstream_pairs_from_json(extracted, "classifier-models.json")
+    else:
+        text_up = upstream_pairs(upstream, "packages/ai/src/models.generated.ts", "MODELS")
+        image_up = upstream_pairs(upstream, "packages/ai/src/models.generated.ts", "IMAGE_MODELS")
+        classifier_up = upstream_pairs(upstream, "packages/ai/src/models.generated.ts", "CLASSIFIER_MODELS")
     text_local = rust_pairs(ROOT / "src/models_generated.rs")
     image_local = rust_pairs(ROOT / "src/images/models_generated.rs")
+    classifier_local = rust_pairs(ROOT / "src/classifier_models_generated.rs")
 
     ok = True
     ok &= report("text", text_up, text_local)
     ok &= report("image", image_up, image_local)
+    ok &= report("classifier", classifier_up, classifier_local)
     return 0 if ok else 1
 
 

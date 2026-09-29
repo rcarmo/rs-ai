@@ -229,6 +229,7 @@ pub fn stream_google<'a>(
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: opts.reasoning.as_ref().map(ModelThinkingLevel::from),
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
@@ -240,6 +241,7 @@ pub fn stream_google<'a>(
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -291,6 +293,18 @@ pub fn stream_google<'a>(
                     Ok(v) => v,
                     Err(_) => continue,
                 };
+                if let Some(hook) = &opts.on_provider_stream_event
+                    && let Err(error) = hook(chunk.clone(), model)
+                {
+                    partial.stop_reason = Some(StopReason::Error);
+                    partial.error_message = Some(error.to_string());
+                    yield Event::Error {
+                        reason: StopReason::Error,
+                        error: Arc::from(error),
+                        message: Some(partial.clone()),
+                    };
+                    return;
+                }
 
                 if let Some(err) = chunk.get("error") {
                     let msg = err.get("message").and_then(|v| v.as_str())

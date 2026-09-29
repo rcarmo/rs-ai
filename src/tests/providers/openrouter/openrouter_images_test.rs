@@ -14,14 +14,17 @@ mod tests {
 
     fn model(base_url: &str, output: Vec<&str>) -> ImagesModel {
         ImagesModel {
+            model_type: crate::types::ModelType::Image,
             id: "google/gemini-3.1-flash-image-preview".into(),
             name: "Gemini".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: base_url.into(),
             input: vec!["text".into(), "image".into()],
+            input_limits: None,
             output: output.into_iter().map(String::from).collect(),
             cost: ModelCost::default(),
+            headers: None,
         }
     }
 

@@ -2,7 +2,7 @@
 """Verify release-pinned generated model metadata against committed Rust registries.
 
 This is stricter than provider/id pair comparison: it regenerates the complete
-Rust text and image registries from the official npm package artifact, normalizes
+Rust chat, image and classifier registries from the official npm package artifact, normalizes
 only generated timestamps, rustfmt-formats the temporary output, and compares the
 full Rust-representable metadata byte-for-byte against the committed files.
 
@@ -27,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TIMESTAMP_RE = re.compile(r"//! Generated: .*", re.MULTILINE)
-DEFAULT_PACKAGE_SHA256 = "35b4432f27cc2665f86beebb9af6a39b1251970883c3044bd8be4f4e8c731ca0"
+DEFAULT_PACKAGE_SHA256 = "f9f44692157d0bf5679c4a17304a310028231d7daaeaaea3b73252f4b7a264d3"
 
 
 def run(cmd: list[str], cwd: Path | None = None, env: dict[str, str] | None = None) -> str:
@@ -117,24 +117,6 @@ def extract_npm_package(package: str, work: Path, expected_sha256: str) -> Path:
     return unpacked
 
 
-def package_image_json(package_dir: Path, out_path: Path) -> int:
-    module = (package_dir / "dist/image-models.generated.js").resolve()
-    if not module.exists():
-        raise SystemExit(f"package image model module missing: {module}")
-    script = f"""
-import {{ IMAGE_MODELS }} from {json.dumps(module.as_uri())};
-process.stdout.write(JSON.stringify(IMAGE_MODELS));
-"""
-    script_path = out_path.with_suffix(".mjs")
-    script_path.write_text(script)
-    try:
-        out = run([js_runtime(), str(script_path)], cwd=package_dir)
-    finally:
-        script_path.unlink(missing_ok=True)
-    out_path.write_text(out)
-    return len(flatten_models(json.loads(out)))
-
-
 def copy_project_for_generation(work: Path) -> Path:
     generated_root = work / "generated-project"
     shutil.copytree(ROOT, generated_root, ignore=shutil.ignore_patterns(".git", "target"))
@@ -151,6 +133,9 @@ def maybe_fault(path: Path, fault: str) -> None:
     elif fault == "image-name":
         old = 'name: "Black Forest Labs: FLUX.2 Flex".into()'
         new = 'name: "Black Forest Labs: FLUX.2 Flex FAULT".into()'
+    elif fault == "classifier-name":
+        old = 'name: "Jev".into()'
+        new = 'name: "Jev FAULT".into()'
     else:
         raise SystemExit(f"unknown fault mode: {fault}")
     if old not in target:
@@ -160,11 +145,11 @@ def maybe_fault(path: Path, fault: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--package", default="@earendil-works/pi-ai@0.87.1")
+    ap.add_argument("--package", default="@earendil-works/pi-ai@0.99.1")
     ap.add_argument("--package-sha256", default=DEFAULT_PACKAGE_SHA256)
     ap.add_argument("--upstream", default="", help="ignored compatibility option; npm artifact is authoritative")
     ap.add_argument("--tag-sha", default="", help="ignored compatibility option; npm artifact is authoritative")
-    ap.add_argument("--fault", default="", choices=["", "text-name", "image-name"], help="test-only metadata fault injection")
+    ap.add_argument("--fault", default="", choices=["", "text-name", "image-name", "classifier-name"], help="test-only metadata fault injection")
     args = ap.parse_args()
 
     with tempfile.TemporaryDirectory(prefix="rs-ai-model-meta-") as tmp:
@@ -183,19 +168,27 @@ def main() -> int:
         generated_root = copy_project_for_generation(work)
         run([sys.executable, "scripts/generate_models.py", str(extracted / "models.json")], cwd=generated_root)
         image_json = extracted / "image-models.json"
-        image_count = package_image_json(package_dir, image_json)
+        classifier_json = extracted / "classifier-models.json"
         run([sys.executable, "scripts/generate_image_models.py", str(image_json)], cwd=generated_root)
+        run([sys.executable, "scripts/generate_classifier_models.py", str(classifier_json)], cwd=generated_root)
 
         # rustfmt only the generated temp files; this normalizes generator formatting
         # without touching the committed working tree.
-        run(["rustfmt", "src/models_generated.rs", "src/images/models_generated.rs"], cwd=generated_root)
+        run([
+            "rustfmt",
+            "src/models_generated.rs",
+            "src/images/models_generated.rs",
+            "src/classifier_models_generated.rs",
+        ], cwd=generated_root)
 
         maybe_fault(generated_root / "src/models_generated.rs", args.fault if args.fault.startswith("text") else "")
         maybe_fault(generated_root / "src/images/models_generated.rs", args.fault if args.fault.startswith("image") else "")
+        maybe_fault(generated_root / "src/classifier_models_generated.rs", args.fault if args.fault.startswith("classifier") else "")
 
         failures: list[str] = []
         failures.extend(compare_file("text", ROOT / "src/models_generated.rs", generated_root / "src/models_generated.rs"))
         failures.extend(compare_file("image", ROOT / "src/images/models_generated.rs", generated_root / "src/images/models_generated.rs"))
+        failures.extend(compare_file("classifier", ROOT / "src/classifier_models_generated.rs", generated_root / "src/classifier_models_generated.rs"))
         if failures:
             print("\n".join(failures), file=sys.stderr)
             return 1
@@ -204,7 +197,11 @@ def main() -> int:
         print(
             "metadata verified: "
             f"text={metadata['modelCount']} providers={metadata['providerCount']} apis={metadata['apiCount']} "
-            f"batchAliases={metadata['batchAliasCount']} image={image_count}"
+            f"batchAliases={metadata['batchAliasCount']} "
+            f"image={metadata['imageModelCount']} imageProviders={metadata['imageProviderCount']} "
+            f"imageApis={metadata['imageApiCount']} classifier={metadata['classifierModelCount']} "
+            f"classifierProviders={metadata['classifierProviderCount']} "
+            f"classifierApis={metadata['classifierApiCount']} total={metadata['totalRecordCount']}"
         )
     return 0
 

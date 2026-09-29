@@ -60,6 +60,7 @@ mod tests {
                 response_id: None,
                 response_model: None,
                 provider_thinking_level: None,
+                thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,
@@ -71,6 +72,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                nested_calls: None,
                 added_tool_names: Vec::new(),
                 sections: None,
                 tools_added: Vec::new(),
@@ -127,6 +129,7 @@ mod tests {
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: None,
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: None,
@@ -138,6 +141,7 @@ mod tests {
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -157,6 +161,47 @@ mod tests {
         assert_eq!(
             err.as_deref(),
             Some("OpenAI Responses stream ended before a terminal response event")
+        );
+    }
+
+    #[tokio::test]
+    async fn rejects_completed_streams_with_an_unfinished_tool_call() {
+        let body = concat!(
+            "data: {\"type\":\"response.output_item.added\",\"output_index\":0,\"item\":{\"type\":\"function_call\",\"id\":\"fc_1\",\"call_id\":\"call_1\",\"name\":\"bash\",\"arguments\":\"\"}}\n\n",
+            "data: {\"type\":\"response.function_call_arguments.delta\",\"output_index\":0,\"item_id\":\"fc_1\",\"delta\":\"{\\\"command\\\":\\\"rm -rf /tmp/build\"}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_unfinished\",\"status\":\"completed\"}}\n\n",
+        )
+        .to_string();
+        let (reason, error, message) = run(body).await;
+        assert_eq!(reason, StopReason::Error);
+        assert_eq!(
+            error.as_deref(),
+            Some(
+                "OpenAI Responses stream completed with an unfinished tool call: bash (call_1|fc_1)"
+            )
+        );
+        assert!(message.content.is_empty());
+    }
+
+    #[tokio::test]
+    async fn rejects_parallel_tool_calls_without_output_index() {
+        let body = concat!(
+            "data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_a\",\"call_id\":\"call_a\",\"name\":\"bash\",\"arguments\":\"\"}}\n\n",
+            "data: {\"type\":\"response.function_call_arguments.delta\",\"item_id\":\"fc_a\",\"delta\":\"{\\\"command\\\":\\\"echo a\\\"}\"}\n\n",
+            "data: {\"type\":\"response.output_item.added\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_b\",\"call_id\":\"call_b\",\"name\":\"bash\",\"arguments\":\"\"}}\n\n",
+            "data: {\"type\":\"response.function_call_arguments.delta\",\"item_id\":\"fc_b\",\"delta\":\"{\\\"command\\\":\\\"echo b\\\"}\"}\n\n",
+            "data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_a\",\"call_id\":\"call_a\",\"name\":\"bash\",\"arguments\":\"{\\\"command\\\":\\\"echo a\\\"}\"}}\n\n",
+            "data: {\"type\":\"response.output_item.done\",\"item\":{\"type\":\"function_call\",\"id\":\"fc_b\",\"call_id\":\"call_b\",\"name\":\"bash\",\"arguments\":\"{\\\"command\\\":\\\"echo b\\\"}\"}}\n\n",
+            "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_no_output_index\",\"status\":\"completed\"}}\n\n",
+        )
+        .to_string();
+        let (reason, error, _message) = run(body).await;
+        assert_eq!(reason, StopReason::Error);
+        assert_eq!(
+            error.as_deref(),
+            Some(
+                "OpenAI Responses stream completed with an unfinished tool call: bash (call_a|fc_a)"
+            )
         );
     }
 

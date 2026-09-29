@@ -639,6 +639,134 @@ fn json_to_document(v: &serde_json::Value) -> Document {
     }
 }
 
+fn document_to_json(document: &Document) -> serde_json::Value {
+    match document {
+        Document::Null => serde_json::Value::Null,
+        Document::Bool(value) => serde_json::json!(value),
+        Document::Number(Number::PosInt(value)) => serde_json::json!(value),
+        Document::Number(Number::NegInt(value)) => serde_json::json!(value),
+        Document::Number(Number::Float(value)) => serde_json::json!(value),
+        Document::String(value) => serde_json::json!(value),
+        Document::Array(values) => {
+            serde_json::Value::Array(values.iter().map(document_to_json).collect())
+        }
+        Document::Object(values) => serde_json::Value::Object(
+            values
+                .iter()
+                .map(|(key, value)| (key.clone(), document_to_json(value)))
+                .collect(),
+        ),
+    }
+}
+
+/// Project the modeled Rust SDK event into the provider-owned object shape exposed
+/// by the JavaScript Bedrock SDK. This is the value observed before normalization.
+pub(crate) fn bedrock_stream_event_json(
+    event: &aws_sdk_bedrockruntime::types::ConverseStreamOutput,
+) -> serde_json::Value {
+    use aws_sdk_bedrockruntime::types::{
+        ContentBlockDelta as Delta, ContentBlockStart as Start, ConverseStreamOutput as Output,
+        ReasoningContentBlockDelta as ReasoningDelta, ToolResultBlockDelta,
+    };
+
+    match event {
+        Output::MessageStart(value) => {
+            serde_json::json!({"messageStart": {"role": value.role().as_str()}})
+        }
+        Output::ContentBlockStart(value) => {
+            let start = match value.start() {
+                Some(Start::ToolUse(tool)) => serde_json::json!({"toolUse": {
+                    "toolUseId": tool.tool_use_id(),
+                    "name": tool.name(),
+                    "type": tool.r#type().map(|value| value.as_str()),
+                }}),
+                Some(Start::ToolResult(tool)) => serde_json::json!({"toolResult": {
+                    "toolUseId": tool.tool_use_id(),
+                    "type": tool.r#type(),
+                    "status": tool.status().map(|value| value.as_str()),
+                }}),
+                Some(Start::Image(image)) => {
+                    serde_json::json!({"image": {"format": image.format().as_str()}})
+                }
+                Some(_) | None => serde_json::Value::Null,
+            };
+            serde_json::json!({"contentBlockStart": {
+                "contentBlockIndex": value.content_block_index(),
+                "start": start,
+            }})
+        }
+        Output::ContentBlockDelta(value) => {
+            let delta = match value.delta() {
+                Some(Delta::Text(text)) => serde_json::json!({"text": text}),
+                Some(Delta::ToolUse(tool)) => {
+                    serde_json::json!({"toolUse": {"input": tool.input()}})
+                }
+                Some(Delta::ReasoningContent(reasoning)) => match reasoning {
+                    ReasoningDelta::Text(text) => {
+                        serde_json::json!({"reasoningContent": {"text": text}})
+                    }
+                    ReasoningDelta::Signature(signature) => {
+                        serde_json::json!({"reasoningContent": {"signature": signature}})
+                    }
+                    ReasoningDelta::RedactedContent(content) => serde_json::json!({
+                        "reasoningContent": {
+                            "redactedContent": base64::engine::general_purpose::STANDARD
+                                .encode(content.as_ref())
+                        }
+                    }),
+                    _ => serde_json::Value::Null,
+                },
+                Some(Delta::ToolResult(results)) => serde_json::json!({
+                    "toolResult": results.iter().map(|result| match result {
+                        ToolResultBlockDelta::Text(text) => serde_json::json!({"text": text}),
+                        ToolResultBlockDelta::Json(document) => {
+                            serde_json::json!({"json": document_to_json(document)})
+                        }
+                        _ => serde_json::Value::Null,
+                    }).collect::<Vec<_>>()
+                }),
+                Some(Delta::Citation(citation)) => serde_json::json!({"citation": {
+                    "title": citation.title(),
+                    "source": citation.source(),
+                }}),
+                Some(Delta::Image(_)) => serde_json::json!({"image": {}}),
+                Some(_) | None => serde_json::Value::Null,
+            };
+            serde_json::json!({"contentBlockDelta": {
+                "contentBlockIndex": value.content_block_index(),
+                "delta": delta,
+            }})
+        }
+        Output::ContentBlockStop(value) => serde_json::json!({"contentBlockStop": {
+            "contentBlockIndex": value.content_block_index(),
+        }}),
+        Output::MessageStop(value) => serde_json::json!({"messageStop": {
+            "stopReason": value.stop_reason().as_str(),
+            "additionalModelResponseFields": value
+                .additional_model_response_fields()
+                .map(document_to_json),
+        }}),
+        Output::Metadata(value) => {
+            let usage = value.usage().map(|usage| {
+                serde_json::json!({
+                    "inputTokens": usage.input_tokens(),
+                    "outputTokens": usage.output_tokens(),
+                    "totalTokens": usage.total_tokens(),
+                    "cacheReadInputTokens": usage.cache_read_input_tokens(),
+                    "cacheWriteInputTokens": usage.cache_write_input_tokens(),
+                })
+            });
+            let metrics = value.metrics().map(|metrics| {
+                serde_json::json!({
+                    "latencyMs": metrics.latency_ms(),
+                })
+            });
+            serde_json::json!({"metadata": {"usage": usage, "metrics": metrics}})
+        }
+        _ => serde_json::json!({"unknown": true}),
+    }
+}
+
 /// Start a Bedrock ConverseStream.
 pub fn stream_bedrock<'a>(
     model: &'a Model,
@@ -814,6 +942,7 @@ pub fn stream_bedrock<'a>(
             response_id: None,
             response_model: None,
             provider_thinking_level: None,
+            thinking_level: opts.reasoning.as_ref().map(ModelThinkingLevel::from),
             diagnostics: Vec::new(),
             usage: None,
             stop_reason: Some(StopReason::Pending),
@@ -825,6 +954,7 @@ pub fn stream_bedrock<'a>(
             tool_name: None,
             is_error: false,
             details: None,
+            nested_calls: None,
             added_tool_names: Vec::new(),
             sections: None,
             tools_added: Vec::new(),
@@ -849,6 +979,18 @@ pub fn stream_bedrock<'a>(
             match recv.recv().await {
                 Ok(Some(event)) => {
                     use aws_sdk_bedrockruntime::types::ConverseStreamOutput;
+                    if let Some(hook) = &opts.on_provider_stream_event
+                        && let Err(error) = hook(bedrock_stream_event_json(&event), model)
+                    {
+                        partial.stop_reason = Some(StopReason::Error);
+                        partial.error_message = Some(error.to_string());
+                        yield Event::Error {
+                            reason: StopReason::Error,
+                            error: Arc::from(error),
+                            message: Some(partial.clone()),
+                        };
+                        return;
+                    }
                     match event {
                         ConverseStreamOutput::MessageStart(ev) => {
                             // Mirror upstream's defensive role check: a converse stream must
@@ -997,6 +1139,18 @@ pub fn stream_bedrock<'a>(
                 }
                 Ok(None) => break,
                 Err(e) => {
+                    if let Some(hook) = &opts.on_provider_stream_event
+                        && let Err(error) = hook(bedrock_stream_error_json(&e), model)
+                    {
+                        partial.stop_reason = Some(StopReason::Error);
+                        partial.error_message = Some(error.to_string());
+                        yield Event::Error {
+                            reason: StopReason::Error,
+                            error: Arc::from(error),
+                            message: Some(partial.clone()),
+                        };
+                        return;
+                    }
                     let err_msg = format_bedrock_stream_error(&e);
                     partial.stop_reason = Some(StopReason::Error);
                     partial.error_message = Some(err_msg.clone());
@@ -1073,6 +1227,7 @@ fn bedrock_error_message(model: &Model, error_message: String) -> Message {
         response_id: None,
         response_model: None,
         provider_thinking_level: None,
+        thinking_level: None,
         diagnostics: Vec::new(),
         usage: None,
         stop_reason: Some(StopReason::Error),
@@ -1084,6 +1239,7 @@ fn bedrock_error_message(model: &Model, error_message: String) -> Message {
         tool_name: None,
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: Vec::new(),
         sections: None,
         tools_added: Vec::new(),
@@ -1261,6 +1417,49 @@ fn bedrock_stream_error_request_id<R>(
         .map(str::to_string)
 }
 
+fn bedrock_stream_error_json<R>(
+    error: &aws_sdk_bedrockruntime::error::SdkError<
+        aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError,
+        R,
+    >,
+) -> serde_json::Value {
+    use aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError as Cse;
+    use aws_smithy_types::error::metadata::ProvideErrorMetadata;
+
+    let service_error = match error.as_service_error() {
+        Some(value) => value,
+        None => return serde_json::json!({"error": error.to_string()}),
+    };
+    let (field, message) = match service_error {
+        Cse::InternalServerException(value) => (
+            "internalServerException",
+            value.message().map(str::to_string),
+        ),
+        Cse::ModelStreamErrorException(value) => (
+            "modelStreamErrorException",
+            value.message().map(str::to_string),
+        ),
+        Cse::ValidationException(value) => {
+            ("validationException", value.message().map(str::to_string))
+        }
+        Cse::ThrottlingException(value) => {
+            ("throttlingException", value.message().map(str::to_string))
+        }
+        Cse::ServiceUnavailableException(value) => (
+            "serviceUnavailableException",
+            value.message().map(str::to_string),
+        ),
+        other => (
+            "error",
+            other
+                .message()
+                .map(str::to_string)
+                .or_else(|| Some(error.to_string())),
+        ),
+    };
+    serde_json::json!({field: {"message": message}})
+}
+
 fn bedrock_stream_error_code<R>(
     e: &aws_sdk_bedrockruntime::error::SdkError<
         aws_sdk_bedrockruntime::types::error::ConverseStreamOutputError,
@@ -1305,8 +1504,104 @@ fn format_bedrock_stream_error<R>(
 
 #[cfg(test)]
 mod tests {
-    use super::{format_bedrock_error, json_to_document};
-    use aws_smithy_types::{Document, Number};
+    use super::{
+        bedrock_stream_error_json, bedrock_stream_event_json, format_bedrock_error,
+        json_to_document,
+    };
+    use aws_sdk_bedrockruntime::types::{
+        ContentBlockDelta, ContentBlockDeltaEvent, ContentBlockStart, ContentBlockStartEvent,
+        ConverseStreamMetadataEvent, ConverseStreamOutput, MessageStartEvent,
+        ReasoningContentBlockDelta, TokenUsage, ToolUseBlockStart,
+    };
+    use aws_smithy_types::{Blob, Document, Number};
+
+    #[test]
+    fn provider_event_projection_matches_bedrock_sdk_object_shape() {
+        let start = ConverseStreamOutput::MessageStart(
+            MessageStartEvent::builder()
+                .role(aws_sdk_bedrockruntime::types::ConversationRole::Assistant)
+                .build()
+                .unwrap(),
+        );
+        assert_eq!(
+            bedrock_stream_event_json(&start),
+            serde_json::json!({"messageStart":{"role":"assistant"}})
+        );
+
+        let tool = ConverseStreamOutput::ContentBlockStart(
+            ContentBlockStartEvent::builder()
+                .content_block_index(2)
+                .start(ContentBlockStart::ToolUse(
+                    ToolUseBlockStart::builder()
+                        .tool_use_id("call_1")
+                        .name("read")
+                        .build()
+                        .unwrap(),
+                ))
+                .build()
+                .unwrap(),
+        );
+        assert_eq!(
+            bedrock_stream_event_json(&tool),
+            serde_json::json!({"contentBlockStart":{"contentBlockIndex":2,"start":{"toolUse":{"toolUseId":"call_1","name":"read","type":null}}}})
+        );
+
+        let reasoning = ConverseStreamOutput::ContentBlockDelta(
+            ContentBlockDeltaEvent::builder()
+                .content_block_index(3)
+                .delta(ContentBlockDelta::ReasoningContent(
+                    ReasoningContentBlockDelta::RedactedContent(Blob::new([1, 2, 3])),
+                ))
+                .build()
+                .unwrap(),
+        );
+        assert_eq!(
+            bedrock_stream_event_json(&reasoning),
+            serde_json::json!({"contentBlockDelta":{"contentBlockIndex":3,"delta":{"reasoningContent":{"redactedContent":"AQID"}}}})
+        );
+
+        let metadata = ConverseStreamOutput::Metadata(
+            ConverseStreamMetadataEvent::builder()
+                .usage(
+                    TokenUsage::builder()
+                        .input_tokens(4)
+                        .output_tokens(5)
+                        .total_tokens(9)
+                        .cache_read_input_tokens(2)
+                        .cache_write_input_tokens(1)
+                        .build()
+                        .unwrap(),
+                )
+                .build(),
+        );
+        assert_eq!(
+            bedrock_stream_event_json(&metadata),
+            serde_json::json!({"metadata":{"usage":{"inputTokens":4,"outputTokens":5,"totalTokens":9,"cacheReadInputTokens":2,"cacheWriteInputTokens":1},"metrics":null}})
+        );
+    }
+
+    #[test]
+    fn provider_error_projection_matches_bedrock_sdk_item_shape() {
+        use aws_sdk_bedrockruntime::types::error::{
+            ConverseStreamOutputError, InternalServerException,
+        };
+        use aws_smithy_runtime_api::client::result::SdkError;
+
+        let error = SdkError::<ConverseStreamOutputError, ()>::service_error(
+            ConverseStreamOutputError::InternalServerException(
+                InternalServerException::builder()
+                    .message("bedrock stream failed")
+                    .build(),
+            ),
+            (),
+        );
+        assert_eq!(
+            bedrock_stream_error_json(&error),
+            serde_json::json!({
+                "internalServerException": {"message": "bedrock stream failed"}
+            })
+        );
+    }
 
     #[test]
     fn test_json_to_document_roundtrip_shapes() {
@@ -1556,6 +1851,7 @@ mod tests {
                 response_id: None,
                 response_model: None,
                 provider_thinking_level: None,
+                thinking_level: None,
                 diagnostics: Vec::new(),
                 usage: None,
                 stop_reason: None,
@@ -1567,6 +1863,7 @@ mod tests {
                 tool_name: None,
                 is_error: false,
                 details: None,
+                nested_calls: None,
                 added_tool_names: Vec::new(),
                 sections: None,
                 tools_added: Vec::new(),

@@ -45,6 +45,7 @@ fn tool_result_marker(added: &[&str]) -> Message {
         response_id: None,
         response_model: None,
         provider_thinking_level: None,
+        thinking_level: None,
         diagnostics: Vec::new(),
         usage: None,
         stop_reason: None,
@@ -56,6 +57,7 @@ fn tool_result_marker(added: &[&str]) -> Message {
         tool_name: Some("base_tool".into()),
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: added.iter().map(|s| s.to_string()).collect(),
         sections: None,
         tools_added: Vec::new(),
@@ -197,19 +199,19 @@ fn release_pinned_catalog_counts_match_v0842() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1495);
+    assert_eq!(pairs.len(), 1523);
     assert_eq!(providers.len(), 41);
     assert_eq!(apis.len(), 10);
     assert_eq!(
         pairs.iter().filter(|(_, id)| id.contains(":batch")).count(),
-        71
+        75
     );
 
     let image_pairs = crate::images::list_image_models(None)
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 55);
+    assert_eq!(image_pairs.len(), 57);
 }
 
 #[test]
@@ -352,6 +354,7 @@ fn responses_replays_namespace_only_when_additional_tools_supported() {
         response_id: None,
         response_model: None,
         provider_thinking_level: None,
+        thinking_level: None,
         diagnostics: Vec::new(),
         usage: None,
         stop_reason: Some(StopReason::ToolUse),
@@ -363,6 +366,7 @@ fn responses_replays_namespace_only_when_additional_tools_supported() {
         tool_name: None,
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: Vec::new(),
         sections: None,
         tools_added: Vec::new(),
@@ -758,6 +762,7 @@ async fn mistral_http_exact_wire_payload_matches_replay_contract() {
         response_id: None,
         response_model: None,
         provider_thinking_level: None,
+        thinking_level: None,
         diagnostics: Vec::new(),
         usage: None,
         stop_reason: None,
@@ -769,6 +774,7 @@ async fn mistral_http_exact_wire_payload_matches_replay_contract() {
         tool_name: None,
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: Vec::new(),
         sections: None,
         tools_added: Vec::new(),
@@ -843,6 +849,7 @@ fn retry_classifier_matches_request_buffer_exhaustion_wording() {
         response_id: None,
         response_model: None,
         provider_thinking_level: None,
+        thinking_level: None,
         diagnostics: Vec::new(),
         usage: None,
         stop_reason: Some(StopReason::Error),
@@ -854,6 +861,7 @@ fn retry_classifier_matches_request_buffer_exhaustion_wording() {
         tool_name: None,
         is_error: false,
         details: None,
+        nested_calls: None,
         added_tool_names: Vec::new(),
         sections: None,
         tools_added: Vec::new(),
