@@ -42,12 +42,18 @@ jobs:
             exit 1
           fi
           echo "RUNTIME_REF_LOWER=${runtime_ref_lower}" >> "${GITHUB_ENV}"
-          if [[ ! "${RELEASE_TAG}" =~ ^upstream-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "release_tag must match upstream-vX.Y.Z: ${RELEASE_TAG}" >&2
+          if [[ "${RELEASE_TAG}" =~ ^upstream-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            release_kind="upstream"
+            release_version="${BASH_REMATCH[1]}"
+          elif [[ "${RELEASE_TAG}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            release_kind="native"
+            release_version="${BASH_REMATCH[1]}"
+          else
+            echo "release_tag must match upstream-vX.Y.Z or vX.Y.Z: ${RELEASE_TAG}" >&2
             exit 1
           fi
-          upstream_version="${RELEASE_TAG#upstream-v}"
-          echo "UPSTREAM_VERSION=${upstream_version}" >> "${GITHUB_ENV}"
+          echo "RELEASE_KIND=${release_kind}" >> "${GITHUB_ENV}"
+          echo "RELEASE_VERSION=${release_version}" >> "${GITHUB_ENV}"
 
       - name: Checkout accepted runtime ref
         uses: actions/checkout@v4
@@ -96,12 +102,14 @@ jobs:
 
           python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
 
           sbom_path = Path("artifacts/sbom.cdx.json")
           expected = Path(".runtime-ref").read_text().strip()
           data = json.loads(sbom_path.read_text())
-          props = data.get("metadata", {}).get("component", {}).get("properties", [])
+          root = data.get("metadata", {}).get("component", {})
+          props = root.get("properties", [])
           revision = None
           for prop in props:
               if isinstance(prop, dict) and prop.get("name") == "rs-ai:vcs:revision":
@@ -109,6 +117,11 @@ jobs:
                   break
           if revision != expected:
               raise SystemExit(f"SBOM rs-ai:vcs:revision mismatch: expected {expected}, got {revision}")
+          if os.environ["RELEASE_KIND"] == "native" and root.get("version") != os.environ["RELEASE_VERSION"]:
+              raise SystemExit(
+                  "SBOM root version mismatch: "
+                  f"expected {os.environ['RELEASE_VERSION']}, got {root.get('version')}"
+              )
           print(f"SBOM provenance revision verified: {revision}")
           PY
 
@@ -123,8 +136,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          title="SBOM for @earendil-works/pi-ai v${UPSTREAM_VERSION}"
-          notes="CycloneDX SBOM generated from accepted rs-ai runtime ref ${RUNTIME_REF_LOWER} for @earendil-works/pi-ai v${UPSTREAM_VERSION}. Assets: sbom.cdx.json and sbom.cdx.json.sha256."
+          if [[ "${RELEASE_KIND}" == "native" ]]; then
+            title="rs-ai v${RELEASE_VERSION}"
+            notes="Native rs-ai v${RELEASE_VERSION} release at accepted runtime ref ${RUNTIME_REF_LOWER}. CycloneDX assets: sbom.cdx.json and sbom.cdx.json.sha256."
+          else
+            title="SBOM for @earendil-works/pi-ai v${RELEASE_VERSION}"
+            notes="CycloneDX SBOM generated from accepted rs-ai runtime ref ${RUNTIME_REF_LOWER} for @earendil-works/pi-ai v${RELEASE_VERSION}. Assets: sbom.cdx.json and sbom.cdx.json.sha256."
+          fi
           runtime_sha="$(git rev-parse HEAD)"
           git fetch --force --tags origin
 
@@ -133,10 +151,16 @@ jobs:
             release_exists=true
           fi
 
+          tag_exists=false
           if git rev-parse -q --verify "refs/tags/${RELEASE_TAG}^{commit}" >/dev/null; then
+            tag_exists=true
             tag_target="$(git rev-list -n 1 "refs/tags/${RELEASE_TAG}")"
             if [[ "${tag_target}" != "${runtime_sha}" ]]; then
               echo "Release tag ${RELEASE_TAG} points to ${tag_target}, not checked-out runtime ${runtime_sha}" >&2
+              exit 1
+            fi
+            if [[ "${RELEASE_KIND}" == "native" && "$(git cat-file -t "refs/tags/${RELEASE_TAG}")" != "tag" ]]; then
+              echo "Native release tag ${RELEASE_TAG} must be annotated" >&2
               exit 1
             fi
           elif [[ "${release_exists}" == "true" ]]; then
@@ -144,8 +168,20 @@ jobs:
             exit 1
           fi
 
+          if [[ "${RELEASE_KIND}" == "native" && "${tag_exists}" == "false" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "${RELEASE_TAG}" "${runtime_sha}" -m "rs-ai v${RELEASE_VERSION}"
+            git push origin "refs/tags/${RELEASE_TAG}"
+          fi
+
           if [[ "${release_exists}" == "true" ]]; then
             gh release edit "${RELEASE_TAG}" \
+              --title "${title}" \
+              --notes "${notes}"
+          elif [[ "${RELEASE_KIND}" == "native" ]]; then
+            gh release create "${RELEASE_TAG}" \
+              --verify-tag \
               --title "${title}" \
               --notes "${notes}"
           else

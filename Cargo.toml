@@ -1,6 +1,6 @@
 [package]
 name = "rs-ai"
-version = "0.1.0"
+version = "0.99.1"
 edition = "2024"
 license = "MIT"
 description = "Unified LLM API — Rust port of @earendil-works/pi-ai"
