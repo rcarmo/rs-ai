@@ -1,6 +1,42 @@
 # rs-ai upstream release parity
 
-## Current audit target: v0.87.1
+## Current audit target: v0.99.1
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v0.99.1`
+- Upstream tag/npm gitHead: `d86654abb8862e201933517d6f1fce9f88dd117f`
+- Previous accepted upstream: `v0.87.1` / `f07218c4d4bbc12bef056a7058c3dd49dfe41abe`
+- Accepted rs-ai runtime: `32b07c7fb3ab336f6a9709bf5eb14286af73958c`
+- Audited range: `f07218c4d4bbc12bef056a7058c3dd49dfe41abe..d86654abb8862e201933517d6f1fce9f88dd117f`
+- Scope: `packages/ai` only; official tag and signed npm artifact.
+- Scope status: **ACCEPTED**. GitHub Actions run `36634981815`, job `109633298070`, passed all 18 steps with 1055 tests plus format, build, strict Clippy, SBOM, licence and vulnerability gates.
+
+### v0.99.1 release inventory
+
+The bounded range contains **169 changed paths**, `+7001/-2913`, and **58 changed test paths**. The final upstream corpus contains **160 test basenames**. `scripts/validate_v0991_manifests.py --require-complete` checks the exact inventories and hashes recorded under `docs/manifests/`; `docs/v0991-160-test-crosswalk.md` records all path and test dispositions with no pending rows.
+
+The signed schema-v6 catalog contains **1523 text/chat models across 41 providers and 10 APIs**, including **75 batch aliases**. It also contains **57 image models** and **12 classifier models**, for **1592 typed records**. The full-record deltas are text `1495→1523`, `+59/-31/110 changed`; images `55→57`, `+2/-0/54 changed`; classifiers `0→12`, `+12/-0/0 changed`. The pinned npm tarball SHA-256 is `f9f44692157d0bf5679c4a17304a310028231d7daaeaaea3b73252f4b7a264d3`.
+
+### v0.99.1 runtime scope
+
+The accepted runtime adds a unified typed model catalog and classifier operations for TypeSafe System One, Cloudflare Workers AI, and llama.cpp. It adds OpenAI ChatGPT OAuth, provider-native stream-event hooks, requested thinking-level metadata, nested tool-call metadata, and fail-closed OpenAI Responses terminal handling. Codex WebSocket and Bedrock provider events reach callbacks before normalisation; callback failures terminate with `StopReason::Error`. Deterministic tests cover callback ordering and failure, OAuth callback/manual/cancel/timeout/IPv6 paths, catalog operations, classifier HTTP production paths, provider reasoning and sampling changes, and incomplete tool-call rejection.
+
+### v0.99.1 CI and SBOM evidence
+
+- Runtime commit: `32b07c7fb3ab336f6a9709bf5eb14286af73958c`
+- GitHub Actions run: `36634981815`
+- Successful job: `build-test-lint` (`109633298070`), all 18 steps green
+- SHA-specific artifact: `rs-ai-sbom-32b07c7fb3ab336f6a9709bf5eb14286af73958c` (`11064098033`)
+- Artifact ZIP SHA-256: `8019316813ac7e0a350688142a4b573ccdecd768756428b191212197082bf354`
+- Embedded `sbom.cdx.json` SHA-256: `986785a7d292e348234f81b88f59145c2e1ec58806e83140714c120d22fe734e`
+- Embedded VCS revision: `32b07c7fb3ab336f6a9709bf5eb14286af73958c`
+- CycloneDX version: **1.5**
+- SBOM components: **278**
+- SBOM dependencies: **279**
+
+The guarded publisher uses tag `upstream-v0.99.1`, checks out the accepted runtime SHA, reruns the security gates, verifies the embedded revision, and publishes `sbom.cdx.json` plus `sbom.cdx.json.sha256`. The v0.87.1, v0.87.0, and v0.85.1 sections and assets remain historical records.
+
+## Historical accepted release: v0.87.1
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v0.87.1`
