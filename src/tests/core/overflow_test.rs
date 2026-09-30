@@ -159,6 +159,14 @@ mod tests {
     }
 
     #[test]
+    fn detects_zai_cn_prompt_exceeds_max_length() {
+        assert!(overflow(
+            &error_message("Prompt exceeds max length"),
+            131072,
+        ));
+    }
+
+    #[test]
     fn ignores_generic_non_overflow_ollama_errors() {
         assert!(!overflow(
             &error_message("500 `model runner crashed unexpectedly`"),

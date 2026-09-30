@@ -73,6 +73,9 @@ mod anthropic_compat_test;
 #[path = "tests/providers/anthropic/anthropic_fallback_test.rs"]
 mod anthropic_fallback_test;
 #[cfg(test)]
+#[path = "tests/providers/anthropic/anthropic_federation_test.rs"]
+mod anthropic_federation_test;
+#[cfg(test)]
 #[path = "tests/providers/anthropic/anthropic_force_adaptive_thinking_test.rs"]
 mod anthropic_force_adaptive_thinking_test;
 #[cfg(test)]
@@ -84,6 +87,9 @@ mod anthropic_oauth_test;
 #[cfg(test)]
 #[path = "tests/providers/anthropic/anthropic_sse_parsing_test.rs"]
 mod anthropic_sse_parsing_test;
+#[cfg(test)]
+#[path = "tests/providers/anthropic/anthropic_strict_tool_schema_test.rs"]
+mod anthropic_strict_tool_schema_test;
 #[cfg(test)]
 #[path = "tests/providers/anthropic/anthropic_temperature_compat_test.rs"]
 mod anthropic_temperature_compat_test;
@@ -426,6 +432,9 @@ mod v0870_catalog_test;
 #[cfg(test)]
 #[path = "tests/release/v0871_release_test.rs"]
 mod v0871_release_test;
+#[cfg(test)]
+#[path = "tests/release/v0992_release_test.rs"]
+mod v0992_release_test;
 #[cfg(test)]
 #[path = "tests/transports/validation_upstream_test.rs"]
 mod validation_upstream_test;

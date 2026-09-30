@@ -372,16 +372,28 @@ fn is_structured_schema(schema: &serde_json::Value) -> bool {
     })
 }
 
+pub type UnsupportedStrictSchemaKeywordCheck = fn(&str, &serde_json::Value) -> bool;
+
 pub fn make_strict_json_schema(schema: &serde_json::Value) -> Result<serde_json::Value, String> {
+    make_strict_json_schema_with_check(schema, None)
+}
+
+pub fn make_strict_json_schema_with_check(
+    schema: &serde_json::Value,
+    unsupported_keyword: Option<UnsupportedStrictSchemaKeywordCheck>,
+) -> Result<serde_json::Value, String> {
     let mut cloned = schema.clone();
-    make_json_schema_node_strict(&mut cloned)?;
+    make_json_schema_node_strict(&mut cloned, unsupported_keyword)?;
     if cloned.get("type").and_then(|v| v.as_str()) != Some("object") {
         return Err("root schema must have type object".into());
     }
     Ok(cloned)
 }
 
-fn make_json_schema_node_strict(schema: &mut serde_json::Value) -> Result<(), String> {
+fn make_json_schema_node_strict(
+    schema: &mut serde_json::Value,
+    unsupported_keyword: Option<UnsupportedStrictSchemaKeywordCheck>,
+) -> Result<(), String> {
     let Some(obj) = schema.as_object_mut() else {
         return Err("boolean schemas are unsupported".into());
     };
@@ -408,6 +420,11 @@ fn make_json_schema_node_strict(schema: &mut serde_json::Value) -> Result<(), St
             return Err(format!("{key} schemas are unsupported"));
         }
     }
+    if let Some(check) = unsupported_keyword
+        && let Some((key, _)) = obj.iter().find(|(key, value)| check(key, value))
+    {
+        return Err(format!("{key} schemas are unsupported by this provider"));
+    }
     if let Some(any_of) = obj.get_mut("anyOf") {
         let Some(arr) = any_of.as_array_mut() else {
             return Err("anyOf must contain at least one schema".into());
@@ -419,14 +436,14 @@ fn make_json_schema_node_strict(schema: &mut serde_json::Value) -> Result<(), St
             if is_structured_schema(variant) {
                 return Err("object and array unions are unsupported".into());
             }
-            make_json_schema_node_strict(variant)?;
+            make_json_schema_node_strict(variant, unsupported_keyword)?;
         }
     }
     if let Some(items) = obj.get_mut("items") {
         if items.is_array() {
             return Err("tuple schemas are unsupported".into());
         }
-        make_json_schema_node_strict(items)?;
+        make_json_schema_node_strict(items, unsupported_keyword)?;
     }
     let is_object = obj.get("type").and_then(|v| v.as_str()) == Some("object");
     if obj.contains_key("properties") && !is_object {
@@ -467,7 +484,7 @@ fn make_json_schema_node_strict(schema: &mut serde_json::Value) -> Result<(), St
     let property_names = properties.keys().cloned().collect::<Vec<_>>();
     for key in &property_names {
         let property = properties.get_mut(key).unwrap();
-        make_json_schema_node_strict(property)?;
+        make_json_schema_node_strict(property, unsupported_keyword)?;
         if !required.contains(key) && !schema_allows_null(property) {
             let old = property.clone();
             *property = serde_json::json!({"anyOf": [old, {"type": "null"}]});
@@ -495,16 +512,29 @@ pub fn resolve_json_schema_strict_sampling(
     tool: &crate::types::Tool,
     supports_strict_mode: bool,
 ) -> Result<Option<bool>, String> {
+    resolve_json_schema_strict_sampling_with_check(tool, supports_strict_mode, None)
+}
+
+pub fn resolve_json_schema_strict_sampling_with_check(
+    tool: &crate::types::Tool,
+    supports_strict_mode: bool,
+    unsupported_keyword: Option<UnsupportedStrictSchemaKeywordCheck>,
+) -> Result<Option<bool>, String> {
     let Some(config) = tool.constrained_sampling.as_ref() else {
         return Ok(None);
     };
     if config.get("type").and_then(|v| v.as_str()) != Some("json_schema") {
         return Ok(None);
     }
+    let required = config.get("strict").and_then(|v| v.as_str()) == Some("require");
     if supports_strict_mode {
-        return Ok(Some(true));
+        match make_strict_json_schema_with_check(&tool.parameters, unsupported_keyword) {
+            Ok(_) => return Ok(Some(true)),
+            Err(error) if required => return Err(error),
+            Err(_) => return Ok(None),
+        }
     }
-    if config.get("strict").and_then(|v| v.as_str()) == Some("require") {
+    if required {
         return Err(format!(
             "Tool \"{}\" requires JSON-schema constrained sampling, but strict tools are unsupported.",
             tool.name

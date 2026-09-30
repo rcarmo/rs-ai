@@ -5,6 +5,47 @@ use std::sync::LazyLock;
 
 use crate::types::{Model, StreamOptions};
 
+pub const ANTHROPIC_FEDERATION_RULE_ID: &str = "ANTHROPIC_FEDERATION_RULE_ID";
+pub const ANTHROPIC_ORGANIZATION_ID: &str = "ANTHROPIC_ORGANIZATION_ID";
+pub const ANTHROPIC_SERVICE_ACCOUNT_ID: &str = "ANTHROPIC_SERVICE_ACCOUNT_ID";
+pub const ANTHROPIC_IDENTITY_TOKEN_FILE: &str = "ANTHROPIC_IDENTITY_TOKEN_FILE";
+pub const ANTHROPIC_WORKSPACE_ID: &str = "ANTHROPIC_WORKSPACE_ID";
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub(crate) struct AnthropicFederationConfig {
+    pub rule_id: String,
+    pub organization_id: String,
+    pub service_account_id: Option<String>,
+    pub identity_token_file: String,
+    pub workspace_id: Option<String>,
+}
+
+pub(crate) fn anthropic_federation_config_from(
+    provider: &str,
+    mut get: impl FnMut(&str) -> Option<String>,
+) -> Option<AnthropicFederationConfig> {
+    if provider != "anthropic" {
+        return None;
+    }
+    let rule_id = get(ANTHROPIC_FEDERATION_RULE_ID).filter(|value| !value.trim().is_empty())?;
+    let organization_id =
+        get(ANTHROPIC_ORGANIZATION_ID).filter(|value| !value.trim().is_empty())?;
+    let identity_token_file =
+        get(ANTHROPIC_IDENTITY_TOKEN_FILE).filter(|value| !value.trim().is_empty())?;
+    let optional = |value: Option<String>| value.filter(|item| !item.trim().is_empty());
+    Some(AnthropicFederationConfig {
+        rule_id,
+        organization_id,
+        service_account_id: optional(get(ANTHROPIC_SERVICE_ACCOUNT_ID)),
+        identity_token_file,
+        workspace_id: optional(get(ANTHROPIC_WORKSPACE_ID)),
+    })
+}
+
+pub(crate) fn anthropic_federation_config(provider: &str) -> Option<AnthropicFederationConfig> {
+    anthropic_federation_config_from(provider, |name| std::env::var(name).ok())
+}
+
 static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyLock::new(|| {
     HashMap::from([
         ("github-copilot", &["COPILOT_GITHUB_TOKEN"][..]),

@@ -11,13 +11,13 @@ mod tests {
     #[test]
     fn signed_typed_catalog_counts_and_cardinalities_match_schema_v6() {
         let all = builtin_any_models();
-        assert_eq!(all.len(), 1592);
+        assert_eq!(all.len(), 1601);
         let chat = list_builtin_models(Some(ModelType::Chat), None);
         let image = list_builtin_models(Some(ModelType::Image), None);
         let classifier = list_builtin_models(Some(ModelType::Classifier), None);
-        assert_eq!(chat.len(), 1523);
+        assert_eq!(chat.len(), 1529);
         assert_eq!(image.len(), 57);
-        assert_eq!(classifier.len(), 12);
+        assert_eq!(classifier.len(), 15);
         assert_eq!(
             chat.iter()
                 .map(AnyModel::provider)

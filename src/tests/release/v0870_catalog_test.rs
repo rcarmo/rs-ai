@@ -151,7 +151,7 @@ mod tests {
             .iter()
             .map(|m| m.api.as_str())
             .collect::<std::collections::HashSet<_>>();
-        assert_eq!(models.len(), 1523);
+        assert_eq!(models.len(), 1529);
         assert_eq!(providers.len(), 41);
         assert_eq!(apis.len(), 10);
         assert_eq!(

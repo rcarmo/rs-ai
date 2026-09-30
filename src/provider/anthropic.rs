@@ -1,21 +1,263 @@
 //! Anthropic Messages API provider.
 
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, LazyLock};
 
 use futures::{StreamExt, stream};
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
 use serde_json::{Value, json};
 
-use crate::env::client_api_key;
+use crate::env::{AnthropicFederationConfig, anthropic_federation_config, client_api_key};
 use crate::events::Event;
 use crate::transports::sse;
 use crate::types::*;
+
+const ANTHROPIC_OAUTH_BETA: &str = "oauth-2025-04-20";
+const ANTHROPIC_FEDERATION_BETA: &str = "oidc-federation-2026-04-01";
+const ANTHROPIC_FEDERATION_GRANT: &str = "urn:ietf:params:oauth:grant-type:jwt-bearer";
+const MAX_IDENTITY_TOKEN_BYTES: usize = 16 * 1024;
+
+#[derive(Clone)]
+struct CachedFederationToken {
+    token: String,
+    expires_at_ms: i64,
+}
+
+static FEDERATION_TOKENS: LazyLock<tokio::sync::Mutex<HashMap<String, CachedFederationToken>>> =
+    LazyLock::new(|| tokio::sync::Mutex::new(HashMap::new()));
+static FEDERATION_LOCKS: LazyLock<
+    tokio::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>,
+> = LazyLock::new(|| tokio::sync::Mutex::new(HashMap::new()));
+
+#[cfg(test)]
+pub(crate) async fn reset_anthropic_federation_cache() {
+    FEDERATION_TOKENS.lock().await.clear();
+    FEDERATION_LOCKS.lock().await.clear();
+}
+
+async fn federation_cancelable<T>(
+    future: impl std::future::Future<Output = T>,
+    cancel: Option<&mut tokio::sync::watch::Receiver<bool>>,
+) -> Result<T, String> {
+    match cancel {
+        Some(receiver) => {
+            if *receiver.borrow() {
+                return Err("Anthropic federation request aborted".into());
+            }
+            tokio::select! {
+                value = future => Ok(value),
+                changed = receiver.changed() => {
+                    if changed.is_ok() && *receiver.borrow() {
+                        Err("Anthropic federation request aborted".into())
+                    } else {
+                        Err("Anthropic federation cancellation channel closed".into())
+                    }
+                }
+            }
+        }
+        None => Ok(future.await),
+    }
+}
+
+fn validate_federation_base_url(base_url: &str) -> Result<(), String> {
+    let url = reqwest::Url::parse(base_url)
+        .map_err(|error| format!("Invalid Anthropic federation base URL: {error}"))?;
+    if url.scheme() == "https" {
+        return Ok(());
+    }
+    let loopback = url
+        .host_str()
+        .is_some_and(|host| matches!(host, "localhost" | "127.0.0.1" | "::1"));
+    if url.scheme() == "http" && loopback {
+        return Ok(());
+    }
+    Err(format!(
+        "Refusing to send Anthropic identity token over non-HTTPS endpoint {base_url}"
+    ))
+}
+
+fn federation_cache_key(base_url: &str, config: &AnthropicFederationConfig) -> String {
+    format!(
+        "{}\0{}\0{}\0{}\0{}\0{}",
+        base_url.trim_end_matches('/'),
+        config.rule_id,
+        config.organization_id,
+        config.service_account_id.as_deref().unwrap_or(""),
+        config.workspace_id.as_deref().unwrap_or(""),
+        config.identity_token_file,
+    )
+}
+
+async fn exchange_anthropic_federation_token(
+    base_url: &str,
+    config: &AnthropicFederationConfig,
+    mut cancel: Option<&mut tokio::sync::watch::Receiver<bool>>,
+) -> Result<CachedFederationToken, String> {
+    validate_federation_base_url(base_url)?;
+    let assertion = federation_cancelable(
+        tokio::fs::read_to_string(&config.identity_token_file),
+        cancel.as_deref_mut(),
+    )
+    .await?
+    .map_err(|error| {
+        format!(
+            "Failed to read Anthropic identity token file {}: {error}",
+            config.identity_token_file
+        )
+    })?;
+    let assertion = assertion.trim();
+    if assertion.is_empty() {
+        return Err("Anthropic identity token file is empty".into());
+    }
+    if assertion.len() > MAX_IDENTITY_TOKEN_BYTES {
+        return Err(format!(
+            "Anthropic identity token is {} KiB, exceeds the 16 KiB assertion limit",
+            assertion.len().div_ceil(1024)
+        ));
+    }
+    let mut body = json!({
+        "grant_type": ANTHROPIC_FEDERATION_GRANT,
+        "assertion": assertion,
+        "federation_rule_id": config.rule_id,
+        "organization_id": config.organization_id,
+    });
+    if let Some(value) = &config.service_account_id {
+        body["service_account_id"] = json!(value);
+    }
+    if let Some(value) = &config.workspace_id {
+        body["workspace_id"] = json!(value);
+    }
+    let url = format!("{}/v1/oauth/token", base_url.trim_end_matches('/'));
+    let request = crate::http_proxy::client_for_target(&url, None)
+        .post(&url)
+        .header(CONTENT_TYPE, "application/json")
+        .header(
+            "anthropic-beta",
+            format!("{ANTHROPIC_OAUTH_BETA},{ANTHROPIC_FEDERATION_BETA}"),
+        )
+        .header("user-agent", crate::utils::pi_runtime_user_agent())
+        .json(&body)
+        .send();
+    let response = federation_cancelable(request, cancel)
+        .await?
+        .map_err(|error| format!("Anthropic federation token exchange failed: {error}"))?;
+    let status = response.status();
+    let text = response
+        .text()
+        .await
+        .map_err(|error| format!("Anthropic federation token response failed: {error}"))?;
+    let value: Value = serde_json::from_str(&text).map_err(|_| {
+        format!(
+            "Anthropic federation token endpoint returned non-JSON response (status {})",
+            status.as_u16()
+        )
+    })?;
+    if !status.is_success() {
+        let safe = ["error", "error_description", "error_uri"]
+            .into_iter()
+            .filter_map(|key| {
+                value.get(key).cloned().map(|mut value| {
+                    if let Value::String(text) = &mut value {
+                        *text = text.replace(assertion, "<redacted>");
+                    }
+                    (key.to_string(), value)
+                })
+            })
+            .collect::<serde_json::Map<_, _>>();
+        return Err(format!(
+            "Anthropic federation token exchange failed with status {}: {}",
+            status.as_u16(),
+            Value::Object(safe)
+        ));
+    }
+    let token = value
+        .get("access_token")
+        .and_then(Value::as_str)
+        .filter(|token| !token.is_empty())
+        .ok_or_else(|| "Anthropic federation token response missing access_token".to_string())?;
+    if value
+        .get("token_type")
+        .and_then(Value::as_str)
+        .is_some_and(|kind| !kind.eq_ignore_ascii_case("bearer"))
+    {
+        return Err("Anthropic federation token response has unsupported token_type".into());
+    }
+    let expires_in = value
+        .get("expires_in")
+        .and_then(Value::as_f64)
+        .filter(|seconds| seconds.is_finite() && *seconds > 0.0)
+        .ok_or_else(|| {
+            "Anthropic federation token response missing finite expires_in".to_string()
+        })?;
+    Ok(CachedFederationToken {
+        token: token.to_string(),
+        expires_at_ms: crate::utils::now_millis() + (expires_in * 1000.0) as i64,
+    })
+}
+
+async fn resolve_anthropic_federation_token(
+    base_url: &str,
+    config: &AnthropicFederationConfig,
+    mut cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> Result<String, String> {
+    let key = federation_cache_key(base_url, config);
+    if let Some(cached) = FEDERATION_TOKENS.lock().await.get(&key).cloned()
+        && cached.expires_at_ms - crate::utils::now_millis() > 30_000
+    {
+        return Ok(cached.token);
+    }
+    let key_lock = {
+        let mut locks = FEDERATION_LOCKS.lock().await;
+        locks
+            .entry(key.clone())
+            .or_insert_with(|| Arc::new(tokio::sync::Mutex::new(())))
+            .clone()
+    };
+    let _guard = federation_cancelable(key_lock.lock(), cancel.as_mut()).await?;
+    if let Some(cached) = FEDERATION_TOKENS.lock().await.get(&key).cloned()
+        && cached.expires_at_ms - crate::utils::now_millis() > 30_000
+    {
+        return Ok(cached.token);
+    }
+    let token = exchange_anthropic_federation_token(base_url, config, cancel.as_mut()).await?;
+    let value = token.token.clone();
+    FEDERATION_TOKENS.lock().await.insert(key, token);
+    Ok(value)
+}
+
+fn has_request_auth_headers(model: &Model, opts: &StreamOptions) -> bool {
+    model
+        .headers
+        .iter()
+        .flat_map(|headers| headers.keys())
+        .chain(opts.headers.iter().flat_map(|headers| headers.keys()))
+        .any(|name| {
+            matches!(
+                name.to_ascii_lowercase().as_str(),
+                "authorization" | "x-api-key" | "cf-aig-authorization"
+            )
+        })
+}
 
 /// Start an Anthropic Messages stream.
 pub fn stream_anthropic<'a>(
     model: &'a Model,
     context: &'a Context,
     opts: &'a StreamOptions,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+    stream_anthropic_with_federation(
+        model,
+        context,
+        opts,
+        anthropic_federation_config(&model.provider),
+    )
+}
+
+pub(crate) fn stream_anthropic_with_federation<'a>(
+    model: &'a Model,
+    context: &'a Context,
+    opts: &'a StreamOptions,
+    federation: Option<AnthropicFederationConfig>,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     let env_auth_token =
         if model.provider == "anthropic" && opts.api_key.is_none() && model.api_key.is_none() {
@@ -25,9 +267,52 @@ pub fn stream_anthropic<'a>(
         } else {
             None
         };
-    let api_key = env_auth_token
+    let has_header_auth = has_request_auth_headers(model, opts);
+    let direct_auth = env_auth_token
+        .or_else(|| client_api_key(model, opts))
+        .or_else(|| has_header_auth.then(|| "unused".to_string()));
+    if direct_auth.is_none()
+        && let Some(config) = federation
+    {
+        return Box::pin(async_stream::stream! {
+            match resolve_anthropic_federation_token(&model.base_url, &config, opts.cancel.clone()).await {
+                Ok(token) => {
+                    let mut inner = stream_anthropic_resolved(model, context, opts, Some(token));
+                    while let Some(event) = inner.next().await {
+                        yield event;
+                    }
+                }
+                Err(message) => yield Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(message)),
+                    message: None,
+                },
+            }
+        });
+    }
+    stream_anthropic_resolved(model, context, opts, None)
+}
+
+fn stream_anthropic_resolved<'a>(
+    model: &'a Model,
+    context: &'a Context,
+    opts: &'a StreamOptions,
+    federation_token: Option<String>,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+    let has_header_auth = has_request_auth_headers(model, opts);
+    let env_auth_token =
+        if model.provider == "anthropic" && opts.api_key.is_none() && model.api_key.is_none() {
+            std::env::var("ANTHROPIC_AUTH_TOKEN")
+                .ok()
+                .filter(|v| !v.is_empty())
+        } else {
+            None
+        };
+    let api_key = federation_token
         .clone()
-        .or_else(|| client_api_key(model, opts));
+        .or_else(|| env_auth_token.clone())
+        .or_else(|| client_api_key(model, opts))
+        .or_else(|| has_header_auth.then(|| "unused".to_string()));
     if api_key.is_none() {
         let err = Event::Error {
             reason: StopReason::Error,
@@ -40,6 +325,19 @@ pub fn stream_anthropic<'a>(
         return Box::pin(stream::once(async { err }));
     }
     let api_key = api_key.unwrap();
+
+    if model.compat.supports_strict_tools == Some(true) {
+        for tool in &context.tools {
+            if let Err(message) = anthropic_tool_strict_mode(tool, true) {
+                let err = Event::Error {
+                    reason: StopReason::Error,
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(message)),
+                    message: None,
+                };
+                return Box::pin(stream::once(async { err }));
+            }
+        }
+    }
 
     let mut payload = build_anthropic_payload(model, context, opts);
     if let Some(ref hook) = opts.on_payload {
@@ -84,6 +382,7 @@ pub fn stream_anthropic<'a>(
         HeaderValue::from_static("true"),
     );
 
+    let is_federated = federation_token.is_some();
     let is_auth_token = env_auth_token.is_some();
     let is_oauth = api_key.contains("sk-ant-oat");
     if model.provider == "cloudflare-ai-gateway" {
@@ -99,6 +398,13 @@ pub fn stream_anthropic<'a>(
             reqwest::header::AUTHORIZATION,
             HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
         );
+    } else if is_federated {
+        headers.insert(
+            reqwest::header::AUTHORIZATION,
+            HeaderValue::from_str(&format!("Bearer {}", api_key)).unwrap(),
+        );
+    } else if has_header_auth {
+        // Caller/model-owned auth headers are merged below. Do not add a placeholder key.
     } else if is_auth_token || is_oauth {
         headers.insert(
             reqwest::header::AUTHORIZATION,
@@ -111,12 +417,15 @@ pub fn stream_anthropic<'a>(
     }
 
     // Beta features (prompt caching is GA and no longer requires a beta header).
-    let beta_features = anthropic_beta_features(
+    let mut beta_features = anthropic_beta_features(
         model,
         context,
         is_oauth,
         opts.interleaved_thinking != Some(false),
     );
+    if is_federated && !beta_features.contains(&ANTHROPIC_OAUTH_BETA) {
+        beta_features.push(ANTHROPIC_OAUTH_BETA);
+    }
     if !beta_features.is_empty()
         && let Ok(val) = HeaderValue::from_str(&beta_features.join(","))
     {
@@ -616,6 +925,60 @@ pub(crate) fn anthropic_needs_session_affinity(model: &Model) -> bool {
 
 /// Normalize a tool-call id for Anthropic (mirrors upstream `normalizeToolCallId`):
 /// replace any character outside `[a-zA-Z0-9_-]` with `_` and truncate to 64.
+const ANTHROPIC_STRICT_UNSUPPORTED_KEYWORDS: &[&str] = &[
+    "minimum",
+    "maximum",
+    "exclusiveMinimum",
+    "exclusiveMaximum",
+    "multipleOf",
+    "maxItems",
+    "uniqueItems",
+    "minContains",
+    "maxContains",
+    "minProperties",
+    "maxProperties",
+];
+
+const ANTHROPIC_STRICT_STRING_FORMATS: &[&str] = &[
+    "date-time",
+    "time",
+    "date",
+    "duration",
+    "email",
+    "hostname",
+    "uri",
+    "ipv4",
+    "ipv6",
+    "uuid",
+];
+
+fn anthropic_strict_unsupported_keyword(key: &str, value: &Value) -> bool {
+    if ANTHROPIC_STRICT_UNSUPPORTED_KEYWORDS.contains(&key) {
+        return true;
+    }
+    if key == "minItems" {
+        return value.as_u64().is_none_or(|count| count > 1);
+    }
+    if key == "format" {
+        return value
+            .as_str()
+            .is_none_or(|format| !ANTHROPIC_STRICT_STRING_FORMATS.contains(&format));
+    }
+    false
+}
+
+pub(crate) fn anthropic_tool_strict_mode(
+    tool: &Tool,
+    supports_strict: bool,
+) -> Result<Option<bool>, String> {
+    crate::utils::resolve_json_schema_strict_sampling_with_check(
+        tool,
+        supports_strict,
+        Some(anthropic_strict_unsupported_keyword),
+    )
+}
+
+/// Normalize a tool-call id for Anthropic (mirrors upstream `normalizeToolCallId`):
 pub(crate) fn normalize_anthropic_tool_call_id(id: &str) -> String {
     let sanitized: String = id
         .chars()
@@ -1118,15 +1481,33 @@ pub(crate) fn build_anthropic_payload(
         let compat = anthropic_compat(model);
         let convert_tool = |t: &Tool, deferred: bool| {
             let schema = &t.parameters;
+            let strict =
+                anthropic_tool_strict_mode(t, model.compat.supports_strict_tools == Some(true))
+                    .ok()
+                    .flatten()
+                    .unwrap_or(false);
+            let legacy_schema = json!({
+                "type": "object",
+                "properties": schema.get("properties").cloned().unwrap_or_else(|| json!({})),
+                "required": schema.get("required").cloned().unwrap_or_else(|| json!([])),
+            });
+            let input_schema = if strict {
+                crate::utils::make_strict_json_schema_with_check(
+                    schema,
+                    Some(anthropic_strict_unsupported_keyword),
+                )
+                .unwrap_or(legacy_schema.clone())
+            } else {
+                legacy_schema
+            };
             let mut tool = json!({
                 "name": if is_oauth { to_claude_code_name(&t.name) } else { t.name.clone() },
                 "description": t.description,
-                "input_schema": {
-                    "type": "object",
-                    "properties": schema.get("properties").cloned().unwrap_or_else(|| json!({})),
-                    "required": schema.get("required").cloned().unwrap_or_else(|| json!([])),
-                },
+                "input_schema": input_schema,
             });
+            if strict {
+                tool["strict"] = json!(true);
+            }
             if deferred {
                 tool["defer_loading"] = json!(true);
             }

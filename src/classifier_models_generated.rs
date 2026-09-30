@@ -1,7 +1,7 @@
 //! Auto-generated classifier model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: signed schema-v6 provider shards (12 classifier models, 5 providers)
-//! Generated: 2026-09-29T18:10:40.924Z
+//! Source: signed schema-v6 provider shards (15 classifier models, 5 providers)
+//! Generated: 2026-09-30T19:17:00.024Z
 
 use crate::types::{ClassifierModel, ModelCost, ModelType};
 
@@ -66,6 +66,26 @@ pub fn builtin_classifier_models() -> Vec<ClassifierModel> {
                 tiers: vec![],
             },
             context_window: 32000,
+            headers: None,
+            api_key: None,
+        },
+        ClassifierModel {
+            model_type: ModelType::Classifier,
+            id: "inception/mercury-decide:free".into(),
+            name: "Inception: Mercury Decide (free)".into(),
+            api: "typesafe-system-one".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into()],
+            input_limits: None,
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+            context_window: 32768,
             headers: None,
             api_key: None,
         },
@@ -151,6 +171,26 @@ pub fn builtin_classifier_models() -> Vec<ClassifierModel> {
         },
         ClassifierModel {
             model_type: ModelType::Classifier,
+            id: "togethercomputer/tev1-4b-experimental".into(),
+            name: "Together: Tev1 4B Experimental".into(),
+            api: "typesafe-system-one".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into()],
+            input_limits: None,
+            cost: ModelCost {
+                input: 0.042_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+            context_window: 32768,
+            headers: None,
+            api_key: None,
+        },
+        ClassifierModel {
+            model_type: ModelType::Classifier,
             id: "typesafe/jev-1.13".into(),
             name: "TypeSafe: Jev 1.13".into(),
             api: "typesafe-system-one".into(),
@@ -226,6 +266,26 @@ pub fn builtin_classifier_models() -> Vec<ClassifierModel> {
                 tiers: vec![],
             },
             context_window: 64000,
+            headers: None,
+            api_key: None,
+        },
+        ClassifierModel {
+            model_type: ModelType::Classifier,
+            id: "liquid/d1".into(),
+            name: "Liquid d1".into(),
+            api: "typesafe-system-one".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh/typesafe/v1".into(),
+            input: vec!["text".into()],
+            input_limits: None,
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+            context_window: 32000,
             headers: None,
             api_key: None,
         },

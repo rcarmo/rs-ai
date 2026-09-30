@@ -1,6 +1,31 @@
 # rs-ai upstream release parity
 
-## Current audit target: v0.99.1
+## Current audit target: v0.99.2
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v0.99.2`
+- Upstream tag/npm gitHead: `005af57d88ee23b33778f343a9595b32e67ff788`
+- Previous accepted upstream: `v0.99.1` / `d86654abb8862e201933517d6f1fce9f88dd117f`
+- Candidate rs-ai version: `0.99.2`
+- Audited range: `d86654abb8862e201933517d6f1fce9f88dd117f..005af57d88ee23b33778f343a9595b32e67ff788`
+- Scope: `packages/ai` only; official tag and signed npm artifact.
+- Scope status: **AUDIT CANDIDATE / publication blocked**. Local and hosted acceptance evidence must complete before any native or upstream tag/release mutation.
+
+### v0.99.2 release inventory
+
+The bounded range contains **15 changed paths**, `+726/-77`, and **6 changed test paths**. The final package test/support corpus contains **171 unique basenames**. `scripts/validate_v0992_manifests.py --require-complete` checks the byte-exact name-status/path inventories, derived basename inventories, hashes, and all path/test dispositions in `docs/v0992-171-test-crosswalk.md`.
+
+The signed schema-v6 catalog contains **1529 text/chat models across 41 providers and 10 APIs**, including **75 batch aliases**. It also contains **57 image models** and **15 classifier models**, for **1601 typed records across 42 provider files**. The v0.99.1→v0.99.2 full-record deltas are chat `+6/-0/23 changed`, image `+0/-0/0 changed`, and classifier `+3/-0/0 changed`. The provider-data structure hash is `3e97a64c71ef31a515f668d9fbc653d49b3ece171d88bfd103001e963497661f`; the pinned npm tarball SHA-256 is `0b3df8791b488216f309d908789294a744bb61bbaad123d94098e56df9538d25`.
+
+### v0.99.2 candidate runtime scope
+
+The candidate adds Anthropic workload identity federation through deterministic Rust environment/file/token-exchange/Bearer-auth and cached credential paths. It keeps Anthropic JavaScript SDK constructor/default credential-chain mechanics as N/A and real workload credentials/network as live-only. Provider-aware Anthropic strict tool schemas retain supported constraints, fall back for rejected keywords, and fail closed when strict mode is required. Eager tool-input behavior remains an independent compatibility predicate. Z.AI CN `Prompt exceeds max length` is classified as context overflow. Invalid and non-finite `Retry-After` values fall back to exponential delay through the production HTTP retry path. The Node `./models` loader contract is N/A; Rust registry/faux access documents the analogous public surface without claiming module-loader parity.
+
+### v0.99.2 acceptance gates
+
+Local acceptance requires exact manifest completeness/corruption gates; typed metadata, pair equality and full-record delta faults; double generated-catalog reproducibility; focused production tests; all-target/all-feature, no-default and explicit Bedrock matrices; format and strict Clippy; licence/RustSec/security/SBOM; and a real-Git clean-worktree run. One final Rui-authored normal-CI candidate may be pushed after the local scope audit. Publication remains blocked until its exact hosted SHA and SBOM artifact are accepted.
+
+## Historical accepted release: v0.99.1
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v0.99.1`

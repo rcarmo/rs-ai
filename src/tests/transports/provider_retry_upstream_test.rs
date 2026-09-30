@@ -45,6 +45,55 @@ mod tests {
         assert_eq!(server.received_requests().await.unwrap().len(), 2);
     }
 
+    #[tokio::test(start_paused = true)]
+    async fn invalid_and_non_finite_retry_after_values_use_exponential_backoff() {
+        for value in ["not-a-delay", "NaN", "Infinity", "-Infinity"] {
+            let server = MockServer::start().await;
+            Mock::given(method("GET"))
+                .and(path("/retry"))
+                .respond_with(ResponseTemplate::new(429).insert_header("retry-after", value))
+                .up_to_n_times(1)
+                .mount(&server)
+                .await;
+            Mock::given(method("GET"))
+                .and(path("/retry"))
+                .respond_with(ResponseTemplate::new(200).set_body_string("ok"))
+                .mount(&server)
+                .await;
+            let client = reqwest::Client::new();
+            let handle = tokio::spawn({
+                let client = client.clone();
+                let url = format!("{}/retry", server.uri());
+                async move {
+                    do_with_retry_cancel(
+                        &client,
+                        client.get(url),
+                        &RetryConfig {
+                            max_retries: 1,
+                            initial_delay: Duration::from_secs(2),
+                            max_delay: Duration::from_secs(2),
+                            backoff_multiplier: 2.0,
+                            jitter_fraction: 0.0,
+                            max_retry_delay_ms: 10_000,
+                        },
+                        None,
+                    )
+                    .await
+                }
+            });
+            tokio::task::yield_now().await;
+            tokio::time::advance(Duration::from_millis(1999)).await;
+            assert!(
+                !handle.is_finished(),
+                "{value} bypassed exponential backoff"
+            );
+            tokio::time::advance(Duration::from_millis(1)).await;
+            let response = handle.await.unwrap().unwrap();
+            assert_eq!(response.status(), 200, "retry failed for {value}");
+            assert_eq!(server.received_requests().await.unwrap().len(), 2);
+        }
+    }
+
     #[tokio::test]
     async fn does_not_retry_provider_marked_non_retryable() {
         let server = MockServer::start().await;

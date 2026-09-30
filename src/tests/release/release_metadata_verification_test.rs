@@ -25,7 +25,7 @@ mod tests {
             String::from_utf8_lossy(&output.stderr)
         );
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("text=1523"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("text=1529"), "unexpected stdout: {stdout}");
         assert!(
             stdout.contains("providers=41"),
             "unexpected stdout: {stdout}"
@@ -36,6 +36,11 @@ mod tests {
             "unexpected stdout: {stdout}"
         );
         assert!(stdout.contains("image=57"), "unexpected stdout: {stdout}");
+        assert!(
+            stdout.contains("classifier=15"),
+            "unexpected stdout: {stdout}"
+        );
+        assert!(stdout.contains("total=1601"), "unexpected stdout: {stdout}");
     }
 
     fn run_fault(fault: &str) -> String {
@@ -481,6 +486,70 @@ mod tests {
         assert!(
             stderr.contains("v0871-changed-paths-16.txt sha256 mismatch"),
             "unexpected stderr: {stderr}"
+        );
+    }
+
+    #[test]
+    fn v0992_manifest_validator_requires_complete_exact_inventories() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .args([
+                "-B",
+                "scripts/validate_v0992_manifests.py",
+                "--require-complete",
+            ])
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "v0.99.2 manifest validator failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("changedPaths=15 shortstat=+726/-77 changedTests=6 corpusRows=171")
+        );
+        assert!(stdout.contains("pendingPaths=0 pendingTests=0"));
+    }
+
+    #[test]
+    fn v0992_baseline_delta_validator_confirms_typed_record_counts() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .args(["-B", "scripts/verify_v0992_baseline_delta.py"])
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "v0.99.2 delta validator failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains(
+            "chat=1523->1529 +6/-0/23 changed image=57->57 +0/-0/0 changed classifier=12->15 +3/-0/0 changed"
+        ));
+    }
+
+    #[test]
+    fn v0992_baseline_delta_validator_rejects_record_mutation() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .args([
+                "-B",
+                "scripts/verify_v0992_baseline_delta.py",
+                "--fault",
+                "classifier-record",
+            ])
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "v0.99.2 delta fault passed");
+        assert!(
+            String::from_utf8_lossy(&output.stderr)
+                .contains("classifier full-record delta mismatch")
         );
     }
 

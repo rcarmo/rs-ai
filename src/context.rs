@@ -39,6 +39,7 @@ pub fn is_context_overflow(msg: &Message, model: &Model) -> bool {
             "exceeded model token limit",            // Kimi
             "too large for model",                   // Mistral
             "model_context_window_exceeded",         // z.ai
+            "prompt exceeds max length",             // z.ai CN (error 1261)
             "prompt too long",                       // Ollama
             "context_length_exceeded",               // generic
             "context length exceeded",               // generic

@@ -29,7 +29,7 @@ fn release_pinned_catalog_counts_match_v0851() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1523);
+    assert_eq!(pairs.len(), 1529);
     assert_eq!(providers.len(), 41);
     assert_eq!(apis.len(), 10);
     assert_eq!(
