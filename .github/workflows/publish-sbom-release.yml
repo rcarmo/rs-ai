@@ -159,9 +159,27 @@ jobs:
               echo "Release tag ${RELEASE_TAG} points to ${tag_target}, not checked-out runtime ${runtime_sha}" >&2
               exit 1
             fi
-            if [[ "${RELEASE_KIND}" == "native" && "$(git cat-file -t "refs/tags/${RELEASE_TAG}")" != "tag" ]]; then
-              echo "Native release tag ${RELEASE_TAG} must be annotated" >&2
-              exit 1
+            if [[ "${RELEASE_KIND}" == "native" ]]; then
+              ref_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${RELEASE_TAG}")"
+              tag_object_type="$(jq -r '.object.type' <<<"${ref_json}")"
+              tag_object_sha="$(jq -r '.object.sha' <<<"${ref_json}")"
+              if [[ "${tag_object_type}" != "tag" ]]; then
+                echo "Native release tag ${RELEASE_TAG} must be annotated" >&2
+                exit 1
+              fi
+              tag_json="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_object_sha}")"
+              tagger_name="$(jq -r '.tagger.name' <<<"${tag_json}")"
+              tagger_email="$(jq -r '.tagger.email' <<<"${tag_json}")"
+              tagged_type="$(jq -r '.object.type' <<<"${tag_json}")"
+              tagged_sha="$(jq -r '.object.sha' <<<"${tag_json}")"
+              if [[ "${tagger_name}" != "Rui Carmo" || "${tagger_email}" != "rui.carmo@gmail.com" ]]; then
+                echo "Native release tag ${RELEASE_TAG} must be authored by Rui Carmo <rui.carmo@gmail.com>" >&2
+                exit 1
+              fi
+              if [[ "${tagged_type}" != "commit" || "${tagged_sha}" != "${runtime_sha}" ]]; then
+                echo "Native release tag object ${tag_object_sha} does not target runtime ${runtime_sha}" >&2
+                exit 1
+              fi
             fi
           elif [[ "${release_exists}" == "true" ]]; then
             echo "Release ${RELEASE_TAG} exists but its tag was not found after fetching origin tags" >&2
@@ -169,10 +187,8 @@ jobs:
           fi
 
           if [[ "${RELEASE_KIND}" == "native" && "${tag_exists}" == "false" ]]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git tag -a "${RELEASE_TAG}" "${runtime_sha}" -m "rs-ai v${RELEASE_VERSION}"
-            git push origin "refs/tags/${RELEASE_TAG}"
+            echo "Native release tag ${RELEASE_TAG} must be created before publisher dispatch" >&2
+            exit 1
           fi
 
           if [[ "${release_exists}" == "true" ]]; then
