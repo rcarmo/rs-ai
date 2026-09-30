@@ -6,10 +6,11 @@
 - Current audit target: `v0.99.2`
 - Upstream tag/npm gitHead: `005af57d88ee23b33778f343a9595b32e67ff788`
 - Previous accepted upstream: `v0.99.1` / `d86654abb8862e201933517d6f1fce9f88dd117f`
-- Candidate rs-ai version: `0.99.2`
+- Accepted rs-ai runtime: `255fdcccc2b392bfed8b1590b241cb6d264c4fa6`
+- Accepted runtime tree: `f77669fe3f3cf32356e1fc78cb6a9f8c8980e620`
 - Audited range: `d86654abb8862e201933517d6f1fce9f88dd117f..005af57d88ee23b33778f343a9595b32e67ff788`
 - Scope: `packages/ai` only; official tag and signed npm artifact.
-- Scope status: **AUDIT CANDIDATE / publication blocked**. Local and hosted acceptance evidence must complete before any native or upstream tag/release mutation.
+- Scope status: **ACCEPTED RUNTIME / publication blocked**. GitHub Actions run `36784618288`, job `110122915626`, passed the normal push CI gates for the exact runtime SHA. Tag, release and upstream alias creation require separate authorisation.
 
 ### v0.99.2 release inventory
 
@@ -21,9 +22,27 @@ The signed schema-v6 catalog contains **1529 text/chat models across 41 provider
 
 The candidate adds Anthropic workload identity federation through deterministic Rust environment/file/token-exchange/Bearer-auth and cached credential paths. It keeps Anthropic JavaScript SDK constructor/default credential-chain mechanics as N/A and real workload credentials/network as live-only. Provider-aware Anthropic strict tool schemas retain supported constraints, fall back for rejected keywords, and fail closed when strict mode is required. Eager tool-input behavior remains an independent compatibility predicate. Z.AI CN `Prompt exceeds max length` is classified as context overflow. Invalid and non-finite `Retry-After` values fall back to exponential delay through the production HTTP retry path. The Node `./models` loader contract is N/A; Rust registry/faux access documents the analogous public surface without claiming module-loader parity.
 
-### v0.99.2 acceptance gates
+### v0.99.2 local and hosted acceptance
 
-Local acceptance requires exact manifest completeness/corruption gates; typed metadata, pair equality and full-record delta faults; double generated-catalog reproducibility; focused production tests; all-target/all-feature, no-default and explicit Bedrock matrices; format and strict Clippy; licence/RustSec/security/SBOM; and a real-Git clean-worktree run. One final Rui-authored normal-CI candidate may be pushed after the local scope audit. Publication remains blocked until its exact hosted SHA and SBOM artifact are accepted.
+The accepted runtime passed the final local matrices with **1074/0** all-target/all-feature tests, **924/0** no-default tests and **1074/0** explicit Bedrock tests. The Anthropic federation focused suite passed **9/0**. Format, strict all-target/all-feature Clippy, exact catalog/reproducibility, manifest/corruption, licence, RustSec and security gates passed. A detached real-Git worktree built from the accepted patch passed **1074/0**, strict Clippy and the security checks. The security review covered **278 third-party packages**.
+
+Hosted acceptance evidence:
+
+- Runtime commit: `255fdcccc2b392bfed8b1590b241cb6d264c4fa6`
+- Runtime tree: `f77669fe3f3cf32356e1fc78cb6a9f8c8980e620`
+- Rollback commit: `b46914a4990ecd5f445c0437c55785f86e455797`
+- GitHub Actions run: `36784618288`
+- Successful job: `build-test-lint` (`110122915626`)
+- SHA-specific artifact: `rs-ai-sbom-255fdcccc2b392bfed8b1590b241cb6d264c4fa6` (`11128719823`)
+- Artifact archive SHA-256: `abd3a4219df96eb4309d9af2de548fc789fa9e019269024b885572d541dd5752`
+- Embedded `sbom.cdx.json` SHA-256: `14c28facdb8a85bbce1b97e2a7291adafd0962260b542e3d3a58c2f7b26f38f5`
+- Embedded VCS revision: `255fdcccc2b392bfed8b1590b241cb6d264c4fa6`
+- Root package: `rs-ai` version `0.99.2`, purl `pkg:cargo/rs-ai@0.99.2`
+- CycloneDX version: **1.5**
+- SBOM components: **278**
+- SBOM dependencies: **279**
+
+The downloaded hosted SBOM passed its checksum file and was byte-identical to the post-commit local SBOM. Publication is still blocked. Any later v0.99.2 tag must target runtime commit `255fdcccc2b392bfed8b1590b241cb6d264c4fa6`, not the later documentation head.
 
 ## Historical accepted release: v0.99.1
 
