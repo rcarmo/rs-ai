@@ -91,6 +91,20 @@ Inspect diffs before committing, including generated-source drift and generated-
 - Any new dependency must include vulnerability and license review before the final candidate push.
 - Final and weekly scheduled CI must generate, validate, scan, and upload the SBOM plus checksum artifact as `rs-ai-sbom-${{ github.sha }}` with 30-day retention. Cleanup must not delete these SBOM artifacts or their associated runs before that 30-day window. `RELEASE.md` must record SBOM tool/version, artifact path or run/artifact pointer, scan disposition, and license disposition for release audits.
 
+## Native release tags and SBOM publication
+
+- Publish accepted native versions under `vX.Y.Z`. The tag must be an annotated Git tag authored by `Rui Carmo <rui.carmo@gmail.com>` and must peel to the accepted version-aligned runtime commit. Lightweight tags, bot-authored tags, docs/tooling heads, and overwritten or force-updated tags are invalid.
+- Native publisher mode must never create or push a tag. It must require a pre-existing annotated tag and fail closed unless the Git Data object has the exact Rui name and email, targets a commit, and targets the supplied runtime SHA. Upstream-alias mode may retain its separate historical behaviour.
+- Treat the peeled tag commit as the release target. GitHub's `target_commitish` field may report `main` for a release created from an existing annotated tag; it is not the provenance authority.
+- Check that the native tag and release are absent immediately before creation. Create the annotated tag with create-only Git Data API semantics, verify it, and only then dispatch the release-only publisher.
+- Keep `upstream-vX.Y.Z` tags and releases as immutable historical aliases. Do not retarget them, replace their assets, or use their SBOM as the native release SBOM.
+- Historical runtimes whose manifest version does not match `X.Y.Z` require an isolated `release/vX.Y.Z` maintenance branch rooted at the recorded runtime. Change only version/lock metadata and the exact CI/publisher controls needed for publication; do not change runtime source. Keep the hosted-green branch published and unmerged.
+- Historical maintenance branches must run normal push CI for their exact branch. Accept only the exact candidate SHA and its SHA-specific SBOM artifact before creating a native tag. Do not substitute manual dispatch for candidate CI.
+- Generate native SBOM assets from the exact version-aligned candidate. The CycloneDX root version, purl, and bom-ref must match `X.Y.Z`; the root must record the tag's peeled commit as its VCS revision and have a root dependency edge.
+- Publish only the canonical `sbom.cdx.json` and `sbom.cdx.json.sha256` assets unless a release contract explicitly adds another asset. Download the public assets, validate the checksum, and compare them byte-for-byte with the accepted exact-SHA hosted artifact.
+- Record and verify the release title `rs-ai vX.Y.Z`, annotated tag object, peeled commit, release-branch SHA, CI run and artifact, asset digests, SBOM root/version/revision, dependency graph, and preserved upstream alias before reporting completion.
+- Process historical versions oldest to newest. Stop on any branch, tag, release, CI, security, licence, checksum, provenance, or publisher conflict.
+
 ## Lifecycle maintenance and triggers
 
 Perform an automated lifecycle/security review weekly via scheduled CI, and perform an immediate lifecycle/security review when any trigger applies:
