@@ -6,10 +6,11 @@
 - Current audit target: `v1.0.0`
 - Upstream tag/npm gitHead: `a13d35a742c6ef8462812a28fbe1d8c8b7431c32`
 - Previous accepted upstream: `v0.99.2` / `005af57d88ee23b33778f343a9595b32e67ff788`
-- Candidate rs-ai version: `1.0.0`
+- Accepted rs-ai runtime: `29dae5e27a90bf45da71c107102eaed61bd8418d`
+- Accepted runtime tree: `bb319969d684c029f939ac056fdd4151bcbc721b`
 - Audited range: `005af57d88ee23b33778f343a9595b32e67ff788..a13d35a742c6ef8462812a28fbe1d8c8b7431c32`
 - Scope: `packages/ai` only; official tag and signed npm artifact.
-- Scope status: **AUDIT CANDIDATE / publication blocked**. Local and hosted acceptance must complete before any commit, tag, release or alias mutation.
+- Scope status: **ACCEPTED RUNTIME / publication blocked**. GitHub Actions run `36935351359`, job `110614195955`, passed the normal push CI gates for the exact runtime SHA. Tag, release and upstream alias creation require separate authorisation.
 
 ### v1.0.0 release inventory
 
@@ -17,7 +18,7 @@ The bounded range contains **8 changed paths**, `+192/-14`, and **3 changed test
 
 The signed schema-v6 catalog contains **1532 text/chat models across 41 chat-bearing providers and 10 APIs**, including **73 batch aliases**. It also contains **57 image models** and **15 classifier models**, for **1604 typed records across 42 provider modules**. The v0.99.2→v1.0.0 full-record deltas are chat `+5/-2/19 changed`, image `+0/-0/0 changed`, and classifier `+0/-0/1 changed`. The provider-data structure hash is `235f2f320916ab6b0d7193e0bf66ec7983e9bc05abeddd7264923fb1e7eaf76e`. Chat and classifier catalogs are regenerated from the exact tarball shards; the unchanged image catalog remains byte-identical to the accepted v0.99.2 source.
 
-### v1.0.0 candidate runtime scope
+### v1.0.0 accepted runtime scope
 
 OpenAI Responses replay resolves grammar capability and transcript tool state once for declarations, assistant calls and tool results. Custom grammar calls/results use their native wire types, preserve `call_id`, retain only compatible `ctc_` item IDs, and map missing or null grammar arguments to an empty string. Historical foreign function calls retain their accepted `fc_<shortHash>` normalisation.
 
@@ -29,11 +30,34 @@ The v1.0.0 classifier declaration and System One/llama.cpp wire contract were au
 
 The Bedrock dependency disables the AWS SDK's legacy default transport feature and explicitly retains `default-https-client` plus `rt-tokio`. AWS SDK versions remain unchanged. The lockfile removes only eight unreachable legacy transport packages: `h2 0.3.27`, Hyper 0.14, hyper-rustls 0.24, rustls 0.21, rustls-webpki 0.101, sct 0.7, socket2 0.5 and tokio-rustls 0.24. The resolved graph retains `h2 0.4.19`, Hyper 1.11, rustls 0.23 and rustls-webpki 0.103 through the modern AWS HTTPS client.
 
-The four expired AWS legacy vulnerability exceptions were removed rather than renewed. `scripts/vuln_check.py` now fails closed if the forbidden legacy versions reappear or the modern HTTP/TLS families disappear. This security slice is independent of the eight-path v1.0.0 upstream parity delta.
+The four expired AWS legacy vulnerability exceptions were removed rather than renewed. `scripts/vuln_check.py` now fails closed if the forbidden legacy versions reappear or the modern HTTP/TLS families disappear. Hosted cargo-audit reported zero vulnerabilities and zero warnings; no vulnerability exceptions remain. This security slice is independent of the eight-path v1.0.0 upstream parity delta.
 
-### v1.0.0 acceptance gates
+### v1.0.0 local and hosted acceptance
 
-Local acceptance requires exact manifest corruption gates; full-record catalog mutation faults; metadata, pair and reproducibility checks; focused Responses/OAuth/callback/classifier production tests; all-target/all-feature, no-default and Bedrock matrices; format, build and strict Clippy; licence, RustSec, security and SBOM gates; and a real-Git detached-worktree run. Publication is blocked until a single candidate commit passes exact-SHA hosted CI and its SHA-specific SBOM is accepted.
+The accepted runtime passed the final local matrices with **1094/0** all-target/all-feature tests, **941/0** no-default tests and **1094/0** explicit Bedrock tests, with no ignored tests. Format, build and strict all-target/all-feature Clippy passed. A detached real-Git worktree built from the byte-identical candidate patch passed **1094/0**, strict Clippy, the security gates and the public empty-input and OAuth future-drop lifecycle probes.
+
+The exact tarball-driven generator produced **1532** chat, **57** image and **15** classifier records. Metadata, provider/id pair equality, full-record delta mutation faults, metadata-name faults and double generation passed. Generated chat SHA-256 was `b3326c65fe95e1693ad7c8bf0b30fa59556d296c43e93221866c4ed99a9c96cf`; classifier SHA-256 was `5dcc6add6fbb1e2dc86692dd5080edc2e674b4e73cfbe076285e7e6340089485`. The unchanged committed image source retained SHA-256 `efa9537e7ac483933477b1fdfe8f54c07a135c150e6bc5a7ebf198dfe46faf1f`.
+
+Hosted acceptance evidence:
+
+- Runtime commit: `29dae5e27a90bf45da71c107102eaed61bd8418d`
+- Runtime tree: `bb319969d684c029f939ac056fdd4151bcbc721b`
+- Rollback commit: `9717d66fefed7486ecc39df9cf7e84603f1a0e75`
+- GitHub Actions run: `36935351359` (normal push, attempt 1)
+- Successful job: `build-test-lint` (`110614195955`), all 18 steps green
+- SHA-specific artifact: `rs-ai-sbom-29dae5e27a90bf45da71c107102eaed61bd8418d` (`11197762487`)
+- Artifact archive SHA-256: `b0c29466ab2a6a30b4a6619e3df26f0ea79c37fc41345ddab8a239d7e8e5e959`
+- Embedded `sbom.cdx.json` SHA-256: `c49d6c2855a64bd873f2faa724b70af17febf95f923c8334a7d842c81501d6b1`
+- Embedded VCS revision: `29dae5e27a90bf45da71c107102eaed61bd8418d`
+- Root package: `rs-ai` version `1.0.0`, purl `pkg:cargo/rs-ai@1.0.0`
+- CycloneDX version: **1.5**
+- SBOM components: **270**
+- SBOM dependencies: **271**
+- Direct root dependency edges: **23**
+- Licence review: **270** third-party packages; licence and vulnerability self-tests passed **10/10** and **8/8**
+- Vulnerability scan: **0 vulnerabilities**, **0 warnings**, no expired waivers or accepted exceptions
+
+The downloaded hosted SBOM and checksum passed strict validation and were byte-identical to the post-commit local files. Publication is still blocked. Any later v1.0.0 native or upstream tag must target runtime commit `29dae5e27a90bf45da71c107102eaed61bd8418d`, never the later documentation head. The accepted v0.99.2 native and upstream history remains unchanged.
 
 ## Historical accepted release: v0.99.2
 
