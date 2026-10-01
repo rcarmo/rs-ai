@@ -1,6 +1,41 @@
 # rs-ai upstream release parity
 
-## Current audit target: v0.99.2
+## Current audit target: v1.0.0
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v1.0.0`
+- Upstream tag/npm gitHead: `a13d35a742c6ef8462812a28fbe1d8c8b7431c32`
+- Previous accepted upstream: `v0.99.2` / `005af57d88ee23b33778f343a9595b32e67ff788`
+- Candidate rs-ai version: `1.0.0`
+- Audited range: `005af57d88ee23b33778f343a9595b32e67ff788..a13d35a742c6ef8462812a28fbe1d8c8b7431c32`
+- Scope: `packages/ai` only; official tag and signed npm artifact.
+- Scope status: **AUDIT CANDIDATE / publication blocked**. Local and hosted acceptance must complete before any commit, tag, release or alias mutation.
+
+### v1.0.0 release inventory
+
+The bounded range contains **8 changed paths**, `+192/-14`, and **3 changed test paths**. The final package test/support corpus contains **171 unique basenames**. `scripts/validate_v100_manifests.py --require-complete` checks the exact inventories, hashes and all dispositions in `docs/v100-171-test-crosswalk.md`. The pinned npm tarball SHA-256 is `f39b99c29b8598f175b10840e5d2a81983e7c0ce5cae4d7df83a1007447d2c2b`.
+
+The signed schema-v6 catalog contains **1532 text/chat models across 41 chat-bearing providers and 10 APIs**, including **73 batch aliases**. It also contains **57 image models** and **15 classifier models**, for **1604 typed records across 42 provider modules**. The v0.99.2→v1.0.0 full-record deltas are chat `+5/-2/19 changed`, image `+0/-0/0 changed`, and classifier `+0/-0/1 changed`. The provider-data structure hash is `235f2f320916ab6b0d7193e0bf66ec7983e9bc05abeddd7264923fb1e7eaf76e`. Chat and classifier catalogs are regenerated from the exact tarball shards; the unchanged image catalog remains byte-identical to the accepted v0.99.2 source.
+
+### v1.0.0 candidate runtime scope
+
+OpenAI Responses replay resolves grammar capability and transcript tool state once for declarations, assistant calls and tool results. Custom grammar calls/results use their native wire types, preserve `call_id`, retain only compatible `ctc_` item IDs, and map missing or null grammar arguments to an empty string. Historical foreign function calls retain their accepted `fc_<shortHash>` normalisation.
+
+The registered Anthropic OAuth adapter adds host-driven browser and copy-code login without changing the shared refresh trait. It uses the exact PKCE/state, endpoints, redirects, scopes and JSON token request shapes, and threads caller cancellation through host hooks and token requests. The shared callback server completes exchange before showing success, renders the official Pi SVG, escapes dynamic text and keeps token failures out of the public page.
+
+The v1.0.0 classifier declaration and System One/llama.cpp wire contract were audited separately because those upstream paths are unchanged. Existing Rust types and transports already match the canonical state, question and answer shapes, `bool`↔`noul` mapping, ordered labels, score calculation, confidence and malformed-answer usage retention. Focused production tests lock those existing behaviours; no classifier runtime change was needed.
+
+### v1.0.0 security remediation
+
+The Bedrock dependency disables the AWS SDK's legacy default transport feature and explicitly retains `default-https-client` plus `rt-tokio`. AWS SDK versions remain unchanged. The lockfile removes only eight unreachable legacy transport packages: `h2 0.3.27`, Hyper 0.14, hyper-rustls 0.24, rustls 0.21, rustls-webpki 0.101, sct 0.7, socket2 0.5 and tokio-rustls 0.24. The resolved graph retains `h2 0.4.19`, Hyper 1.11, rustls 0.23 and rustls-webpki 0.103 through the modern AWS HTTPS client.
+
+The four expired AWS legacy vulnerability exceptions were removed rather than renewed. `scripts/vuln_check.py` now fails closed if the forbidden legacy versions reappear or the modern HTTP/TLS families disappear. This security slice is independent of the eight-path v1.0.0 upstream parity delta.
+
+### v1.0.0 acceptance gates
+
+Local acceptance requires exact manifest corruption gates; full-record catalog mutation faults; metadata, pair and reproducibility checks; focused Responses/OAuth/callback/classifier production tests; all-target/all-feature, no-default and Bedrock matrices; format, build and strict Clippy; licence, RustSec, security and SBOM gates; and a real-Git detached-worktree run. Publication is blocked until a single candidate commit passes exact-SHA hosted CI and its SHA-specific SBOM is accepted.
+
+## Historical accepted release: v0.99.2
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v0.99.2`

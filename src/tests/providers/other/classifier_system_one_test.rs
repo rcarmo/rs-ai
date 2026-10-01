@@ -86,6 +86,25 @@ mod tests {
             result.answers["approved"],
             ClassifierAnswer::Bool { probability } if (probability - 0.95).abs() < 1e-12
         ));
+        let ClassifierAnswer::Choice {
+            choice,
+            probabilities,
+            confidence,
+        } = &result.answers["category"]
+        else {
+            panic!("choice answer")
+        };
+        assert_eq!(choice, "success");
+        assert!((probabilities["success"] - 0.9).abs() < 1e-12);
+        assert!((probabilities["failure"] - 0.1).abs() < 1e-12);
+        assert!((*confidence - 0.8).abs() < 1e-12);
+        assert!(
+            matches!(result.answers["score"], ClassifierAnswer::Score { score, confidence } if (score - 1.0).abs() < 1e-12 && (confidence - 0.7).abs() < 1e-12)
+        );
+        assert_eq!(
+            serde_json::to_value(&result.answers["approved"]).unwrap(),
+            json!({"type":"bool","probability":0.95})
+        );
         assert_eq!(result.usage.as_ref().unwrap().total_tokens, 331);
         assert!((result.usage.unwrap().cost.total - 0.000012936).abs() < 1e-12);
         let requests = server.received_requests().await.unwrap();
@@ -96,7 +115,21 @@ mod tests {
         );
         let body: serde_json::Value = requests[0].body_json().unwrap();
         assert_eq!(body["model"], "jev-latest");
+        assert_eq!(body["state"], json!({"text":"Deployment succeeded"}));
         assert_eq!(body["questions"]["approved"]["type"], "noul");
+        assert_eq!(body["questions"]["category"]["instructions"], "Classify");
+        assert_eq!(
+            body["questions"]["category"]["criteria"]["success"],
+            "Successful"
+        );
+        assert_eq!(
+            body["questions"]["category"]["criteria"]["failure"],
+            "Failed"
+        );
+        assert_eq!(
+            body["questions"]["score"]["criteria"],
+            json!(["low", "high"])
+        );
         assert!(body.get("temperature").is_none());
     }
 

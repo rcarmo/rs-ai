@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tomllib
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -26,38 +27,45 @@ EXPECTED_AUDIT_RETURN_CODES = {0, 1}
 ExceptionKey = tuple[str, str, str]
 ExceptionPolicy = dict[ExceptionKey, dict[str, str]]
 
-# Existing AWS SDK legacy HTTP/TLS stack pulled by aws-sdk-bedrockruntime.
-# Owner: Rui Carmo <rui.carmo@gmail.com>
-# Rationale: rs-ai needs Bedrock runtime coverage; current AWS Rust SDK still
-# resolves legacy hyper-rustls/rustls-webpki/h2 via aws-smithy-http-client.
-# This exception is temporary and must be revisited on the next dependency or
-# release audit, or sooner if a patched AWS stack is available.
-APPROVED_EXCEPTIONS: ExceptionPolicy = {
-    ("RUSTSEC-2026-0258", "h2", "0.3.27"): {
-        "owner": "Rui Carmo <rui.carmo@gmail.com>",
-        "expires": "2026-09-30",
-        "rationale": "AWS SDK legacy hyper 0.14 transport dependency; update AWS stack when patched transitives are available.",
-        "mitigation": "Bedrock access is isolated to configured AWS endpoints; keep AWS SDK current and re-run cargo update/audit on each release or advisory review.",
-    },
-    ("RUSTSEC-2026-0099", "rustls-webpki", "0.101.7"): {
-        "owner": "Rui Carmo <rui.carmo@gmail.com>",
-        "expires": "2026-09-30",
-        "rationale": "AWS SDK legacy rustls 0.21 dependency; update AWS stack when patched transitives are available.",
-        "mitigation": "Bedrock TLS is limited to AWS endpoints through the SDK; keep AWS SDK current and re-run cargo update/audit on each release or advisory review.",
-    },
-    ("RUSTSEC-2026-0098", "rustls-webpki", "0.101.7"): {
-        "owner": "Rui Carmo <rui.carmo@gmail.com>",
-        "expires": "2026-09-30",
-        "rationale": "AWS SDK legacy rustls 0.21 dependency; update AWS stack when patched transitives are available.",
-        "mitigation": "Bedrock TLS is limited to AWS endpoints through the SDK; keep AWS SDK current and re-run cargo update/audit on each release or advisory review.",
-    },
-    ("RUSTSEC-2026-0104", "rustls-webpki", "0.101.7"): {
-        "owner": "Rui Carmo <rui.carmo@gmail.com>",
-        "expires": "2026-09-30",
-        "rationale": "AWS SDK legacy rustls 0.21 dependency; update AWS stack when patched transitives are available.",
-        "mitigation": "Bedrock TLS is limited to AWS endpoints through the SDK; keep AWS SDK current and re-run cargo update/audit on each release or advisory review.",
-    },
+# No accepted advisories remain. Bedrock disables the SDK's legacy default
+# transport feature and explicitly uses the modern HTTPS/Tokio client.
+APPROVED_EXCEPTIONS: ExceptionPolicy = {}
+
+FORBIDDEN_LOCKED_DEPENDENCIES = {
+    ("h2", "0.3.27"),
+    ("hyper", "0.14.32"),
+    ("hyper-rustls", "0.24.2"),
+    ("rustls", "0.21.12"),
+    ("rustls-webpki", "0.101.7"),
+    ("tokio-rustls", "0.24.1"),
 }
+
+
+def validate_locked_dependencies(lock_path: Path = ROOT / "Cargo.lock") -> None:
+    try:
+        data = tomllib.loads(lock_path.read_text())
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        raise ValueError(f"cannot validate Cargo.lock dependency policy: {exc}") from exc
+    packages = {
+        (str(package.get("name", "")), str(package.get("version", "")))
+        for package in data.get("package", [])
+        if isinstance(package, dict)
+    }
+    forbidden = sorted(packages & FORBIDDEN_LOCKED_DEPENDENCIES)
+    if forbidden:
+        rendered = ", ".join(f"{name} {version}" for name, version in forbidden)
+        raise ValueError(f"forbidden legacy HTTP/TLS dependencies in Cargo.lock: {rendered}")
+    required_modern_families = {"h2": "0.4.", "rustls-webpki": "0.103."}
+    missing = [
+        f"{name} {prefix}x"
+        for name, prefix in sorted(required_modern_families.items())
+        if not any(package == name and version.startswith(prefix) for package, version in packages)
+    ]
+    if missing:
+        raise ValueError(
+            "required modern HTTP/TLS dependencies missing from Cargo.lock: "
+            + ", ".join(missing)
+        )
 
 
 def find_cargo_audit() -> str | None:
@@ -169,6 +177,11 @@ def review_report(
 
 
 def main() -> int:
+    try:
+        validate_locked_dependencies()
+    except ValueError as exc:
+        print(f"dependency policy failed: {exc}", file=sys.stderr)
+        return 2
     exe = find_cargo_audit()
     if not exe:
         print(

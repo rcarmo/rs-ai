@@ -122,6 +122,41 @@ impl OAuthAuth for CodexOAuth {
     }
 }
 
+struct AnthropicBrowserLoginGuard<T> {
+    server: crate::oauth_callback::OAuthCallbackServer<T>,
+    prompt_cancel: watch::Sender<bool>,
+}
+
+impl<T> Drop for AnthropicBrowserLoginGuard<T> {
+    fn drop(&mut self) {
+        let _ = self.prompt_cancel.send(true);
+        self.server.close();
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AnthropicLoginMethod {
+    Browser,
+    CopyCode,
+}
+
+#[async_trait::async_trait]
+pub trait AnthropicLoginHost: Send + Sync {
+    /// Return `None` when the user cancels selection. Implementations should list
+    /// browser first and copy-code second.
+    async fn select_method(&self) -> Result<Option<AnthropicLoginMethod>, String>;
+    /// Deliver the authorization URL to the host. A browser host may launch it;
+    /// headless hosts can print it. Returning does not imply authentication.
+    async fn present_authorization_url(&self, url: &str) -> Result<(), String>;
+    /// Obtain pasted callback/code input. Hosts own their UI and should honour the
+    /// cancellation receiver while waiting.
+    async fn prompt_authorization_input(
+        &self,
+        prompt: &str,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<String, String>;
+}
+
 /// Anthropic (Claude Pro/Max) OAuth.
 pub struct AnthropicOAuth {
     pub token_url: Option<String>,
@@ -136,6 +171,199 @@ impl AnthropicOAuth {
 impl Default for AnthropicOAuth {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl AnthropicOAuth {
+    fn token_url(&self) -> &str {
+        self.token_url
+            .as_deref()
+            .unwrap_or(crate::oauth::ANTHROPIC_TOKEN_URL)
+    }
+
+    fn credential(token: crate::oauth::RefreshedToken) -> OAuthCredential {
+        OAuthCredential {
+            access: token.access,
+            refresh: token.refresh,
+            expires: token.expires_at_ms,
+            account_id: None,
+        }
+    }
+
+    async fn exchange_input(
+        &self,
+        input: &str,
+        verifier: &str,
+        redirect_uri: &str,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        let parsed = crate::oauth::parse_anthropic_authorization_input(input).map_err(oauth_err)?;
+        if parsed.code.trim().is_empty() {
+            return Err(oauth_err("Missing authorization code"));
+        }
+        let state = parsed.state.as_deref().unwrap_or(verifier);
+        if state != verifier {
+            return Err(oauth_err("OAuth state mismatch"));
+        }
+        crate::oauth::exchange_anthropic_code_at_with_cancel(
+            self.token_url(),
+            &parsed.code,
+            state,
+            verifier,
+            redirect_uri,
+            cancel,
+        )
+        .await
+        .map(Self::credential)
+        .map_err(oauth_err)
+    }
+
+    /// Run Anthropic browser/copy-code login with host-owned selection, URL
+    /// presentation and prompting. The shared OAuth trait stays refresh-only.
+    pub async fn login(
+        &self,
+        host: &dyn AnthropicLoginHost,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<OAuthCredential, ModelsError> {
+        if cancel.as_ref().is_some_and(|cancel| *cancel.borrow()) {
+            return Err(oauth_abort_err());
+        }
+        let method = cancelable_oauth_call(host.select_method(), cancel.clone())
+            .await?
+            .ok_or_else(|| oauth_err("Login cancelled"))?;
+        let pkce = crate::oauth::generate_pkce();
+        match method {
+            AnthropicLoginMethod::CopyCode => {
+                let redirect = crate::oauth::ANTHROPIC_COPY_CODE_REDIRECT_URI;
+                let url = crate::oauth::build_anthropic_authorize_url(
+                    &pkce.challenge,
+                    &pkce.verifier,
+                    redirect,
+                );
+                cancelable_oauth_call(host.present_authorization_url(&url), cancel.clone()).await?;
+                let input = cancelable_oauth_call(
+                    host.prompt_authorization_input("Paste the authorization code", cancel.clone()),
+                    cancel.clone(),
+                )
+                .await?;
+                self.exchange_input(&input, &pkce.verifier, redirect, cancel)
+                    .await
+            }
+            AnthropicLoginMethod::Browser => {
+                use std::sync::Arc;
+                use std::sync::atomic::{AtomicBool, Ordering};
+
+                let claimed = Arc::new(AtomicBool::new(false));
+                let token_url = self.token_url().to_string();
+                let verifier = pkce.verifier.clone();
+                let completion_cancel = cancel.clone();
+                let completion_claimed = claimed.clone();
+                let complete: crate::oauth_callback::OAuthCompletion<OAuthCredential> =
+                    Arc::new(move |code| {
+                        let token_url = token_url.clone();
+                        let verifier = verifier.clone();
+                        let cancel = completion_cancel.clone();
+                        let claimed = completion_claimed.clone();
+                        Box::pin(async move {
+                            if claimed
+                                .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                                .is_err()
+                            {
+                                return Err("Anthropic sign-in already handled".into());
+                            }
+                            crate::oauth::exchange_anthropic_code_at_with_cancel(
+                                &token_url,
+                                &code,
+                                &verifier,
+                                &verifier,
+                                crate::oauth::ANTHROPIC_REDIRECT_URI,
+                                cancel,
+                            )
+                            .await
+                            .map(AnthropicOAuth::credential)
+                        })
+                    });
+                let server = crate::oauth_callback::start_oauth_callback_server(
+                    crate::oauth_callback::OAuthCallbackOptions {
+                        provider_name: "Anthropic".into(),
+                        host: "127.0.0.1".into(),
+                        port: 53692,
+                        path: "/callback".into(),
+                        redirect_host: Some("localhost".into()),
+                        state: Some(pkce.verifier.clone()),
+                        complete,
+                        cancel: cancel.clone(),
+                        timeout_ms: None,
+                    },
+                )
+                .await
+                .ok();
+                let url = crate::oauth::build_anthropic_authorize_url(
+                    &pkce.challenge,
+                    &pkce.verifier,
+                    crate::oauth::ANTHROPIC_REDIRECT_URI,
+                );
+                cancelable_oauth_call(host.present_authorization_url(&url), cancel.clone()).await?;
+                if let Some(server) = server {
+                    let (prompt_cancel_tx, prompt_cancel_rx) = watch::channel(false);
+                    let guard = AnthropicBrowserLoginGuard {
+                        server,
+                        prompt_cancel: prompt_cancel_tx,
+                    };
+                    let callback = guard.server.wait();
+                    let prompt = cancelable_oauth_call(
+                        host.prompt_authorization_input(
+                            "Paste the authorization code or redirect URL",
+                            Some(prompt_cancel_rx),
+                        ),
+                        cancel.clone(),
+                    );
+                    tokio::pin!(callback);
+                    tokio::pin!(prompt);
+                    tokio::select! {
+                        result = &mut callback => {
+                            let _ = guard.prompt_cancel.send(true);
+                            let _ = (&mut prompt).await;
+                            result
+                                .map_err(oauth_err)?
+                                .ok_or_else(|| oauth_err("Login cancelled"))
+                        },
+                        input = &mut prompt => {
+                            let input = input?;
+                            if claimed.compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst).is_err() {
+                                return callback.await
+                                    .map_err(oauth_err)?
+                                    .ok_or_else(|| oauth_err("Login cancelled"));
+                            }
+                            guard.server.cancel();
+                            let _ = callback.await;
+                            self.exchange_input(
+                                &input,
+                                &pkce.verifier,
+                                crate::oauth::ANTHROPIC_REDIRECT_URI,
+                                cancel,
+                            ).await
+                        }
+                    }
+                } else {
+                    let input = cancelable_oauth_call(
+                        host.prompt_authorization_input(
+                            "Paste the authorization code or redirect URL",
+                            cancel.clone(),
+                        ),
+                        cancel.clone(),
+                    )
+                    .await?;
+                    self.exchange_input(
+                        &input,
+                        &pkce.verifier,
+                        crate::oauth::ANTHROPIC_REDIRECT_URI,
+                        cancel,
+                    )
+                    .await
+                }
+            }
+        }
     }
 }
 

@@ -30,6 +30,12 @@ pub struct OAuthCallbackServer<T> {
     cancel: watch::Sender<bool>,
 }
 
+impl<T> Drop for OAuthCallbackServer<T> {
+    fn drop(&mut self) {
+        let _ = self.cancel.send(true);
+    }
+}
+
 impl<T> OAuthCallbackServer<T> {
     pub async fn wait(&self) -> Result<Option<T>, String> {
         let receiver = self
@@ -52,10 +58,19 @@ impl<T> OAuthCallbackServer<T> {
     }
 }
 
+fn escape_html(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
 fn html(message: &str) -> String {
+    let message = escape_html(message);
     format!(
-        "<!doctype html><html><body><h1>{}</h1></body></html>",
-        message.replace('&', "&amp;").replace('<', "&lt;")
+        r##"<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Pi authentication</title></head><body><main><svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="Pi"><path fill="#F09082" d="M165.29 165.29H517.36V400H400V282.65H165.29Z"/><path fill="#4D9ABF" d="M165.29 282.65H282.65V400H400V517.36H282.65V634.72H165.29Z"/><path fill="#F1BE58" d="M517.36 400H634.72V634.72H517.36Z"/></svg><h1>{message}</h1></main></body></html>"##
     )
 }
 
@@ -204,7 +219,7 @@ pub async fn start_oauth_callback_server<T: Send + 'static>(
                         return;
                     }
                     let code = url.query_pairs().find(|(key, _)| key == "code").map(|(_, value)| value.into_owned());
-                    let Some(code) = code else {
+                    let Some(code) = code.filter(|code| !code.trim().is_empty()) else {
                         send(&mut stream, 400, "Missing authorization code.").await;
                         continue;
                     };
@@ -215,7 +230,9 @@ pub async fn start_oauth_callback_server<T: Send + 'static>(
                             let _ = sender.send(Ok(Some(value)));
                         }
                         Err(error) => {
-                            send(&mut stream, 502, &format!("{provider_name} sign-in failed. {error}")).await;
+                            // Never reflect token-exchange details into the browser page. The
+                            // caller still receives the internal, already provider-sanitised error.
+                            send(&mut stream, 502, &format!("{provider_name} sign-in failed. Return to the application and try again.")).await;
                             let _ = sender.send(Err(error));
                         }
                     }

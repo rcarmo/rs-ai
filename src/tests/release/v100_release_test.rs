@@ -1,4 +1,4 @@
-//! v0.99.2 release-pinned catalog and public-surface evidence.
+//! v1.0.0 release-pinned catalog and public-surface evidence.
 
 #[cfg(test)]
 mod tests {
@@ -10,31 +10,43 @@ mod tests {
     use futures::StreamExt;
 
     #[test]
-    fn signed_v0992_catalog_additions_are_present() {
+    fn signed_v100_catalog_delta_is_present() {
         for (provider, id) in [
-            ("amazon-bedrock", "anthropic.claude-sonnet-5-5"),
-            ("amazon-bedrock", "openai.gpt-6.1-sol"),
-            ("amazon-bedrock", "us.openai.gpt-6.1-sol"),
-            ("baseten", "deepseek-ai/DeepSeek-V4.1-Flash-Fast"),
-            ("github-copilot", "gpt-6.1-sol"),
-            ("opencode", "gpt-6.1-sol"),
+            ("amazon-bedrock", "global.openai.gpt-6.1-sol"),
+            ("opencode", "fledge-alpha-free"),
+            ("openrouter", "apodex/apodex-1.1-mini:free"),
+            ("openrouter", "typesafe/jev-router"),
+            ("openrouter", "unbiased/pareto-26.10-preview"),
         ] {
             assert!(
                 registry::get_model(provider, id).is_some(),
                 "missing signed chat model {provider}/{id}"
             );
         }
-        for (provider, id) in [
-            ("openrouter", "inception/mercury-decide:free"),
-            ("openrouter", "togethercomputer/tev1-4b-experimental"),
-            ("vercel-ai-gateway", "liquid/d1"),
-        ] {
+        for removed in ["openai/gpt-6.1-sol-pro:batch", "openai/gpt-6.1-sol:batch"] {
             assert!(
-                get_builtin_model_of_type(ModelType::Classifier, provider, id).is_some(),
-                "missing signed classifier model {provider}/{id}"
+                registry::get_model("openrouter", removed).is_none(),
+                "removed batch alias retained: {removed}"
             );
         }
+        let classifier =
+            get_builtin_model_of_type(ModelType::Classifier, "vercel-ai-gateway", "liquid/d1")
+                .expect("v1.0.0 classifier");
+        let crate::types::AnyModel::Classifier(classifier) = classifier else {
+            panic!("expected classifier model")
+        };
+        assert_eq!(classifier.context_window, 65_536);
+        assert_eq!(classifier.cost.input, 0.04);
         assert_eq!(builtin_any_models().len(), 1604);
+        assert_eq!(crate::models_generated::builtin_models().len(), 1532);
+        assert_eq!(
+            crate::images::models_generated::builtin_image_models().len(),
+            57
+        );
+        assert_eq!(
+            crate::classifier_models_generated::builtin_classifier_models().len(),
+            15
+        );
     }
 
     #[tokio::test]

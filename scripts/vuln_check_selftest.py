@@ -122,6 +122,36 @@ def test_approved_advisory_passes() -> None:
     ]
 
 
+def test_legacy_dependency_policy_fails_closed() -> None:
+    with tempfile.TemporaryDirectory(prefix="rs-ai-lock-selftest-") as tmp:
+        lock = Path(tmp) / "Cargo.lock"
+        lock.write_text('''version = 4
+
+[[package]]
+name = "h2"
+version = "0.3.27"
+
+[[package]]
+name = "rustls-webpki"
+version = "0.103.15"
+''')
+        assert_raises_value_error(
+            lambda: vuln_check.validate_locked_dependencies(lock),
+            "forbidden legacy HTTP/TLS dependencies",
+        )
+        lock.write_text('''version = 4
+
+[[package]]
+name = "h2"
+version = "0.4.19"
+
+[[package]]
+name = "rustls-webpki"
+version = "0.103.15"
+''')
+        vuln_check.validate_locked_dependencies(lock)
+
+
 def test_main_rejects_mock_scanner_error_exit_with_empty_json() -> None:
     with tempfile.TemporaryDirectory(prefix="rs-ai-vuln-selftest-") as tmp:
         mock = Path(tmp) / "cargo-audit"
@@ -152,6 +182,7 @@ def main() -> int:
         test_unapproved_advisory_fails,
         test_expired_and_incomplete_waivers_fail,
         test_approved_advisory_passes,
+        test_legacy_dependency_policy_fails_closed,
         test_main_rejects_mock_scanner_error_exit_with_empty_json,
     ]
     for test in tests:

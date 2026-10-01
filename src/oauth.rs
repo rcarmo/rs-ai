@@ -58,6 +58,73 @@ fn base64url_encode(input: &[u8]) -> String {
 pub const ANTHROPIC_CLIENT_ID: &str = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
 /// Anthropic OAuth token endpoint.
 pub const ANTHROPIC_TOKEN_URL: &str = "https://platform.claude.com/v1/oauth/token";
+/// Anthropic OAuth headless copy-code redirect URI.
+pub const ANTHROPIC_COPY_CODE_REDIRECT_URI: &str =
+    "https://platform.claude.com/oauth/code/callback";
+/// Anthropic token-request timeout.
+pub const ANTHROPIC_TOKEN_TIMEOUT_MS: u64 = 30_000;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AnthropicAuthorization {
+    pub code: String,
+    pub state: Option<String>,
+}
+
+/// Parse Anthropic pasted authorization input: a redirect URL, `code#state`,
+/// query-style input, or a bare code.
+pub fn parse_anthropic_authorization_input(input: &str) -> Result<AnthropicAuthorization, String> {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return Err("Missing authorization code".into());
+    }
+    if let Ok(url) = url::Url::parse(trimmed) {
+        let code = url
+            .query_pairs()
+            .find(|(key, _)| key == "code")
+            .map(|(_, value)| value.into_owned())
+            .filter(|code| !code.trim().is_empty())
+            .ok_or_else(|| "Missing authorization code".to_string())?;
+        let state = url
+            .query_pairs()
+            .find(|(key, _)| key == "state")
+            .map(|(_, value)| value.into_owned())
+            .or_else(|| {
+                url.fragment()
+                    .filter(|value| !value.is_empty())
+                    .map(str::to_string)
+            });
+        return Ok(AnthropicAuthorization { code, state });
+    }
+    if let Some((code, state)) = trimmed.split_once('#') {
+        if code.is_empty() {
+            return Err("Missing authorization code".into());
+        }
+        return Ok(AnthropicAuthorization {
+            code: code.to_string(),
+            state: (!state.is_empty()).then(|| state.to_string()),
+        });
+    }
+    if trimmed.contains("code=") {
+        let query = trimmed.strip_prefix('?').unwrap_or(trimmed);
+        let url = url::Url::parse(&format!("https://localhost/?{query}"))
+            .map_err(|_| "Invalid authorization input".to_string())?;
+        let code = url
+            .query_pairs()
+            .find(|(key, _)| key == "code")
+            .map(|(_, value)| value.into_owned())
+            .filter(|code| !code.trim().is_empty())
+            .ok_or_else(|| "Missing authorization code".to_string())?;
+        let state = url
+            .query_pairs()
+            .find(|(key, _)| key == "state")
+            .map(|(_, value)| value.into_owned());
+        return Ok(AnthropicAuthorization { code, state });
+    }
+    Ok(AnthropicAuthorization {
+        code: trimmed.to_string(),
+        state: None,
+    })
+}
 
 /// A refreshed OAuth token.
 #[derive(Debug, Clone)]
@@ -78,28 +145,28 @@ pub async fn refresh_anthropic_token_at(
     token_url: &str,
     refresh_token: &str,
 ) -> Result<RefreshedToken, String> {
-    let client = reqwest::Client::new();
-    let resp = client
-        .post(token_url)
-        .json(&serde_json::json!({
+    refresh_anthropic_token_at_with_cancel(token_url, refresh_token, None).await
+}
+
+pub async fn refresh_anthropic_token_at_with_cancel(
+    token_url: &str,
+    refresh_token: &str,
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> Result<RefreshedToken, String> {
+    let data = anthropic_post_json(
+        token_url,
+        serde_json::json!({
             "grant_type": "refresh_token",
             "client_id": ANTHROPIC_CLIENT_ID,
             "refresh_token": refresh_token,
-        }))
-        .send()
-        .await
-        .map_err(|e| {
-            format!("Anthropic token refresh request failed. url={token_url}; details={e}")
-        })?;
-    let body = resp.text().await.map_err(|e| {
-        format!("Anthropic token refresh request failed. url={token_url}; details={e}")
-    })?;
-    let data: serde_json::Value = serde_json::from_str(&body)
-        .map_err(|e| format!("Anthropic token refresh returned invalid JSON. url={token_url}; body={body}; details={e}"))?;
+        }),
+        cancel,
+    )
+    .await?;
     let access = data
         .get("access_token")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| format!("Anthropic token refresh missing access_token. body={body}"))?
+        .ok_or_else(|| "Anthropic token refresh missing access_token".to_string())?
         .to_string();
     let refresh = data
         .get("refresh_token")
@@ -176,37 +243,35 @@ pub async fn exchange_anthropic_code_at(
     verifier: &str,
     redirect_uri: &str,
 ) -> Result<RefreshedToken, String> {
-    let client = reqwest::Client::new();
-    let resp = client
-        .post(token_url)
-        .json(&serde_json::json!({
+    exchange_anthropic_code_at_with_cancel(token_url, code, state, verifier, redirect_uri, None)
+        .await
+}
+
+pub async fn exchange_anthropic_code_at_with_cancel(
+    token_url: &str,
+    code: &str,
+    state: &str,
+    verifier: &str,
+    redirect_uri: &str,
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> Result<RefreshedToken, String> {
+    let data = anthropic_post_json(
+        token_url,
+        serde_json::json!({
             "grant_type": "authorization_code",
             "client_id": ANTHROPIC_CLIENT_ID,
             "code": code,
             "state": state,
             "redirect_uri": redirect_uri,
             "code_verifier": verifier,
-        }))
-        .send()
-        .await
-        .map_err(|e| format!("Token exchange request failed. url={token_url}; redirect_uri={redirect_uri}; details={e}"))?;
-    let status = resp.status();
-    let body = resp
-        .text()
-        .await
-        .map_err(|e| format!("Token exchange request failed. url={token_url}; details={e}"))?;
-    if !status.is_success() {
-        return Err(format!(
-            "HTTP request failed. status={status}; url={token_url}; body={body}"
-        ));
-    }
-    let data: serde_json::Value = serde_json::from_str(&body).map_err(|e| {
-        format!("Token exchange returned invalid JSON. url={token_url}; body={body}; details={e}")
-    })?;
+        }),
+        cancel,
+    )
+    .await?;
     let access = data
         .get("access_token")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| format!("Token exchange missing access_token. body={body}"))?
+        .ok_or_else(|| "Anthropic token exchange missing access_token".to_string())?
         .to_string();
     let refresh = data
         .get("refresh_token")
@@ -218,6 +283,56 @@ pub async fn exchange_anthropic_code_at(
         refresh,
         expires_at_ms: crate::utils::now_millis() + expires_in * 1000 - 5 * 60 * 1000,
     })
+}
+
+async fn anthropic_post_json(
+    token_url: &str,
+    body: serde_json::Value,
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> Result<serde_json::Value, String> {
+    if cancel.as_ref().is_some_and(|cancel| *cancel.borrow()) {
+        return Err("Login cancelled".into());
+    }
+    let request = async {
+        let response = reqwest::Client::new()
+            .post(token_url)
+            .header(reqwest::header::ACCEPT, "application/json")
+            .json(&body)
+            .send()
+            .await
+            .map_err(|error| format!("Anthropic token request failed: {error}"))?;
+        let status = response.status();
+        let text = response.text().await.unwrap_or_default();
+        if !status.is_success() {
+            return Err(format!(
+                "Anthropic token request failed ({})",
+                status.as_u16()
+            ));
+        }
+        serde_json::from_str(&text)
+            .map_err(|_| "Anthropic token response returned invalid JSON".to_string())
+    };
+    let timed = async {
+        tokio::time::timeout(
+            std::time::Duration::from_millis(ANTHROPIC_TOKEN_TIMEOUT_MS),
+            request,
+        )
+        .await
+        .map_err(|_| "Anthropic token request timed out".to_string())?
+    };
+    match cancel {
+        Some(mut cancel) => tokio::select! {
+            biased;
+            _ = async {
+                loop {
+                    if *cancel.borrow() { break; }
+                    if cancel.changed().await.is_err() { std::future::pending::<()>().await; }
+                }
+            } => Err("Login cancelled".into()),
+            result = timed => result,
+        },
+        None => timed.await,
+    }
 }
 
 /// OpenAI Codex OAuth client id.

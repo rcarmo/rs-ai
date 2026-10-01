@@ -1,7 +1,7 @@
 //! Auto-generated classifier model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
 //! Source: signed schema-v6 provider shards (15 classifier models, 5 providers)
-//! Generated: 2026-09-30T19:17:00.024Z
+//! Generated: 2026-10-01T18:57:11.882Z
 
 use crate::types::{ClassifierModel, ModelCost, ModelType};
 
@@ -279,13 +279,13 @@ pub fn builtin_classifier_models() -> Vec<ClassifierModel> {
             input: vec!["text".into()],
             input_limits: None,
             cost: ModelCost {
-                input: 0_f64,
+                input: 0.04_f64,
                 output: 0_f64,
                 cache_read: 0_f64,
                 cache_write: 0_f64,
                 tiers: vec![],
             },
-            context_window: 32000,
+            context_window: 65536,
             headers: None,
             api_key: None,
         },

@@ -969,15 +969,17 @@ fn build_foreign_responses_item_id(item_id: &str) -> String {
     if s.len() > 64 { s[..64].to_string() } else { s }
 }
 
-/// Resolve the `call_id` and optional item `id` for a Responses `function_call`
-/// item from a stored tool-call id, applying upstream normalizeToolCallId plus the
-/// isDifferentModel item-id omission rule.
-fn responses_function_call_ids(
+/// Resolve the `call_id` and optional item `id` for a Responses tool call.
+/// `transformMessages(..., normalizeToolCallId)` normalizes foreign item suffixes
+/// to `fc_<shortHash>` before conversion upstream. Replay then omits item ids for
+/// same-provider/API different-model history and for call-type prefix mismatches.
+fn responses_tool_call_ids(
     raw_id: &str,
     model: &Model,
     src_provider: Option<&str>,
     src_api: Option<&str>,
     src_model: Option<&str>,
+    expected_item_prefix: &str,
 ) -> (String, Option<String>) {
     if !is_responses_tool_call_provider(&model.provider) || !raw_id.contains('|') {
         return (normalize_id_part(raw_id), None);
@@ -986,23 +988,44 @@ fn responses_function_call_ids(
     let call_id = normalize_id_part(call_part);
     let is_foreign =
         src_provider != Some(model.provider.as_str()) || src_api != Some(model.api.as_str());
-    let mut item_id = if is_foreign {
+    let item_id = if is_foreign {
         build_foreign_responses_item_id(item_part)
     } else {
         normalize_id_part(item_part)
     };
-    if !item_id.starts_with("fc_") {
-        item_id = normalize_id_part(&format!("fc_{item_id}"));
-    }
-    // For a different model on the same provider/api, omit the item id to avoid
-    // OpenAI's fc/rs pairing validation.
     let is_different_model = src_model != Some(model.id.as_str())
         && src_provider == Some(model.provider.as_str())
         && src_api == Some(model.api.as_str());
-    if is_different_model && item_id.starts_with("fc_") {
+    if is_different_model || !item_id.starts_with(expected_item_prefix) {
         return (call_id, None);
     }
     (call_id, Some(item_id))
+}
+
+/// JavaScript `String(value ?? "")` semantics used by grammar replay. Rust
+/// strings cannot contain unpaired UTF-16 surrogates, so no extra sanitisation is
+/// required after conversion.
+fn grammar_replay_input(
+    arguments: &std::collections::HashMap<String, Value>,
+    property: &str,
+) -> String {
+    match arguments.get(property).filter(|value| !value.is_null()) {
+        None => String::new(),
+        Some(Value::String(value)) => value.clone(),
+        Some(Value::Bool(value)) => value.to_string(),
+        Some(Value::Number(value)) => value.to_string(),
+        Some(Value::Array(values)) => values
+            .iter()
+            .map(|value| match value {
+                Value::Null => String::new(),
+                Value::String(value) => value.clone(),
+                other => other.to_string(),
+            })
+            .collect::<Vec<_>>()
+            .join(","),
+        Some(Value::Object(_)) => "[object Object]".to_string(),
+        Some(Value::Null) => unreachable!(),
+    }
 }
 
 /// Resolve the `call_id` for a Responses `function_call_output` from a stored
@@ -1097,6 +1120,25 @@ fn build_responses_payload_with_auth(
     }
 
     let transformed_messages = crate::transform::transform_messages(&context.messages, model);
+    let grammar_props: std::collections::HashMap<String, String> = context
+        .tools
+        .iter()
+        .chain(
+            context
+                .messages
+                .iter()
+                .flat_map(|message| message.tools_added.iter()),
+        )
+        .filter_map(|tool| {
+            crate::utils::resolve_grammar_constrained_sampling(
+                tool,
+                model.compat.supports_openai_grammar_tools.unwrap_or(false),
+            )
+            .ok()
+            .flatten()
+            .map(|grammar| (tool.name.clone(), grammar.input_property))
+        })
+        .collect();
 
     for (msg_index, msg) in transformed_messages.iter().enumerate() {
         match msg.role {
@@ -1229,21 +1271,40 @@ fn build_responses_payload_with_auth(
                             namespace,
                             ..
                         } => {
-                            let (call_id, item_id) = responses_function_call_ids(
+                            let custom_input_property = grammar_props.get(name);
+                            let is_custom = custom_input_property.is_some();
+                            let (call_id, item_id) = responses_tool_call_ids(
                                 id,
                                 model,
                                 msg.provider.as_deref(),
                                 msg.api.as_deref(),
                                 msg.model.as_deref(),
+                                if is_custom { "ctc_" } else { "fc_" },
                             );
-                            let mut item = json!({
-                                "type": "function_call",
-                                "id": item_id,
-                                "call_id": call_id,
-                                "name": name,
-                                "arguments": serde_json::to_string(arguments).unwrap_or_else(|_| "{}".to_string()),
-                            });
+                            let mut item = if let Some(property) = custom_input_property {
+                                json!({
+                                    "type": "custom_tool_call",
+                                    "call_id": call_id,
+                                    "name": name,
+                                    "input": grammar_replay_input(arguments, property),
+                                })
+                            } else {
+                                json!({
+                                    "type": "function_call",
+                                    "call_id": call_id,
+                                    "name": name,
+                                    "arguments": serde_json::to_string(arguments).unwrap_or_else(|_| "{}".to_string()),
+                                })
+                            };
+                            if let Some(item_id) = item_id {
+                                item["id"] = json!(item_id);
+                            }
+                            let same_model = msg.provider.as_deref()
+                                == Some(model.provider.as_str())
+                                && msg.api.as_deref() == Some(model.api.as_str())
+                                && msg.model.as_deref() == Some(model.id.as_str());
                             if supports_additional_tools
+                                && same_model
                                 && let Some(ns) = namespace.as_deref().filter(|s| !s.is_empty())
                             {
                                 item["namespace"] = json!(ns);
@@ -1324,6 +1385,10 @@ fn build_responses_payload_with_auth(
                     .as_deref()
                     .map(|id| responses_function_output_call_id(id, model))
                     .unwrap_or_default();
+                let is_custom = msg
+                    .tool_name
+                    .as_deref()
+                    .is_some_and(|name| grammar_props.contains_key(name));
                 if !image_parts.is_empty() {
                     let mut output = Vec::new();
                     if !text_result.is_empty() {
@@ -1331,7 +1396,7 @@ fn build_responses_payload_with_auth(
                     }
                     output.extend(image_parts);
                     input.push(json!({
-                        "type": "function_call_output",
+                        "type": if is_custom { "custom_tool_call_output" } else { "function_call_output" },
                         "call_id": call_id,
                         "output": output,
                     }));
@@ -1344,7 +1409,7 @@ fn build_responses_payload_with_auth(
                         text_result
                     };
                     input.push(json!({
-                        "type": "function_call_output",
+                        "type": if is_custom { "custom_tool_call_output" } else { "function_call_output" },
                         "call_id": call_id,
                         "output": output,
                     }));

@@ -322,6 +322,9 @@ mod openai_responses_terminal_event_test;
 #[path = "tests/providers/openai/openai_responses_tool_result_images_test.rs"]
 mod openai_responses_tool_result_images_test;
 #[cfg(test)]
+#[path = "tests/providers/openai/openai_responses_v100_grammar_replay_test.rs"]
+mod openai_responses_v100_grammar_replay_test;
+#[cfg(test)]
 #[path = "tests/providers/other/opencode_headers_test.rs"]
 mod opencode_headers_test;
 #[cfg(test)]
@@ -435,6 +438,9 @@ mod v0871_release_test;
 #[cfg(test)]
 #[path = "tests/release/v0992_release_test.rs"]
 mod v0992_release_test;
+#[cfg(test)]
+#[path = "tests/release/v100_release_test.rs"]
+mod v100_release_test;
 #[cfg(test)]
 #[path = "tests/transports/validation_upstream_test.rs"]
 mod validation_upstream_test;
