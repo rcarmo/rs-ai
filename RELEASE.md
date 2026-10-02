@@ -10,7 +10,7 @@
 - Accepted runtime tree: `bb319969d684c029f939ac056fdd4151bcbc721b`
 - Audited range: `005af57d88ee23b33778f343a9595b32e67ff788..a13d35a742c6ef8462812a28fbe1d8c8b7431c32`
 - Scope: `packages/ai` only; official tag and signed npm artifact.
-- Scope status: **ACCEPTED RUNTIME / publication blocked**. GitHub Actions run `36935351359`, job `110614195955`, passed the normal push CI gates for the exact runtime SHA. Tag, release and upstream alias creation require separate authorisation.
+- Scope status: **PUBLISHED NATIVE AND UPSTREAM ALIAS**. GitHub Actions run `36935351359`, job `110614195955`, passed the normal push CI gates for the exact runtime SHA. Native and upstream-alias publisher runs `36974911135` and `36975082618` completed successfully.
 
 ### v1.0.0 release inventory
 
@@ -57,7 +57,42 @@ Hosted acceptance evidence:
 - Licence review: **270** third-party packages; licence and vulnerability self-tests passed **10/10** and **8/8**
 - Vulnerability scan: **0 vulnerabilities**, **0 warnings**, no expired waivers or accepted exceptions
 
-The downloaded hosted SBOM and checksum passed strict validation and were byte-identical to the post-commit local files. Publication is still blocked. Any later v1.0.0 native or upstream tag must target runtime commit `29dae5e27a90bf45da71c107102eaed61bd8418d`, never the later documentation head. The accepted v0.99.2 native and upstream history remains unchanged.
+The downloaded hosted SBOM and checksum passed strict validation and were byte-identical to the post-commit local files.
+
+### v1.0.0 native and upstream-alias publication
+
+The accepted runtime and documentation history are separate:
+
+- Runtime and immutable tag target: `29dae5e27a90bf45da71c107102eaed61bd8418d`
+- Runtime tree: `bb319969d684c029f939ac056fdd4151bcbc721b`
+- Rollback commit: `9717d66fefed7486ecc39df9cf7e84603f1a0e75`
+- Pre-publication documentation head: `d37b0499d06d15b7ced0eae8a72dcf46bfac08d5`
+- Final publication receipt: the later `RELEASE.md`-only `[skip ci]` commit whose parent is `d37b0499d06d15b7ced0eae8a72dcf46bfac08d5`; its SHA is the final documentation head, never a release target
+
+Native publication:
+
+- Annotated tag: `v1.0.0`
+- Tag object: `45eed46d6f3add945b0f3742f6603ac84d1fe40e`
+- Tagger: `Rui Carmo <rui.carmo@gmail.com>`
+- Tag message: `rs-ai v1.0.0`
+- Peeled target: `29dae5e27a90bf45da71c107102eaed61bd8418d`
+- Publisher run: `36974911135` (attempt 1), job `110736524631`; all 13 steps passed
+- Release: `https://github.com/rcarmo/rs-ai/releases/tag/v1.0.0` (`401592587`)
+- `sbom.cdx.json`: asset `604999940`, SHA-256 `c49d6c2855a64bd873f2faa724b70af17febf95f923c8334a7d842c81501d6b1`
+- `sbom.cdx.json.sha256`: asset `604999939`, SHA-256 `ffe1ea469d5e484911155b89211f42a16fbc824a5a8850035d920703e2bd4096`
+
+Upstream-alias publication:
+
+- Lightweight tag: `upstream-v1.0.0`
+- Direct target: `29dae5e27a90bf45da71c107102eaed61bd8418d`
+- Publisher run: `36975082618` (attempt 1), job `110737045269`; all 13 steps passed
+- Release: `https://github.com/rcarmo/rs-ai/releases/tag/upstream-v1.0.0` (`401593495`)
+- `sbom.cdx.json`: asset `605002966`, SHA-256 `c49d6c2855a64bd873f2faa724b70af17febf95f923c8334a7d842c81501d6b1`
+- `sbom.cdx.json.sha256`: asset `605002964`, SHA-256 `ffe1ea469d5e484911155b89211f42a16fbc824a5a8850035d920703e2bd4096`
+
+Both publisher runs used workflow head `d37b0499d06d15b7ced0eae8a72dcf46bfac08d5` on `main` and the explicit runtime input `29dae5e27a90bf45da71c107102eaed61bd8418d`. Their security, licence and provenance gates passed. Both releases contain only the canonical SBOM and checksum assets. The files are byte-identical to each other and to the accepted hosted runtime evidence: CycloneDX 1.5, root `rs-ai@1.0.0`, embedded revision `29dae5e27a90bf45da71c107102eaed61bd8418d`, 270 components, 271 dependencies and 23 direct root edges. Cargo audit reported zero vulnerabilities and zero warnings; no expired waivers or accepted exceptions remain.
+
+The v1.0.0 tags must continue to target the accepted runtime, never `d37b0499d06d15b7ced0eae8a72dcf46bfac08d5` or the final documentation receipt. The accepted v0.99.2 native and upstream refs, release IDs and asset digests remain unchanged. Native pi-durable work is a separate future feature cycle and has no source, dependency, publication or completion status in this v1.0.0 release.
 
 ## Historical accepted release: v0.99.2
 
