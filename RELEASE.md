@@ -10,7 +10,7 @@
 - Official range: `a13d35a742c6ef8462812a28fbe1d8c8b7431c32..a7229ddc21810d6245105978033b7df645ecc2f7`
 - Artifact SHA-256: `8a9e69b1309cf93405d87729fa123c8b11c6be7c646b16f34f8bef7b792f9138`
 - npm integrity: computed SHA-512 matches registry metadata; npm advertises SLSA v1 provenance, but this cycle has not independently verified its signature/transparency record
-- Scope status: **LOCAL IMPLEMENTATION IN REVIEW / no commit or publication**.
+- Scope status: **INITIAL NATIVE AND UPSTREAM-ALIAS PUBLICATION ACCEPTED**.
 
 The exact upstream delta contains **19 changed paths**, `+546/-153`, and **6 changed tests**. The final corpus contains **171 test/support paths**: 164 executable tests and seven support files. `scripts/validate_v101_manifests.py --require-complete` verifies exact manifests and the complete crosswalk with no pending rows.
 
@@ -22,7 +22,42 @@ Staged hydration validates the exact artifact, complete schema/provider/API/cost
 
 Local evidence to date: focused provider/retry/release tests passed 29/0 before OAuth lifecycle expansion; the ChatGPT OAuth, shared callback and Anthropic OAuth suites passed 8/0, 5/0 and 11/0 after the public-cancellation correction. An independent public API probe reports `Login cancelled`, prompt cleanup complete before return and successful port-1455 rebind. No-default tests passed **947/0**; all-target/all-feature and explicit Bedrock matrices each passed **1104/0**, with no ignored tests. Format, build, strict all-target/all-feature Clippy, exact manifests, full-record mutation faults, metadata equality, double generation, staged hydration faults, licence and vulnerability gates passed. Security includes 270 third-party packages, licence/vulnerability self-tests 10/10 and 8/8, zero cargo-audit vulnerabilities, and SBOM SHA-256 `8b804f05479945755be86f6cc95b15922649463bacdeeba7c6c5ad3baccf46bd`.
 
-The final local scope is 48 paths: 37 tracked modifications plus 11 new files, `+1786/-512` before generated/untracked accounting is frozen for review. The sorted status inventory SHA-256 is `dc4422a17b245256152d81fd70bb02d0ab9831ff0136c669415db2986bfe7b34`; the external local-acceptance receipt records the content patch digest without creating a self-referential release ledger. A real detached worktree from baseline `0be75ef2eb571644eb4eeabb2cee19d4bc7543f6` passed exact manifest validation, strict hydration valid/fault sentinels, format and all-target/all-feature compilation. Final ChatGPT lifecycle controls passed **11/0**, including deterministic callback/manual single exchange, joined browser request, present/prompt/parse error cleanup, caller cancellation cleanup-before-return, dropped-public-future listener release and port rebind. The final shared callback and Anthropic OAuth suites passed **5/0** and **11/0**; strict Clippy passed after those changes. Initial native/upstream v1.0.1 publication requires separate authorisation. The mandatory pi-durable port is a later, separate cycle under the user-approved same-version retag policy and is excluded from this runtime candidate.
+The final local scope was 48 paths: 37 tracked modifications plus 11 new files, `+1786/-512`. The sorted status inventory SHA-256 was `dc4422a17b245256152d81fd70bb02d0ab9831ff0136c669415db2986bfe7b34`. A real detached worktree from baseline `0be75ef2eb571644eb4eeabb2cee19d4bc7543f6` passed exact manifest validation, strict hydration valid/fault sentinels, format and all-target/all-feature compilation. Final ChatGPT lifecycle controls passed **11/0**, including deterministic callback/manual single exchange, joined browser request, present/prompt/parse error cleanup, caller cancellation cleanup-before-return, dropped-public-future listener release and port rebind. The final shared callback and Anthropic OAuth suites passed **5/0** and **11/0**; strict Clippy passed after those changes.
+
+### v1.0.1 initial hosted acceptance and publication
+
+- Accepted runtime: `73de29d00230f794cac08b71bd669ca9386772db`
+- Runtime tree: `5202f38da904a8ed0060a286eeadf03ad5acb452`
+- Parent/rollback: `0be75ef2eb571644eb4eeabb2cee19d4bc7543f6`
+- Normal push CI: `37161895463`, attempt 1, job `111316886118`; all hosted steps passed
+- Hosted test result: **1107 passed, 0 failed, 0 ignored**
+- SHA-specific artifact: `rs-ai-sbom-73de29d00230f794cac08b71bd669ca9386772db` (`11288450921`)
+- Artifact archive SHA-256: `b8909f7566e3a84b91e4bb7953dd1f4ceb9afb7550a61b4365761ab5115728d9`
+- SBOM SHA-256: `3ef55884fdaec88daf384028d08e5d3854c90311e6bb9f7511c7e9c2f07bb2d8`
+- Checksum-file SHA-256: `f6e04e7808cd4785bbad6b7a8cecc22fad5c49e93fa76a73fe04441542c2cd16`
+- SBOM root: `rs-ai@1.0.1`, exact runtime revision, 270 components, 271 dependencies and 23 direct root edges
+- Post-commit licence and vulnerability gates passed with zero cargo-audit vulnerabilities or warnings
+
+Native publication:
+
+- Annotated tag: `v1.0.1`
+- Rui-authored tag object: `4110c49168ca52f4f7e3af07f2902d57a18f91bd`
+- Peeled runtime: `73de29d00230f794cac08b71bd669ca9386772db`
+- Publisher run: `37162332446`, attempt 1, job `111318164299`; all 13 steps passed
+- Release: `https://github.com/rcarmo/rs-ai/releases/tag/v1.0.1` (`402735140`)
+- Assets: `sbom.cdx.json` (`608731681`) and `sbom.cdx.json.sha256` (`608731679`)
+
+Upstream-alias publication:
+
+- Lightweight tag: `upstream-v1.0.1`
+- Direct runtime target: `73de29d00230f794cac08b71bd669ca9386772db`
+- Publisher run: `37162431527`, attempt 1, job `111318459944`; all 13 steps passed
+- Release: `https://github.com/rcarmo/rs-ai/releases/tag/upstream-v1.0.1` (`402735666`)
+- Assets: `sbom.cdx.json` (`608734300`) and `sbom.cdx.json.sha256` (`608734301`)
+
+Both releases contain exactly the canonical SBOM and checksum assets. Public downloads validate and are byte-identical to the accepted hosted artifact. All 25 older tag refs and 14 older releases/assets remained unchanged.
+
+The initial v1.0.1 tags target the accepted provider runtime, never this later documentation head. The mandatory native pi-durable cycle is queued separately and is not yet implemented or accepted. User policy requires a later **same-version v1.0.1 retag/republication** after a separately accepted durable runtime; that bounded replacement must preserve and record the initial tag object, runtime, release and asset evidence above, plus the replacement evidence. No durable completion or full pi-durable parity is claimed here.
 
 ## Historical accepted release: v1.0.0
 
