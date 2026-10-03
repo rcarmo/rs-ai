@@ -509,6 +509,16 @@ fn bedrock_supports_native_xhigh_effort(model: &Model) -> bool {
     })
 }
 
+fn bedrock_supports_thinking_block_binding(model: &Model) -> bool {
+    bedrock_model_match_candidates(model).iter().any(|s| {
+        s.contains("opus-4-7")
+            || s.contains("opus-4-8")
+            || s.contains("opus-5")
+            || s.contains("sonnet-5")
+            || s.contains("fable-5")
+    })
+}
+
 /// Resolve the Bedrock inference-config `max_tokens` (mirrors stream's inferenceConfig):
 /// thinking-adjusted cap, else caller cap, else the model cap for Claude; clamped to the
 /// context window via `clampMaxTokensToContext`. `thinking_max` is the optional thinking-
@@ -571,13 +581,17 @@ pub(crate) fn bedrock_thinking_fields(
         if let Some(d) = display {
             thinking["display"] = serde_json::json!(d);
         }
-        Some((
-            serde_json::json!({
-                "thinking": thinking,
-                "output_config": { "effort": effort },
-            }),
-            None,
-        ))
+        let mut fields = serde_json::json!({
+            "thinking": thinking,
+            "output_config": { "effort": effort },
+        });
+        if !is_govcloud_bedrock_target(model) && bedrock_supports_thinking_block_binding(model) {
+            fields["thinking"]["block_binding"] = serde_json::json!({
+                "prefix_mismatch_behavior": "drop_block"
+            });
+            fields["anthropic_beta"] = serde_json::json!(["thinking-binding-controls-2026-08-01"]);
+        }
+        Some((fields, None))
     } else {
         // Budget-based: select budget by level and adjust max_tokens (adjustMaxTokensForThinking).
         let mut budgets_map = std::collections::HashMap::new();

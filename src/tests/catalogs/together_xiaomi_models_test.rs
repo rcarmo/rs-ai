@@ -59,7 +59,7 @@ mod tests {
         assert_eq!(gpt_oss.compat.supports_reasoning_effort, Some(true));
         assert_eq!(gpt_oss.compat.thinking_format.as_deref(), Some("openai"));
 
-        let deepseek = get_model("together", "deepseek-ai/DeepSeek-V4-Pro").unwrap();
+        let deepseek = get_model("together", "deepseek-ai/DeepSeek-V4-Pro-0813").unwrap();
         assert_eq!(
             deepseek.thinking_level_map,
             Some(tlm(&[

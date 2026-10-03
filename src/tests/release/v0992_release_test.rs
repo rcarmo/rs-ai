@@ -34,7 +34,7 @@ mod tests {
                 "missing signed classifier model {provider}/{id}"
             );
         }
-        assert_eq!(builtin_any_models().len(), 1604);
+        assert_eq!(builtin_any_models().len(), 1615);
     }
 
     #[tokio::test]

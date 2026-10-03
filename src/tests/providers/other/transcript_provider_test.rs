@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 use serde_json::{Value, json};
 
 use crate::compat::detect_compat;
-use crate::provider::anthropic::build_anthropic_payload;
+use crate::provider::anthropic::{anthropic_beta_features, build_anthropic_payload};
 use crate::provider::openai::build_payload;
 use crate::provider::responses::build_responses_payload;
 use crate::transcript::system_message;
@@ -185,6 +185,69 @@ fn anthropic_preserves_native_updates_and_collapses_when_unsupported() {
     assert_eq!(update["role"], "system");
     assert_eq!(update["content"][1]["type"], "tool_removal");
     assert_eq!(update["content"][2]["type"], "tool_addition");
+    assert_eq!(update["content"][2]["tool"]["type"], "tool_definition");
+    assert_eq!(
+        update["content"][2]["tool"]["definition"]["name"],
+        "late_tool"
+    );
+    assert!(update["content"][2].get("cache_control").is_some());
+    assert!(
+        update["content"][2]["tool"]["definition"]
+            .get("cache_control")
+            .is_none()
+    );
+    assert_eq!(
+        names(payload["tools"].as_array().unwrap(), "/name"),
+        ["base_tool", "__pi_deferred_placeholder__"]
+    );
+
+    let initial_only = Context {
+        system_prompt: None,
+        messages: vec![
+            system_message("base", None, vec![tool("base_tool")], vec![]),
+            user_message("hello"),
+        ],
+        tools: vec![],
+    };
+    let first = build_anthropic_payload(&native, &initial_only, &StreamOptions::default());
+    assert!(
+        anthropic_beta_features(&native, &initial_only, false, false)
+            .contains(&"inline-tools-2026-09-15")
+    );
+    assert_eq!(
+        names(first["tools"].as_array().unwrap(), "/name"),
+        ["base_tool", "__pi_deferred_placeholder__"]
+    );
+    assert!(first["tools"][0].get("cache_control").is_some());
+
+    let redefined = Context {
+        system_prompt: None,
+        messages: vec![
+            system_message("base", None, vec![tool("base_tool")], vec![]),
+            user_message("before"),
+            system_message(
+                "",
+                None,
+                vec![Tool {
+                    description: "replacement".into(),
+                    ..tool("base_tool")
+                }],
+                vec![ToolReference {
+                    name: "base_tool".into(),
+                }],
+            ),
+        ],
+        tools: vec![],
+    };
+    let replacement = build_anthropic_payload(&native, &redefined, &StreamOptions::default());
+    let blocks = replacement["messages"].as_array().unwrap().last().unwrap()["content"]
+        .as_array()
+        .unwrap();
+    assert!(blocks.iter().all(|block| block["type"] != "tool_removal"));
+    assert_eq!(
+        blocks[0]["tool"]["definition"]["description"],
+        "replacement"
+    );
 
     let unsupported = model("anthropic-messages", "anthropic", ModelCompat::default());
     let payload =

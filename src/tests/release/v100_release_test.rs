@@ -37,15 +37,15 @@ mod tests {
         };
         assert_eq!(classifier.context_window, 65_536);
         assert_eq!(classifier.cost.input, 0.04);
-        assert_eq!(builtin_any_models().len(), 1604);
-        assert_eq!(crate::models_generated::builtin_models().len(), 1532);
+        assert_eq!(builtin_any_models().len(), 1615);
+        assert_eq!(crate::models_generated::builtin_models().len(), 1536);
         assert_eq!(
             crate::images::models_generated::builtin_image_models().len(),
-            57
+            59
         );
         assert_eq!(
             crate::classifier_models_generated::builtin_classifier_models().len(),
-            15
+            20
         );
     }
 

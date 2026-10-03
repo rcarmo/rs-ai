@@ -29,7 +29,7 @@ fn release_pinned_catalog_counts_match_v0851() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1532);
+    assert_eq!(pairs.len(), 1536);
     assert_eq!(providers.len(), 41);
     assert_eq!(apis.len(), 10);
     assert_eq!(
@@ -57,7 +57,7 @@ fn release_pinned_catalog_counts_match_v0851() {
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 57);
+    assert_eq!(image_pairs.len(), 59);
     assert!(image_pairs.contains(&(
         "openrouter".to_string(),
         "microsoft/mai-image-2.6".to_string()

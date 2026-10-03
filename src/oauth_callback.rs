@@ -9,8 +9,27 @@ use tokio::sync::{Mutex, oneshot, watch};
 
 pub type OAuthCompletion<T> =
     Arc<dyn Fn(String) -> Pin<Box<dyn Future<Output = Result<T, String>> + Send>> + Send + Sync>;
+pub(crate) type OAuthInputExtractor =
+    Arc<dyn Fn(&url::Url) -> Result<String, String> + Send + Sync>;
 type CallbackResult<T> = Result<Option<T>, String>;
 type CallbackReceiver<T> = oneshot::Receiver<CallbackResult<T>>;
+
+#[derive(Debug)]
+pub(crate) enum OAuthCallbackStartError {
+    Bind(std::io::Error),
+    Other(String),
+}
+
+impl std::fmt::Display for OAuthCallbackStartError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Bind(error) => write!(f, "{error}"),
+            Self::Other(error) => f.write_str(error),
+        }
+    }
+}
+
+impl std::error::Error for OAuthCallbackStartError {}
 
 pub struct OAuthCallbackOptions<T> {
     pub provider_name: String,
@@ -28,11 +47,17 @@ pub struct OAuthCallbackServer<T> {
     pub redirect_uri: String,
     result: Mutex<Option<CallbackReceiver<T>>>,
     cancel: watch::Sender<bool>,
+    task: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    abort: tokio::task::AbortHandle,
 }
 
 impl<T> Drop for OAuthCallbackServer<T> {
     fn drop(&mut self) {
         let _ = self.cancel.send(true);
+        self.abort.abort();
+        if let Some(task) = self.task.get_mut().take() {
+            task.abort();
+        }
     }
 }
 
@@ -44,9 +69,13 @@ impl<T> OAuthCallbackServer<T> {
             .await
             .take()
             .ok_or_else(|| "OAuth callback wait already consumed".to_string())?;
-        receiver
+        let result = receiver
             .await
-            .map_err(|_| "OAuth callback server closed".to_string())?
+            .map_err(|_| "OAuth callback server closed".to_string())?;
+        if let Some(task) = self.task.lock().await.take() {
+            let _ = task.await;
+        }
+        result
     }
 
     pub fn cancel(&self) {
@@ -55,6 +84,13 @@ impl<T> OAuthCallbackServer<T> {
 
     pub fn close(&self) {
         let _ = self.cancel.send(true);
+    }
+
+    pub async fn close_and_wait(&self) {
+        let _ = self.cancel.send(true);
+        if let Some(task) = self.task.lock().await.take() {
+            let _ = task.await;
+        }
     }
 }
 
@@ -119,21 +155,40 @@ async fn request_url(stream: &mut TcpStream) -> Result<(String, String), String>
     Ok((method, target))
 }
 
+fn code_input(url: &url::Url) -> Result<String, String> {
+    url.query_pairs()
+        .find(|(key, _)| key == "code")
+        .map(|(_, value)| value.into_owned())
+        .filter(|code| !code.trim().is_empty())
+        .ok_or_else(|| "Missing authorization code".to_string())
+}
+
 /// Start a loopback callback server on the requested address.
 pub async fn start_oauth_callback_server<T: Send + 'static>(
     options: OAuthCallbackOptions<T>,
 ) -> Result<OAuthCallbackServer<T>, String> {
+    start_oauth_callback_server_typed(options, Arc::new(code_input))
+        .await
+        .map_err(|error| error.to_string())
+}
+
+pub(crate) async fn start_oauth_callback_server_typed<T: Send + 'static>(
+    options: OAuthCallbackOptions<T>,
+    extract_input: OAuthInputExtractor,
+) -> Result<OAuthCallbackServer<T>, OAuthCallbackStartError> {
     if options
         .cancel
         .as_ref()
         .is_some_and(|cancel| *cancel.borrow())
     {
-        return Err("Login cancelled".into());
+        return Err(OAuthCallbackStartError::Other("Login cancelled".into()));
     }
     let listener = TcpListener::bind((options.host.as_str(), options.port))
         .await
-        .map_err(|error| error.to_string())?;
-    let address = listener.local_addr().map_err(|error| error.to_string())?;
+        .map_err(OAuthCallbackStartError::Bind)?;
+    let address = listener
+        .local_addr()
+        .map_err(|error| OAuthCallbackStartError::Other(error.to_string()))?;
     let redirect_host = options.redirect_host.as_deref().unwrap_or(&options.host);
     let rendered_host = if redirect_host.contains(':') {
         format!("[{redirect_host}]")
@@ -149,7 +204,7 @@ pub async fn start_oauth_callback_server<T: Send + 'static>(
     let completion = options.complete;
     let timeout_ms = options.timeout_ms;
     let mut external_cancel = options.cancel;
-    tokio::spawn(async move {
+    let task = tokio::spawn(async move {
         let mut result_tx = Some(result_tx);
         let timeout = async move {
             match timeout_ms {
@@ -190,7 +245,34 @@ pub async fn start_oauth_callback_server<T: Send + 'static>(
                         }
                         return;
                     };
-                    let Ok((method, target)) = request_url(&mut stream).await else {
+                    let request = tokio::select! {
+                        request = request_url(&mut stream) => Some(request),
+                        _ = cancel_rx.changed() => {
+                            if *cancel_rx.borrow() && let Some(sender) = result_tx.take() {
+                                let _ = sender.send(Ok(None));
+                            }
+                            None
+                        },
+                        _ = async {
+                            match external_cancel.as_mut() {
+                                Some(cancel) => { let _ = cancel.changed().await; },
+                                None => std::future::pending::<()>().await,
+                            }
+                        } => {
+                            if let Some(sender) = result_tx.take() {
+                                let _ = sender.send(Err("Login cancelled".into()));
+                            }
+                            None
+                        },
+                        _ = &mut timeout => {
+                            if let Some(sender) = result_tx.take() {
+                                let _ = sender.send(Err(format!("{provider_name} sign-in timed out")));
+                            }
+                            None
+                        }
+                    };
+                    let Some(request) = request else { return; };
+                    let Ok((method, target)) = request else {
                         send(&mut stream, 400, "Invalid callback request.").await;
                         continue;
                     };
@@ -218,13 +300,15 @@ pub async fn start_oauth_callback_server<T: Send + 'static>(
                         }
                         return;
                     }
-                    let code = url.query_pairs().find(|(key, _)| key == "code").map(|(_, value)| value.into_owned());
-                    let Some(code) = code.filter(|code| !code.trim().is_empty()) else {
-                        send(&mut stream, 400, "Missing authorization code.").await;
-                        continue;
+                    let input = match extract_input(&url) {
+                        Ok(input) => input,
+                        Err(error) => {
+                            send(&mut stream, 400, &format!("{error}.")).await;
+                            continue;
+                        }
                     };
                     let sender = result_tx.take().unwrap();
-                    match completion(code).await {
+                    match completion(input).await {
                         Ok(value) => {
                             send(&mut stream, 200, &format!("Authentication successful. Signed in to {provider_name}. You may now close this page.")).await;
                             let _ = sender.send(Ok(Some(value)));
@@ -241,9 +325,12 @@ pub async fn start_oauth_callback_server<T: Send + 'static>(
             }
         }
     });
+    let abort = task.abort_handle();
     Ok(OAuthCallbackServer {
         redirect_uri,
         result: Mutex::new(Some(result_rx)),
         cancel: cancel_tx,
+        task: Mutex::new(Some(task)),
+        abort,
     })
 }

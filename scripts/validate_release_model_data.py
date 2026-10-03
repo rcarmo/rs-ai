@@ -14,6 +14,55 @@ from pathlib import Path
 
 SUPPORTED_SCHEMA_VERSIONS = {3, 6}
 MODEL_TYPES = {"chat", "image", "classifier"}
+REQUIRED_STRING_FIELDS = {"id", "provider", "api", "name"}
+MODALITIES = {"text", "image"}
+
+
+def finite_number(value) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and value == value and abs(value) != float("inf")
+
+
+def validate_model_fields(model: dict, filename: str, stored_key: str, schema_version: int) -> None:
+    for field in REQUIRED_STRING_FIELDS:
+        if not isinstance(model.get(field), str) or not model[field].strip():
+            raise ValueError(f"model {stored_key} has invalid {field} in {filename}")
+    if schema_version != 6:
+        return
+    model_type = model.get("type")
+    if model_type not in MODEL_TYPES:
+        raise ValueError(f"model {stored_key} has invalid type in {filename}")
+    if not isinstance(model.get("baseUrl"), str):
+        raise ValueError(f"model {stored_key} has invalid baseUrl in {filename}")
+    inputs = model.get("input")
+    if (
+        not isinstance(inputs, list)
+        or not inputs
+        or any(item not in MODALITIES for item in inputs)
+    ):
+        raise ValueError(f"model {stored_key} has invalid input modalities in {filename}")
+    output = model.get("output")
+    if model_type == "image":
+        if not isinstance(output, list) or "image" not in output or any(item not in MODALITIES for item in output):
+            raise ValueError(f"model {stored_key} has invalid output modalities in {filename}")
+    elif output is not None:
+        raise ValueError(f"model {stored_key} must not define output modalities in {filename}")
+    if model_type == "chat":
+        if not isinstance(model.get("reasoning"), bool):
+            raise ValueError(f"model {stored_key} has invalid reasoning in {filename}")
+        for field in ("contextWindow", "maxTokens"):
+            if not finite_number(model.get(field)) or model[field] <= 0:
+                raise ValueError(f"model {stored_key} has invalid {field} in {filename}")
+    elif model_type == "classifier":
+        if not finite_number(model.get("contextWindow")) or model["contextWindow"] <= 0:
+            raise ValueError(f"model {stored_key} has invalid contextWindow in {filename}")
+    cost = model.get("cost")
+    if not isinstance(cost, dict):
+        raise ValueError(f"model {stored_key} has invalid cost in {filename}")
+    for field in ("input", "output", "cacheRead", "cacheWrite"):
+        value = cost.get(field)
+        # Negative finite costs are upstream sentinel values for dynamic routing.
+        if not finite_number(value):
+            raise ValueError(f"model {stored_key} has invalid cost.{field} in {filename}")
 
 
 def sha256_text(text: str) -> str:
@@ -87,6 +136,7 @@ def validate_model_data_directory(data_dir: Path) -> dict:
             for stored_key, model in values.items():
                 if not isinstance(model, dict):
                     raise ValueError(f"invalid model entry in {filename}")
+                validate_model_fields(model, filename, stored_key, schema_version)
                 model_id = model.get("id")
                 model_provider = model.get("provider")
                 model_api = model.get("api")

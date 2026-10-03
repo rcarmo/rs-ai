@@ -35,7 +35,7 @@ mod tests {
             .iter()
             .map(|model| model.api.as_str())
             .collect::<HashSet<_>>();
-        assert_eq!(models.len(), 1532);
+        assert_eq!(models.len(), 1536);
         assert_eq!(providers.len(), 41);
         assert_eq!(apis.len(), 10);
         assert_eq!(
@@ -47,7 +47,7 @@ mod tests {
         );
 
         let images = crate::images::models_generated::builtin_image_models();
-        assert_eq!(images.len(), 57);
+        assert_eq!(images.len(), 59);
         assert!(images.iter().any(|model| {
             model.provider == "openrouter" && model.id == "inclusionai/ming-image-0.1-design"
         }));

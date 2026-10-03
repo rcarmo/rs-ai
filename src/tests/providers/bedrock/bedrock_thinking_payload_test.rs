@@ -87,10 +87,13 @@ mod tests {
         let f = fields(&opus_4_8_global(), ThinkingLevel::High);
         assert_eq!(
             f["thinking"],
-            json!({"type": "adaptive", "display": "summarized"})
+            json!({"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}})
         );
         assert_eq!(f["output_config"], json!({"effort": "high"}));
-        assert!(f.get("anthropic_beta").is_none());
+        assert_eq!(
+            f["anthropic_beta"],
+            json!(["thinking-binding-controls-2026-08-01"])
+        );
     }
 
     #[test]
@@ -98,7 +101,7 @@ mod tests {
         let f = fields(&opus_4_8_global(), ThinkingLevel::XHigh);
         assert_eq!(
             f["thinking"],
-            json!({"type": "adaptive", "display": "summarized"})
+            json!({"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}})
         );
         assert_eq!(f["output_config"], json!({"effort": "xhigh"}));
     }
@@ -110,10 +113,13 @@ mod tests {
         let f = fields(&m, ThinkingLevel::High);
         assert_eq!(
             f["thinking"],
-            json!({"type": "adaptive", "display": "summarized"})
+            json!({"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}})
         );
         assert_eq!(f["output_config"], json!({"effort": "high"}));
-        assert!(f.get("anthropic_beta").is_none());
+        assert_eq!(
+            f["anthropic_beta"],
+            json!(["thinking-binding-controls-2026-08-01"])
+        );
     }
 
     #[test]
@@ -122,7 +128,7 @@ mod tests {
         let f = fields(&m, ThinkingLevel::High);
         assert_eq!(
             f["thinking"],
-            json!({"type": "adaptive", "display": "summarized"})
+            json!({"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}})
         );
         assert_eq!(f["output_config"], json!({"effort": "high"}));
     }
@@ -133,7 +139,7 @@ mod tests {
         let f = fields(&m, ThinkingLevel::XHigh);
         assert_eq!(
             f["thinking"],
-            json!({"type": "adaptive", "display": "summarized"})
+            json!({"type": "adaptive", "display": "summarized", "block_binding": {"prefix_mismatch_behavior": "drop_block"}})
         );
         assert_eq!(f["output_config"], json!({"effort": "xhigh"}));
     }
@@ -167,6 +173,17 @@ mod tests {
             "GovCloud must omit thinking.display: {f}"
         );
         assert_eq!(f["output_config"], json!({"effort": "high"}));
+        assert!(f["thinking"].get("block_binding").is_none());
+        assert!(f.get("anthropic_beta").is_none());
+    }
+
+    #[test]
+    fn excludes_claude_opus_4_6_from_thinking_block_binding() {
+        let m = get_model("amazon-bedrock", "global.anthropic.claude-opus-4-6-v1").unwrap();
+        let f = fields(&m, ThinkingLevel::High);
+        assert_eq!(f["thinking"]["type"], json!("adaptive"));
+        assert!(f["thinking"].get("block_binding").is_none());
+        assert!(f.get("anthropic_beta").is_none());
     }
 
     // --- application inference profile (opaque ARN id; model.name identifies the model) ---

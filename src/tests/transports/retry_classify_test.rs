@@ -73,6 +73,8 @@ mod tests {
             "stream ended without a stop reason",
             "http2 request did not get a response",
             "you can retry your request",
+            "Model is at capacity",
+            "MODEL IS AT CAPACITY; try later",
             // v0.80.5 additions.
             "524 status code (no body)",
             "The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()",
@@ -113,6 +115,11 @@ mod tests {
             Some(StopReason::Error),
         );
         assert!(!is_retryable_assistant_error(&m));
+        let capacity_with_quota = err_msg(
+            Some("model is at capacity because quota exceeded"),
+            Some(StopReason::Error),
+        );
+        assert!(!is_retryable_assistant_error(&capacity_with_quota));
     }
 
     #[test]

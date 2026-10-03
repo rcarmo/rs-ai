@@ -295,6 +295,9 @@ fn output_value(transport: Transport, body: Value) -> Result<Value, String> {
                 .ok_or_else(|| {
                     "Cloudflare Workers AI returned an unexpected response".to_string()
                 })?;
+            if run.contains_key("answers") {
+                return Ok(Value::Object(run.clone()));
+            }
             if run.get("state").and_then(Value::as_str) != Some("Completed") {
                 return Err(format!(
                     "Cloudflare Workers AI run did not complete (state: {})",

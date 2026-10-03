@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (57 image models, 1 provider)
-//! Generated: 2026-09-29T18:10:40.924Z
+//! Source: image-models.generated.js (59 image models, 1 provider)
+//! Generated: 2026-10-03T12:25:02.573Z
 
 use crate::images::types::ImageModel;
 use crate::types::{ModelCost, ModelType};
@@ -9,6 +9,19 @@ use crate::types::{ModelCost, ModelType};
 /// Returns all built-in image models from the upstream pi-ai registry.
 pub fn builtin_image_models() -> Vec<ImageModel> {
     vec![
+        ImageModel {
+            model_type: ModelType::Image,
+            id: "black-forest-labs/flux-3-image".into(),
+            name: "Black Forest Labs: FLUX.3 Image".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\":{\"resize\":{\"jpegQuality\":80,\"maxBytes\":4718592,\"maxHeight\":2000,\"maxWidth\":2000}}}").unwrap()),
+            output: vec!["image".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            headers: None,
+        },
         ImageModel {
             model_type: ModelType::Image,
             id: "black-forest-labs/flux.2-flex".into(),
@@ -69,6 +82,19 @@ pub fn builtin_image_models() -> Vec<ImageModel> {
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),
             input: vec!["image".into(), "text".into()],
+            input_limits: Some(serde_json::from_str("{\"images\":{\"resize\":{\"jpegQuality\":80,\"maxBytes\":4718592,\"maxHeight\":2000,\"maxWidth\":2000}}}").unwrap()),
+            output: vec!["image".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            headers: None,
+        },
+        ImageModel {
+            model_type: ModelType::Image,
+            id: "bytedance-seed/seedream-5-0-flash".into(),
+            name: "ByteDance Seed: Seedream 5.0 Flash".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
             input_limits: Some(serde_json::from_str("{\"images\":{\"resize\":{\"jpegQuality\":80,\"maxBytes\":4718592,\"maxHeight\":2000,\"maxWidth\":2000}}}").unwrap()),
             output: vec!["image".into()],
             cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },

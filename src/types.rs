@@ -641,6 +641,9 @@ pub struct ModelCompat {
     pub supports_mid_convo_system_messages: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_mid_convo_tool_additions: Option<bool>,
+    /// Provider supports inline mid-conversation tool additions/redefinitions by full
+    /// `tool_definition` value plus `tool_removal` blocks (Anthropic
+    /// `inline-tools-2026-09-15`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supports_mid_convo_tool_changes: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

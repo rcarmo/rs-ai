@@ -201,6 +201,44 @@ mod tests {
         assert_eq!(result.stop_reason, ClassifierStopReason::Stop);
         assert_eq!(result.usage.unwrap().total_tokens, 499);
 
+        Mock::given(method("POST"))
+            .and(path("/client/v4/accounts/direct/ai/run"))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "application/json")
+                    .set_body_json(json!({
+                        "success": true,
+                        "result": {"answers": answers(), "usage": {"input_tokens": 12, "output_tokens": 3}},
+                        "errors": [], "messages": []
+                    })),
+            )
+            .mount(&server)
+            .await;
+        let mut direct = crate::classifiers::get_classifier_model(
+            "cloudflare-workers-ai",
+            "@cf/cloudflare/clef",
+        )
+        .unwrap();
+        direct.base_url = format!(
+            "{}/client/v4/accounts/{{CLOUDFLARE_ACCOUNT_ID}}/ai",
+            server.uri()
+        );
+        let direct_result = system_one::classify_cloudflare(
+            &direct,
+            &context(),
+            &ClassifierOptions {
+                api_key: Some("cf-key".into()),
+                env: Some(HashMap::from([(
+                    "CLOUDFLARE_ACCOUNT_ID".into(),
+                    "direct".into(),
+                )])),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert_eq!(direct_result.stop_reason, ClassifierStopReason::Stop);
+        assert_eq!(direct_result.usage.unwrap().total_tokens, 15);
+
         let queued = system_one::classify_cloudflare(
             &model,
             &context(),

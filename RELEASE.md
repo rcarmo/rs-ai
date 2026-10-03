@@ -1,6 +1,30 @@
 # rs-ai upstream release parity
 
-## Current audit target: v1.0.0
+## Current audit target: v1.0.1
+
+- Upstream package: `@earendil-works/pi-ai`
+- Current audit target: `v1.0.1`
+- Upstream tag/npm gitHead: `a7229ddc21810d6245105978033b7df645ecc2f7`
+- Previous accepted upstream: `v1.0.0` / `a13d35a742c6ef8462812a28fbe1d8c8b7431c32`
+- Implementation baseline: `0be75ef2eb571644eb4eeabb2cee19d4bc7543f6`
+- Official range: `a13d35a742c6ef8462812a28fbe1d8c8b7431c32..a7229ddc21810d6245105978033b7df645ecc2f7`
+- Artifact SHA-256: `8a9e69b1309cf93405d87729fa123c8b11c6be7c646b16f34f8bef7b792f9138`
+- npm integrity: computed SHA-512 matches registry metadata; npm advertises SLSA v1 provenance, but this cycle has not independently verified its signature/transparency record
+- Scope status: **LOCAL IMPLEMENTATION IN REVIEW / no commit or publication**.
+
+The exact upstream delta contains **19 changed paths**, `+546/-153`, and **6 changed tests**. The final corpus contains **171 test/support paths**: 164 executable tests and seven support files. `scripts/validate_v101_manifests.py --require-complete` verifies exact manifests and the complete crosswalk with no pending rows.
+
+The native runtime uses Anthropic inline full tool definitions from the first eligible request, a stable initial tool/placeholder cache prefix, same-name replacement and outer update-block cache control. Bedrock adds binding controls only for eligible non-GovCloud adaptive Claude models. Cloudflare System One accepts direct `answers` and nested completed-run envelopes. Assistant retry classification includes `model is at capacity` while quota/billing precedence remains non-retryable. ChatGPT OAuth now exposes a host-owned cancellable login API, binds port 1455 before host effects, preserves a typed internal bind cause, claims callback/manual exchange once and joins owned prompt/listener work on completion or cancellation.
+
+All schema-v6 catalogs are regenerated offline from the verified pinned artifact: **1536 chat**, **59 image** and **20 classifier** records, **1615 total**, across 42 provider files. The full-record v1.0.0→v1.0.1 deltas are chat `+17/-13/54 changed`, image `+2/-0/0 changed`, classifier `+5/-0/0 changed`. An independent export through the public native registries compared every typed identity and all metadata against the official 42 shards with zero semantic differences. Two established native representations are retained: chat `type` is implicit in Rust `Model`, and Serde's native `supportsOpenaiGrammarTools` field maps to upstream `supportsOpenAIGrammarTools` with the same typed value. The manifest structure hash is `03d2e1aeeee6eb16959d4f727b47b9b187efaf863c688a47889fb90d200e6812`. Generated Rust SHA-256 receipts are chat `dcb3da25d8ece8de321544278194c05dfdd743963492dea3e517c4a99dc4d231`, image `b083239189ddf81097805ecd0fdaa910fc04a1ebf726e55c269cdf4e35e13832`, classifier `84ecedf4b733f543a1838e9c57b0e37e6aaecf8f70b13da424f8aed0fc9e49ab`; hashes record provenance only. Acceptance uses full-record semantic comparison and deterministic regeneration, not output-hash equality.
+
+Staged hydration validates the exact artifact, complete schema/provider/API/cost/modality identities and all three rendered/formatted outputs before replacing accepted files. Validate-only and normal render/format fault sentinels leave accepted outputs unchanged. No dependency, AWS graph, workflow, Makefile or publisher-policy change belongs to this runtime.
+
+Local evidence to date: focused provider/retry/release tests passed 29/0 before OAuth lifecycle expansion; the ChatGPT OAuth, shared callback and Anthropic OAuth suites passed 8/0, 5/0 and 11/0 after the public-cancellation correction. An independent public API probe reports `Login cancelled`, prompt cleanup complete before return and successful port-1455 rebind. No-default tests passed **947/0**; all-target/all-feature and explicit Bedrock matrices each passed **1104/0**, with no ignored tests. Format, build, strict all-target/all-feature Clippy, exact manifests, full-record mutation faults, metadata equality, double generation, staged hydration faults, licence and vulnerability gates passed. Security includes 270 third-party packages, licence/vulnerability self-tests 10/10 and 8/8, zero cargo-audit vulnerabilities, and SBOM SHA-256 `8b804f05479945755be86f6cc95b15922649463bacdeeba7c6c5ad3baccf46bd`.
+
+The final local scope is 48 paths: 37 tracked modifications plus 11 new files, `+1786/-512` before generated/untracked accounting is frozen for review. The sorted status inventory SHA-256 is `dc4422a17b245256152d81fd70bb02d0ab9831ff0136c669415db2986bfe7b34`; the external local-acceptance receipt records the content patch digest without creating a self-referential release ledger. A real detached worktree from baseline `0be75ef2eb571644eb4eeabb2cee19d4bc7543f6` passed exact manifest validation, strict hydration valid/fault sentinels, format and all-target/all-feature compilation. Final ChatGPT lifecycle controls passed **11/0**, including deterministic callback/manual single exchange, joined browser request, present/prompt/parse error cleanup, caller cancellation cleanup-before-return, dropped-public-future listener release and port rebind. The final shared callback and Anthropic OAuth suites passed **5/0** and **11/0**; strict Clippy passed after those changes. Initial native/upstream v1.0.1 publication requires separate authorisation. The mandatory pi-durable port is a later, separate cycle under the user-approved same-version retag policy and is excluded from this runtime candidate.
+
+## Historical accepted release: v1.0.0
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v1.0.0`

@@ -25,7 +25,7 @@ mod tests {
             String::from_utf8_lossy(&output.stderr)
         );
         let stdout = String::from_utf8_lossy(&output.stdout);
-        assert!(stdout.contains("text=1532"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("text=1536"), "unexpected stdout: {stdout}");
         assert!(
             stdout.contains("providers=41"),
             "unexpected stdout: {stdout}"
@@ -35,12 +35,12 @@ mod tests {
             stdout.contains("batchAliases=73"),
             "unexpected stdout: {stdout}"
         );
-        assert!(stdout.contains("image=57"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("image=59"), "unexpected stdout: {stdout}");
         assert!(
-            stdout.contains("classifier=15"),
+            stdout.contains("classifier=20"),
             "unexpected stdout: {stdout}"
         );
-        assert!(stdout.contains("total=1604"), "unexpected stdout: {stdout}");
+        assert!(stdout.contains("total=1615"), "unexpected stdout: {stdout}");
     }
 
     fn run_fault(fault: &str) -> String {
@@ -610,6 +610,69 @@ mod tests {
             assert!(
                 !output.status.success(),
                 "v1.0.0 delta fault {fault} passed"
+            );
+        }
+    }
+
+    #[test]
+    fn v101_manifest_validator_requires_complete_exact_inventories() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .args([
+                "-B",
+                "scripts/validate_v101_manifests.py",
+                "--require-complete",
+            ])
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "v1.0.1 manifest validator failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("changedPaths=19 shortstat=+546/-153 changedTests=6 corpusRows=171")
+        );
+        assert!(stdout.contains("pendingPaths=0 pendingTests=0"));
+    }
+
+    #[test]
+    fn v101_baseline_delta_validator_confirms_typed_record_counts() {
+        let output = Command::new("python3")
+            .env("PYTHONDONTWRITEBYTECODE", "1")
+            .args(["-B", "scripts/verify_v101_baseline_delta.py"])
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "v1.0.1 delta validator failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("chat=1532->1536 +17/-13/54 changed image=57->59 +2/-0/0 changed classifier=15->20 +5/-0/0 changed"));
+    }
+
+    #[test]
+    fn v101_baseline_delta_validator_rejects_all_record_mutations() {
+        for fault in ["chat-record", "image-record", "classifier-record"] {
+            let output = Command::new("python3")
+                .env("PYTHONDONTWRITEBYTECODE", "1")
+                .args([
+                    "-B",
+                    "scripts/verify_v101_baseline_delta.py",
+                    "--fault",
+                    fault,
+                ])
+                .current_dir(env!("CARGO_MANIFEST_DIR"))
+                .output()
+                .unwrap();
+            assert!(
+                !output.status.success(),
+                "v1.0.1 delta fault {fault} passed"
             );
         }
     }

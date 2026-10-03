@@ -251,14 +251,41 @@ mod tests {
         ctx.messages[1].api = Some("openai-responses".into());
         ctx.messages[1].provider = Some("openai".into());
         ctx.messages[1].model = Some("gpt-5.4".into());
+        ctx.tools.clear();
+        ctx.messages.insert(
+            0,
+            crate::transcript::system_message("", None, vec![tool("base_tool")], Vec::new()),
+        );
+        ctx.messages.insert(
+            2,
+            crate::transcript::system_message("", None, vec![tool("late_tool")], Vec::new()),
+        );
         let payload = build_anthropic_payload(
             &get_model("anthropic", "claude-opus-4-8").unwrap(),
             &ctx,
             &StreamOptions::default(),
         );
-        assert_eq!(payload["tools"][1]["defer_loading"], true);
+        assert_eq!(payload["tools"][1]["name"], "__pi_deferred_placeholder__");
+        assert!(
+            payload["tools"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|tool| tool["name"] != "late_tool")
+        );
+        let update = payload["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|message| message["role"] == "system")
+            .unwrap();
         assert_eq!(
-            anthropic_tool_result_content(&payload)[0]["content"][0]["tool_name"],
+            update["content"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|block| block["type"] == "tool_addition")
+                .unwrap()["tool"]["definition"]["name"],
             "late_tool"
         );
     }

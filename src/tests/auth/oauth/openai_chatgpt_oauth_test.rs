@@ -3,16 +3,69 @@
 #[cfg(test)]
 mod tests {
     use crate::openai_chatgpt_oauth::{
-        ChatGptAuthorization, ChatGptOAuthCredential, DIRECT_TOKEN_SCOPE, EXPIRY_MARGIN_MS,
-        REDIRECT_URI, RESOURCE, SCOPE, agent_host_id, build_authorize_url,
-        exchange_authorization_code_at, parse_callback_url, refresh_access_token_at,
+        ChatGptAuthorization, ChatGptLoginHost, ChatGptOAuthCredential, DIRECT_TOKEN_SCOPE,
+        EXPIRY_MARGIN_MS, REDIRECT_URI, RESOURCE, SCOPE, agent_host_id, build_authorize_url,
+        exchange_authorization_code_at, login_chatgpt_with_host_at,
+        login_chatgpt_with_host_test_port, parse_callback_url, refresh_access_token_at,
     };
     use base64::Engine;
     use serde_json::json;
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use tokio::sync::{Notify, watch};
     use wiremock::matchers::{method, path};
-    use wiremock::{Mock, MockServer, ResponseTemplate};
+    use wiremock::{Mock, MockServer, Request, Respond, ResponseTemplate};
 
     const DEVICE_ID: &str = "e61bbe28-07ef-466d-8e5d-a344f94ab305";
+
+    struct Host {
+        calls: Arc<AtomicUsize>,
+        url: Arc<tokio::sync::Mutex<Option<String>>>,
+        ready: Arc<Notify>,
+        manual: Option<String>,
+        prompt_cleaned: Arc<std::sync::atomic::AtomicBool>,
+    }
+
+    #[async_trait::async_trait]
+    impl ChatGptLoginHost for Host {
+        async fn device_id(&self) -> Result<String, String> {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            Ok(DEVICE_ID.into())
+        }
+
+        async fn present_authorization_url(&self, url: &str) -> Result<(), String> {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            *self.url.lock().await = Some(url.to_string());
+            self.ready.notify_waiters();
+            Ok(())
+        }
+
+        async fn prompt_callback_url(
+            &self,
+            _prompt: &str,
+            mut cancel: Option<watch::Receiver<bool>>,
+        ) -> Result<String, String> {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            if let Some(value) = &self.manual {
+                return Ok(value.clone());
+            }
+            if let Some(rx) = cancel.as_mut() {
+                let _ = rx.changed().await;
+            }
+            self.prompt_cleaned.store(true, Ordering::SeqCst);
+            Err("Login cancelled".into())
+        }
+    }
+
+    fn host(manual: Option<String>) -> Host {
+        Host {
+            calls: Arc::new(AtomicUsize::new(0)),
+            url: Arc::new(tokio::sync::Mutex::new(None)),
+            ready: Arc::new(Notify::new()),
+            manual,
+            prompt_cleaned: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        }
+    }
 
     fn token(scope: &str) -> serde_json::Value {
         json!({
@@ -196,6 +249,351 @@ mod tests {
         assert_eq!(
             base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(b"id"),
             "aWQ"
+        );
+    }
+
+    #[tokio::test]
+    async fn occupied_fixed_port_fails_before_any_host_callback() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:1455")
+            .await
+            .expect("test owns callback port");
+        let host = host(None);
+        let error = login_chatgpt_with_host_at(&host, "http://127.0.0.1/unused", None)
+            .await
+            .unwrap_err();
+        assert!(error.contains("Port 1455 is in use"), "{error}");
+        assert_eq!(host.calls.load(Ordering::SeqCst), 0);
+        drop(listener);
+    }
+
+    #[tokio::test]
+    async fn callback_wins_exchanges_once_cleans_prompt_and_releases_port() {
+        let token_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(token(SCOPE)))
+            .expect(1)
+            .mount(&token_server)
+            .await;
+        let host = Arc::new(host(None));
+        let login_host = host.clone();
+        let token_url = format!("{}/token", token_server.uri());
+        let login = tokio::spawn(async move {
+            login_chatgpt_with_host_at(login_host.as_ref(), &token_url, None).await
+        });
+        host.ready.notified().await;
+        let authorization_url = host.url.lock().await.clone().unwrap();
+        let state = url::Url::parse(&authorization_url)
+            .unwrap()
+            .query_pairs()
+            .find(|(key, _)| key == "state")
+            .unwrap()
+            .1
+            .into_owned();
+        let response = reqwest::get(format!(
+            "{REDIRECT_URI}?code=browser&state={state}&client_id=oaiapp_issued"
+        ))
+        .await
+        .unwrap();
+        assert_eq!(response.status(), 200);
+        let credential = login.await.unwrap().unwrap();
+        assert_eq!(credential.client_id, "oaiapp_issued");
+        assert!(
+            host.prompt_cleaned.load(Ordering::SeqCst),
+            "host prompt cleanup must finish before public login returns"
+        );
+        assert_eq!(token_server.received_requests().await.unwrap().len(), 1);
+        let rebound = tokio::net::TcpListener::bind("127.0.0.1:1455").await;
+        assert!(rebound.is_ok(), "callback port leaked after success");
+    }
+
+    #[tokio::test]
+    async fn manual_callback_uses_one_exchange_and_releases_test_listener() {
+        let token_server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(token(SCOPE)))
+            .expect(1)
+            .mount(&token_server)
+            .await;
+        let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = probe.local_addr().unwrap().port();
+        drop(probe);
+        let manual = format!("{REDIRECT_URI}?code=manual&state=STATE&client_id=oaiapp_manual");
+        // The state is generated by the flow, so use a host that derives it from the presented URL.
+        struct ManualHost {
+            callback: Arc<tokio::sync::Mutex<Option<String>>>,
+        }
+        #[async_trait::async_trait]
+        impl ChatGptLoginHost for ManualHost {
+            async fn device_id(&self) -> Result<String, String> {
+                Ok(DEVICE_ID.into())
+            }
+            async fn present_authorization_url(&self, url: &str) -> Result<(), String> {
+                let state = url::Url::parse(url)
+                    .unwrap()
+                    .query_pairs()
+                    .find(|(k, _)| k == "state")
+                    .unwrap()
+                    .1
+                    .into_owned();
+                *self.callback.lock().await = Some(format!(
+                    "{REDIRECT_URI}?code=manual&state={state}&client_id=oaiapp_manual"
+                ));
+                Ok(())
+            }
+            async fn prompt_callback_url(
+                &self,
+                _: &str,
+                _: Option<watch::Receiver<bool>>,
+            ) -> Result<String, String> {
+                loop {
+                    if let Some(value) = self.callback.lock().await.clone() {
+                        return Ok(value);
+                    }
+                    tokio::task::yield_now().await;
+                }
+            }
+        }
+        let _ = manual;
+        let host = ManualHost {
+            callback: Arc::new(tokio::sync::Mutex::new(None)),
+        };
+        let credential = login_chatgpt_with_host_test_port(
+            &host,
+            &format!("{}/token", token_server.uri()),
+            port,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(credential.client_id, "oaiapp_manual");
+        assert_eq!(token_server.received_requests().await.unwrap().len(), 1);
+        assert!(
+            tokio::net::TcpListener::bind(("127.0.0.1", port))
+                .await
+                .is_ok()
+        );
+    }
+
+    #[tokio::test]
+    async fn simultaneous_manual_and_browser_completion_exchanges_once() {
+        #[derive(Clone)]
+        struct ClaimedTokenResponder {
+            started: Arc<Notify>,
+            calls: Arc<AtomicUsize>,
+        }
+        impl Respond for ClaimedTokenResponder {
+            fn respond(&self, _request: &Request) -> ResponseTemplate {
+                self.calls.fetch_add(1, Ordering::SeqCst);
+                self.started.notify_waiters();
+                ResponseTemplate::new(200).set_body_json(token(SCOPE))
+            }
+        }
+
+        let token_server = MockServer::start().await;
+        let token_started = Arc::new(Notify::new());
+        let token_calls = Arc::new(AtomicUsize::new(0));
+        Mock::given(method("POST"))
+            .and(path("/token"))
+            .respond_with(ClaimedTokenResponder {
+                started: token_started.clone(),
+                calls: token_calls.clone(),
+            })
+            .expect(1)
+            .mount(&token_server)
+            .await;
+        let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = probe.local_addr().unwrap().port();
+        drop(probe);
+        struct RaceHost {
+            port: u16,
+            callback: Arc<tokio::sync::Mutex<Option<String>>>,
+            token_started: Arc<Notify>,
+            browser: Arc<
+                tokio::sync::Mutex<
+                    Option<tokio::task::JoinHandle<reqwest::Result<reqwest::Response>>>,
+                >,
+            >,
+        }
+        #[async_trait::async_trait]
+        impl ChatGptLoginHost for RaceHost {
+            async fn device_id(&self) -> Result<String, String> {
+                Ok(DEVICE_ID.into())
+            }
+            async fn present_authorization_url(&self, url: &str) -> Result<(), String> {
+                let state = url::Url::parse(url)
+                    .unwrap()
+                    .query_pairs()
+                    .find(|(key, _)| key == "state")
+                    .unwrap()
+                    .1
+                    .into_owned();
+                let canonical =
+                    format!("{REDIRECT_URI}?code=race&state={state}&client_id=oaiapp_race");
+                *self.callback.lock().await = Some(canonical);
+                let browser = format!(
+                    "http://127.0.0.1:{}/auth/callback?code=race&state={state}&client_id=oaiapp_race",
+                    self.port
+                );
+                *self.browser.lock().await =
+                    Some(tokio::spawn(async move { reqwest::get(browser).await }));
+                Ok(())
+            }
+            async fn prompt_callback_url(
+                &self,
+                _: &str,
+                _: Option<watch::Receiver<bool>>,
+            ) -> Result<String, String> {
+                // The browser path has already claimed the once gate and reached the token
+                // endpoint before the pasted URL is released into the competing branch.
+                self.token_started.notified().await;
+                Ok(self.callback.lock().await.clone().unwrap())
+            }
+        }
+        let browser = Arc::new(tokio::sync::Mutex::new(None));
+        let host = RaceHost {
+            port,
+            callback: Arc::new(tokio::sync::Mutex::new(None)),
+            token_started,
+            browser: browser.clone(),
+        };
+        let credential = login_chatgpt_with_host_test_port(
+            &host,
+            &format!("{}/token", token_server.uri()),
+            port,
+            None,
+        )
+        .await
+        .unwrap();
+        let browser_response = browser.lock().await.take().unwrap().await.unwrap().unwrap();
+        assert_eq!(browser_response.status(), 200);
+        assert_eq!(credential.client_id, "oaiapp_race");
+        assert_eq!(token_calls.load(Ordering::SeqCst), 1);
+        assert_eq!(token_server.received_requests().await.unwrap().len(), 1);
+        assert!(
+            tokio::net::TcpListener::bind(("127.0.0.1", port))
+                .await
+                .is_ok()
+        );
+    }
+
+    #[tokio::test]
+    async fn present_prompt_and_parse_errors_release_listener() {
+        enum Failure {
+            Present,
+            Prompt,
+            Parse,
+        }
+        struct FailureHost {
+            failure: Failure,
+        }
+        #[async_trait::async_trait]
+        impl ChatGptLoginHost for FailureHost {
+            async fn device_id(&self) -> Result<String, String> {
+                Ok(DEVICE_ID.into())
+            }
+            async fn present_authorization_url(&self, _: &str) -> Result<(), String> {
+                if matches!(self.failure, Failure::Present) {
+                    Err("present failed".into())
+                } else {
+                    Ok(())
+                }
+            }
+            async fn prompt_callback_url(
+                &self,
+                _: &str,
+                _: Option<watch::Receiver<bool>>,
+            ) -> Result<String, String> {
+                match self.failure {
+                    Failure::Prompt => Err("prompt failed".into()),
+                    Failure::Parse => Ok("not a callback URL".into()),
+                    Failure::Present => std::future::pending().await,
+                }
+            }
+        }
+        for failure in [Failure::Present, Failure::Prompt, Failure::Parse] {
+            let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let port = probe.local_addr().unwrap().port();
+            drop(probe);
+            let result = login_chatgpt_with_host_test_port(
+                &FailureHost { failure },
+                "http://127.0.0.1/unused",
+                port,
+                None,
+            )
+            .await;
+            assert!(result.is_err());
+            assert!(
+                tokio::net::TcpListener::bind(("127.0.0.1", port))
+                    .await
+                    .is_ok()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn dropping_public_login_future_releases_listener() {
+        let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = probe.local_addr().unwrap().port();
+        drop(probe);
+        let host = Arc::new(host(None));
+        let login_host = host.clone();
+        let login = tokio::spawn(async move {
+            login_chatgpt_with_host_test_port(
+                login_host.as_ref(),
+                "http://127.0.0.1/unused",
+                port,
+                None,
+            )
+            .await
+        });
+        host.ready.notified().await;
+        login.abort();
+        let _ = login.await;
+        for _ in 0..20 {
+            if tokio::net::TcpListener::bind(("127.0.0.1", port))
+                .await
+                .is_ok()
+            {
+                return;
+            }
+            tokio::task::yield_now().await;
+        }
+        panic!("dropping public login future leaked callback port");
+    }
+
+    #[tokio::test]
+    async fn idle_accepted_socket_cancels_and_releases_listener() {
+        let probe = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = probe.local_addr().unwrap().port();
+        drop(probe);
+        let host = Arc::new(host(None));
+        let login_host = host.clone();
+        let (tx, rx) = watch::channel(false);
+        let login = tokio::spawn(async move {
+            login_chatgpt_with_host_test_port(
+                login_host.as_ref(),
+                "http://127.0.0.1/unused",
+                port,
+                Some(rx),
+            )
+            .await
+        });
+        host.ready.notified().await;
+        let _idle = tokio::net::TcpStream::connect(("127.0.0.1", port))
+            .await
+            .unwrap();
+        tx.send(true).unwrap();
+        assert!(login.await.unwrap().unwrap_err().contains("cancelled"));
+        assert!(
+            host.prompt_cleaned.load(Ordering::SeqCst),
+            "caller cancellation must await cooperative host cleanup"
+        );
+        assert!(
+            tokio::net::TcpListener::bind(("127.0.0.1", port))
+                .await
+                .is_ok()
         );
     }
 }

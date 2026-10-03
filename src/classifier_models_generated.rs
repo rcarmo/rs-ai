@@ -1,13 +1,55 @@
 //! Auto-generated classifier model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: signed schema-v6 provider shards (15 classifier models, 5 providers)
-//! Generated: 2026-10-01T18:57:11.882Z
+//! Source: signed schema-v6 provider shards (20 classifier models, 5 providers)
+//! Generated: 2026-10-03T12:25:02.573Z
 
 use crate::types::{ClassifierModel, ModelCost, ModelType};
 
 /// Returns all built-in classifier models from the signed release registry.
 pub fn builtin_classifier_models() -> Vec<ClassifierModel> {
     vec![
+        ClassifierModel {
+            model_type: ModelType::Classifier,
+            id: "@cf/cloudflare/clef".into(),
+            name: "Clef".into(),
+            api: "cloudflare-workers-ai-system-one".into(),
+            provider: "cloudflare-workers-ai".into(),
+            base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai"
+                .into(),
+            input: vec!["text".into()],
+            input_limits: None,
+            cost: ModelCost {
+                input: 0.24_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+            context_window: 65536,
+            headers: None,
+            api_key: None,
+        },
+        ClassifierModel {
+            model_type: ModelType::Classifier,
+            id: "@cf/cloudflare/clef-flash".into(),
+            name: "Clef Flash".into(),
+            api: "cloudflare-workers-ai-system-one".into(),
+            provider: "cloudflare-workers-ai".into(),
+            base_url: "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai"
+                .into(),
+            input: vec!["text".into()],
+            input_limits: None,
+            cost: ModelCost {
+                input: 0.09_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+            context_window: 65536,
+            headers: None,
+            api_key: None,
+        },
         ClassifierModel {
             model_type: ModelType::Classifier,
             id: "typesafe/jev".into(),
@@ -106,6 +148,26 @@ pub fn builtin_classifier_models() -> Vec<ClassifierModel> {
                 tiers: vec![],
             },
             context_window: 8192,
+            headers: None,
+            api_key: None,
+        },
+        ClassifierModel {
+            model_type: ModelType::Classifier,
+            id: "liquid/d1".into(),
+            name: "LiquidAI: D1".into(),
+            api: "typesafe-system-one".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into()],
+            input_limits: None,
+            cost: ModelCost {
+                input: 0.04_f64,
+                output: 0_f64,
+                cache_read: 0.04_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+            context_window: 65536,
             headers: None,
             api_key: None,
         },
@@ -266,6 +328,46 @@ pub fn builtin_classifier_models() -> Vec<ClassifierModel> {
                 tiers: vec![],
             },
             context_window: 64000,
+            headers: None,
+            api_key: None,
+        },
+        ClassifierModel {
+            model_type: ModelType::Classifier,
+            id: "convaiinnovations/laya".into(),
+            name: "Laya".into(),
+            api: "typesafe-system-one".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh/typesafe/v1".into(),
+            input: vec!["text".into()],
+            input_limits: None,
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+            context_window: 8192,
+            headers: None,
+            api_key: None,
+        },
+        ClassifierModel {
+            model_type: ModelType::Classifier,
+            id: "convaiinnovations/laya-free".into(),
+            name: "Laya (Free)".into(),
+            api: "typesafe-system-one".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh/typesafe/v1".into(),
+            input: vec!["text".into()],
+            input_limits: None,
+            cost: ModelCost {
+                input: 0_f64,
+                output: 0_f64,
+                cache_read: 0_f64,
+                cache_write: 0_f64,
+                tiers: vec![],
+            },
+            context_window: 8192,
             headers: None,
             api_key: None,
         },

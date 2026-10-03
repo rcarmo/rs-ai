@@ -576,6 +576,7 @@ const NON_RETRYABLE_PROVIDER_LIMIT: &[ErrPat] = &[
 const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Plain("overloaded"),
     ErrPat::Plain("currently experiencing high demand"),
+    ErrPat::Plain("model is at capacity"),
     ErrPat::Gap(&["rate", "limit"]),
     ErrPat::Plain("too many requests"),
     ErrPat::Plain("429"),

@@ -1086,7 +1086,7 @@ pub(crate) fn anthropic_compat(model: &Model) -> AnthropicCompat {
 /// Compute the Anthropic `anthropic-beta` feature list for a request (mirrors the
 /// upstream createClient beta-header logic).
 const SERVER_SIDE_FALLBACK_BETA: &str = "server-side-fallback-2026-07-01";
-const MID_CONVERSATION_TOOL_CHANGES_BETA: &str = "mid-conversation-tool-changes-2026-07-01";
+const INLINE_TOOLS_BETA: &str = "inline-tools-2026-09-15";
 const MID_CONVERSATION_OUTPUT_CONFIG_BETA: &str = "mid-conversation-output-config-2026-07-01";
 
 fn supports_native_transcript_tool_changes(model: &Model, context: &Context) -> bool {
@@ -1094,15 +1094,20 @@ fn supports_native_transcript_tool_changes(model: &Model, context: &Context) -> 
     let initial_tools = crate::transcript::get_initial_system_message(&normalized.messages)
         .map(|message| message.tools_added.len())
         .unwrap_or(0);
-    let has_later_tool_delta = normalized.messages.iter().skip(1).any(|message| {
-        message.role == Role::System
-            && (!message.tools_added.is_empty() || !message.tools_removed.is_empty())
-    });
     model.compat.supports_mid_convo_system_messages == Some(true)
         && model.compat.supports_mid_convo_tool_changes == Some(true)
         && initial_tools > 0
-        && has_later_tool_delta
-        && !crate::transcript::has_tool_redefinitions(&normalized.messages)
+}
+
+fn effective_anthropic_oauth(model: &Model, opts: &StreamOptions) -> bool {
+    if let Some(api_key) = crate::env::resolve_api_key(model, opts) {
+        return api_key.contains("sk-ant-oat");
+    }
+    model.provider == "anthropic"
+        && !has_request_auth_headers(model, opts)
+        && std::env::var("ANTHROPIC_AUTH_TOKEN")
+            .ok()
+            .is_some_and(|token| !token.is_empty())
 }
 const THINKING_BINDING_CONTROLS_BETA: &str = "thinking-binding-controls-2026-08-01";
 
@@ -1137,7 +1142,7 @@ pub(crate) fn anthropic_beta_features<'a>(
         beta_features.push(SERVER_SIDE_FALLBACK_BETA);
     }
     if supports_native_transcript_tool_changes(model, context) {
-        beta_features.push(MID_CONVERSATION_TOOL_CHANGES_BETA);
+        beta_features.push(INLINE_TOOLS_BETA);
     }
     if model.compat.supports_mid_convo_effort == Some(true) {
         beta_features.push(MID_CONVERSATION_OUTPUT_CONFIG_BETA);
@@ -1164,6 +1169,44 @@ fn map_anthropic_effort(model: &Model, level: Option<&ThinkingLevel>) -> String 
     } else {
         "high".to_string()
     }
+}
+
+fn anthropic_tool_definition(model: &Model, tool: &Tool, is_oauth: bool, deferred: bool) -> Value {
+    let compat = anthropic_compat(model);
+    let schema = &tool.parameters;
+    let strict = anthropic_tool_strict_mode(tool, model.compat.supports_strict_tools == Some(true))
+        .ok()
+        .flatten()
+        .unwrap_or(false);
+    let legacy_schema = json!({
+        "type": "object",
+        "properties": schema.get("properties").cloned().unwrap_or_else(|| json!({})),
+        "required": schema.get("required").cloned().unwrap_or_else(|| json!([])),
+    });
+    let input_schema = if strict {
+        crate::utils::make_strict_json_schema_with_check(
+            schema,
+            Some(anthropic_strict_unsupported_keyword),
+        )
+        .unwrap_or(legacy_schema.clone())
+    } else {
+        legacy_schema
+    };
+    let mut definition = json!({
+        "name": if is_oauth { to_claude_code_name(&tool.name) } else { tool.name.clone() },
+        "description": tool.description,
+        "input_schema": input_schema,
+    });
+    if strict {
+        definition["strict"] = json!(true);
+    }
+    if deferred {
+        definition["defer_loading"] = json!(true);
+    }
+    if compat.supports_eager_tool_input_streaming {
+        definition["eager_input_streaming"] = json!(true);
+    }
+    definition
 }
 
 pub(crate) fn build_anthropic_payload(
@@ -1196,9 +1239,7 @@ pub(crate) fn build_anthropic_payload(
     let context = &context;
     let mut messages: Vec<Value> = Vec::new();
     let mut pending_system_messages: Vec<Value> = Vec::new();
-    let is_oauth = crate::env::resolve_api_key(model, opts)
-        .map(|k| k.contains("sk-ant-oat"))
-        .unwrap_or(false);
+    let is_oauth = effective_anthropic_oauth(model, opts);
 
     let transformed_messages = crate::transform::transform_messages(&context.messages, model);
     let supports_tool_refs = crate::deferred_tools::anthropic_supports_tool_references(model);
@@ -1213,14 +1254,29 @@ pub(crate) fn build_anthropic_payload(
                 blocks.push(json!({"type": "text", "text": text}));
             }
             if native_tool_changes {
-                blocks.extend(msg.tools_removed.iter().map(|tool| json!({
-                    "type": "tool_removal",
-                    "tool": {"type": "tool_reference", "name": if is_oauth { to_claude_code_name(&tool.name) } else { tool.name.clone() }},
-                })));
-                blocks.extend(msg.tools_added.iter().map(|tool| json!({
-                    "type": "tool_addition",
-                    "tool": {"type": "tool_reference", "name": if is_oauth { to_claude_code_name(&tool.name) } else { tool.name.clone() }},
-                })));
+                let added_names = msg
+                    .tools_added
+                    .iter()
+                    .map(|tool| tool.name.as_str())
+                    .collect::<std::collections::HashSet<_>>();
+                blocks.extend(
+                    msg.tools_removed
+                        .iter()
+                        .filter(|tool| !added_names.contains(tool.name.as_str()))
+                        .map(|tool| json!({
+                            "type": "tool_removal",
+                            "tool": {"type": "tool_reference", "name": if is_oauth { to_claude_code_name(&tool.name) } else { tool.name.clone() }},
+                        })),
+                );
+                blocks.extend(msg.tools_added.iter().map(|tool| {
+                    json!({
+                        "type": "tool_addition",
+                        "tool": {
+                            "type": "tool_definition",
+                            "definition": anthropic_tool_definition(model, tool, is_oauth, false),
+                        },
+                    })
+                }));
             }
             if !blocks.is_empty() {
                 pending_system_messages.push(json!({"role": "system", "content": blocks}));
@@ -1356,18 +1412,25 @@ pub(crate) fn build_anthropic_payload(
         }
     };
 
-    // Add cache_control to the last user message's last block (text/image/tool_result only),
-    // to cache conversation history (mirrors upstream).
+    // Cache the final eligible outer content block. Native system tool changes carry
+    // cache control on the tool_addition/tool_removal container, never inside a definition.
     if let Some(ref cc) = cache_control
         && let Some(last_msg) = messages.last_mut()
-        && last_msg.get("role").and_then(|r| r.as_str()) == Some("user")
+        && matches!(
+            last_msg.get("role").and_then(|role| role.as_str()),
+            Some("user") | Some("system")
+        )
         && let Some(blocks) = last_msg.get_mut("content").and_then(|c| c.as_array_mut())
         && let Some(last_block) = blocks.last_mut()
     {
         let block_type = last_block.get("type").and_then(|t| t.as_str());
         if matches!(
             block_type,
-            Some("text") | Some("image") | Some("tool_result")
+            Some("text")
+                | Some("image")
+                | Some("tool_result")
+                | Some("tool_addition")
+                | Some("tool_removal")
         ) {
             last_block["cache_control"] = cc.clone();
         }
@@ -1479,48 +1542,11 @@ pub(crate) fn build_anthropic_payload(
 
     if !context.tools.is_empty() {
         let compat = anthropic_compat(model);
-        let convert_tool = |t: &Tool, deferred: bool| {
-            let schema = &t.parameters;
-            let strict =
-                anthropic_tool_strict_mode(t, model.compat.supports_strict_tools == Some(true))
-                    .ok()
-                    .flatten()
-                    .unwrap_or(false);
-            let legacy_schema = json!({
-                "type": "object",
-                "properties": schema.get("properties").cloned().unwrap_or_else(|| json!({})),
-                "required": schema.get("required").cloned().unwrap_or_else(|| json!([])),
-            });
-            let input_schema = if strict {
-                crate::utils::make_strict_json_schema_with_check(
-                    schema,
-                    Some(anthropic_strict_unsupported_keyword),
-                )
-                .unwrap_or(legacy_schema.clone())
-            } else {
-                legacy_schema
-            };
-            let mut tool = json!({
-                "name": if is_oauth { to_claude_code_name(&t.name) } else { t.name.clone() },
-                "description": t.description,
-                "input_schema": input_schema,
-            });
-            if strict {
-                tool["strict"] = json!(true);
-            }
-            if deferred {
-                tool["defer_loading"] = json!(true);
-            }
-            if compat.supports_eager_tool_input_streaming {
-                tool["eager_input_streaming"] = json!(true);
-            }
-            tool
-        };
         let mut tools: Vec<Value>;
         if native_tool_changes {
             tools = initial_tools
                 .iter()
-                .map(|tool| convert_tool(tool, false))
+                .map(|tool| anthropic_tool_definition(model, tool, is_oauth, false))
                 .collect();
             if compat.supports_cache_control_on_tools
                 && let Some(ref cc) = cache_control
@@ -1534,16 +1560,6 @@ pub(crate) fn build_anthropic_payload(
                 "input_schema": {"type": "object", "properties": {}},
                 "defer_loading": true,
             }));
-            let initial_names = initial_tools
-                .iter()
-                .map(|tool| tool.name.as_str())
-                .collect::<std::collections::HashSet<_>>();
-            for tool in crate::transcript::get_declared_tools(&normalized.messages)
-                .iter()
-                .filter(|tool| !initial_names.contains(tool.name.as_str()))
-            {
-                tools.push(convert_tool(tool, true));
-            }
         } else {
             let (active_tools, deferred_names) =
                 crate::deferred_tools::immediate_and_deferred_tools(
@@ -1553,11 +1569,11 @@ pub(crate) fn build_anthropic_payload(
                 );
             tools = active_tools
                 .iter()
-                .map(|tool| convert_tool(tool, false))
+                .map(|tool| anthropic_tool_definition(model, tool, is_oauth, false))
                 .collect();
             for name in deferred_names.iter() {
                 if let Some(tool) = crate::deferred_tools::tool_by_name(context, name, is_oauth) {
-                    tools.push(convert_tool(&tool, true));
+                    tools.push(anthropic_tool_definition(model, &tool, is_oauth, true));
                 }
             }
             if compat.supports_cache_control_on_tools

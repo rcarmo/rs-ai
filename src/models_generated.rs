@@ -1,7 +1,7 @@
 //! Auto-generated model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: models.generated.js (1532 models, 41 providers)
-//! Generated: 2026-10-01T18:57:11.882Z
+//! Source: models.generated.js (1536 models, 41 providers)
+//! Generated: 2026-10-03T12:25:02.573Z
 
 #![allow(clippy::approx_constant)]
 
@@ -1798,7 +1798,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.2_f64, output: 1.2_f64, cache_read: 0.02_f64, cache_write: 0.25_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.2_f64, output: 1.2_f64, cache_read: 0.02_f64, cache_write: 0.25_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.4_f64, output: 1.8_f64, cache_read: 0.04_f64, cache_write: 0.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -1827,7 +1827,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.4_f64, cache_write: 5_f64, tiers: vec![] },
+            cost: ModelCost { input: 4_f64, output: 20_f64, cache_read: 0.4_f64, cache_write: 5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 8_f64, output: 30_f64, cache_read: 0.8_f64, cache_write: 10_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -1853,7 +1853,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![] },
+            cost: ModelCost { input: 2_f64, output: 12_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4_f64, output: 18_f64, cache_read: 0.4_f64, cache_write: 5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -1879,7 +1879,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![] },
+            cost: ModelCost { input: 10_f64, output: 50_f64, cache_read: 1_f64, cache_write: 12.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 20_f64, output: 75_f64, cache_read: 2_f64, cache_write: 25_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -1908,7 +1908,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.1_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0.125_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.2_f64, output: 0.75_f64, cache_read: 0.02_f64, cache_write: 0.25_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -1937,7 +1937,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![] },
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.2_f64, cache_write: 2.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4_f64, output: 15_f64, cache_read: 0.4_f64, cache_write: 5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -1966,7 +1966,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.1_f64, cache_write: 2.5_f64, tiers: vec![] },
+            cost: ModelCost { input: 2_f64, output: 10_f64, cache_read: 0.1_f64, cache_write: 2.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4_f64, output: 15_f64, cache_read: 0.2_f64, cache_write: 5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -2112,6 +2112,84 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "in.anthropic.claude-haiku-4-5-20251001-v1:0".into(),
+            name: "Claude Haiku 4.5 (India)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 1.1_f64, output: 5.5_f64, cache_read: 0.11_f64, cache_write: 1.375_f64, tiers: vec![] },
+            context_window: 200000,
+            max_tokens: 64000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
+            id: "in.anthropic.claude-opus-5".into(),
+            name: "Claude Opus 5 (India)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 5.5_f64, output: 27.5_f64, cache_read: 0.55_f64, cache_write: 6.875_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
+            id: "in.anthropic.claude-sonnet-5".into(),
+            name: "Claude Sonnet 5 (India)".into(),
+            api: "bedrock-converse-stream".into(),
+            provider: "amazon-bedrock".into(),
+            base_url: "https://bedrock-runtime.us-east-1.amazonaws.com".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("max".into(), Some("max".into())),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"maxPerMessage\": 20, \"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 128000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat::default(),
+        }
+    );
+    models.push(
+        Model {
             id: "in.openai.gpt-5.6-luna".into(),
             name: "GPT-5.6 Luna (India)".into(),
             api: "bedrock-converse-stream".into(),
@@ -2127,7 +2205,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.22_f64, output: 1.32_f64, cache_read: 0.022_f64, cache_write: 0.275_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.22_f64, output: 1.32_f64, cache_read: 0.022_f64, cache_write: 0.275_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.44_f64, output: 1.98_f64, cache_read: 0.044_f64, cache_write: 0.55_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -2156,7 +2234,7 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2.2_f64, output: 13.2_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.2_f64, output: 13.2_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4.4_f64, output: 19.8_f64, cache_read: 0.44_f64, cache_write: 5.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -2632,6 +2710,9 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_2(models: &mut Vec<Model>) {
     models.push(Model {
         id: "mistral.devstral-2-123b".into(),
         name: "Devstral 2 123B".into(),
@@ -2717,9 +2798,6 @@ fn append_builtin_models_1(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_2(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "mistral.ministral-3-3b-instruct".into(),
@@ -3140,7 +3218,7 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.22_f64, output: 1.32_f64, cache_read: 0.022_f64, cache_write: 0.275_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.22_f64, output: 1.32_f64, cache_read: 0.022_f64, cache_write: 0.275_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.44_f64, output: 1.98_f64, cache_read: 0.044_f64, cache_write: 0.55_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -3169,7 +3247,7 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 4.4_f64, output: 22_f64, cache_read: 0.44_f64, cache_write: 5.5_f64, tiers: vec![] },
+            cost: ModelCost { input: 4.4_f64, output: 22_f64, cache_read: 0.44_f64, cache_write: 5.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 8.8_f64, output: 33_f64, cache_read: 0.88_f64, cache_write: 11_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -3198,7 +3276,7 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2.2_f64, output: 13.2_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.2_f64, output: 13.2_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4.4_f64, output: 19.8_f64, cache_read: 0.44_f64, cache_write: 5.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -3227,7 +3305,7 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 11_f64, output: 55_f64, cache_read: 1.1_f64, cache_write: 13.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 11_f64, output: 55_f64, cache_read: 1.1_f64, cache_write: 13.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 22_f64, output: 82.5_f64, cache_read: 2.2_f64, cache_write: 27.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -3256,7 +3334,7 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.11_f64, output: 0.55_f64, cache_read: 0.011_f64, cache_write: 0.1375_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.11_f64, output: 0.55_f64, cache_read: 0.011_f64, cache_write: 0.1375_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.22_f64, output: 0.825_f64, cache_read: 0.022_f64, cache_write: 0.275_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -3285,7 +3363,7 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4.4_f64, output: 16.5_f64, cache_read: 0.44_f64, cache_write: 5.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -3314,7 +3392,7 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.11_f64, cache_write: 2.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.11_f64, cache_write: 2.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4.4_f64, output: 16.5_f64, cache_read: 0.22_f64, cache_write: 5.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -4074,6 +4152,9 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_3(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "us.anthropic.claude-opus-4-7".into(),
@@ -4155,9 +4236,6 @@ fn append_builtin_models_2(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
-}
-
-fn append_builtin_models_3(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "us.anthropic.claude-opus-5-5".into(),
@@ -4492,7 +4570,7 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.22_f64, output: 1.32_f64, cache_read: 0.022_f64, cache_write: 0.275_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.22_f64, output: 1.32_f64, cache_read: 0.022_f64, cache_write: 0.275_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.44_f64, output: 1.98_f64, cache_read: 0.044_f64, cache_write: 0.55_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -4521,7 +4599,7 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 4.4_f64, output: 22_f64, cache_read: 0.44_f64, cache_write: 5.5_f64, tiers: vec![] },
+            cost: ModelCost { input: 4.4_f64, output: 22_f64, cache_read: 0.44_f64, cache_write: 5.5_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 8.8_f64, output: 33_f64, cache_read: 0.88_f64, cache_write: 11_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -4547,7 +4625,7 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2.2_f64, output: 13.2_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.2_f64, output: 13.2_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4.4_f64, output: 19.8_f64, cache_read: 0.44_f64, cache_write: 5.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -4573,7 +4651,7 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 11_f64, output: 55_f64, cache_read: 1.1_f64, cache_write: 13.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 11_f64, output: 55_f64, cache_read: 1.1_f64, cache_write: 13.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 22_f64, output: 82.5_f64, cache_read: 2.2_f64, cache_write: 27.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -4602,7 +4680,7 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.11_f64, output: 0.55_f64, cache_read: 0.011_f64, cache_write: 0.1375_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.11_f64, output: 0.55_f64, cache_read: 0.011_f64, cache_write: 0.1375_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 0.22_f64, output: 0.825_f64, cache_read: 0.022_f64, cache_write: 0.275_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -4631,7 +4709,7 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.22_f64, cache_write: 2.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4.4_f64, output: 16.5_f64, cache_read: 0.44_f64, cache_write: 5.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -4660,7 +4738,7 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.11_f64, cache_write: 2.75_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.2_f64, output: 11_f64, cache_read: 0.11_f64, cache_write: 2.75_f64, tiers: vec![ModelCostTier { input_tokens_above: 272000_u64, input: 4.4_f64, output: 16.5_f64, cache_read: 0.22_f64, cache_write: 5.5_f64 }] },
             context_window: 1050000,
             max_tokens: 128000,
             sampling_params: None,
@@ -5534,6 +5612,9 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_4(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "claude-sonnet-5".into(),
@@ -5633,9 +5714,6 @@ fn append_builtin_models_3(models: &mut Vec<Model>) {
         api_key: None,
         compat: ModelCompat::default(),
     });
-}
-
-fn append_builtin_models_4(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-4-turbo".into(),
@@ -7025,6 +7103,9 @@ fn append_builtin_models_4(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_5(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "deepseek-ai/DeepSeek-V4.1-Flash-Fast".into(),
@@ -7156,9 +7237,6 @@ fn append_builtin_models_4(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_5(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "moonshotai/Kimi-K2.7-Code".into(),
@@ -7975,7 +8053,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-fable-5.1".into(),
+            id: "claude-fable-5-1".into(),
             name: "Claude Fable 5.1".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8007,7 +8085,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-haiku-4.5".into(),
+            id: "claude-haiku-4-5".into(),
             name: "Claude Haiku 4.5 (latest)".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8034,7 +8112,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-opus-4.5".into(),
+            id: "claude-opus-4-5".into(),
             name: "Claude Opus 4.5 (latest)".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8061,7 +8139,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-opus-4.6".into(),
+            id: "claude-opus-4-6".into(),
             name: "Claude Opus 4.6".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8091,7 +8169,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-opus-4.7".into(),
+            id: "claude-opus-4-7".into(),
             name: "Claude Opus 4.7".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8123,7 +8201,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-opus-4.8".into(),
+            id: "claude-opus-4-8".into(),
             name: "Claude Opus 4.8".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8187,7 +8265,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-opus-5.5".into(),
+            id: "claude-opus-5-5".into(),
             name: "Claude Opus 5.5".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8219,7 +8297,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-sonnet-4.5".into(),
+            id: "claude-sonnet-4-5".into(),
             name: "Claude Sonnet 4.5 (latest)".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8246,7 +8324,7 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
-            id: "claude-sonnet-4.6".into(),
+            id: "claude-sonnet-4-6".into(),
             name: "Claude Sonnet 4.6".into(),
             api: "anthropic-messages".into(),
             provider: "cloudflare-ai-gateway".into(),
@@ -8908,6 +8986,9 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_6(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-6-astra".into(),
@@ -9016,9 +9097,6 @@ fn append_builtin_models_5(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_6(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "o3".into(),
@@ -9219,7 +9297,7 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.1_f64, output: 0.3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.1_f64, output: 0.3_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 256000,
             max_tokens: 16384,
             sampling_params: None,
@@ -9827,7 +9905,7 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.1_f64, output: 0.3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.1_f64, output: 0.3_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 256000,
             max_tokens: 16384,
             sampling_params: None,
@@ -10526,7 +10604,7 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.22_f64, output: 0.66_f64, cache_read: 0.007_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.006_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 384000,
             sampling_params: None,
@@ -10740,6 +10818,9 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_7(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "accounts/fireworks/models/kimi-k3".into(),
@@ -10862,9 +10943,6 @@ fn append_builtin_models_6(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_7(models: &mut Vec<Model>) {
     models.push(Model {
         id: "accounts/fireworks/models/nemotron-lightning-3p5-30b-a3b".into(),
         name: "Nemotron 3.5 Lightning 30B A3B".into(),
@@ -11007,7 +11085,7 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.22_f64, output: 0.66_f64, cache_read: 0.007_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.006_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 384000,
             sampling_params: None,
@@ -12529,6 +12607,9 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
+}
+
+fn append_builtin_models_8(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "deep-research-max-preview-04-2026".into(),
@@ -12601,9 +12682,6 @@ fn append_builtin_models_7(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
-}
-
-fn append_builtin_models_8(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gemini-2.5-flash".into(),
@@ -14077,6 +14155,9 @@ fn append_builtin_models_8(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_9(models: &mut Vec<Model>) {
     models.push(Model {
         id: "Qwen/Qwen3-235B-A22B-Instruct-2507".into(),
         name: "Qwen3 235B-A22B Instruct 2507".into(),
@@ -14173,9 +14254,6 @@ fn append_builtin_models_8(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_9(models: &mut Vec<Model>) {
     models.push(Model {
         id: "Qwen/Qwen3-32B".into(),
         name: "Qwen3 32B".into(),
@@ -15700,6 +15778,9 @@ fn append_builtin_models_9(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_10(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/gpt-oss-20b".into(),
         name: "GPT OSS 20B".into(),
@@ -15808,9 +15889,6 @@ fn append_builtin_models_9(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_10(models: &mut Vec<Model>) {
     models.push(Model {
         id: "tencent/Hy3".into(),
         name: "Hy3".into(),
@@ -17225,6 +17303,9 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
+}
+
+fn append_builtin_models_11(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "mistral-medium-2604".into(),
@@ -17321,9 +17402,6 @@ fn append_builtin_models_10(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
-}
-
-fn append_builtin_models_11(models: &mut Vec<Model>) {
     models.push(Model {
         id: "mistral-nemo".into(),
         name: "Mistral Nemo".into(),
@@ -17994,6 +18072,78 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
     );
     models.push(
         Model {
+            id: "deepseek-ai/deepseek-v4.1-flash".into(),
+            name: "DeepSeek V4.1 Flash".into(),
+            api: "openai-completions".into(),
+            provider: "nvidia".into(),
+            base_url: "https://integrate.api.nvidia.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), None),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), None),
+                ("minimal".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 384000,
+            sampling_params: None,
+            headers: Some(HashMap::from([("NVCF-POLL-SECONDS".into(), "3600".into())])),
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                requires_reasoning_content_on_assistant_messages: Some(true),
+                supports_developer_role: Some(false),
+                supports_long_cache_retention: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(false),
+                thinking_format: Some("deepseek".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "google/diffusiongemma-26b-a4b-it".into(),
+            name: "DiffusionGemma 26B A4B IT".into(),
+            api: "openai-completions".into(),
+            provider: "nvidia".into(),
+            base_url: "https://integrate.api.nvidia.com/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 250000,
+            max_tokens: 32768,
+            sampling_params: None,
+            headers: Some(HashMap::from([("NVCF-POLL-SECONDS".into(), "3600".into())])),
+            api_key: None,
+            compat: ModelCompat {
+                max_tokens_field: Some("max_tokens".into()),
+                supports_developer_role: Some(false),
+                supports_long_cache_retention: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(false),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
             id: "google/gemma-3-12b-it".into(),
             name: "Gemma 3 12B IT".into(),
             api: "openai-completions".into(),
@@ -18389,42 +18539,6 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
         }
     );
     models.push(Model {
-        id: "nvidia/nemotron-3-super-120b-a12b".into(),
-        name: "Nemotron 3 Super".into(),
-        api: "openai-completions".into(),
-        provider: "nvidia".into(),
-        base_url: "https://integrate.api.nvidia.com/v1".into(),
-        reasoning: true,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0.2_f64,
-            output: 0.8_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 262144,
-        max_tokens: 262144,
-        sampling_params: None,
-        headers: Some(HashMap::from([("NVCF-POLL-SECONDS".into(), "3600".into())])),
-        api_key: None,
-        compat: ModelCompat {
-            max_tokens_field: Some("max_tokens".into()),
-            supports_developer_role: Some(false),
-            supports_long_cache_retention: Some(false),
-            supports_reasoning_effort: Some(false),
-            supports_store: Some(false),
-            supports_strict_mode: Some(false),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
         id: "nvidia/nemotron-3-ultra-550b-a55b".into(),
         name: "Nemotron 3 Ultra 550B A55B".into(),
         api: "openai-completions".into(),
@@ -18802,6 +18916,9 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_12(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-4o-2024-05-13".into(),
@@ -18910,9 +19027,6 @@ fn append_builtin_models_11(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_12(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-5".into(),
@@ -20581,6 +20695,9 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_13(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "claude-haiku-4-5".into(),
@@ -20689,9 +20806,6 @@ fn append_builtin_models_12(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_13(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "claude-opus-4-8".into(),
@@ -22319,6 +22433,9 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_14(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "gpt-6-sol".into(),
@@ -22465,9 +22582,6 @@ fn append_builtin_models_13(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_14(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "grok-4.7".into(),
@@ -22673,6 +22787,40 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
     models.push(Model {
         id: "ling-3.0-flash-fin-free".into(),
         name: "Ling 3.0 Flash Fin Free".into(),
+        api: "openai-completions".into(),
+        provider: "opencode".into(),
+        base_url: "https://opencode.ai/zen/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 262144,
+        max_tokens: 32768,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            max_tokens_field: Some("max_tokens".into()),
+            supports_developer_role: Some(false),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "ling-3.1-flash-free".into(),
+        name: "Ling 3.1 Flash Free".into(),
         api: "openai-completions".into(),
         provider: "opencode".into(),
         base_url: "https://opencode.ai/zen/v1".into(),
@@ -24007,6 +24155,9 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
+}
+
+fn append_builtin_models_15(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "muse-spark-1.2-contributor".into(),
@@ -24172,9 +24323,6 @@ fn append_builtin_models_14(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_15(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "space-bunny-free".into(),
@@ -25689,6 +25837,9 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_16(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "bytedance-seed/seed-2-1-turbo".into(),
@@ -25863,9 +26014,6 @@ fn append_builtin_models_15(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_16(models: &mut Vec<Model>) {
     models.push(Model {
         id: "cohere/command-r-08-2024".into(),
         name: "Cohere: Command R (08-2024)".into(),
@@ -26023,8 +26171,8 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 163840,
-        max_tokens: 147456,
+        context_window: 128000,
+        max_tokens: 115200,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -26153,14 +26301,14 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.3_f64,
+            input: 0.27_f64,
             output: 1_f64,
-            cache_read: 0.135_f64,
+            cache_read: 0_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 131072,
-        max_tokens: 65536,
+        context_window: 163840,
+        max_tokens: 147456,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -26263,14 +26411,14 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.04186_f64,
-            output: 0.08372_f64,
-            cache_read: 0.008372_f64,
+            input: 0.028_f64,
+            output: 0.056_f64,
+            cache_read: 0.0056_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 1048576,
-        max_tokens: 131072,
+        context_window: 1024000,
+        max_tokens: 384000,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -26306,9 +26454,9 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.0108_f64,
+            input: 0.0188_f64,
             output: 1.28_f64,
-            cache_read: 0.0108_f64,
+            cache_read: 0.0188_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -26474,7 +26622,7 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.03_f64, output: 0.5_f64, cache_read: 0.01_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.006_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 943718,
             sampling_params: None,
@@ -27491,6 +27639,9 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_17(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "google/gemini-3.8-flash:batch".into(),
@@ -27604,7 +27755,7 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.09_f64, output: 0.3_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.0675_f64, output: 0.225_f64, cache_read: 0.0375_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 235929,
             sampling_params: None,
@@ -27649,9 +27800,6 @@ fn append_builtin_models_16(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_17(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "google/gemma-4-31b-it".into(),
@@ -27887,14 +28035,14 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.06_f64,
-            output: 0.18_f64,
-            cache_read: 0.012_f64,
+            input: 0.042_f64,
+            output: 0.1232_f64,
+            cache_read: 0.0084_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
         context_window: 262144,
-        max_tokens: 235929,
+        max_tokens: 32768,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -27970,6 +28118,40 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             },
         }
     );
+    models.push(Model {
+        id: "inclusionai/ling-3.1-flash".into(),
+        name: "inclusionAI: Ling 3.1 Flash".into(),
+        api: "openai-completions".into(),
+        provider: "openrouter".into(),
+        base_url: "https://openrouter.ai/api/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 262144,
+        max_tokens: 32768,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            send_session_affinity_headers: Some(true),
+            supports_developer_role: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("openrouter".into()),
+            ..Default::default()
+        },
+    });
     models.push(Model {
         id: "kwaipilot/kat-coder-pro-v2.5".into(),
         name: "Kwaipilot: KAT-Coder-Pro V2.5".into(),
@@ -29148,6 +29330,9 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_18(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "mistralai/mistral-medium-3.1:batch".into(),
@@ -29352,9 +29537,6 @@ fn append_builtin_models_17(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_18(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "mistralai/mistral-small-3.2-24b-instruct".into(),
@@ -29600,7 +29782,7 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.43415_f64, output: 1.828_f64, cache_read: 0.07312_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.95_f64, output: 4_f64, cache_read: 0.16_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
             max_tokens: 235929,
             sampling_params: None,
@@ -29671,7 +29853,7 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.6635_f64, output: 10_f64, cache_read: 0.6635_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 2.7_f64, output: 13.5_f64, cache_read: 0.27_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             sampling_params: None,
@@ -29933,14 +30115,14 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.6_f64,
-            output: 2.4_f64,
-            cache_read: 0.12_f64,
+            input: 0.5_f64,
+            output: 2.2_f64,
+            cache_read: 0.1_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 202800,
-        max_tokens: 182520,
+        context_window: 262144,
+        max_tokens: 16384,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -30802,6 +30984,9 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_19(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-5-nano".into(),
@@ -31024,9 +31209,6 @@ fn append_builtin_models_18(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_19(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-5.1-codex-max".into(),
@@ -32659,6 +32841,9 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_20(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-6-sol-pro".into(),
@@ -32878,9 +33063,6 @@ fn append_builtin_models_19(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_20(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/gpt-audio-mini".into(),
         name: "OpenAI: GPT Audio Mini".into(),
@@ -34372,6 +34554,9 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_21(models: &mut Vec<Model>) {
     models.push(Model {
         id: "qwen/qwen3-coder-plus".into(),
         name: "Qwen: Qwen3 Coder Plus".into(),
@@ -34529,8 +34714,8 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 262144,
-        max_tokens: 235929,
+        context_window: 131072,
+        max_tokens: 32768,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -34572,9 +34757,6 @@ fn append_builtin_models_20(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_21(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "qwen/qwen3-vl-235b-a22b-thinking".into(),
@@ -34836,9 +35018,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.1625_f64, output: 1.3_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.15_f64, output: 1_f64, cache_read: 0.05_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 262144,
-            max_tokens: 65536,
+            max_tokens: 235929,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -35886,9 +36068,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.0825_f64,
-            output: 0.33_f64,
-            cache_read: 0.020625_f64,
+            input: 0.132_f64,
+            output: 0.528_f64,
+            cache_read: 0.033_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -35970,9 +36152,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.7506_f64,
-            output: 2.2509_f64,
-            cache_read: 0.0378_f64,
+            input: 0.834_f64,
+            output: 2.501_f64,
+            cache_read: 0.042_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -36012,9 +36194,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 1_f64, output: 4.05_f64, cache_read: 0.17_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.95_f64, output: 4.05_f64, cache_read: 0.16_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 524288,
-            max_tokens: 471859,
+            max_tokens: 262144,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -36065,6 +36247,9 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_22(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "thinkingmachines/inkling-small:free".into(),
@@ -36273,9 +36458,6 @@ fn append_builtin_models_21(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_22(models: &mut Vec<Model>) {
     models.push(Model {
         id: "upstage/solar-pro-3".into(),
         name: "Upstage: Solar Pro 3".into(),
@@ -37079,9 +37261,9 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.9646_f64,
-            output: 3.0316_f64,
-            cache_read: 0.17914_f64,
+            input: 1.4_f64,
+            output: 4.4_f64,
+            cache_read: 0.26_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -37163,14 +37345,14 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.2219_f64,
-            output: 3.39_f64,
-            cache_read: 0.1775_f64,
+            input: 1.4_f64,
+            output: 4.4_f64,
+            cache_read: 0.14_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
         context_window: 1048576,
-        max_tokens: 943718,
+        max_tokens: 131072,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -37581,7 +37763,7 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.0255_f64, output: 0.6_f64, cache_read: 0.0255_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.02_f64, output: 0.6_f64, cache_read: 0.01_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 943718,
             sampling_params: None,
@@ -37619,14 +37801,14 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.15312_f64,
-            output: 0.45936_f64,
-            cache_read: 0.004872_f64,
+            input: 0.14_f64,
+            output: 4.2_f64,
+            cache_read: 0.12_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
         context_window: 1048576,
-        max_tokens: 393216,
+        max_tokens: 943718,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -37661,9 +37843,9 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
         lab: None,
         providers: None,
         cost: ModelCost {
-            input: 0.0108_f64,
+            input: 0.0188_f64,
             output: 1.28_f64,
-            cache_read: 0.0108_f64,
+            cache_read: 0.0188_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
@@ -37780,7 +37962,7 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.6635_f64, output: 10_f64, cache_read: 0.6635_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.9895_f64, output: 13_f64, cache_read: 0.45_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 131072,
             sampling_params: None,
@@ -37871,6 +38053,9 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_23(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "~openai/gpt-mini-latest".into(),
@@ -38046,9 +38231,9 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
             enabled: None,
             lab: None,
             providers: None,
-            cost: ModelCost { input: 0.02_f64, output: 0.3_f64, cache_read: 0.01_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.035_f64, output: 0.5_f64, cache_read: 0.035_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
-            max_tokens: 943718,
+            max_tokens: 131072,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -38085,13 +38270,13 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
         providers: None,
         cost: ModelCost {
             input: 0.12_f64,
-            output: 1.14_f64,
-            cache_read: 0.067_f64,
+            output: 4_f64,
+            cache_read: 0.08_f64,
             cache_write: 0_f64,
             tiers: vec![],
         },
-        context_window: 262144,
-        max_tokens: 235929,
+        context_window: 1048576,
+        max_tokens: 131072,
         sampling_params: None,
         headers: None,
         api_key: None,
@@ -38103,1681 +38288,1681 @@ fn append_builtin_models_22(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+    models.push(Model {
+        id: "MiniMax-M2.5".into(),
+        name: "MiniMax-M2.5".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 196608,
+        max_tokens: 32768,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(false),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v3.2".into(),
+        name: "DeepSeek V3.2".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 131072,
+        max_tokens: 65536,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(false),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-flash".into(),
+        name: "DeepSeek V4 Flash".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-flash-0731".into(),
+        name: "DeepSeek V4 Flash 0731".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-pro".into(),
+        name: "DeepSeek V4 Pro".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-pro-0813".into(),
+        name: "DeepSeek V4 Pro 0813".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(
+        Model {
+            id: "deepseek-v4.1-flash".into(),
+            name: "DeepSeek V4.1 Flash".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), None),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 384000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(true),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(Model {
+        id: "glm-5".into(),
+        name: "GLM-5".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 202752,
+        max_tokens: 16384,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "glm-5.1".into(),
+        name: "GLM-5.1".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 202752,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "glm-5.2".into(),
+        name: "GLM-5.2".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "glm-5.3".into(),
+        name: "GLM-5.3".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(
+        Model {
+            id: "kimi-k2.5".into(),
+            name: "Kimi K2.5".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 98304,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "kimi-k2.6".into(),
+            name: "Kimi K2.6".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 262144,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "kimi-k2.7-code".into(),
+            name: "Kimi K2.7 Code".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 262144,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "qwen3.6-flash".into(),
+            name: "Qwen3.6 Flash".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 65536,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "qwen3.6-plus".into(),
+            name: "Qwen3.6 Plus".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 65536,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(Model {
+        id: "qwen3.7-max".into(),
+        name: "Qwen3.7 Max".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(false),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(
+        Model {
+            id: "qwen3.7-plus".into(),
+            name: "Qwen3.7 Plus".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 65536,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "qwen3.8-flash".into(),
+            name: "Qwen3.8 Flash".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), None),
+                ("low".into(), Some("low".into())),
+                ("max".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(true),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "qwen3.8-max".into(),
+            name: "Qwen3.8 Max".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan".into(),
+            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), None),
+                ("low".into(), Some("low".into())),
+                ("max".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(true),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(Model {
+        id: "MiniMax-M2.5".into(),
+        name: "MiniMax-M2.5".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 196608,
+        max_tokens: 32768,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(false),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v3.2".into(),
+        name: "DeepSeek V3.2".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 131072,
+        max_tokens: 65536,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(false),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-flash".into(),
+        name: "DeepSeek V4 Flash".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-flash-0731".into(),
+        name: "DeepSeek V4 Flash 0731".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-pro".into(),
+        name: "DeepSeek V4 Pro".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-pro-0813".into(),
+        name: "DeepSeek V4 Pro 0813".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(
+        Model {
+            id: "deepseek-v4.1-flash".into(),
+            name: "DeepSeek V4.1 Flash".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), Some("high".into())),
+                ("low".into(), Some("low".into())),
+                ("max".into(), Some("max".into())),
+                ("medium".into(), None),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), None)
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 384000,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(true),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(Model {
+        id: "glm-5".into(),
+        name: "GLM-5".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 202752,
+        max_tokens: 16384,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "glm-5.1".into(),
+        name: "GLM-5.1".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 202752,
+        max_tokens: 128000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "glm-5.2".into(),
+        name: "GLM-5.2".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "glm-5.3".into(),
+        name: "GLM-5.3".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), Some("low".into())),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(
+        Model {
+            id: "kimi-k2.5".into(),
+            name: "Kimi K2.5".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 98304,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "kimi-k2.6".into(),
+            name: "Kimi K2.6".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 262144,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "kimi-k2.7-code".into(),
+            name: "Kimi K2.7 Code".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 262144,
+            max_tokens: 262144,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "qwen3.6-flash".into(),
+            name: "Qwen3.6 Flash".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 65536,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "qwen3.6-plus".into(),
+            name: "Qwen3.6 Plus".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 65536,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(Model {
+        id: "qwen3.7-max".into(),
+        name: "Qwen3.7 Max".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-cn".into(),
+        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: None,
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(false),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(
+        Model {
+            id: "qwen3.7-plus".into(),
+            name: "Qwen3.7 Plus".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 65536,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(false),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "qwen3.8-flash".into(),
+            name: "Qwen3.8 Flash".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), None),
+                ("low".into(), Some("low".into())),
+                ("max".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(true),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "qwen3.8-max".into(),
+            name: "Qwen3.8 Max".into(),
+            api: "openai-completions".into(),
+            provider: "qwen-token-plan-cn".into(),
+            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
+            reasoning: true,
+            thinking_level_map: Some(HashMap::from([
+                ("high".into(), None),
+                ("low".into(), Some("low".into())),
+                ("max".into(), None),
+                ("medium".into(), Some("medium".into())),
+                ("minimal".into(), None),
+                ("off".into(), None),
+                ("xhigh".into(), Some("xhigh".into()))
+            ])),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1000000,
+            max_tokens: 131072,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                supports_developer_role: Some(false),
+                supports_reasoning_effort: Some(true),
+                supports_store: Some(false),
+                supports_strict_mode: Some(true),
+                thinking_format: Some("qwen".into()),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(Model {
+        id: "deepseek-v4-flash-0731".into(),
+        name: "DeepSeek V4 Flash 0731".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-individual".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-pro".into(),
+        name: "DeepSeek V4 Pro".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-individual".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "deepseek-v4-pro-0813".into(),
+        name: "DeepSeek V4 Pro 0813".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-individual".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 384000,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
+    models.push(Model {
+        id: "glm-5.2".into(),
+        name: "GLM-5.2".into(),
+        api: "openai-completions".into(),
+        provider: "qwen-token-plan-individual".into(),
+        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
+        reasoning: true,
+        thinking_level_map: Some(HashMap::from([
+            ("high".into(), Some("high".into())),
+            ("low".into(), None),
+            ("max".into(), Some("max".into())),
+            ("medium".into(), None),
+            ("minimal".into(), None),
+            ("off".into(), None),
+            ("xhigh".into(), None),
+        ])),
+        input: vec!["text".into()],
+        input_limits: None,
+        prompt_cache: None,
+        enabled: None,
+        lab: None,
+        providers: None,
+        cost: ModelCost {
+            input: 0_f64,
+            output: 0_f64,
+            cache_read: 0_f64,
+            cache_write: 0_f64,
+            tiers: vec![],
+        },
+        context_window: 1000000,
+        max_tokens: 131072,
+        sampling_params: None,
+        headers: None,
+        api_key: None,
+        compat: ModelCompat {
+            supports_developer_role: Some(false),
+            supports_reasoning_effort: Some(true),
+            supports_store: Some(false),
+            supports_strict_mode: Some(true),
+            thinking_format: Some("qwen".into()),
+            ..Default::default()
+        },
+    });
 }
 
-fn append_builtin_models_23(models: &mut Vec<Model>) {
-    models.push(Model {
-        id: "MiniMax-M2.5".into(),
-        name: "MiniMax-M2.5".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 196608,
-        max_tokens: 32768,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(false),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v3.2".into(),
-        name: "DeepSeek V3.2".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 131072,
-        max_tokens: 65536,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(false),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-flash".into(),
-        name: "DeepSeek V4 Flash".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-flash-0731".into(),
-        name: "DeepSeek V4 Flash 0731".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-pro".into(),
-        name: "DeepSeek V4 Pro".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-pro-0813".into(),
-        name: "DeepSeek V4 Pro 0813".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(
-        Model {
-            id: "deepseek-v4.1-flash".into(),
-            name: "DeepSeek V4.1 Flash".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), Some("high".into())),
-                ("low".into(), Some("low".into())),
-                ("max".into(), Some("max".into())),
-                ("medium".into(), None),
-                ("minimal".into(), None),
-                ("off".into(), None),
-                ("xhigh".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 384000,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(true),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(Model {
-        id: "glm-5".into(),
-        name: "GLM-5".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 202752,
-        max_tokens: 16384,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "glm-5.1".into(),
-        name: "GLM-5.1".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 202752,
-        max_tokens: 128000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "glm-5.2".into(),
-        name: "GLM-5.2".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 131072,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "glm-5.3".into(),
-        name: "GLM-5.3".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), Some("low".into())),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 131072,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(
-        Model {
-            id: "kimi-k2.5".into(),
-            name: "Kimi K2.5".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 98304,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "kimi-k2.6".into(),
-            name: "Kimi K2.6".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 262144,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "kimi-k2.7-code".into(),
-            name: "Kimi K2.7 Code".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 262144,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "qwen3.6-flash".into(),
-            name: "Qwen3.6 Flash".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 65536,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "qwen3.6-plus".into(),
-            name: "Qwen3.6 Plus".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 65536,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(Model {
-        id: "qwen3.7-max".into(),
-        name: "Qwen3.7 Max".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 131072,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(false),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(
-        Model {
-            id: "qwen3.7-plus".into(),
-            name: "Qwen3.7 Plus".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 65536,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "qwen3.8-flash".into(),
-            name: "Qwen3.8 Flash".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), None),
-                ("low".into(), Some("low".into())),
-                ("max".into(), None),
-                ("medium".into(), Some("medium".into())),
-                ("minimal".into(), None),
-                ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 131072,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(true),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "qwen3.8-max".into(),
-            name: "Qwen3.8 Max".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan".into(),
-            base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), None),
-                ("low".into(), Some("low".into())),
-                ("max".into(), None),
-                ("medium".into(), Some("medium".into())),
-                ("minimal".into(), None),
-                ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 131072,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(true),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(Model {
-        id: "MiniMax-M2.5".into(),
-        name: "MiniMax-M2.5".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 196608,
-        max_tokens: 32768,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(false),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v3.2".into(),
-        name: "DeepSeek V3.2".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 131072,
-        max_tokens: 65536,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(false),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-flash".into(),
-        name: "DeepSeek V4 Flash".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-flash-0731".into(),
-        name: "DeepSeek V4 Flash 0731".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-pro".into(),
-        name: "DeepSeek V4 Pro".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-pro-0813".into(),
-        name: "DeepSeek V4 Pro 0813".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(
-        Model {
-            id: "deepseek-v4.1-flash".into(),
-            name: "DeepSeek V4.1 Flash".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), Some("high".into())),
-                ("low".into(), Some("low".into())),
-                ("max".into(), Some("max".into())),
-                ("medium".into(), None),
-                ("minimal".into(), None),
-                ("off".into(), None),
-                ("xhigh".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 384000,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(true),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(Model {
-        id: "glm-5".into(),
-        name: "GLM-5".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 202752,
-        max_tokens: 16384,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "glm-5.1".into(),
-        name: "GLM-5.1".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 202752,
-        max_tokens: 128000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "glm-5.2".into(),
-        name: "GLM-5.2".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 131072,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "glm-5.3".into(),
-        name: "GLM-5.3".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), Some("low".into())),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 131072,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(
-        Model {
-            id: "kimi-k2.5".into(),
-            name: "Kimi K2.5".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 98304,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "kimi-k2.6".into(),
-            name: "Kimi K2.6".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 262144,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "kimi-k2.7-code".into(),
-            name: "Kimi K2.7 Code".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 262144,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "qwen3.6-flash".into(),
-            name: "Qwen3.6 Flash".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 65536,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "qwen3.6-plus".into(),
-            name: "Qwen3.6 Plus".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 65536,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(Model {
-        id: "qwen3.7-max".into(),
-        name: "Qwen3.7 Max".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-cn".into(),
-        base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: None,
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 131072,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(false),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(
-        Model {
-            id: "qwen3.7-plus".into(),
-            name: "Qwen3.7 Plus".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: None,
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 65536,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "qwen3.8-flash".into(),
-            name: "Qwen3.8 Flash".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), None),
-                ("low".into(), Some("low".into())),
-                ("max".into(), None),
-                ("medium".into(), Some("medium".into())),
-                ("minimal".into(), None),
-                ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 131072,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(true),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "qwen3.8-max".into(),
-            name: "Qwen3.8 Max".into(),
-            api: "openai-completions".into(),
-            provider: "qwen-token-plan-cn".into(),
-            base_url: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("high".into(), None),
-                ("low".into(), Some("low".into())),
-                ("max".into(), None),
-                ("medium".into(), Some("medium".into())),
-                ("minimal".into(), None),
-                ("off".into(), None),
-                ("xhigh".into(), Some("xhigh".into()))
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 1000000,
-            max_tokens: 131072,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                supports_developer_role: Some(false),
-                supports_reasoning_effort: Some(true),
-                supports_store: Some(false),
-                supports_strict_mode: Some(true),
-                thinking_format: Some("qwen".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(Model {
-        id: "deepseek-v4-flash-0731".into(),
-        name: "DeepSeek V4 Flash 0731".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-individual".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-pro".into(),
-        name: "DeepSeek V4 Pro".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-individual".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-v4-pro-0813".into(),
-        name: "DeepSeek V4 Pro 0813".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-individual".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "glm-5.2".into(),
-        name: "GLM-5.2".into(),
-        api: "openai-completions".into(),
-        provider: "qwen-token-plan-individual".into(),
-        base_url: "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), None),
-            ("max".into(), Some("max".into())),
-            ("medium".into(), None),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0_f64,
-            output: 0_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 1000000,
-        max_tokens: 131072,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            supports_developer_role: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(true),
-            thinking_format: Some("qwen".into()),
-            ..Default::default()
-        },
-    });
+fn append_builtin_models_24(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "qwen3.6-flash".into(),
@@ -39985,9 +40170,6 @@ fn append_builtin_models_23(models: &mut Vec<Model>) {
             compat: ModelCompat::default(),
         }
     );
-}
-
-fn append_builtin_models_24(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "cheap".into(),
@@ -40011,7 +40193,7 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             enabled: Some(serde_json::from_str("true").unwrap()),
             lab: Some(serde_json::from_str("\"DeepSeek\"").unwrap()),
             providers: Some(serde_json::from_str("[{\"credential\": \"radius\", \"id\": \"fireworks\", \"name\": \"Fireworks AI\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"relace\", \"name\": \"Relace\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"baseten\", \"name\": \"Baseten\", \"source\": \"radius\"}]").unwrap()),
-            cost: ModelCost { input: 0.22_f64, output: 0.66_f64, cache_read: 0.007_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.006_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 32768,
             sampling_params: None,
@@ -40317,7 +40499,7 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             enabled: Some(serde_json::from_str("true").unwrap()),
             lab: Some(serde_json::from_str("\"DeepSeek\"").unwrap()),
             providers: Some(serde_json::from_str("[{\"credential\": \"radius\", \"id\": \"fireworks\", \"name\": \"Fireworks AI\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"relace\", \"name\": \"Relace\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"baseten\", \"name\": \"Baseten\", \"source\": \"radius\"}]").unwrap()),
-            cost: ModelCost { input: 0.22_f64, output: 0.66_f64, cache_read: 0.007_f64, cache_write: 0_f64, tiers: vec![] },
+            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.006_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 32768,
             sampling_params: None,
@@ -40348,7 +40530,7 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             prompt_cache: None,
             enabled: Some(serde_json::from_str("true").unwrap()),
             lab: Some(serde_json::from_str("\"Z.ai\"").unwrap()),
-            providers: Some(serde_json::from_str("[{\"credential\": \"radius\", \"id\": \"sference\", \"name\": \"sference\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"fireworks\", \"name\": \"Fireworks AI\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"baseten\", \"name\": \"Baseten\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"deepinfra\", \"name\": \"DeepInfra\", \"source\": \"radius\"}]").unwrap()),
+            providers: Some(serde_json::from_str("[{\"credential\": \"radius\", \"id\": \"sference\", \"name\": \"sference\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"fireworks\", \"name\": \"Fireworks AI\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"baseten\", \"name\": \"Baseten\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"deepinfra\", \"name\": \"DeepInfra\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"openrouter\", \"name\": \"OpenRouter\", \"source\": \"radius\"}, {\"credential\": \"radius\", \"id\": \"vercel-ai-gateway\", \"name\": \"Vercel AI Gateway\", \"source\": \"radius\"}]").unwrap()),
             cost: ModelCost { input: 1.4_f64, output: 4.4_f64, cache_read: 0.26_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1000000,
             max_tokens: 131072,
@@ -41078,8 +41260,8 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
         },
     });
     models.push(Model {
-        id: "deepseek-ai/DeepSeek-V4-Pro".into(),
-        name: "DeepSeek V4 Pro".into(),
+        id: "deepseek-ai/DeepSeek-V4-Pro-0813".into(),
+        name: "DeepSeek V4 Pro 0813".into(),
         api: "openai-completions".into(),
         provider: "together".into(),
         base_url: "https://api.together.ai/v1".into(),
@@ -41090,47 +41272,6 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             ("medium".into(), None),
             ("minimal".into(), None),
             ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 1.74_f64,
-            output: 3.48_f64,
-            cache_read: 0.2_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 512000,
-        max_tokens: 384000,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            max_tokens_field: Some("max_tokens".into()),
-            supports_developer_role: Some(false),
-            supports_long_cache_retention: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(false),
-            thinking_format: Some("together".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "deepseek-ai/DeepSeek-V4-Pro-0813".into(),
-        name: "DeepSeek V4 Pro 0813".into(),
-        api: "openai-completions".into(),
-        provider: "together".into(),
-        base_url: "https://api.together.ai/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("low".into(), None),
-            ("medium".into(), None),
-            ("minimal".into(), None),
         ])),
         input: vec!["text".into()],
         input_limits: None,
@@ -41154,7 +41295,7 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             max_tokens_field: Some("max_tokens".into()),
             supports_developer_role: Some(false),
             supports_long_cache_retention: Some(false),
-            supports_reasoning_effort: Some(false),
+            supports_reasoning_effort: Some(true),
             supports_store: Some(false),
             supports_strict_mode: Some(false),
             thinking_format: Some("together".into()),
@@ -41183,43 +41324,6 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.006_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 384000,
-            sampling_params: None,
-            headers: None,
-            api_key: None,
-            compat: ModelCompat {
-                max_tokens_field: Some("max_tokens".into()),
-                supports_developer_role: Some(false),
-                supports_long_cache_retention: Some(false),
-                supports_reasoning_effort: Some(false),
-                supports_store: Some(false),
-                supports_strict_mode: Some(false),
-                thinking_format: Some("together".into()),
-                ..Default::default()
-            },
-        }
-    );
-    models.push(
-        Model {
-            id: "google/gemma-4-31B-it".into(),
-            name: "Gemma 4 31B Instruct".into(),
-            api: "openai-completions".into(),
-            provider: "together".into(),
-            base_url: "https://api.together.ai/v1".into(),
-            reasoning: true,
-            thinking_level_map: Some(HashMap::from([
-                ("low".into(), None),
-                ("medium".into(), None),
-                ("minimal".into(), None)
-            ])),
-            input: vec!["text".into(), "image".into()],
-            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
-            prompt_cache: None,
-            enabled: None,
-            lab: None,
-            providers: None,
-            cost: ModelCost { input: 0.39_f64, output: 0.97_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
-            context_window: 262144,
-            max_tokens: 131072,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -41375,51 +41479,6 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
         cost: ModelCost {
             input: 0.15_f64,
             output: 0.6_f64,
-            cache_read: 0_f64,
-            cache_write: 0_f64,
-            tiers: vec![],
-        },
-        context_window: 131072,
-        max_tokens: 131072,
-        sampling_params: None,
-        headers: None,
-        api_key: None,
-        compat: ModelCompat {
-            max_tokens_field: Some("max_tokens".into()),
-            supports_developer_role: Some(false),
-            supports_long_cache_retention: Some(false),
-            supports_reasoning_effort: Some(true),
-            supports_store: Some(false),
-            supports_strict_mode: Some(false),
-            thinking_format: Some("openai".into()),
-            ..Default::default()
-        },
-    });
-    models.push(Model {
-        id: "openai/gpt-oss-20b".into(),
-        name: "GPT OSS 20B".into(),
-        api: "openai-completions".into(),
-        provider: "together".into(),
-        base_url: "https://api.together.ai/v1".into(),
-        reasoning: true,
-        thinking_level_map: Some(HashMap::from([
-            ("high".into(), Some("high".into())),
-            ("low".into(), Some("low".into())),
-            ("max".into(), None),
-            ("medium".into(), Some("medium".into())),
-            ("minimal".into(), None),
-            ("off".into(), None),
-            ("xhigh".into(), None),
-        ])),
-        input: vec!["text".into()],
-        input_limits: None,
-        prompt_cache: None,
-        enabled: None,
-        lab: None,
-        providers: None,
-        cost: ModelCost {
-            input: 0.05_f64,
-            output: 0.2_f64,
             cache_read: 0_f64,
             cache_write: 0_f64,
             tiers: vec![],
@@ -41596,6 +41655,9 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_25(models: &mut Vec<Model>) {
     models.push(Model {
         id: "alibaba/qwen-3-14b".into(),
         name: "Qwen3-14B".into(),
@@ -41689,9 +41751,6 @@ fn append_builtin_models_24(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
-}
-
-fn append_builtin_models_25(models: &mut Vec<Model>) {
     models.push(Model {
         id: "alibaba/qwen-3-32b".into(),
         name: "Qwen 3 32B".into(),
@@ -43061,6 +43120,9 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_26(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "anthropic/claude-sonnet-4".into(),
@@ -43145,9 +43207,6 @@ fn append_builtin_models_25(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_26(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "anthropic/claude-sonnet-5".into(),
@@ -43678,6 +43737,33 @@ fn append_builtin_models_26(models: &mut Vec<Model>) {
             cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.007_f64, cache_write: 0_f64, tiers: vec![] },
             context_window: 1048576,
             max_tokens: 32768,
+            sampling_params: None,
+            headers: None,
+            api_key: None,
+            compat: ModelCompat {
+                allow_empty_signature: Some(true),
+                ..Default::default()
+            },
+        }
+    );
+    models.push(
+        Model {
+            id: "deepseek/deepseek-v4.1-flash-fast".into(),
+            name: "DeepSeek V4.1 Flash Fast".into(),
+            api: "anthropic-messages".into(),
+            provider: "vercel-ai-gateway".into(),
+            base_url: "https://ai-gateway.vercel.sh".into(),
+            reasoning: true,
+            thinking_level_map: None,
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\": {\"resize\": {\"jpegQuality\": 80, \"maxBytes\": 4718592, \"maxHeight\": 2000, \"maxWidth\": 2000}}}").unwrap()),
+            prompt_cache: None,
+            enabled: None,
+            lab: None,
+            providers: None,
+            cost: ModelCost { input: 0.3_f64, output: 1.2_f64, cache_read: 0.006_f64, cache_write: 0_f64, tiers: vec![] },
+            context_window: 1048576,
+            max_tokens: 1000000,
             sampling_params: None,
             headers: None,
             api_key: None,
@@ -44487,6 +44573,9 @@ fn append_builtin_models_26(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_27(models: &mut Vec<Model>) {
     models.push(Model {
         id: "meta/llama-3.3-70b".into(),
         name: "Llama 3.3 70B Instruct".into(),
@@ -44599,9 +44688,6 @@ fn append_builtin_models_26(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_27(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "meta/muse-spark-1.1".into(),
@@ -45916,6 +46002,9 @@ fn append_builtin_models_27(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_28(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-4o-mini".into(),
@@ -46024,9 +46113,6 @@ fn append_builtin_models_27(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_28(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "openai/gpt-5-fast".into(),
@@ -47346,6 +47432,9 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             },
         }
     );
+}
+
+fn append_builtin_models_29(models: &mut Vec<Model>) {
     models.push(Model {
         id: "openai/o3-mini".into(),
         name: "o3-mini".into(),
@@ -47458,9 +47547,6 @@ fn append_builtin_models_28(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_29(models: &mut Vec<Model>) {
     models.push(Model {
         id: "poolside/laguna-s-2.1".into(),
         name: "Laguna S 2.1".into(),
@@ -48775,6 +48861,9 @@ fn append_builtin_models_29(models: &mut Vec<Model>) {
             ..Default::default()
         },
     });
+}
+
+fn append_builtin_models_30(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "zai/glm-5.3-flash".into(),
@@ -48891,9 +48980,6 @@ fn append_builtin_models_29(models: &mut Vec<Model>) {
             },
         }
     );
-}
-
-fn append_builtin_models_30(models: &mut Vec<Model>) {
     models.push(
         Model {
             id: "grok-4.5".into(),
@@ -50004,7 +50090,7 @@ fn append_builtin_models_30(models: &mut Vec<Model>) {
 
 /// Returns all built-in models from the upstream pi-ai registry.
 pub fn builtin_models() -> Vec<Model> {
-    let mut models = Vec::with_capacity(1532);
+    let mut models = Vec::with_capacity(1536);
     append_builtin_models_0(&mut models);
     append_builtin_models_1(&mut models);
     append_builtin_models_2(&mut models);

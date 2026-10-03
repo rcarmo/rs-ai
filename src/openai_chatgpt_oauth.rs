@@ -2,6 +2,8 @@
 
 use crate::oauth::{PkceChallenge, generate_pkce};
 use rand::RngCore;
+use std::future::Future;
+use tokio::sync::watch;
 
 pub const DYNAMIC_CLIENT_ID: &str = "dynamic_agent_client";
 pub const AGENT_NAME_HINT: &str = "Pi";
@@ -27,6 +29,32 @@ pub struct ChatGptOAuthCredential {
 pub struct ChatGptAuthorization {
     pub code: String,
     pub client_id: String,
+}
+
+#[async_trait::async_trait]
+pub trait ChatGptLoginHost: Send + Sync {
+    /// Return the installation's stable device UUID.
+    async fn device_id(&self) -> Result<String, String>;
+    /// Present or open the authorization URL. This is called only after port 1455 binds.
+    async fn present_authorization_url(&self, url: &str) -> Result<(), String>;
+    /// Wait for a pasted full callback URL and honour the cancellation receiver.
+    async fn prompt_callback_url(
+        &self,
+        prompt: &str,
+        cancel: Option<watch::Receiver<bool>>,
+    ) -> Result<String, String>;
+}
+
+struct ChatGptLoginGuard<T> {
+    server: crate::oauth_callback::OAuthCallbackServer<T>,
+    prompt_cancel: watch::Sender<bool>,
+}
+
+impl<T> Drop for ChatGptLoginGuard<T> {
+    fn drop(&mut self) {
+        let _ = self.prompt_cancel.send(true);
+        self.server.cancel();
+    }
 }
 
 fn random_value() -> String {
@@ -85,12 +113,10 @@ pub fn new_authorization_url(
     Ok((url, pkce, state, nonce))
 }
 
-pub fn parse_callback_url(
-    input: &str,
+fn parse_callback_parts(
+    url: &url::Url,
     expected_state: &str,
 ) -> Result<ChatGptAuthorization, String> {
-    let url = url::Url::parse(input.trim())
-        .map_err(|_| "Paste the full callback URL from the browser".to_string())?;
     let expected = url::Url::parse(REDIRECT_URI).map_err(|error| error.to_string())?;
     if url.origin() != expected.origin() || url.path() != expected.path() {
         return Err(format!(
@@ -124,16 +150,37 @@ pub fn parse_callback_url(
     Ok(ChatGptAuthorization { code, client_id })
 }
 
-async fn request_token(
+pub fn parse_callback_url(
+    input: &str,
+    expected_state: &str,
+) -> Result<ChatGptAuthorization, String> {
+    let url = url::Url::parse(input.trim())
+        .map_err(|_| "Paste the full callback URL from the browser".to_string())?;
+    parse_callback_parts(&url, expected_state)
+}
+
+async fn request_token_with_cancel(
     token_url: &str,
     fields: &[(&str, &str)],
+    mut cancel: Option<watch::Receiver<bool>>,
 ) -> Result<serde_json::Value, String> {
-    let response = reqwest::Client::new()
-        .post(token_url)
-        .form(fields)
-        .send()
-        .await
-        .map_err(|error| format!("OpenAI OAuth token request failed: {error}"))?;
+    if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
+        return Err("Login cancelled".into());
+    }
+    let request = reqwest::Client::new().post(token_url).form(fields).send();
+    let response = match cancel.as_mut() {
+        Some(rx) => {
+            tokio::select! {
+                response = request => response,
+                changed = rx.changed() => {
+                    let _ = changed;
+                    return Err("Login cancelled".into());
+                }
+            }
+        }
+        None => request.await,
+    }
+    .map_err(|error| format!("OpenAI OAuth token request failed: {error}"))?;
     let status = response.status();
     let body = response.text().await.unwrap_or_default();
     if !status.is_success() {
@@ -145,6 +192,13 @@ async fn request_token(
     }
     serde_json::from_str(&body)
         .map_err(|_| "OpenAI OAuth token response must be an object".to_string())
+}
+
+async fn request_token(
+    token_url: &str,
+    fields: &[(&str, &str)],
+) -> Result<serde_json::Value, String> {
+    request_token_with_cancel(token_url, fields, None).await
 }
 
 fn credential_from_token_response(
@@ -186,12 +240,13 @@ fn credential_from_token_response(
     })
 }
 
-pub async fn exchange_authorization_code_at(
+async fn exchange_authorization_code_at_with_cancel(
     token_url: &str,
     authorization: &ChatGptAuthorization,
     verifier: &str,
+    cancel: Option<watch::Receiver<bool>>,
 ) -> Result<ChatGptOAuthCredential, String> {
-    let token = request_token(
+    let token = request_token_with_cancel(
         token_url,
         &[
             ("grant_type", "authorization_code"),
@@ -201,6 +256,7 @@ pub async fn exchange_authorization_code_at(
             ("redirect_uri", REDIRECT_URI),
             ("resource", RESOURCE),
         ],
+        cancel,
     )
     .await?;
     if token
@@ -214,11 +270,201 @@ pub async fn exchange_authorization_code_at(
     credential_from_token_response(&token, &authorization.client_id)
 }
 
+pub async fn exchange_authorization_code_at(
+    token_url: &str,
+    authorization: &ChatGptAuthorization,
+    verifier: &str,
+) -> Result<ChatGptOAuthCredential, String> {
+    exchange_authorization_code_at_with_cancel(token_url, authorization, verifier, None).await
+}
+
 pub async fn exchange_authorization_code(
     authorization: &ChatGptAuthorization,
     verifier: &str,
 ) -> Result<ChatGptOAuthCredential, String> {
     exchange_authorization_code_at(TOKEN_URL, authorization, verifier).await
+}
+
+async fn cancelable_host_call<F, T>(
+    future: F,
+    mut cancel: Option<watch::Receiver<bool>>,
+) -> Result<T, String>
+where
+    F: Future<Output = Result<T, String>> + Send,
+{
+    match cancel.as_mut() {
+        Some(rx) => {
+            if *rx.borrow() {
+                return Err("Login cancelled".into());
+            }
+            tokio::select! {
+                result = future => result,
+                changed = rx.changed() => {
+                    let _ = changed;
+                    Err("Login cancelled".into())
+                }
+            }
+        }
+        None => future.await,
+    }
+}
+
+async fn login_chatgpt_with_host_on_port(
+    host: &dyn ChatGptLoginHost,
+    token_url: &str,
+    port: u16,
+    cancel: Option<watch::Receiver<bool>>,
+) -> Result<ChatGptOAuthCredential, String> {
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
+        return Err("Login cancelled".into());
+    }
+    // Generate the flow without invoking the host. The callback port must bind before
+    // every host-owned side effect, including device-id lookup.
+    let pkce = generate_pkce();
+    let state = random_value();
+    let nonce = random_value();
+    let claimed = std::sync::Arc::new(AtomicBool::new(false));
+    let callback_state = state.clone();
+    let callback_verifier = pkce.verifier.clone();
+    let callback_token_url = token_url.to_string();
+    let callback_cancel = cancel.clone();
+    let callback_claimed = claimed.clone();
+    let complete: crate::oauth_callback::OAuthCompletion<ChatGptOAuthCredential> =
+        std::sync::Arc::new(move |input| {
+            let state = callback_state.clone();
+            let verifier = callback_verifier.clone();
+            let token_url = callback_token_url.clone();
+            let cancel = callback_cancel.clone();
+            let claimed = callback_claimed.clone();
+            Box::pin(async move {
+                if claimed
+                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_err()
+                {
+                    return Err("Authorization was already handled".into());
+                }
+                let authorization = parse_callback_url(&input, &state)?;
+                exchange_authorization_code_at_with_cancel(
+                    &token_url,
+                    &authorization,
+                    &verifier,
+                    cancel,
+                )
+                .await
+            })
+        });
+    let extractor_state = state.clone();
+    let extract_input: crate::oauth_callback::OAuthInputExtractor =
+        std::sync::Arc::new(move |callback| {
+            let mut canonical = url::Url::parse(REDIRECT_URI).map_err(|error| error.to_string())?;
+            canonical.set_query(callback.query());
+            parse_callback_parts(&canonical, &extractor_state)?;
+            Ok(canonical.into())
+        });
+    let server = match crate::oauth_callback::start_oauth_callback_server_typed(
+        crate::oauth_callback::OAuthCallbackOptions {
+            provider_name: "OpenAI ChatGPT".into(),
+            host: "127.0.0.1".into(),
+            port,
+            path: "/auth/callback".into(),
+            redirect_host: Some("127.0.0.1".into()),
+            state: Some(state.clone()),
+            complete,
+            cancel: cancel.clone(),
+            timeout_ms: None,
+        },
+        extract_input,
+    )
+    .await
+    {
+        Ok(server) => server,
+        Err(crate::oauth_callback::OAuthCallbackStartError::Bind(error))
+            if error.kind() == std::io::ErrorKind::AddrInUse =>
+        {
+            return Err("Port 1455 is in use, probably by an unfinished login in another pi session or by the Codex CLI. Cancel that login and try again.".into());
+        }
+        Err(error) => return Err(error.to_string()),
+    };
+    let (prompt_cancel_tx, prompt_cancel_rx) = watch::channel(false);
+    let guard = ChatGptLoginGuard {
+        server,
+        prompt_cancel: prompt_cancel_tx,
+    };
+
+    let result = async {
+        let device_id = cancelable_host_call(host.device_id(), cancel.clone()).await?;
+        let url = build_authorize_url(&device_id, &pkce, &state, &nonce)?;
+        cancelable_host_call(host.present_authorization_url(&url), cancel.clone()).await?;
+        let callback = guard.server.wait();
+        // Caller cancellation is owned by the callback server. Its terminal result
+        // signals this prompt receiver, then we keep polling the host future until it
+        // performs cooperative cleanup. Wrapping this future in an outer cancellation
+        // select would drop host code before it observes its receiver.
+        let prompt = host.prompt_callback_url(
+            "Paste the full callback URL from the browser",
+            Some(prompt_cancel_rx),
+        );
+        tokio::pin!(callback);
+        tokio::pin!(prompt);
+        tokio::select! {
+            callback_result = &mut callback => {
+                let _ = guard.prompt_cancel.send(true);
+                let _prompt_cleanup = (&mut prompt).await;
+                // The callback result is authoritative after it claims the exchange.
+                callback_result?.ok_or_else(|| "Login cancelled".to_string())
+            }
+            manual_result = &mut prompt => {
+                let input = manual_result?;
+                let authorization = parse_callback_url(&input, &state)?;
+                if claimed
+                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_err()
+                {
+                    return callback.await?.ok_or_else(|| "Login cancelled".to_string());
+                }
+                guard.server.cancel();
+                let _ = callback.await;
+                exchange_authorization_code_at_with_cancel(
+                    token_url,
+                    &authorization,
+                    &pkce.verifier,
+                    cancel.clone(),
+                ).await
+            }
+        }
+    }
+    .await;
+
+    let _ = guard.prompt_cancel.send(true);
+    guard.server.close_and_wait().await;
+    result
+}
+
+pub async fn login_chatgpt_with_host_at(
+    host: &dyn ChatGptLoginHost,
+    token_url: &str,
+    cancel: Option<watch::Receiver<bool>>,
+) -> Result<ChatGptOAuthCredential, String> {
+    login_chatgpt_with_host_on_port(host, token_url, 1455, cancel).await
+}
+
+#[cfg(test)]
+pub(crate) async fn login_chatgpt_with_host_test_port(
+    host: &dyn ChatGptLoginHost,
+    token_url: &str,
+    port: u16,
+    cancel: Option<watch::Receiver<bool>>,
+) -> Result<ChatGptOAuthCredential, String> {
+    login_chatgpt_with_host_on_port(host, token_url, port, cancel).await
+}
+
+pub async fn login_chatgpt_with_host(
+    host: &dyn ChatGptLoginHost,
+    cancel: Option<watch::Receiver<bool>>,
+) -> Result<ChatGptOAuthCredential, String> {
+    login_chatgpt_with_host_at(host, TOKEN_URL, cancel).await
 }
 
 pub async fn refresh_access_token_at(
