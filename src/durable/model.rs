@@ -1,6 +1,6 @@
 use crate::durable::types::{DurableError, MAX_ENTRY_BYTES, MAX_TASK_FIELD_BYTES};
 use crate::events::Event;
-use crate::types::{ContentBlock, Context, Message, Model, Role, StopReason, StreamOptions};
+use crate::types::{ContentBlock, Context, Message, Model, Role, StopReason, StreamOptions, Tool};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::future::Future;
@@ -146,8 +146,12 @@ pub struct DurableMessage {
 pub struct ModelIntent {
     pub model: PinnedModel,
     pub options: PinnedOptions,
+    #[serde(default)]
+    pub offered_tools: Vec<Tool>,
     pub system_prompt: Option<String>,
     pub context: Vec<DurableMessage>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub native_messages: Option<Vec<Message>>,
     pub context_cutoff: u32,
     pub logical_attempt: u32,
 }
@@ -190,6 +194,12 @@ impl ModelIntent {
                     limit: MAX_ENTRY_BYTES,
                 });
             }
+        }
+        if let Some(messages) = &self.native_messages {
+            let _ = encode_limited("native model context", messages, MAX_TASK_FIELD_BYTES)?;
+        }
+        if self.offered_tools.len() > crate::durable::tool::MAX_OFFERED_TOOLS {
+            return Err(DurableError::Rejected("too many offered tools".into()));
         }
         let _ = encode_limited("model intent", self, MAX_TASK_FIELD_BYTES)?;
         Ok(())
@@ -257,6 +267,10 @@ impl DurableUsage {
             },
         })
     }
+
+    pub(crate) fn validate(&self) -> Result<(), DurableError> {
+        validate_usage(self)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -279,6 +293,11 @@ pub enum ModelTerminal {
     BilledError {
         code: String,
         usage: DurableUsage,
+    },
+    ToolCalls {
+        calls: Vec<crate::durable::tool::DurableToolCall>,
+        usage: DurableUsage,
+        assistant: Value,
     },
     UnsupportedToolCall,
     UnsupportedDeferred,
@@ -347,6 +366,21 @@ impl ModelRun {
                 validate_usage(usage)?;
             }
             ModelTerminal::Malformed { code } => validate_code(code)?,
+            ModelTerminal::ToolCalls {
+                calls,
+                usage,
+                assistant,
+            } => {
+                if calls.is_empty() || calls.len() > crate::durable::tool::MAX_TOOL_CALLS_PER_ROUND
+                {
+                    return Err(DurableError::Rejected("invalid tool call count".into()));
+                }
+                usage.validate()?;
+                let _ = encode_limited("assistant tool call", assistant, MAX_TASK_FIELD_BYTES)?;
+                for call in calls {
+                    let _ = encode_limited("tool call", call, MAX_TASK_FIELD_BYTES)?;
+                }
+            }
             ModelTerminal::UnsupportedToolCall | ModelTerminal::UnsupportedDeferred => {}
         }
         let _ = encode_limited("model terminal", terminal, MAX_TASK_FIELD_BYTES)?;
@@ -380,8 +414,11 @@ impl DurableModelRunner for RegistryModelRunner {
             };
             let context = Context {
                 system_prompt: intent.system_prompt.clone(),
-                tools: Vec::new(),
-                messages: intent.context.iter().map(to_message).collect(),
+                tools: intent.offered_tools.clone(),
+                messages: intent
+                    .native_messages
+                    .clone()
+                    .unwrap_or_else(|| intent.context.iter().map(to_message_for_durable).collect()),
             };
             let mut stream = crate::registry::stream(&model, &context, &options);
             let mut terminal = None;
@@ -454,7 +491,41 @@ async fn done_terminal(model: &PinnedModel, reason: StopReason, message: Message
             .iter()
             .any(|block| matches!(block, ContentBlock::ToolCall { .. }))
     {
-        return ModelTerminal::UnsupportedToolCall;
+        let usage = match message.usage.as_ref().map(DurableUsage::from_usage) {
+            Some(Ok(usage)) => usage,
+            Some(Err(_)) => return malformed("invalid_usage"),
+            None => return malformed("missing_usage"),
+        };
+        let calls = message
+            .content
+            .iter()
+            .filter_map(|block| match block {
+                ContentBlock::ToolCall {
+                    id,
+                    name,
+                    arguments,
+                    ..
+                } => Some(crate::durable::tool::DurableToolCall {
+                    provider_call_id: id.clone(),
+                    name: name.clone(),
+                    original_arguments: Value::Object(arguments.clone().into_iter().collect()),
+                }),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        let assistant = match encode_limited("assistant tool call", &message, MAX_TASK_FIELD_BYTES)
+            .and_then(|bytes| {
+                serde_json::from_slice(&bytes)
+                    .map_err(|error| DurableError::Rejected(error.to_string()))
+            }) {
+            Ok(value) => value,
+            Err(_) => return malformed("answer_too_large"),
+        };
+        return ModelTerminal::ToolCalls {
+            calls,
+            usage,
+            assistant,
+        };
     }
     let usage = match message.usage.as_ref().map(DurableUsage::from_usage) {
         Some(Ok(usage)) => usage,
@@ -554,6 +625,7 @@ fn validate_code(code: &str) -> Result<(), DurableError> {
         "terminal_error",
         "terminal_aborted",
         "terminal_pending",
+        "durable_tool_rejected",
         "duplicate_terminal",
         "missing_terminal",
     ];
@@ -579,7 +651,7 @@ fn error_terminal(message: Option<Message>) -> ModelTerminal {
     }
 }
 
-fn to_message(message: &DurableMessage) -> Message {
+pub(crate) fn to_message_for_durable(message: &DurableMessage) -> Message {
     let mut result = crate::types::user_message(&message.text);
     result.role = if message.role == "assistant" {
         Role::Assistant

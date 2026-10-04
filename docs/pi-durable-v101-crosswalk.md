@@ -2,7 +2,7 @@
 
 Source: fixed official `@earendil-works/pi-durable@1.0.1` tree `a7229ddc21810d6245105978033b7df645ecc2f7`; verified artifact SHA-256 `c4bc1ea49653ee972045a5de755756b633e3be0e1528ae32f5f32d82e012db7d`. The v1.0.0→v1.0.1 delta changes only package metadata and changelog; the 60 source files, 42 test suites and specification are unchanged.
 
-R1a implements the atomic storage/session foundation with memory and framed journal backends. R1b implements persistent root no-tool model generation, idempotent submissions and owned close/drain. `ADAPTED` means the named official surface contributes a tested R1a/R1b invariant. `LATER` means it is required by R1c or later full-contract work. No row claims complete parity.
+R1a implements atomic storage/session semantics. R1b implements persistent root no-tool generation. R1c implements the useful model→owned tool→result-aware answer vertical with exact-version safe replay, bottom-up abort and non-aborting close drain. `ADAPTED` names a tested native invariant; `LATER` names remaining full-contract work. No row claims complete parity.
 
 ## Official 60-source disposition
 
@@ -28,8 +28,8 @@ R1a implements the atomic storage/session foundation with memory and framed jour
 | `packages/durable/src/harness/registry.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/scheduler.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/submissions.ts` | ADAPTED | `submission.rs`: typed request conflict, idempotent winner reacquisition and detached committed views. |
-| `packages/durable/src/harness/task-graph.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
-| `packages/durable/src/harness/tool.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
+| `packages/durable/src/harness/task-graph.ts` | ADAPTED | R1c generation owns tool children, remains `completing` until all settle, and aborts/drains bottom-up; generic graphs remain later. |
+| `packages/durable/src/harness/tool.ts` | ADAPTED | R1c durable offered schema, intent-before-effect, owned child task, bounded result and final answer continuation. |
 | `packages/durable/src/harness/types.ts` | ADAPTED | R1a records plus R1b pinned model/options/usage/content and public submission DTOs. |
 | `packages/durable/src/harness/usage.ts` | ADAPTED | R1b atomically stores complete per-turn usage/cost plus checked aggregate totals across journal reopen. |
 | `packages/durable/src/harness/util.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
@@ -85,10 +85,10 @@ R1a implements the atomic storage/session foundation with memory and framed jour
 | `packages/durable/test/harness-generation.test.ts` | ADAPTED | Production local HTTP/SSE registry proof, pinned behaviour, terminal validation and usage settlement. |
 | `packages/durable/test/harness-inbox.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-inspect.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-lifecycle.test.ts` | ADAPTED | Caller-drop admission, non-cooperative runner drain, close seal and dropped-close common outcome. |
+| `packages/durable/test/harness-lifecycle.test.ts` | ADAPTED | Caller-drop retention, durable bottom-up abort, non-cooperative tool drain, close-without-abort and successor fencing. |
 | `packages/durable/test/harness-live-deltas.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-output.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-ownership.test.ts` | ADAPTED | Single root FIFO provider executor and retained admission/settlement ownership; tool ownership remains R1c. |
+| `packages/durable/test/harness-ownership.test.ts` | ADAPTED | FIFO model phases plus R1c owned tool executors, completing drain, caller-drop retention and phase fences. |
 | `packages/durable/test/harness-prompt.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-registry.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-structured.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
@@ -96,8 +96,8 @@ R1a implements the atomic storage/session foundation with memory and framed jour
 | `packages/durable/test/harness-task-graph.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-tasks-recovery.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-tasks.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-tools-recovery.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-tools.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
+| `packages/durable/test/harness-tools-recovery.test.ts` | ADAPTED | Exact safe implementation/version/schema replay, stable idempotency key and conservative unsafe/changed/missing settlement. |
+| `packages/durable/test/harness-tools.test.ts` | ADAPTED | Real model→tool→answer, original versus validated execution arguments, schema/limit failures and atomic tool usage/outcome. |
 | `packages/durable/test/harness-view.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/jsonl-storage.test.ts` | ADAPTED | `journal_recovery_test.rs`: framed reopen, every final-frame byte cut, malformed complete data and append/sync/ack fault truth. |
 | `packages/durable/test/memory-storage.test.ts` | ADAPTED | `storage_conformance_test.rs::memory_storage_passes_atomic_detached_conformance`. |

@@ -348,11 +348,13 @@ mod tests {
         let intent = ModelIntent {
             model: model(),
             options: PinnedOptions::default(),
+            offered_tools: vec![],
             system_prompt: None,
             context: vec![DurableMessage {
                 role: "user".into(),
                 text: "hello".into(),
             }],
+            native_messages: None,
             context_cutoff: 1,
             logical_attempt: 1,
         };

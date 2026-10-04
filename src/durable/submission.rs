@@ -46,8 +46,10 @@ pub(crate) fn build_initial_batch(
     let intent = ModelIntent {
         model,
         options,
+        offered_tools: vec![],
         system_prompt: None,
         context: vec![],
+        native_messages: None,
         context_cutoff: 1,
         logical_attempt: 1,
     };

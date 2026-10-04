@@ -1,6 +1,6 @@
 # Native durable R1a/R1b foundation
 
-R1a adds the storage/session kernel. R1b adds persistent no-tool model generation through the existing rs-ai provider registry. Executable tools and model→tool→answer ownership belong to R1c.
+R1a adds the storage/session kernel. R1b adds persistent model generation through the existing rs-ai provider registry. R1c adds the useful model→owned tool→result-aware answer vertical.
 
 ## Implemented contract
 
@@ -29,6 +29,16 @@ R1a adds the storage/session kernel. R1b adds persistent no-tool model generatio
 - R1b persists terminal output only; provider partials are consumed by the owned executor and are not exposed or stored.
 - Local evidence for the final R1b candidate includes 38 focused durable tests, 988 no-default tests, 1,145 all-feature tests, strict Clippy for both feature profiles, security/catalog validators, hydration/fault self-tests and a genuine detached Git `make check` with zero failures or ignored tests.
 
+## R1c owned tools
+
+- `DurableToolRegistry` seals offered native `Tool` definitions with implementation identity/version, replay policy and schema identity. It supports a bounded JSON Schema subset: object properties with string, number, integer or boolean values, required names and `additionalProperties: false`.
+- The first model request carries the exact offered native schemas. A tool-call terminal persists the original assistant message, original provider arguments, separately validated execution arguments, stable durable idempotency key, parent `completing` checkpoint and owned child intents before any tool effect.
+- Fresh unsafe tools execute once after their intent commit. Reopen replay requires stored and current `Safe` policy plus exact implementation ID, version and schema identity. Unsafe, changed or missing tools settle with a redacted durable interruption and no effect.
+- Each child uses a durable `pending→running→terminal` phase. Tool result entry, child outcome and optional validated usage settle atomically from a fresh snapshot. Committed terminal children are reconstructed without re-execution.
+- The successor model receives the original assistant tool call followed by committed native tool-result messages. Its complete transcript and attempt are committed on the still-`completing` parent before the provider effect. The final answer terminalises the parent/submission and updates live/inbox/usage atomically.
+- Durable abort marks parent and children before signalling active tool cancellation, drains admitted non-cooperative work, then settles children before the parent. Close is separate from abort: it seals new phases, drains admitted tool settlement, starts no successor provider after sealing and releases storage only after owned work exits.
+- Tool schemas, offered registry bytes, calls per round, rounds, arguments, outputs and outcomes have fixed preallocation limits. Invalid custom output/usage becomes a typed terminal failure rather than an application-data commit or implicit replay.
+
 ## Journal format
 
 A fixed checksummed header is followed by digest-linked frames. Each frame stores magic/version, sequence, payload length, previous-frame digest, payload digest, canonical JSON batch and a trailer repeating sequence/length/digest. The writer validates and encodes the complete frame before append, uses `write_all`, calls `sync_all`, then acknowledges and adopts.
@@ -47,6 +57,6 @@ Sizes use encoded JSON bytes. There is no truncation.
 
 ## Later required work
 
-R1c must add an executable tool registry, durable intent-before-effect, exact implementation/version safe replay, generation→tool ownership, `completing` drain and bottom-up abort. Those remain mandatory before a same-version v1.0.1 durable retag. R1b alone is a persistent no-tool generation slice, not the useful-port completion.
+R1c supplies the executable tool registry, intent-before-effect, exact implementation/version/schema replay gate, generation→tool ownership, completing drain and bottom-up abort needed for the useful vertical. Same-version v1.0.1 retagging still requires local/hosted acceptance and publication authority; this document records implementation scope only.
 
 Generic documents/tasks, forks, inbox modes, watches/events, extensions/hooks, durable partial output, deferred polling, compaction, subagents, remote storage, SQLite and cross-process leases belong to later cycles.

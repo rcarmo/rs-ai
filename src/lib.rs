@@ -161,11 +161,17 @@ mod coverage_test;
 #[path = "tests/core/deferred_tools_test.rs"]
 mod deferred_tools_test;
 #[cfg(test)]
+#[path = "tests/durable/harness_abort_test.rs"]
+mod durable_harness_abort_test;
+#[cfg(test)]
 #[path = "tests/durable/harness_generation_test.rs"]
 mod durable_harness_generation_test;
 #[cfg(test)]
 #[path = "tests/durable/harness_lifecycle_test.rs"]
 mod durable_harness_lifecycle_test;
+#[cfg(test)]
+#[path = "tests/durable/harness_tool_test.rs"]
+mod durable_harness_tool_test;
 #[cfg(test)]
 #[path = "tests/durable/journal_recovery_test.rs"]
 mod durable_journal_recovery_test;
@@ -178,6 +184,9 @@ mod durable_storage_conformance_test;
 #[cfg(test)]
 #[path = "tests/durable/submission_test.rs"]
 mod durable_submission_test;
+#[cfg(test)]
+#[path = "tests/durable/tool_recovery_test.rs"]
+mod durable_tool_recovery_test;
 #[cfg(test)]
 #[path = "tests/providers/other/edge_case_test.rs"]
 mod edge_case_test;

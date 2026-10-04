@@ -1,14 +1,15 @@
-//! Native durable R1a/R1b foundation.
+//! Native durable R1a/R1b/R1c vertical.
 //!
-//! R1a provides atomic storage/session semantics. R1b adds persistent no-tool
-//! generation through the existing rs-ai model registry. Executable tool
-//! ownership and safe replay remain mandatory R1c work.
+//! R1a provides atomic storage/session semantics. R1b adds persistent model
+//! generation. R1c adds owned versioned tools, conservative replay, bottom-up
+//! abort and non-aborting close drain.
 
 pub mod harness;
 pub mod model;
 pub mod session;
 pub mod storage;
 pub mod submission;
+pub mod tool;
 pub mod types;
 
 pub use harness::DurableHarness;
@@ -21,4 +22,8 @@ pub use storage::journal::JournalStorage;
 pub use storage::memory::MemoryStorage;
 pub use storage::{DurableStorage, StorageSnapshot};
 pub use submission::{SubmissionHandle, SubmissionView, SubmitRequest};
+pub use tool::{
+    DurableTool, DurableToolCall, DurableToolRegistry, ReplayPolicy, ToolBinding, ToolExecution,
+    ToolFailure, ToolIntent, ToolOutput,
+};
 pub use types::*;
