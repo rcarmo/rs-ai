@@ -152,6 +152,20 @@ impl RuntimeProvider {
         merged
     }
 
+    pub fn get_model(&self, id: &str) -> Option<Model> {
+        if let Some(model) = self
+            .dynamic
+            .lock()
+            .unwrap()
+            .iter()
+            .rev()
+            .find(|model| model.id == id)
+        {
+            return Some(model.clone());
+        }
+        self.baseline.iter().find(|model| model.id == id).cloned()
+    }
+
     pub fn radius(
         id: impl Into<String>,
         name: impl Into<String>,
@@ -342,9 +356,8 @@ impl ModelsRuntime {
         }
     }
     pub fn get_model(&self, provider: &str, id: &str) -> Option<Model> {
-        self.get_models(Some(provider))
-            .into_iter()
-            .find(|m| m.id == id)
+        let provider = self.providers.lock().unwrap().get(provider).cloned()?;
+        provider.get_model(id)
     }
 
     pub fn provider_has_oauth(&self, provider: &str) -> bool {

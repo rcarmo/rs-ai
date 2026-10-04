@@ -617,6 +617,121 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn direct_lookup_preserves_duplicate_override_order_and_caller_isolation() {
+        let runtime = ModelsRuntime::new();
+        let mut baseline_first = model("ordered", "same");
+        baseline_first.name = "baseline-first".into();
+        let mut baseline_second = model("ordered", "same");
+        baseline_second.name = "baseline-second".into();
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "ordered",
+            "Ordered",
+            ProviderAuth::default(),
+            vec![baseline_first, baseline_second],
+            |_ctx| async move {
+                let mut dynamic_first = model("ordered", "same");
+                dynamic_first.name = "dynamic-first".into();
+                let mut dynamic_last = model("ordered", "same");
+                dynamic_last.name = "dynamic-last".into();
+                Ok(vec![dynamic_first, dynamic_last])
+            },
+        ));
+
+        assert_eq!(
+            runtime.get_model("ordered", "same").unwrap().name,
+            "baseline-first"
+        );
+        let refreshed = runtime
+            .refresh(RefreshOptions {
+                allow_network: true,
+                force: false,
+                cancel: None,
+                providers: Some(vec!["ordered".into()]),
+            })
+            .await;
+        assert!(refreshed.errors.is_empty());
+        let mut selected = runtime.get_model("ordered", "same").unwrap();
+        assert_eq!(selected.name, "dynamic-last");
+        selected.name = "caller-mutated".into();
+        assert_eq!(
+            runtime.get_model("ordered", "same").unwrap().name,
+            "dynamic-last",
+            "callers receive an isolated clone"
+        );
+        assert!(runtime.get_model("ordered", "missing").is_none());
+        assert!(runtime.get_model("missing-provider", "same").is_none());
+    }
+
+    #[test]
+    fn static_direct_lookup_uses_first_baseline_duplicate() {
+        let runtime = ModelsRuntime::new();
+        let mut first = model("static", "duplicate");
+        first.name = "first".into();
+        let mut second = model("static", "duplicate");
+        second.name = "second".into();
+        runtime.set_provider(RuntimeProvider::static_provider(
+            "static",
+            "Static",
+            ProviderAuth::default(),
+            vec![first, second],
+        ));
+        assert_eq!(
+            runtime.get_model("static", "duplicate").unwrap().name,
+            "first"
+        );
+    }
+
+    #[test]
+    fn direct_lookup_remains_valid_during_provider_replacement() {
+        let runtime = Arc::new(ModelsRuntime::new());
+        runtime.set_provider(RuntimeProvider::static_provider(
+            "replace",
+            "Replace",
+            ProviderAuth::default(),
+            vec![model("replace", "value")],
+        ));
+        let writer = runtime.clone();
+        let replacing = std::thread::spawn(move || {
+            for generation in 1..=200 {
+                let mut replacement = model("replace", "value");
+                replacement.name = format!("generation-{generation}");
+                writer.set_provider(RuntimeProvider::static_provider(
+                    "replace",
+                    "Replace",
+                    ProviderAuth::default(),
+                    vec![replacement],
+                ));
+            }
+        });
+        for _ in 0..2_000 {
+            assert!(runtime.get_model("replace", "value").is_some());
+        }
+        replacing.join().unwrap();
+        assert_eq!(
+            runtime.get_model("replace", "value").unwrap().name,
+            "generation-200"
+        );
+    }
+
+    #[test]
+    fn production_registry_lookup_returns_an_isolated_match() {
+        let provider = "lookup-isolation-test-provider";
+        let id = "lookup-isolation-test-model";
+        let mut registered = model(provider, id);
+        registered.name = "registered".into();
+        crate::registry::register_model(registered);
+
+        let mut selected = crate::registry::get_model(provider, id).unwrap();
+        assert_eq!(selected.name, "registered");
+        selected.name = "caller-mutated".into();
+        assert_eq!(
+            crate::registry::get_model(provider, id).unwrap().name,
+            "registered"
+        );
+        assert!(crate::registry::get_model(provider, "missing").is_none());
+    }
+
     #[test]
     fn default_runtime_populates_builtin_fallbacks_and_grok_45_routes_responses() {
         let runtime = ModelsRuntime::new();

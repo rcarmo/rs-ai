@@ -1,6 +1,36 @@
 //! Unified typed model catalog and operation guards.
 
 use crate::types::{AnyModel, ClassifierContext, ClassifierResult, ModelType, StreamOptions};
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
+type BuiltinTypeIndex = HashMap<ModelType, HashMap<String, HashMap<String, AnyModel>>>;
+
+static BUILTIN_TYPE_INDEX: LazyLock<BuiltinTypeIndex> = LazyLock::new(|| {
+    let mut index = BuiltinTypeIndex::new();
+    let mut insert_first = |model: AnyModel| {
+        let model_type = model.model_type();
+        let provider = model.provider().to_string();
+        let id = model.id().to_string();
+        index
+            .entry(model_type)
+            .or_default()
+            .entry(provider)
+            .or_default()
+            .entry(id)
+            .or_insert(model);
+    };
+    for model in crate::models_generated::builtin_models() {
+        insert_first(AnyModel::Chat(Box::new(model)));
+    }
+    for model in crate::images::models_generated::builtin_image_models() {
+        insert_first(AnyModel::Image(model));
+    }
+    for model in crate::classifier_models_generated::builtin_classifier_models() {
+        insert_first(AnyModel::Classifier(model));
+    }
+    index
+});
 
 /// The model type, treating legacy chat models without a wire discriminator as chat.
 pub fn get_model_type(model: &AnyModel) -> ModelType {
@@ -32,20 +62,11 @@ pub fn get_builtin_model_of_type(
     provider: &str,
     id: &str,
 ) -> Option<AnyModel> {
-    match model_type {
-        ModelType::Chat => crate::models_generated::builtin_models()
-            .into_iter()
-            .find(|model| model.provider == provider && model.id == id)
-            .map(|model| AnyModel::Chat(Box::new(model))),
-        ModelType::Image => crate::images::models_generated::builtin_image_models()
-            .into_iter()
-            .find(|model| model.provider == provider && model.id == id)
-            .map(AnyModel::Image),
-        ModelType::Classifier => crate::classifier_models_generated::builtin_classifier_models()
-            .into_iter()
-            .find(|model| model.provider == provider && model.id == id)
-            .map(AnyModel::Classifier),
-    }
+    BUILTIN_TYPE_INDEX
+        .get(&model_type)?
+        .get(provider)?
+        .get(id)
+        .cloned()
 }
 
 /// List signed built-in models, optionally filtered by model type and provider.

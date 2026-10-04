@@ -60,6 +60,32 @@ mod tests {
         assert!(get_builtin_model_of_type(ModelType::Chat, "typesafe", "jev-latest").is_none());
     }
 
+    #[test]
+    fn typed_builtin_lookup_returns_isolated_models_and_stable_misses() {
+        let mut chat = get_builtin_model_of_type(ModelType::Chat, "openai", "gpt-4o-mini").unwrap();
+        let original_name = match &chat {
+            AnyModel::Chat(model) => model.name.clone(),
+            _ => unreachable!(),
+        };
+        match &mut chat {
+            AnyModel::Chat(model) => model.name = "caller-mutated".into(),
+            _ => unreachable!(),
+        }
+        let fresh = get_builtin_model_of_type(ModelType::Chat, "openai", "gpt-4o-mini").unwrap();
+        assert_eq!(
+            match fresh {
+                AnyModel::Chat(model) => model.name,
+                _ => unreachable!(),
+            },
+            original_name
+        );
+        assert!(get_builtin_model_of_type(ModelType::Chat, "openai", "missing").is_none());
+        assert!(get_builtin_model_of_type(ModelType::Image, "openai", "gpt-4o-mini").is_none());
+        assert!(
+            get_builtin_model_of_type(ModelType::Classifier, "typesafe", "jev-latest").is_some()
+        );
+    }
+
     #[tokio::test]
     async fn wrong_typed_operations_return_typed_errors() {
         let chat = get_builtin_model_of_type(ModelType::Chat, "openai", "gpt-4o-mini").unwrap();
