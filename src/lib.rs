@@ -28,6 +28,7 @@ pub mod compat;
 pub mod context;
 pub mod deferred_tools;
 pub mod diagnostics;
+pub mod durable;
 pub mod env;
 pub mod error_body;
 pub mod estimate;
@@ -159,6 +160,15 @@ mod coverage_test;
 #[cfg(test)]
 #[path = "tests/core/deferred_tools_test.rs"]
 mod deferred_tools_test;
+#[cfg(test)]
+#[path = "tests/durable/journal_recovery_test.rs"]
+mod durable_journal_recovery_test;
+#[cfg(test)]
+#[path = "tests/durable/session_lifecycle_test.rs"]
+mod durable_session_lifecycle_test;
+#[cfg(test)]
+#[path = "tests/durable/storage_conformance_test.rs"]
+mod durable_storage_conformance_test;
 #[cfg(test)]
 #[path = "tests/providers/other/edge_case_test.rs"]
 mod edge_case_test;
