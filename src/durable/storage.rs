@@ -416,7 +416,13 @@ pub fn validate_batch(
         require_kind(
             "document kind",
             &document.kind,
-            &["pi.live", "pi.usage", "pi.checkpoint"],
+            &[
+                "pi.live",
+                "pi.usage",
+                "pi.checkpoint",
+                "pi.agent",
+                "pi.inbox",
+            ],
         )?;
         if document.version == 0 {
             return Err(DurableError::Rejected(
@@ -440,7 +446,10 @@ fn valid_transition(previous: &TaskState, next: &TaskState) -> bool {
     matches!(
         (previous, next),
         (Pending, Pending | Running | Aborted)
-            | (Running, Running | Completing | Succeeded | Failed | Aborted)
+            | (
+                Running,
+                Pending | Running | Completing | Succeeded | Failed | Aborted
+            )
             | (Completing, Completing | Succeeded | Failed | Aborted)
     )
 }

@@ -2,7 +2,7 @@
 
 Source: fixed official `@earendil-works/pi-durable@1.0.1` tree `a7229ddc21810d6245105978033b7df645ecc2f7`; verified artifact SHA-256 `c4bc1ea49653ee972045a5de755756b633e3be0e1528ae32f5f32d82e012db7d`. The v1.0.0→v1.0.1 delta changes only package metadata and changelog; the 60 source files, 42 test suites and specification are unchanged.
 
-R1a implements only the atomic storage/session foundation with memory and framed journal backends. `ADAPTED` means the named official surface contributes a bounded R1a invariant. `LATER` means it is required by a later R1b/R1c/full-contract cycle. No row claims complete parity.
+R1a implements the atomic storage/session foundation with memory and framed journal backends. R1b implements persistent root no-tool model generation, idempotent submissions and owned close/drain. `ADAPTED` means the named official surface contributes a tested R1a/R1b invariant. `LATER` means it is required by R1c or later full-contract work. No row claims complete parity.
 
 ## Official 60-source disposition
 
@@ -18,20 +18,20 @@ R1a implements only the atomic storage/session foundation with memory and framed
 | `packages/durable/src/harness/context.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/define.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/events.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
-| `packages/durable/src/harness/generation.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
-| `packages/durable/src/harness/harness.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
-| `packages/durable/src/harness/inbox.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
+| `packages/durable/src/harness/generation.ts` | ADAPTED | `model.rs` and `harness.rs`: pinned intent-before-effect, owned registry stream, terminal/usage atomic settlement and explicit resume. |
+| `packages/durable/src/harness/harness.ts` | ADAPTED | Public root `DurableHarness`, FIFO executor, admission fence, inspect/context/wait and common close drain. |
+| `packages/durable/src/harness/inbox.ts` | ADAPTED | R1b `pi.inbox` is an authoritative bounded pending-submission snapshot; steer/follow-up modes and withdrawal remain later. |
 | `packages/durable/src/harness/json.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
-| `packages/durable/src/harness/live.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
+| `packages/durable/src/harness/live.ts` | ADAPTED | R1b `pi.live` tracks the current queued/running/terminal root generation across settlement and reopen. |
 | `packages/durable/src/harness/output.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/prompt.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/registry.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/scheduler.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
-| `packages/durable/src/harness/submissions.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
+| `packages/durable/src/harness/submissions.ts` | ADAPTED | `submission.rs`: typed request conflict, idempotent winner reacquisition and detached committed views. |
 | `packages/durable/src/harness/task-graph.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/tool.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
-| `packages/durable/src/harness/types.ts` | ADAPTED | Atomic records/session/storage invariant adapted in native kernel. |
-| `packages/durable/src/harness/usage.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
+| `packages/durable/src/harness/types.ts` | ADAPTED | R1a records plus R1b pinned model/options/usage/content and public submission DTOs. |
+| `packages/durable/src/harness/usage.ts` | ADAPTED | R1b atomically stores complete per-turn usage/cost plus checked aggregate totals across journal reopen. |
 | `packages/durable/src/harness/util.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/harness/view.ts` | LATER | Outside R1a foundation; retained for R1b/R1c or later full-contract work. |
 | `packages/durable/src/ids.ts` | ADAPTED | Atomic records/session/storage invariant adapted in native kernel. |
@@ -78,21 +78,21 @@ R1a implements only the atomic storage/session foundation with memory and framed
 | `packages/durable/test/env-node.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/env-truncate.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-compaction.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-context.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
+| `packages/durable/test/harness-context.test.ts` | ADAPTED | Detached committed root context and passive-write busy fencing are covered in R1b lifecycle/submission tests. |
 | `packages/durable/test/harness-conversations.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-events.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-generation-recovery.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-generation.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
+| `packages/durable/test/harness-generation-recovery.test.ts` | ADAPTED | Persistent running→pending open reconciliation, zero-effect open and explicit resume proof. |
+| `packages/durable/test/harness-generation.test.ts` | ADAPTED | Production local HTTP/SSE registry proof, pinned behaviour, terminal validation and usage settlement. |
 | `packages/durable/test/harness-inbox.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-inspect.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-lifecycle.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
+| `packages/durable/test/harness-lifecycle.test.ts` | ADAPTED | Caller-drop admission, non-cooperative runner drain, close seal and dropped-close common outcome. |
 | `packages/durable/test/harness-live-deltas.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-output.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-ownership.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
+| `packages/durable/test/harness-ownership.test.ts` | ADAPTED | Single root FIFO provider executor and retained admission/settlement ownership; tool ownership remains R1c. |
 | `packages/durable/test/harness-prompt.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-registry.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-structured.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
-| `packages/durable/test/harness-submissions.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
+| `packages/durable/test/harness-submissions.test.ts` | ADAPTED | Request-ID reacquisition/conflict, passive writes, failure usage and strict submission bounds. |
 | `packages/durable/test/harness-task-graph.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-tasks-recovery.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
 | `packages/durable/test/harness-tasks.test.ts` | LATER | Outside R1a foundation; retained for later implementation and evidence. |
@@ -123,6 +123,10 @@ R1a implements only the atomic storage/session foundation with memory and framed
 - Bounded session and storage queues with pre-admission caller-drop tombstones and owned non-cancellable post-admission settlement.
 - Memory/reference and persistent framed-journal conformance.
 - Reopen, partial-final-tail handling, corruption rejection, uncertainty poison, close fencing and public visibility after adoption.
+
+## Final R1b local evidence
+
+The exact 11-path candidate passed 38 focused durable tests, 988 no-default tests and 1,145 all-feature tests with zero failures or ignored tests. Strict Clippy passed for no-default and all-feature profiles. Security, SBOM, licence, vulnerability, v1.0.1 manifest, metadata, reproducibility, hydration and fault/self-test gates passed. A genuine detached Git worktree from the R1a checkpoint passed exact `make check`. The isolated Rust 1.85 module check validates syntax and the durable contract shape; the unchanged whole dependency graph retains its documented Rust 1.88 floor.
 
 ## Explicit later work
 
