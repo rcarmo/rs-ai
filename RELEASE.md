@@ -10,7 +10,7 @@
 - Official range: `a13d35a742c6ef8462812a28fbe1d8c8b7431c32..a7229ddc21810d6245105978033b7df645ecc2f7`
 - Artifact SHA-256: `8a9e69b1309cf93405d87729fa123c8b11c6be7c646b16f34f8bef7b792f9138`
 - npm integrity: computed SHA-512 matches registry metadata; npm advertises SLSA v1 provenance, but this cycle has not independently verified its signature/transparency record
-- Scope status: **INITIAL NATIVE AND UPSTREAM-ALIAS PUBLICATION ACCEPTED**.
+- Scope status: **USEFUL DURABLE R1 NATIVE AND UPSTREAM-ALIAS REPLACEMENT PUBLISHED; FULL PI-DURABLE PARITY IS NOT COMPLETE**.
 
 The exact upstream delta contains **19 changed paths**, `+546/-153`, and **6 changed tests**. The final corpus contains **171 test/support paths**: 164 executable tests and seven support files. `scripts/validate_v101_manifests.py --require-complete` verifies exact manifests and the complete crosswalk with no pending rows.
 
@@ -57,7 +57,35 @@ Upstream-alias publication:
 
 Both releases contain exactly the canonical SBOM and checksum assets. Public downloads validate and are byte-identical to the accepted hosted artifact. All 25 older tag refs and 14 older releases/assets remained unchanged.
 
-The initial v1.0.1 tags target the accepted provider runtime, never this later documentation head. The mandatory native pi-durable cycle is queued separately and is not yet implemented or accepted. User policy requires a later **same-version v1.0.1 retag/republication** after a separately accepted durable runtime; that bounded replacement must preserve and record the initial tag object, runtime, release and asset evidence above, plus the replacement evidence. No durable completion or full pi-durable parity is claimed here.
+The initial v1.0.1 publication above is retained as historical evidence. Its annotated tag object `4110c49168ca52f4f7e3af07f2902d57a18f91bd`, runtime `73de29d00230f794cac08b71bd669ca9386772db`, release IDs and initial asset IDs/digests remain the rollback and preservation record for the same-version replacement.
+
+### v1.0.1 durable useful-runtime replacement
+
+The accepted runtime is `12ce97be283aebf3ded6764b7c796785b8b7781a`, with tree `c6c738b61f8413910d18c3dd931a7533610b19f3`. The durable sequence consists of R1a `fc754aea5622a1c93e083f795989ec97b1d7fe8b`, R1b `84f4152889ed3a1d665428b7287164d50814cb66` and the accepted R1c checkpoint `1189c92ee9e5dbf3681d63ec4331c78a9062261d`. R1a adds the storage/session kernel; R1b adds persistent root generation; R1c adds the model→owned tool→result-aware answer path with durable intents, stable idempotency keys, exact safe-replay gates, cumulative usage, explicit recovery, bottom-up abort and close drains.
+
+Local R1c acceptance covered focused durable tests **60/0**, no-default tests **1010/0** plus one doctest, all-feature tests **1167/0**, and explicit Bedrock tests **1167/0** plus one doctest. Format, build, strict Clippy for all-feature and no-default profiles, an isolated Rust 1.85 durable-module shape check, SBOM, licence, vulnerability, manifests, full-record metadata, deterministic catalogue generation, hydration and fail-closed fault gates passed. The unchanged whole dependency graph retains its Rust 1.88 floor; the isolated check is not a whole-crate Rust 1.85 compatibility claim. A genuine detached Git clone passed the corresponding source-bound gates. Synthetic validation commits `a934eb7719d82f94b292aaacdf8c91fb34035a7a` and `d07f67211106f479980bddfb4b9b9b6c35e0672a` were never release targets.
+
+The first hosted R1c run, `37176785519`, failed strict Clippy under Rust 1.99 on `clippy::needless_late_init`; no test, SBOM or security validation steps ran after strict Clippy failed, while checkout, toolchain setup, cache, pinned cargo-audit installation, format and build passed. The run produced no artifact. The one-block mechanical correction is commit `12ce97be283aebf3ded6764b7c796785b8b7781a`, parent `1189c92ee9e5dbf3681d63ec4331c78a9062261d`. Isolated Rust/Clippy 1.99 local and clean-clone validation passed before the successor push. Normal push CI run `37177760346`, attempt 1, job `111363862250`, passed all 18 steps with **1167 passed, 0 failed, 0 ignored**. SHA-specific artifact `rs-ai-sbom-12ce97be283aebf3ded6764b7c796785b8b7781a` (`11293778981`) has archive SHA-256 `90ac7a9be586bd1192bb9beb333764382b0b7340d901a261dfd225cb34aa9439`.
+
+The accepted CycloneDX 1.5 SBOM has root `rs-ai@1.0.1`, embedded revision `12ce97be283aebf3ded6764b7c796785b8b7781a`, 270 components, 271 dependency records and 23 direct root edges. Its SHA-256 is `e2447de15d942f1be413f33dde4f728fede32474f2de993d1e473c2039636e0b`; the checksum-file SHA-256 is `1af5805bae5b1f343124a3234af80964632feec6b26025d80b6d6b872dbf8b09`.
+
+Native same-version replacement:
+
+- annotated tag `v1.0.1`, Rui-authored tag object `6d5717e64970feef066b5d2f34b1a2b6e966975a`, peeled runtime `12ce97be283aebf3ded6764b7c796785b8b7781a`;
+- publisher run `37178159190`, attempt 1, job `111365041221`; all 13 steps passed;
+- release `402735140`, retained from the initial publication;
+- replacement assets `sbom.cdx.json` (`609149226`) and `sbom.cdx.json.sha256` (`609149231`).
+
+Upstream-alias same-version replacement:
+
+- lightweight tag `upstream-v1.0.1`, direct runtime target `12ce97be283aebf3ded6764b7c796785b8b7781a`;
+- publisher run `37178347944`, attempt 1, job `111365604011`; all 13 steps passed;
+- release `402735666`, retained from the initial publication;
+- replacement assets `sbom.cdx.json` (`609155886`) and `sbom.cdx.json.sha256` (`609155885`).
+
+The native, upstream-alias and hosted SBOM/checksum files validate and are byte-identical. The replacement changed only the two v1.0.1 refs and publisher-managed release bodies/assets; the other 25 refs and 14 releases/assets remained unchanged. GitHub derived each release `created_at` value from its replacement tag target; release IDs, titles and publication state were retained. The old tag object, old runtime, initial release IDs and initial asset IDs/digests above preserve the rollback record. Runtime tag targets are immutable at `12ce97be283aebf3ded6764b7c796785b8b7781a`; this later documentation head is not a release target.
+
+This release implements a useful R1 vertical, not complete `pi-durable` parity. Generic documents/tasks, forks, inbox modes, watches/events, extensions/hooks, durable partial output, deferred polling, compaction, subagents, remote storage, SQLite and cross-process leases remain later work.
 
 ## Historical accepted release: v1.0.0
 
