@@ -87,6 +87,40 @@ The native, upstream-alias and hosted SBOM/checksum files validate and are byte-
 
 This release implements a useful R1 vertical, not complete `pi-durable` parity. Generic documents/tasks, forks, inbox modes, watches/events, extensions/hooks, durable partial output, deferred polling, compaction, subagents, remote storage, SQLite and cross-process leases remain later work.
 
+### v1.0.1 model lookup performance replacement
+
+The accepted and published performance runtime is `ecc458f525f0eeb5e7c2eb28544efc7a04c755e1`, with parent `e7d4ddc668992bb29714bc14d763b68a0236c533` and tree `869b7655979bfb607d93b24a3775e784a7ef1fdf`. It changes four paths: the runtime model lookup, the typed built-in lookup and their existing test files. Runtime lookup now selects the winning dynamic or baseline record before cloning it. The typed helper builds one immutable index from the generated catalogues and clones only the selected result. Existing generated records, dependencies, workflows and model-list ordering are unchanged.
+
+The runtime preserves the previous lookup contract: the last matching dynamic model overrides the first matching baseline model; the first baseline duplicate wins without a dynamic override; missing providers and models return no value; callers receive an isolated clone; concurrent provider replacement and refresh retain valid lookup results. Typed lookup keeps chat, image and classifier identities separate and preserves the first generated record for duplicate keys.
+
+Native Valgrind 3.27.1 `xtree-memory` evidence used identical locked baseline and candidate probes under Rust 1.96.0. Each warm estimate is the allocation-total difference between separate 100- and 10-iteration processes divided by 90; the raw records retain process setup, timing and RSS separately. For a 512-model public-registry hit, allocation fell from about 2.76 MB and 19,457 blocks per lookup to about 4.54 KB and 38 blocks. A 512-model dynamic hit fell from about 5.08 MB and 38,913 blocks to about 4.54 KB and 38 blocks. Runtime misses now allocate zero blocks. A warm typed chat hit fell from about 4.00 MB and 30,511 blocks to 2,946 bytes and 20 blocks; a warm typed miss allocates zero blocks. The typed index has a larger one-time cold cost: 7,276,278 bytes and 36,813 blocks, compared with 4,047,469 bytes and 30,608 blocks for the former single lookup. That cold cost is paid once per process and is reported separately from warm lookup measurements.
+
+Focused tests passed **14/0** for runtime refresh/lookup and **4/0** for the typed catalogue. Full local and genuine-clone validation passed no-default **1015/0** plus one doctest and all-feature **1172/0**, with zero ignored tests. Both strict Clippy profiles, explicit Bedrock **1172/0** plus one doctest, format, build, SBOM, licence, vulnerability, exact manifests, full-record metadata, deterministic catalogue regeneration, hydration and all fail-closed mutation sentinels passed. Rust/Clippy 1.99 strict validation also passed for the exact checkpoint.
+
+Normal push CI run `37194595514`, attempt 1, job `111413720525`, passed all 18 steps with **1172 passed, 0 failed, 0 ignored**. SHA-specific artifact `rs-ai-sbom-ecc458f525f0eeb5e7c2eb28544efc7a04c755e1` (`11300830468`) has archive SHA-256 `d5ff43ec881ef9542889eb625cb45b3550247a7dd0300179142b74d39d70e984`. Its CycloneDX 1.5 SBOM has root `rs-ai@1.0.1`, embedded revision `ecc458f525f0eeb5e7c2eb28544efc7a04c755e1`, 270 components, 271 dependency records and 23 direct root edges. The SBOM SHA-256 is `f518a5b76eeb189ab69461a2e6d170e8b5855825d339a1a01f02bcde6858880f`; the checksum-file SHA-256 is `f6c20755c9061ebc0411d779f25c853e32264760163bbaa692a7aebe9f81f35b`.
+
+Native same-version publication:
+
+- annotated tag `v1.0.1`, Rui-authored object `a988bdbeed57a1984ca003ce8a0bd6c993ae8bf0`, peeled runtime `ecc458f525f0eeb5e7c2eb28544efc7a04c755e1`;
+- publisher run `37195282559`, attempt 1, job `111415758854`; all 13 steps passed;
+- release `402735140`, retained across the same-version replacements;
+- canonical assets `sbom.cdx.json` (`609618039`) and `sbom.cdx.json.sha256` (`609618038`).
+
+Upstream-alias same-version publication:
+
+- lightweight tag `upstream-v1.0.1`, direct runtime target `ecc458f525f0eeb5e7c2eb28544efc7a04c755e1`;
+- publisher run `37195940824`, attempt 1, job `111417698682`; all 13 steps passed;
+- release `402735666`, retained across the same-version replacements;
+- canonical assets `sbom.cdx.json` (`609636186`) and `sbom.cdx.json.sha256` (`609636189`).
+
+Both public releases contain exactly the canonical SBOM and checksum assets. Their sidecars validate, and their files are byte-identical to each other and to hosted artifact `11300830468`. The final inventory remains 27 tag refs and 16 releases: the accepted native tag is annotated, the alias is lightweight, both target `ecc458f525f0eeb5e7c2eb28544efc7a04c755e1`, and the other 25 refs and 14 releases/assets remain unchanged.
+
+The prior durable publication remains a distinct rollback and history layer: native object `6d5717e64970feef066b5d2f34b1a2b6e966975a` and lightweight alias targeted `12ce97be283aebf3ded6764b7c796785b8b7781a`; retained releases `402735140` and `402735666` previously carried assets `609149226`/`609149231` and `609155886`/`609155885`, with public SBOM/checksum hashes `e2447de15d942f1be413f33dde4f728fede32474f2de993d1e473c2039636e0b` / `1af5805bae5b1f343124a3234af80964632feec6b26025d80b6d6b872dbf8b09`. The still earlier initial `73de29d...` publication layer above is also preserved rather than rewritten.
+
+Transaction checks stopped before mutation or dispatch whenever raw state exceeded the authorised contract. Anonymous evidence downloads changed only GitHub asset `download_count` values and were recorded separately. The alias ref update changed only release `402735666`'s target-derived `created_at` and ref-update-derived `updated_at`; those exact changes were independently accepted before its single publisher dispatch. No retry, fallback, release recreation or automatic rollback occurred.
+
+This lookup optimisation does not expand durable scope or complete `pi-durable` parity. Generic documents/tasks, forks, inbox modes, watches/events, extensions/hooks, durable partial output, deferred polling, compaction, subagents, remote storage, SQLite and cross-process leases remain later work. Runtime tags target `ecc458f525f0eeb5e7c2eb28544efc7a04c755e1`; a later documentation commit must never become a release target.
+
 ## Historical accepted release: v1.0.0
 
 - Upstream package: `@earendil-works/pi-ai`
