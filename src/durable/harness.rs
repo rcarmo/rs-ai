@@ -757,8 +757,7 @@ async fn settle(inner: &Arc<Inner>, task_id: TaskId, run: ModelRun) -> Result<()
     let mut settled_task = task;
     let mut settled_submission = submission;
     let mut entries = Vec::new();
-    let outcome;
-    match terminal {
+    let outcome = match terminal {
         ModelTerminal::Answer {
             content,
             text,
@@ -782,7 +781,7 @@ async fn settle(inner: &Arc<Inner>, task_id: TaskId, run: ModelRun) -> Result<()
             settled_task.state = TaskState::Succeeded;
             settled_submission.status = "done".into();
             settled_submission.answer_id = Some(answer_id);
-            outcome = json!({"status":"done","usage":usage});
+            json!({"status":"done","usage":usage})
         }
         ModelTerminal::ToolCalls {
             calls,
@@ -796,27 +795,27 @@ async fn settle(inner: &Arc<Inner>, task_id: TaskId, run: ModelRun) -> Result<()
             settled_task.state = TaskState::Failed;
             settled_submission.status = "failed".into();
             settled_submission.reason = Some(json!({"code":code}));
-            outcome = json!({"status":"failed","code":code,"usage":usage});
+            json!({"status":"failed","code":code,"usage":usage})
         }
         ModelTerminal::UnsupportedToolCall => {
             settled_task.state = TaskState::Failed;
             settled_submission.status = "failed".into();
             settled_submission.reason = Some(json!({"code":"durable_tool_unsupported_r1b"}));
-            outcome = json!({"status":"failed","code":"durable_tool_unsupported_r1b"});
+            json!({"status":"failed","code":"durable_tool_unsupported_r1b"})
         }
         ModelTerminal::UnsupportedDeferred => {
             settled_task.state = TaskState::Failed;
             settled_submission.status = "failed".into();
             settled_submission.reason = Some(json!({"code":"durable_deferred_unsupported"}));
-            outcome = json!({"status":"failed","code":"durable_deferred_unsupported"});
+            json!({"status":"failed","code":"durable_deferred_unsupported"})
         }
         ModelTerminal::Malformed { code } => {
             settled_task.state = TaskState::Failed;
             settled_submission.status = "failed".into();
             settled_submission.reason = Some(json!({"code":code}));
-            outcome = json!({"status":"failed","code":code});
+            json!({"status":"failed","code":code})
         }
-    }
+    };
     settled_task.checkpoint = json!({"phase":"terminal"});
     settled_task.outcome = Some(outcome);
     settled_task.updated_seq = seq;
