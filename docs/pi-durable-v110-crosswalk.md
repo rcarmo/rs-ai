@@ -146,7 +146,7 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 | `packages/durable/test/provider-session-cache-e2e.test.ts` | PENDING | Not yet accepted |
 | `packages/durable/test/session-checkpoints-migrations.test.ts` | PENDING | Not yet accepted |
 | `packages/durable/test/session-definitions.test.ts` | PENDING | Not yet accepted |
-| `packages/durable/test/session-documents.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/session-documents.test.ts` | ADAPTED; GAPS | Ten tests in `src/tests/durable/document_definition_test.rs` cover singleton/family lazy initialisation, duplicate/first seeds, detached reads, no-op suppression, policy/version/type rejection, read migrations/errors, rollback, fork/history and journal reopening/retirement. Eight whole-value tests in `documents_test.rs` cover storage/fork/limits. Tracked drafts/deltas, persisted migration, structural sharing, scopes and async contracts remain unaccepted. |
 | `packages/durable/test/session-forks.test.ts` | PENDING | Not yet accepted |
 | `packages/durable/test/session-states.test.ts` | PENDING | Not yet accepted |
 | `packages/durable/test/session-support.ts` | INVENTORIED SUPPORT | Not yet accepted |
@@ -171,7 +171,7 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 
 | Official path | Disposition | Native evidence |
 |---|---|---|
-| `packages/durable/src/documents.ts` | ADAPTED whole-value conversation document subset | `src/durable/documents.rs` plus eight tests in `src/tests/durable/documents_test.rs` cover incarnation IDs/keys, current/historical reads and directional filtered scans, atomic updates/retirement/recreation, definition identity rejection and native fork policies. Definitions/migrations/tracked deltas, other scopes and observers remain gaps. |
+| `packages/durable/src/documents.ts` | ADAPTED whole-value conversation document subset | `src/durable/documents.rs` plus eight tests in `src/tests/durable/documents_test.rs` cover incarnation IDs/keys, current/historical reads and directional filtered scans, atomic updates/retirement/recreation, definition identity rejection and native fork policies. `src/durable/document_definition.rs` adds typed conversation singleton/family initialisers and detached read migrations with ten regressions; generic pull watches are adapted. Persisted migrations/tracked deltas, other scopes and full listener/view observers remain gaps. |
 | `packages/durable/src/entries.ts` | ADAPTED generic passive draft subset | `src/durable/entries.rs` accepts custom kinds, optional data/model, resolved self heads and edits; `src/tests/durable/entries_test.rs` covers wire omission/null, model-less entries, contributions and recovery. `EntryDefinition<D>` adapts unregistered kind tokens, required typed draft data, kind-only matching and Serde decoding. A regression covers equal-kind tokens, cloning without data Clone, malformed/missing/null data and no persistent definitions. Flat upstream record encoding is absent. |
 | `packages/durable/src/env/decode.ts` | PENDING | No full-contract acceptance yet |
 | `packages/durable/src/env/index.ts` | PENDING | No full-contract acceptance yet |

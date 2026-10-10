@@ -466,6 +466,24 @@ impl DurableSession {
         result.await.unwrap_or(Err(DurableError::Closed))
     }
 
+    /// Detached typed read. Missing documents never initialise; older values
+    /// may migrate in memory through the token without rewriting stored state.
+    pub async fn typed_document<D, I>(
+        &self,
+        definition: &super::document_definition::DocumentDefinition<D, I>,
+        conversation: ConversationId,
+        key: Option<&str>,
+        point: super::documents::DocumentPoint,
+    ) -> Result<Option<D>, DurableError>
+    where
+        D: serde::Serialize + serde::de::DeserializeOwned,
+    {
+        let record = self
+            .document(definition.address(conversation, key)?, point)
+            .await?;
+        definition.decode(record.as_ref())
+    }
+
     pub async fn snapshot(&self) -> Result<StorageSnapshot, DurableError> {
         if self.sealed.load(Ordering::Acquire) {
             return Err(DurableError::Closed);

@@ -129,13 +129,23 @@ Session/snapshot `document(address, Current|At(seq))` returns detached content. 
 
 Fork `AsOf` requires rewindable history and selects documents alive in the cutoff entry's owning conversation at its commit sequence, including final values written after that entry in the same commit. `Current` selects live documents from the immediate parent at fork admission; `Initial` copies nothing. Copies allocate independent child incarnations and values; duplicate selected addresses reject atomically. Selection works without host definitions and survives journal reopen.
 
-Tracked drafts/deltas, definition initialisers/migrations, session/task scopes, task-terminal retirement, document watches and runtime-document fork hooks are unimplemented. This native API stores whole revisions rather than upstream delta checkpoints. Copying generic documents does not initialise the child's provider session or execution runtime.
+Tracked drafts/deltas, persisted version migrations, session/task scopes, task-terminal retirement and runtime-document fork hooks are unimplemented. Generic-document pull watches and typed definitions are described below. This native API stores whole revisions rather than upstream delta checkpoints. Copying generic documents does not initialise the child's provider session or execution runtime.
 
 ## Native context views
 
 `DurableSession::context_view(conversation, at)` and `DurableHarness::context_view(ContextOptions { at })` return detached `ContextView` values on the session line. `head` contains the newest marker entry and resolved retained lower bound; `entries` lists that marker first, then retained non-head entries. `contributions` aligns one-for-one with those entries after edits and excluded assistant stop reasons, before tool-result repair or system-prefix promotion. Entries without model messages remain visible with an empty contribution; synthesized missing results appear only in the final `messages`.
 
 Historical views are inclusive, reject foreign/missing cutoffs, and neither commit nor dispatch. Reads wait for admitted commits and reject on poison/close. The view does not reuse the messages-only cache or expose upstream generic EntryRecord/fork ancestry; callers pay for detached entries and contributions only when requesting a full view.
+
+## Typed document definitions
+
+`DocumentDefinition<D, I = ()>` defines an unregistered conversation singleton or keyed family with an initializer and optional read migration. Tokens hold immutable kind/version/history/fork policies and process-local callbacks; cloning them does not require `D` or `I: Clone`. Singleton access rejects a key; families require one (including the empty string). Definition creation validates native policies without calling the initializer.
+
+`EntryTransaction::edit_document` lazily initialises a missing incarnation, decodes an existing value, invokes a synchronous edit callback and stages a validated whole-value replacement. Existing members ignore the seed, including repeated access within a transaction. Unchanged values stage nothing. The typed value is owned and detached; no revocable proxy or borrowed draft escapes. Caught initializer/edit/encoding errors and panics fail the complete transaction, including previously staged entries. Keep callbacks short and nonblocking.
+
+`DurableSession::typed_document` and token `decode` return detached typed values without creating missing documents. Tokens reject different kind/family/history/fork policies, newer stored versions and older versions without a migration. Read migrations receive owned old JSON and its persisted version, validate their typed result and leave the journal and watch streams unchanged. Each read migrates independently; there is no typed revision cache.
+
+Persisted document versions remain immutable. Typed edits using a newer token reject with `document migration persistence unsupported` before running the edit callback. Rewindable revisions currently store values without per-revision versions; changing that journal contract requires separate replay/history work. Ten tests cover lazy initialisation, duplicate/family seeds, detached reads, no-op suppression, policy/version/type rejection, migrations/failures, rollback, history/fork independence, retirement/recreation and reopening with fresh tokens. Serde-owned callbacks adapt upstream `documents.ts` and part of `session-documents.test.ts`; tracked structural operations, same-batch retire/recreate, checkpoint hooks and full async/scoped document contracts are open.
 
 ## v1.1.0 native context retention
 

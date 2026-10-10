@@ -5,6 +5,7 @@
 //! abort and non-aborting close drain.
 
 pub mod context;
+pub mod document_definition;
 pub mod document_watch;
 pub mod documents;
 pub mod entries;
@@ -21,6 +22,7 @@ pub mod transaction;
 pub mod types;
 
 pub use context::{ContextEdit, ContextHead, ContextMarker, ContextUpdate, ContextView, SelfHead};
+pub use document_definition::DocumentDefinition;
 pub use document_watch::{DocumentEvent, DocumentWatch, DocumentWatchEnd};
 pub use documents::{
     DocumentAddress, DocumentDraft, DocumentFork, DocumentHistory, DocumentPoint, DocumentQuery,

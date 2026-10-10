@@ -308,17 +308,91 @@ impl<'a> EntryTransaction<'a> {
         address: &DocumentAddress,
         point: DocumentPoint,
     ) -> Result<Option<GenericDocumentRecord>, DurableError> {
-        if matches!(point, DocumentPoint::Current)
-            && let Some(record) = self
-                .batch
-                .generic_documents
-                .iter()
-                .find(|record| record.address == *address)
-        {
-            return Ok(record.retired_seq.is_none().then(|| record.clone()));
+        if matches!(point, DocumentPoint::Current) {
+            return Ok(self.current_document(address).cloned());
         }
         self.state.document(address, point)
     }
+    fn current_document(&self, address: &DocumentAddress) -> Option<&GenericDocumentRecord> {
+        if let Some(record) = self
+            .batch
+            .generic_documents
+            .iter()
+            .find(|record| record.address == *address)
+        {
+            return record.retired_seq.is_none().then_some(record);
+        }
+        self.state
+            .generic_documents
+            .values()
+            .find(|record| record.address == *address && record.retired_seq.is_none())
+    }
+    /// Acquire or lazily initialise a typed native document, edit an owned value
+    /// synchronously and stage its whole-value replacement. No borrowed draft
+    /// escapes; caught callback/validation failures still roll back this Tx.
+    /// Seeds are ignored for existing members. Cross-version writes reject.
+    pub fn edit_document<D, I, T>(
+        &mut self,
+        definition: &super::document_definition::DocumentDefinition<D, I>,
+        conversation: ConversationId,
+        key: Option<&str>,
+        seed: &I,
+        edit: impl FnOnce(&mut D) -> Result<T, DurableError>,
+    ) -> Result<T, DurableError>
+    where
+        D: serde::Serialize + serde::de::DeserializeOwned,
+    {
+        if let Some(error) = &self.failure {
+            return Err(error.clone());
+        }
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let address = definition.address(conversation, key)?;
+            let current = self.current_document(&address);
+            if let Some(record) = current {
+                definition.check(record)?;
+                if record.version != definition.version() {
+                    return Err(DurableError::Rejected(
+                        "document migration persistence unsupported".into(),
+                    ));
+                }
+            }
+            let mut value = match current {
+                Some(record) => definition.decode(Some(record))?.unwrap(),
+                None => {
+                    let value = definition.initial(seed)?;
+                    definition.encode(&value)?;
+                    value
+                }
+            };
+            let output = edit(&mut value)?;
+            let encoded = definition.encode(&value)?;
+            // Native whole-value edits suppress unchanged writes. Version/delta
+            // structural no-op semantics require a separate tracked-draft API.
+            if current
+                .as_ref()
+                .is_none_or(|record| record.value != encoded)
+            {
+                self.put_document(DocumentDraft {
+                    address,
+                    version: definition.version(),
+                    history: definition.history(),
+                    fork: definition.fork(),
+                    value: encoded,
+                })?;
+            }
+            Ok(output)
+        }))
+        .unwrap_or_else(|_| {
+            Err(DurableError::Rejected(
+                "document edit callback panicked".into(),
+            ))
+        });
+        if let Err(error) = &result {
+            self.failure = Some(error.clone());
+        }
+        result
+    }
+
     pub fn put_document(
         &mut self,
         draft: DocumentDraft,
