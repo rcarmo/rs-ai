@@ -87,6 +87,85 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn harness_pages_show_terminal_tasks_and_submissions_with_detached_results() {
+        let harness = DurableHarness::open(
+            Box::new(MemoryStorage::new()),
+            Arc::new(ImmediateRunner {
+                calls: Arc::new(Mutex::new(0)),
+            }),
+            model(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        let handle = harness
+            .submit(SubmitRequest {
+                request_id: "pages".into(),
+                content: "hello".into(),
+            })
+            .await
+            .unwrap();
+        harness.wait(handle).await.unwrap();
+        let mut entries = harness
+            .entries(EntryQuery {
+                kind: Some("assistant".into()),
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        assert_eq!(entries.items.len(), 1);
+        entries.items[0].value["text"] = json!("changed");
+        assert_eq!(
+            harness
+                .entries(EntryQuery {
+                    kind: Some("assistant".into()),
+                    ..Default::default()
+                })
+                .await
+                .unwrap()
+                .items[0]
+                .value["text"],
+            "answer"
+        );
+        assert_eq!(
+            harness
+                .tasks(TaskQuery {
+                    state: Some(TaskState::Succeeded),
+                    ..Default::default()
+                })
+                .await
+                .unwrap()
+                .items
+                .len(),
+            1
+        );
+        assert_eq!(
+            harness
+                .submissions(SubmissionQuery {
+                    status: Some("done".into()),
+                    ..Default::default()
+                })
+                .await
+                .unwrap()
+                .items
+                .len(),
+            1
+        );
+        assert!(
+            harness
+                .submissions(SubmissionQuery {
+                    status: Some("pending".into()),
+                    ..Default::default()
+                })
+                .await
+                .unwrap()
+                .items
+                .is_empty()
+        );
+        harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn request_id_reacquires_same_winner_and_conflict_is_rejected() {
         let calls = Arc::new(Mutex::new(0));
         let harness = DurableHarness::open(

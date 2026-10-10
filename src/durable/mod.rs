@@ -23,7 +23,9 @@ pub use models::{DurableModels, RegistryModels};
 pub use session::{DurableSession, LifecycleClock};
 pub use storage::journal::JournalStorage;
 pub use storage::memory::MemoryStorage;
-pub use storage::scan::{ScanCursor, ScanOptions, ScanOrder, ScanPage};
+pub use storage::scan::{
+    EntryQuery, ScanCursor, ScanOptions, ScanOrder, ScanPage, SubmissionQuery, TaskQuery,
+};
 pub use storage::{DurableStorage, StorageSnapshot};
 pub use submission::{SubmissionHandle, SubmissionView, SubmitRequest};
 pub use tool::{

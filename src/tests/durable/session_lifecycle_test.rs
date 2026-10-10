@@ -252,7 +252,45 @@ mod tests {
             session.commit(batch(1)).await,
             Err(DurableError::Poisoned)
         ));
+        let conversation = ConversationId::new(1).unwrap();
+        assert!(matches!(
+            session.entries(conversation, EntryQuery::default()).await,
+            Err(DurableError::Poisoned)
+        ));
+        assert!(matches!(
+            session.tasks(conversation, TaskQuery::default()).await,
+            Err(DurableError::Poisoned)
+        ));
+        assert!(matches!(
+            session
+                .submissions(conversation, SubmissionQuery::default())
+                .await,
+            Err(DurableError::Poisoned)
+        ));
         assert!(session.close().await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn paged_read_waits_for_admitted_commit_and_observes_settled_state() {
+        let (storage, admitted, release, _) = BarrierStorage::new(false);
+        let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());
+        let writer = session.clone();
+        let commit = tokio::spawn(async move { writer.commit(batch(1)).await });
+        admitted.notified().await;
+        let reader = session.clone();
+        let read = tokio::spawn(async move {
+            reader
+                .entries(ConversationId::new(1).unwrap(), EntryQuery::default())
+                .await
+        });
+        tokio::task::yield_now().await;
+        assert!(!read.is_finished());
+        release.notify_waiters();
+        commit.await.unwrap().unwrap();
+        let page = read.await.unwrap().unwrap();
+        assert_eq!(page.items.len(), 1);
+        assert_eq!(page.items[0].value["seq"], 1);
+        session.close().await.unwrap();
     }
 
     #[tokio::test]

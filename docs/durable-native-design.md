@@ -69,7 +69,9 @@ The host owns credentials, cancellation/options and nested-call accounting. Nest
 
 `StorageSnapshot::scan_entries`, `scan_tasks` and `scan_submissions` return owned pages filtered by conversation. Entries default to descending ID order; tasks and submissions default to ascending. `ScanCursor` stores the exclusive last ID and direction. Continuations can omit order, but a conflicting order fails. Legacy cursors without direction use the record type's default. Limits must be positive; page values are detached from snapshot JSON.
 
-These methods operate on an already-loaded snapshot. They do not add backend query/streaming APIs, conversation records, kind/range filters, fork traversal or SQLite storage. Rust cursor IDs use the existing positive-i64 contract, including zero as an exclusive boundary; upstream uses JavaScript safe integers. Conformance regressions cover both directions, defaults, pagination, isolation, detached values, cursor errors and rejected-commit snapshot atomicity.
+`EntryQuery` adds inclusive ID bounds and kind filtering; `TaskQuery` adds kind/state/abort filtering; `SubmissionQuery` adds status filtering. `DurableSession::entries/tasks/submissions` evaluate these on the mutation queue and clone only returned page records; the harness exposes root-conversation counterparts. Entry pagination seeks into the BTreeMap range before filtering. Reads wait for admitted commits, reject after close and fail when storage settlement has poisoned the session.
+
+Fork traversal, conversation records, background-task filters, backend streaming and SQLite storage are absent. Rust cursor IDs use the existing positive-i64 contract, including zero as an exclusive boundary; upstream uses JavaScript safe integers. Regressions cover ordering, ranges, filters, pagination, isolation, detached values, read/commit ordering, poison/close and rejected-commit snapshot atomicity.
 
 ## v1.1.0 historical text context
 

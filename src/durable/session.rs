@@ -1,3 +1,4 @@
+use crate::durable::storage::scan::{EntryQuery, ScanPage, SubmissionQuery, TaskQuery};
 use crate::durable::storage::{DurableStorage, StorageSnapshot, WriterClaim};
 use crate::durable::types::*;
 use std::sync::Arc;
@@ -16,6 +17,21 @@ enum SessionCommand {
         oneshot::Sender<Result<StorageSnapshot, DurableError>>,
     ),
     Snapshot(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
+    Entries(
+        ConversationId,
+        EntryQuery,
+        oneshot::Sender<Result<ScanPage<EntryRecord>, DurableError>>,
+    ),
+    Tasks(
+        ConversationId,
+        TaskQuery,
+        oneshot::Sender<Result<ScanPage<TaskRecord>, DurableError>>,
+    ),
+    Submissions(
+        ConversationId,
+        SubmissionQuery,
+        oneshot::Sender<Result<ScanPage<SubmissionRecord>, DurableError>>,
+    ),
 }
 
 /// Wall-clock source used for durable task lifecycle timestamps.
@@ -117,6 +133,54 @@ impl DurableSession {
         let (reply, result) = oneshot::channel();
         self.tx
             .send(SessionCommand::Snapshot(reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
+    pub async fn entries(
+        &self,
+        conversation: ConversationId,
+        query: EntryQuery,
+    ) -> Result<ScanPage<EntryRecord>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Entries(conversation, query, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
+    pub async fn tasks(
+        &self,
+        conversation: ConversationId,
+        query: TaskQuery,
+    ) -> Result<ScanPage<TaskRecord>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Tasks(conversation, query, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
+    pub async fn submissions(
+        &self,
+        conversation: ConversationId,
+        query: SubmissionQuery,
+    ) -> Result<ScanPage<SubmissionRecord>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Submissions(conversation, query, reply))
             .await
             .map_err(|_| DurableError::Closed)?;
         result.await.unwrap_or(Err(DurableError::Closed))
@@ -231,6 +295,15 @@ async fn session_worker(
                     SessionCommand::Snapshot(reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { Ok(state.clone()) });
                     }
+                    SessionCommand::Entries(conversation, query, reply) => {
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_entries(conversation, &query) });
+                    }
+                    SessionCommand::Tasks(conversation, query, reply) => {
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_tasks(conversation, &query) });
+                    }
+                    SessionCommand::Submissions(conversation, query, reply) => {
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_submissions(conversation, &query) });
+                    }
                 }
             }
         }
@@ -243,6 +316,15 @@ fn reject(command: SessionCommand) {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Snapshot(reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Entries(_, _, reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Tasks(_, _, reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Submissions(_, _, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }
     }

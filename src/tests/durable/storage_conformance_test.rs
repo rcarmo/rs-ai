@@ -348,6 +348,213 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn session_queries_filter_range_kind_state_and_status_without_snapshot_mutation() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        session.commit(batch(1)).await.unwrap();
+        let seq = CommitSeq::new(2).unwrap();
+        session
+            .commit(CommitBatch {
+                seq,
+                next_id: 8,
+                next_seq: 3,
+                entries: vec![
+                    EntryRecord {
+                        id: EntryId::new(5).unwrap(),
+                        conversation_id: ConversationId::new(1).unwrap(),
+                        kind: "assistant".into(),
+                        value: json!({"text":"answer"}),
+                        by_task_id: None,
+                        created_seq: seq,
+                    },
+                    EntryRecord {
+                        id: EntryId::new(6).unwrap(),
+                        conversation_id: ConversationId::new(1).unwrap(),
+                        kind: "user".into(),
+                        value: json!({"text":"second"}),
+                        by_task_id: None,
+                        created_seq: seq,
+                    },
+                    EntryRecord {
+                        id: EntryId::new(7).unwrap(),
+                        conversation_id: ConversationId::new(2).unwrap(),
+                        kind: "user".into(),
+                        value: json!({"text":"foreign"}),
+                        by_task_id: None,
+                        created_seq: seq,
+                    },
+                ],
+                tasks: vec![],
+                submissions: vec![],
+                documents: vec![],
+            })
+            .await
+            .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        let before = session.snapshot().await.unwrap();
+        let mut page = session
+            .entries(
+                conversation,
+                EntryQuery {
+                    min_entry_id: Some(EntryId::new(2).unwrap()),
+                    max_entry_id: Some(EntryId::new(6).unwrap()),
+                    kind: Some("user".into()),
+                    scan: ScanOptions {
+                        order: Some(ScanOrder::Ascending),
+                        limit: 1,
+                        ..Default::default()
+                    },
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(page.items[0].id.get(), 2);
+        page.items[0].value["text"] = json!("detached");
+        let second = session
+            .entries(
+                conversation,
+                EntryQuery {
+                    kind: Some("user".into()),
+                    scan: ScanOptions {
+                        cursor: page.cursor,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            second
+                .items
+                .iter()
+                .map(|entry| entry.id.get())
+                .collect::<Vec<_>>(),
+            [6]
+        );
+        let range = session
+            .entries(
+                conversation,
+                EntryQuery {
+                    min_entry_id: Some(EntryId::new(5).unwrap()),
+                    max_entry_id: Some(EntryId::new(5).unwrap()),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(range.items.len(), 1);
+        assert_eq!(range.items[0].kind, "assistant");
+        assert!(
+            session
+                .entries(
+                    conversation,
+                    EntryQuery {
+                        min_entry_id: Some(EntryId::new(6).unwrap()),
+                        max_entry_id: Some(EntryId::new(2).unwrap()),
+                        ..Default::default()
+                    }
+                )
+                .await
+                .is_err()
+        );
+        let empty = session
+            .entries(
+                conversation,
+                EntryQuery {
+                    scan: ScanOptions {
+                        cursor: Some(ScanCursor {
+                            after: 0,
+                            order: Some(ScanOrder::Descending),
+                        }),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert!(empty.items.is_empty());
+        assert_eq!(
+            session
+                .tasks(
+                    conversation,
+                    TaskQuery {
+                        kind: Some("generation".into()),
+                        state: Some(TaskState::Pending),
+                        abort_requested: Some(false),
+                        ..Default::default()
+                    }
+                )
+                .await
+                .unwrap()
+                .items
+                .len(),
+            1
+        );
+        assert!(
+            session
+                .tasks(
+                    conversation,
+                    TaskQuery {
+                        state: Some(TaskState::Succeeded),
+                        ..Default::default()
+                    }
+                )
+                .await
+                .unwrap()
+                .items
+                .is_empty()
+        );
+        assert_eq!(
+            session
+                .submissions(
+                    conversation,
+                    SubmissionQuery {
+                        status: Some("pending".into()),
+                        ..Default::default()
+                    }
+                )
+                .await
+                .unwrap()
+                .items
+                .len(),
+            1
+        );
+        assert!(
+            session
+                .submissions(
+                    conversation,
+                    SubmissionQuery {
+                        status: Some("done".into()),
+                        ..Default::default()
+                    }
+                )
+                .await
+                .unwrap()
+                .items
+                .is_empty()
+        );
+        assert_eq!(session.snapshot().await.unwrap(), before);
+        session.close().await.unwrap();
+        assert!(matches!(
+            session.entries(conversation, EntryQuery::default()).await,
+            Err(DurableError::Closed)
+        ));
+        assert!(matches!(
+            session.tasks(conversation, TaskQuery::default()).await,
+            Err(DurableError::Closed)
+        ));
+        assert!(matches!(
+            session
+                .submissions(conversation, SubmissionQuery::default())
+                .await,
+            Err(DurableError::Closed)
+        ));
+    }
+
     #[test]
     fn rejected_commit_leaves_snapshot_completely_unchanged() {
         let mut snapshot = StorageSnapshot::empty();

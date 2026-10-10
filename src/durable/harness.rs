@@ -290,6 +290,30 @@ impl DurableHarness {
         context_from_snapshot(&snapshot, options)
     }
 
+    pub async fn entries(
+        &self,
+        query: super::storage::scan::EntryQuery,
+    ) -> Result<super::storage::scan::ScanPage<EntryRecord>, DurableError> {
+        self.inner.session.entries(conversation_id()?, query).await
+    }
+
+    pub async fn tasks(
+        &self,
+        query: super::storage::scan::TaskQuery,
+    ) -> Result<super::storage::scan::ScanPage<TaskRecord>, DurableError> {
+        self.inner.session.tasks(conversation_id()?, query).await
+    }
+
+    pub async fn submissions(
+        &self,
+        query: super::storage::scan::SubmissionQuery,
+    ) -> Result<super::storage::scan::ScanPage<SubmissionRecord>, DurableError> {
+        self.inner
+            .session
+            .submissions(conversation_id()?, query)
+            .await
+    }
+
     pub async fn inspect_documents(
         &self,
     ) -> Result<std::collections::BTreeMap<String, Value>, DurableError> {

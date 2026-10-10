@@ -143,7 +143,8 @@ mod tests {
         let server = tokio::spawn(async move {
             let (mut socket, _) = listener.accept().await.unwrap();
             let mut request = [0; 8192];
-            socket.read(&mut request).await.unwrap();
+            let read = socket.read(&mut request).await.unwrap();
+            assert!(read > 0, "HTTP request arrived before response headers");
             socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 1000\r\n\r\n{").await.unwrap();
             sent.send(()).unwrap();
             std::future::pending::<()>().await;
