@@ -184,7 +184,7 @@ mod tests {
         };
         assert_eq!(
             text(crate::durable::context::messages(&snapshot, conversation, None).unwrap()),
-            ["replacement", "kept", "new-marker"]
+            ["new-marker", "replacement", "kept"]
         );
         assert_eq!(
             text(
@@ -195,7 +195,7 @@ mod tests {
                 )
                 .unwrap()
             ),
-            ["kept", "old-marker"]
+            ["old-marker", "kept"]
         );
         snapshot
             .entries
@@ -204,8 +204,128 @@ mod tests {
             .value["edits"] = json!([{"type":"omit","target":1}]);
         assert_eq!(
             text(crate::durable::context::messages(&snapshot, conversation, None).unwrap()),
-            ["kept", "new-marker"]
+            ["new-marker", "kept"]
         );
+    }
+
+    #[test]
+    fn orphan_results_do_not_hide_leading_system_and_edits_still_filter_assistants() {
+        use crate::durable::*;
+        let conversation = ConversationId::new(1).unwrap();
+        let mut system = crate::user_message("baseline");
+        system.role = Role::System;
+        let mut excluded = assistant(&[]);
+        excluded.stop_reason = Some(crate::types::StopReason::Error);
+        let mut snapshot = StorageSnapshot::empty();
+        for (id, value) in [
+            (
+                1,
+                serde_json::json!({"messages":[crate::user_message("input"), tool("orphan", "ignored"), system]}),
+            ),
+            (
+                2,
+                serde_json::json!({"edits":[{"type":"replace","target":1,"messages":[crate::user_message("replacement"), tool("orphan", "ignored"), system, excluded]}]}),
+            ),
+        ] {
+            let id = EntryId::new(id).unwrap();
+            snapshot.entries.insert(
+                id,
+                EntryRecord {
+                    id,
+                    conversation_id: conversation,
+                    kind: "context".into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: CommitSeq::new(1).unwrap(),
+                },
+            );
+        }
+        for at in [None, Some(EntryId::new(1).unwrap())] {
+            let messages = crate::durable::context::messages(&snapshot, conversation, at).unwrap();
+            assert_eq!(messages.len(), 2);
+            assert_eq!(messages[0].role, Role::System);
+            assert_eq!(messages[1].role, Role::User);
+        }
+    }
+
+    #[test]
+    fn edits_before_retained_range_do_not_override_new_head_contribution() {
+        use crate::durable::*;
+        let conversation = ConversationId::new(1).unwrap();
+        let mut snapshot = StorageSnapshot::empty();
+        for (id, value) in [
+            (
+                1,
+                serde_json::json!({"messages":[crate::user_message("old marker")],"head":"self"}),
+            ),
+            (2, serde_json::json!({"edits":[{"type":"omit","target":1}]})),
+            (
+                3,
+                serde_json::json!({"head":"self","messages":[crate::user_message("new marker")]}),
+            ),
+        ] {
+            let id = EntryId::new(id).unwrap();
+            snapshot.entries.insert(
+                id,
+                EntryRecord {
+                    id,
+                    conversation_id: conversation,
+                    kind: "context".into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: CommitSeq::new(1).unwrap(),
+                },
+            );
+        }
+        let messages = crate::durable::context::messages(&snapshot, conversation, None).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert!(
+            matches!(&messages[0].content[0], ContentBlock::Text { text, .. } if text == "new marker")
+        );
+    }
+
+    #[test]
+    fn head_contribution_precedes_retained_assistant_and_honours_omit_edit() {
+        use crate::durable::*;
+        let conversation = ConversationId::new(1).unwrap();
+        let mut snapshot = StorageSnapshot::empty();
+        for (id, value) in [
+            (1, serde_json::json!({"messages":[assistant(&[])]})),
+            (
+                2,
+                serde_json::json!({"head":1,"messages":[crate::user_message("handoff")]}),
+            ),
+            (3, serde_json::json!({"edits":[{"type":"omit","target":2}]})),
+        ] {
+            let id = EntryId::new(id).unwrap();
+            snapshot.entries.insert(
+                id,
+                EntryRecord {
+                    id,
+                    conversation_id: conversation,
+                    kind: "context".into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: CommitSeq::new(1).unwrap(),
+                },
+            );
+        }
+        let messages = crate::durable::context::messages(
+            &snapshot,
+            conversation,
+            Some(EntryId::new(2).unwrap()),
+        )
+        .unwrap();
+        assert_eq!(
+            messages
+                .iter()
+                .map(|message| message.role.clone())
+                .collect::<Vec<_>>(),
+            [Role::User, Role::Assistant]
+        );
+        let messages = crate::durable::context::messages(&snapshot, conversation, None).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].role, Role::Assistant);
     }
 
     #[test]
@@ -219,6 +339,9 @@ mod tests {
         assert!(messages[1].is_error);
         assert_eq!(messages[1].timestamp, 123);
         assert_eq!(messages[1].duration_ms, None);
+        assert!(
+            matches!(&messages[1].content[0], ContentBlock::Text { text, .. } if text == "Tool result unavailable: history ends before this call completed.")
+        );
         assert_eq!(
             messages[1].details.as_ref().unwrap()["reason"],
             "missing_result"

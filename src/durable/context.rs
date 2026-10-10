@@ -177,23 +177,34 @@ fn derive<'a>(
             });
             marker = Some(entry.id);
         }
-        for edit in &update.edits {
-            edits.insert(edit.target(), edit.clone());
-        }
         updates.insert(entry.id, update);
     }
-    let mut result = Vec::new();
-    for entry in entries {
-        if head.is_some_and(|head| entry.id < head) {
-            continue;
-        }
-        if let Some(update) = updates.get(&entry.id) {
-            // Older head markers do not contribute even when the latest marker
-            // points backwards. Their edits still participate in latest-wins.
-            if update.head.is_some() && marker != Some(entry.id) {
-                continue;
+    // Only edits inside the retained range count. A later reset must not
+    // resurrect edits from transcript entries before its chosen head.
+    for entry in &entries {
+        if head.is_none_or(|head| entry.id >= head)
+            && let Some(update) = updates.get(&entry.id)
+        {
+            for edit in &update.edits {
+                edits.insert(edit.target(), edit.clone());
             }
         }
+    }
+    // Upstream selectActive places the newest head marker first, followed by
+    // retained non-head entries. Its position is not its chronological log ID.
+    // Edits from older markers in the retained range still participate above.
+    let active = entries
+        .iter()
+        .copied()
+        .filter(|entry| marker == Some(entry.id))
+        .chain(entries.iter().copied().filter(|entry| {
+            head.is_none_or(|head| entry.id >= head)
+                && updates
+                    .get(&entry.id)
+                    .is_none_or(|update| update.head.is_none())
+        }));
+    let mut result = Vec::new();
+    for entry in active {
         if let Some(edit) = edits.get(&entry.id) {
             if let ContextEdit::Replace { messages, .. } = edit {
                 result.extend(messages.clone());
@@ -328,6 +339,9 @@ fn derive<'a>(
                 Some(StopReason::Aborted | StopReason::Error | StopReason::Deferred)
             )
     });
+    // Repair results before testing the leading-system prefix: orphan results
+    // can otherwise hide a baseline system message behind earlier user inputs.
+    let mut result = order_tool_results(result);
     // Lead with baseline system metadata only while preceding messages are user
     // inputs, matching upstream provider prompt/cache prefix ordering.
     if let Some(index) = result.iter().position(|message| message.role != Role::User)
@@ -337,7 +351,7 @@ fn derive<'a>(
         let system = result.remove(index);
         result.insert(0, system);
     }
-    Ok(order_tool_results(result))
+    Ok(result)
 }
 
 pub(crate) fn text_messages(messages: Vec<Message>) -> Vec<DurableMessage> {
@@ -414,7 +428,9 @@ pub(crate) fn order_tool_results(messages: Vec<Message>) -> Vec<Message> {
                 message.role == Role::ToolResult && message.tool_call_id.as_deref() == Some(id)
             });
             result.push(found.cloned().unwrap_or_else(|| {
-                let mut missing = crate::user_message("Missing tool result");
+                let mut missing = crate::user_message(
+                    "Tool result unavailable: history ends before this call completed.",
+                );
                 missing.role = Role::ToolResult;
                 missing.timestamp = message.timestamp;
                 missing.tool_call_id = Some(id.clone());
