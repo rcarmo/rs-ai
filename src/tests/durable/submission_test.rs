@@ -319,6 +319,18 @@ mod tests {
             .message_context(ContextOptions::default())
             .await
             .unwrap();
+        let view = harness
+            .context_view(ContextOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(view.head.as_ref().unwrap().head, reset);
+        assert_eq!(view.head.as_ref().unwrap().entry.id, reset);
+        assert_eq!(view.entries.len(), 1);
+        assert_eq!(view.contributions.len(), 1);
+        assert_eq!(
+            serde_json::to_value(&view.messages).unwrap(),
+            serde_json::to_value(&current).unwrap()
+        );
         assert_eq!(current.len(), 1);
         assert!(
             matches!(current[0].content.first(), Some(crate::types::ContentBlock::Text { text, .. }) if text == "handoff")

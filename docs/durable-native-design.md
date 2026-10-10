@@ -83,9 +83,15 @@ New submissions persist native context in their intent so prior tool rounds surv
 
 ## Native context heads and edits
 
-`update_context(ContextUpdate)` writes a native `context` entry while idle. Its optional head points to a visible prior entry or `ContextHead::SelfEntry(SelfHead::SelfEntry)`; omit/replace edits target earlier entries in the same conversation. Validation rejects future/foreign/non-entry targets, invalid edit shapes and oversized message/edit lists before mutation. A replacement contributes its message sequence at the target's position; latest visible edits win, including those recorded in older head markers. Only the newest visible head marker contributes messages; historical cuts apply only updates at/before their cutoff. A leading system contribution moves ahead of preceding user-only messages.
+`update_context(ContextUpdate)` writes a native `context` entry while idle. Its optional head points to a visible prior entry or `ContextHead::SelfEntry(SelfHead::SelfEntry)`; omit/replace edits target earlier entries in the same conversation. Validation rejects future/foreign/non-entry targets, invalid edit shapes and oversized message/edit lists before mutation. A replacement contributes its message sequence at the target's position; latest visible edits win, including those recorded in older head markers. Only the newest visible head marker contributes messages, before the retained non-head entries; historical cuts apply only updates at/before their cutoff. Edits before the retained lower bound do not participate. After tool-result repair, a leading system contribution moves ahead of preceding user-only messages.
 
 Both native provider context and the text-runner compatibility view apply these rules. Reads never dispatch. Reopen preserves updates, and cache invalidation follows successful commits. Updates during pending work reject; upstream boundary scheduling, forks and generic entry drafts are absent. The native journal kind/schema is an adaptation, not upstream's generic EntryDraft wire format.
+
+## Native context views
+
+`DurableSession::context_view(conversation, at)` and `DurableHarness::context_view(ContextOptions { at })` return detached `ContextView` values on the session line. `head` contains the newest marker entry and resolved retained lower bound; `entries` lists that marker first, then retained non-head entries. `contributions` aligns one-for-one with those entries after edits and excluded assistant stop reasons, before tool-result repair or system-prefix promotion. Entries without model messages remain visible with an empty contribution; synthesized missing results appear only in the final `messages`.
+
+Historical views are inclusive, reject foreign/missing cutoffs, and neither commit nor dispatch. Reads wait for admitted commits and reject on poison/close. The view does not reuse the messages-only cache or expose upstream generic EntryRecord/fork ancestry; callers pay for detached entries and contributions only when requesting a full view.
 
 ## v1.1.0 native context retention
 

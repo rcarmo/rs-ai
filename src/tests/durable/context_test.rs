@@ -109,6 +109,117 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn context_view_aligns_detached_entries_and_unrepaired_contributions() {
+        use crate::durable::*;
+        use serde_json::json;
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        let empty = session.context_view(conversation, None).await.unwrap();
+        assert!(empty.head.is_none());
+        assert!(empty.entries.is_empty());
+        assert!(empty.contributions.is_empty());
+        assert!(empty.messages.is_empty());
+        for (id, kind, value) in [
+            (1, "user", json!({"text":"input"})),
+            (2, "assistant", json!({"message":assistant(&["a"])})),
+            (3, "model_error", json!({"message":"diagnostic"})),
+            (
+                4,
+                "context",
+                json!({"head":1,"messages":[crate::user_message("handoff")],"edits":[{"type":"omit","target":1}]}),
+            ),
+        ] {
+            let seq = CommitSeq::new(id).unwrap();
+            session
+                .commit(CommitBatch {
+                    seq,
+                    next_id: id + 1,
+                    next_seq: id + 1,
+                    entries: vec![EntryRecord {
+                        id: EntryId::new(id).unwrap(),
+                        conversation_id: conversation,
+                        kind: kind.into(),
+                        value,
+                        by_task_id: None,
+                        created_seq: seq,
+                    }],
+                    tasks: vec![],
+                    submissions: vec![],
+                    documents: vec![],
+                })
+                .await
+                .unwrap();
+        }
+        let before = session.snapshot().await.unwrap();
+        let mut view = session.context_view(conversation, None).await.unwrap();
+        assert_eq!(
+            view.entries
+                .iter()
+                .map(|entry| entry.id.get())
+                .collect::<Vec<_>>(),
+            [4, 1, 2, 3]
+        );
+        assert_eq!(
+            view.contributions.iter().map(Vec::len).collect::<Vec<_>>(),
+            [1, 0, 1, 0]
+        );
+        assert_eq!(view.head.as_ref().unwrap().head.get(), 1);
+        assert_eq!(view.head.as_ref().unwrap().entry.id.get(), 4);
+        assert_eq!(view.messages.len(), 3);
+        assert!(view.messages[2].is_error);
+        assert_eq!(view.contributions[2].len(), 1); // synthesized result is not a log contribution
+        assert_eq!(
+            serde_json::to_value(&view.messages).unwrap(),
+            serde_json::to_value(session.message_context(conversation, None).await.unwrap())
+                .unwrap()
+        );
+        let historical = session
+            .context_view(conversation, Some(EntryId::new(2).unwrap()))
+            .await
+            .unwrap();
+        assert!(historical.head.is_none());
+        assert_eq!(historical.entries.len(), 2);
+        assert_eq!(
+            historical
+                .contributions
+                .iter()
+                .map(Vec::len)
+                .collect::<Vec<_>>(),
+            [1, 1]
+        );
+        assert!(
+            session
+                .context_view(
+                    ConversationId::new(2).unwrap(),
+                    Some(EntryId::new(2).unwrap())
+                )
+                .await
+                .is_err()
+        );
+        view.entries[0].value = json!(null);
+        view.head.as_mut().unwrap().entry.value = json!(null);
+        view.contributions.clear();
+        view.messages.clear();
+        assert_eq!(session.snapshot().await.unwrap(), before);
+        assert_eq!(
+            session
+                .context_view(conversation, None)
+                .await
+                .unwrap()
+                .messages
+                .len(),
+            3
+        );
+        session.close().await.unwrap();
+        assert!(matches!(
+            session.context_view(conversation, None).await,
+            Err(DurableError::Closed)
+        ));
+    }
+
     #[test]
     fn malformed_native_context_fails_without_mutating_records() {
         use crate::durable::*;

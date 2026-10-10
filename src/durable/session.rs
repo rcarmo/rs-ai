@@ -40,6 +40,11 @@ enum SessionCommand {
         Option<EntryId>,
         oneshot::Sender<Result<Vec<crate::types::Message>, DurableError>>,
     ),
+    ContextView(
+        ConversationId,
+        Option<EntryId>,
+        oneshot::Sender<Result<super::context::ContextView, DurableError>>,
+    ),
     Watch(oneshot::Sender<Result<DurableWatch, DurableError>>),
     #[cfg(test)]
     CacheStats(oneshot::Sender<(usize, usize)>),
@@ -291,6 +296,24 @@ impl DurableSession {
         result.await.unwrap_or(Err(DurableError::Closed))
     }
 
+    /// Detached active entries, aligned contributions and reconstructed messages.
+    /// Runs on the session line; historical cuts are inclusive and never dispatch.
+    pub async fn context_view(
+        &self,
+        conversation: ConversationId,
+        at: Option<EntryId>,
+    ) -> Result<super::context::ContextView, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::ContextView(conversation, at, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
     /// Atomically acquire current state and subscribe to subsequent adoption.
     pub async fn watch(&self) -> Result<DurableWatch, DurableError> {
         if self.sealed.load(Ordering::Acquire) {
@@ -479,6 +502,11 @@ async fn session_worker(
                         }
                         let _ = reply.send(result);
                     }
+                    SessionCommand::ContextView(conversation, at, reply) => {
+                        let result = if poisoned { Err(DurableError::Poisoned) }
+                            else { super::context::view(&state, conversation, at) };
+                        let _ = reply.send(result);
+                    }
                     SessionCommand::Watch(reply) => {
                         if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
                         watches.values.retain(|watch| watch.upgrade().is_some_and(|watch| watch.active()));
@@ -513,6 +541,9 @@ fn reject(command: SessionCommand) {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Context(_, _, reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::ContextView(_, _, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Watch(reply) => {

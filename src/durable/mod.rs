@@ -16,7 +16,7 @@ pub mod submission;
 pub mod tool;
 pub mod types;
 
-pub use context::{ContextEdit, ContextHead, ContextUpdate, SelfHead};
+pub use context::{ContextEdit, ContextHead, ContextMarker, ContextUpdate, ContextView, SelfHead};
 pub use events::{DurableEvent, DurableWatch, WatchEnd};
 pub use harness::{ContextOptions, DurableHarness, HarnessServices};
 pub use model::{

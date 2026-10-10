@@ -93,11 +93,45 @@ pub(crate) fn validate_update(
     Ok(())
 }
 
+/// The newest native head marker and its resolved retained lower bound.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ContextMarker {
+    pub entry: EntryRecord,
+    pub head: EntryId,
+}
+
+/// Detached active entries and their model contributions. Contributions align
+/// with entries before tool-result repair and leading-system promotion.
+#[derive(Clone, Debug, Default)]
+pub struct ContextView {
+    pub head: Option<ContextMarker>,
+    pub entries: Vec<EntryRecord>,
+    pub contributions: Vec<Vec<Message>>,
+    pub messages: Vec<Message>,
+}
+
+pub(crate) fn view(
+    snapshot: &StorageSnapshot,
+    conversation: ConversationId,
+    at: Option<EntryId>,
+) -> Result<ContextView, DurableError> {
+    read(snapshot, conversation, at, true)
+}
+
 pub(crate) fn messages(
     snapshot: &StorageSnapshot,
     conversation: ConversationId,
     at: Option<EntryId>,
 ) -> Result<Vec<Message>, DurableError> {
+    Ok(read(snapshot, conversation, at, false)?.messages)
+}
+
+fn read(
+    snapshot: &StorageSnapshot,
+    conversation: ConversationId,
+    at: Option<EntryId>,
+    collect_view: bool,
+) -> Result<ContextView, DurableError> {
     if let Some(at) = at
         && !snapshot
             .entries
@@ -114,6 +148,7 @@ pub(crate) fn messages(
         snapshot.entries.values().filter(|entry| {
             entry.conversation_id == conversation && at.is_none_or(|at| entry.id <= at)
         }),
+        collect_view,
     )
 }
 
@@ -152,13 +187,14 @@ pub(crate) fn for_task(
         .chain(std::iter::once(target));
     // The native FIFO scheduler places the active input after completed turns,
     // even when its durable ID was allocated while a prior turn was running.
-    derive(snapshot, entries)
+    Ok(derive(snapshot, entries, false)?.messages)
 }
 
 fn derive<'a>(
     snapshot: &StorageSnapshot,
     entries: impl Iterator<Item = &'a EntryRecord>,
-) -> Result<Vec<Message>, DurableError> {
+    collect_view: bool,
+) -> Result<ContextView, DurableError> {
     let entries = entries.collect::<Vec<_>>();
     let mut head = None;
     let mut marker = None;
@@ -203,142 +239,41 @@ fn derive<'a>(
                     .get(&entry.id)
                     .is_none_or(|update| update.head.is_none())
         }));
-    let mut result = Vec::new();
-    for entry in active {
-        if let Some(edit) = edits.get(&entry.id) {
-            if let ContextEdit::Replace { messages, .. } = edit {
-                result.extend(messages.clone());
-            }
-            continue;
-        }
-        if let Some(update) = updates.get(&entry.id) {
-            result.extend(update.messages.clone());
-            continue;
-        }
-        let mut message = match entry.kind.as_str() {
-            "user" => to_message_for_durable(&DurableMessage {
-                role: "user".into(),
-                text: text(entry)?,
-            }),
-            "assistant" => {
-                if let Some(message) = entry.value.get("message") {
-                    let message: Message =
-                        serde_json::from_value(message.clone()).map_err(|_| {
-                            DurableError::Corrupt("invalid assistant context message".into())
-                        })?;
-                    if message.role != Role::Assistant {
-                        return Err(DurableError::Corrupt(
-                            "assistant entry has wrong role".into(),
-                        ));
-                    }
-                    message
-                } else {
-                    let mut message = to_message_for_durable(&DurableMessage {
-                        role: "assistant".into(),
-                        text: text(entry)?,
-                    });
-                    if let Some(content) = entry.value.get("content") {
-                        let content: Vec<DurableContent> = serde_json::from_value(content.clone())
-                            .map_err(|_| {
-                                DurableError::Corrupt("invalid durable assistant content".into())
-                            })?;
-                        if !content.is_empty() {
-                            message.content = content
-                                .into_iter()
-                                .map(|content| match content {
-                                    DurableContent::Text { text } => ContentBlock::Text {
-                                        text,
-                                        text_signature: None,
-                                    },
-                                    DurableContent::Thinking { thinking, redacted } => {
-                                        ContentBlock::Thinking {
-                                            thinking,
-                                            redacted: Some(redacted),
-                                            thinking_signature: None,
-                                        }
-                                    }
-                                })
-                                .collect();
-                        }
-                    }
-                    message.duration_ms = entry.value.get("durationMs").and_then(Value::as_u64);
-                    message.stop_reason = entry
-                        .value
-                        .get("stop_reason")
-                        .map(|value| {
-                            serde_json::from_value(value.clone()).map_err(|_| {
-                                DurableError::Corrupt("invalid assistant stop reason".into())
-                            })
-                        })
-                        .transpose()?;
-                    message.response_id = entry
-                        .value
-                        .get("response_id")
-                        .and_then(Value::as_str)
-                        .map(str::to_owned);
-                    if let Some(task) = entry.by_task_id.and_then(|id| snapshot.tasks.get(&id)) {
-                        let intent: ModelIntent = serde_json::from_value(task.input.clone())
-                            .map_err(|_| {
-                                DurableError::Corrupt("invalid assistant model identity".into())
-                            })?;
-                        message.api = Some(intent.model.api().into());
-                        message.provider = Some(intent.model.provider().into());
-                        message.model = Some(intent.model.id().into());
-                    }
-                    message
-                }
-            }
-            "tool_result" => {
-                let id = entry
-                    .value
-                    .get("tool_call_id")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| DurableError::Corrupt("tool result lacks call id".into()))?;
-                let name = entry
-                    .value
-                    .get("tool_name")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| DurableError::Corrupt("tool result lacks tool name".into()))?;
-                let value = entry
-                    .value
-                    .get("result")
-                    .ok_or_else(|| DurableError::Corrupt("tool result lacks value".into()))?;
-                let mut message = crate::user_message(&value.to_string());
-                message.role = Role::ToolResult;
-                message.tool_call_id = Some(id.into());
-                message.tool_name = Some(name.into());
-                message.is_error = entry
-                    .value
-                    .get("is_error")
-                    .and_then(Value::as_bool)
-                    .unwrap_or(false);
-                message.duration_ms = entry.value.get("durationMs").and_then(Value::as_u64);
-                message
-            }
-            _ => continue,
-        };
-        // Legacy text entries have no provider timestamp. Do not invent timing
-        // for reconstructed messages or count them as newly streamed responses.
-        if entry.value.get("message").is_none() {
-            message.timestamp = 0;
-        }
-        if message.role == Role::Assistant
-            && matches!(
-                message.stop_reason,
-                Some(StopReason::Aborted | StopReason::Error | StopReason::Deferred)
-            )
-        {
-            continue;
-        }
-        result.push(message);
+    let mut view = ContextView::default();
+    if collect_view && let Some(marker) = marker {
+        view.head = entries
+            .iter()
+            .find(|entry| entry.id == marker)
+            .map(|entry| ContextMarker {
+                entry: (*entry).clone(),
+                head: head.expect("head marker has a resolved head"),
+            });
     }
-    result.retain(|message| {
-        message.role != Role::Assistant
-            || !matches!(
-                message.stop_reason,
-                Some(StopReason::Aborted | StopReason::Error | StopReason::Deferred)
-            )
-    });
+    let mut result = Vec::new();
+    // Reuse the contribution buffer even for messages-only reads. A fresh Vec
+    // per text entry would undo the earlier context-allocation optimisation.
+    let mut contributed = Vec::new();
+    for entry in active {
+        contribution(
+            snapshot,
+            entry,
+            updates.get(&entry.id),
+            edits.get(&entry.id),
+            &mut contributed,
+        )?;
+        contributed.retain(|message| {
+            message.role != Role::Assistant
+                || !matches!(
+                    message.stop_reason,
+                    Some(StopReason::Aborted | StopReason::Error | StopReason::Deferred)
+                )
+        });
+        if collect_view {
+            view.entries.push(entry.clone());
+            view.contributions.push(contributed.clone());
+        }
+        result.append(&mut contributed);
+    }
     // Repair results before testing the leading-system prefix: orphan results
     // can otherwise hide a baseline system message behind earlier user inputs.
     let mut result = order_tool_results(result);
@@ -351,7 +286,135 @@ fn derive<'a>(
         let system = result.remove(index);
         result.insert(0, system);
     }
-    Ok(result)
+    view.messages = result;
+    Ok(view)
+}
+
+fn contribution(
+    snapshot: &StorageSnapshot,
+    entry: &EntryRecord,
+    update: Option<&ContextUpdate>,
+    edit: Option<&ContextEdit>,
+    result: &mut Vec<Message>,
+) -> Result<(), DurableError> {
+    if let Some(edit) = edit {
+        if let ContextEdit::Replace { messages, .. } = edit {
+            result.extend(messages.iter().cloned());
+        }
+        return Ok(());
+    }
+    if let Some(update) = update {
+        result.extend(update.messages.iter().cloned());
+        return Ok(());
+    }
+    let mut message = match entry.kind.as_str() {
+        "user" => to_message_for_durable(&DurableMessage {
+            role: "user".into(),
+            text: text(entry)?,
+        }),
+        "assistant" => {
+            if let Some(message) = entry.value.get("message") {
+                let message: Message = serde_json::from_value(message.clone()).map_err(|_| {
+                    DurableError::Corrupt("invalid assistant context message".into())
+                })?;
+                if message.role != Role::Assistant {
+                    return Err(DurableError::Corrupt(
+                        "assistant entry has wrong role".into(),
+                    ));
+                }
+                message
+            } else {
+                let mut message = to_message_for_durable(&DurableMessage {
+                    role: "assistant".into(),
+                    text: text(entry)?,
+                });
+                if let Some(content) = entry.value.get("content") {
+                    let content: Vec<DurableContent> = serde_json::from_value(content.clone())
+                        .map_err(|_| {
+                            DurableError::Corrupt("invalid durable assistant content".into())
+                        })?;
+                    if !content.is_empty() {
+                        message.content = content
+                            .into_iter()
+                            .map(|content| match content {
+                                DurableContent::Text { text } => ContentBlock::Text {
+                                    text,
+                                    text_signature: None,
+                                },
+                                DurableContent::Thinking { thinking, redacted } => {
+                                    ContentBlock::Thinking {
+                                        thinking,
+                                        redacted: Some(redacted),
+                                        thinking_signature: None,
+                                    }
+                                }
+                            })
+                            .collect();
+                    }
+                }
+                message.duration_ms = entry.value.get("durationMs").and_then(Value::as_u64);
+                message.stop_reason = entry
+                    .value
+                    .get("stop_reason")
+                    .map(|value| {
+                        serde_json::from_value(value.clone()).map_err(|_| {
+                            DurableError::Corrupt("invalid assistant stop reason".into())
+                        })
+                    })
+                    .transpose()?;
+                message.response_id = entry
+                    .value
+                    .get("response_id")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned);
+                if let Some(task) = entry.by_task_id.and_then(|id| snapshot.tasks.get(&id)) {
+                    let intent: ModelIntent =
+                        serde_json::from_value(task.input.clone()).map_err(|_| {
+                            DurableError::Corrupt("invalid assistant model identity".into())
+                        })?;
+                    message.api = Some(intent.model.api().into());
+                    message.provider = Some(intent.model.provider().into());
+                    message.model = Some(intent.model.id().into());
+                }
+                message
+            }
+        }
+        "tool_result" => {
+            let id = entry
+                .value
+                .get("tool_call_id")
+                .and_then(Value::as_str)
+                .ok_or_else(|| DurableError::Corrupt("tool result lacks call id".into()))?;
+            let name = entry
+                .value
+                .get("tool_name")
+                .and_then(Value::as_str)
+                .ok_or_else(|| DurableError::Corrupt("tool result lacks tool name".into()))?;
+            let value = entry
+                .value
+                .get("result")
+                .ok_or_else(|| DurableError::Corrupt("tool result lacks value".into()))?;
+            let mut message = crate::user_message(&value.to_string());
+            message.role = Role::ToolResult;
+            message.tool_call_id = Some(id.into());
+            message.tool_name = Some(name.into());
+            message.is_error = entry
+                .value
+                .get("is_error")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            message.duration_ms = entry.value.get("durationMs").and_then(Value::as_u64);
+            message
+        }
+        _ => return Ok(()),
+    };
+    // Legacy text entries have no provider timestamp. Do not invent timing
+    // for reconstructed messages or count them as newly streamed responses.
+    if entry.value.get("message").is_none() {
+        message.timestamp = 0;
+    }
+    result.push(message);
+    Ok(())
 }
 
 pub(crate) fn text_messages(messages: Vec<Message>) -> Vec<DurableMessage> {

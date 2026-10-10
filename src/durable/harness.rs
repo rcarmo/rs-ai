@@ -350,6 +350,18 @@ impl DurableHarness {
             .await
     }
 
+    /// Read the native active transcript with aligned per-entry contributions.
+    pub async fn context_view(
+        &self,
+        options: ContextOptions,
+    ) -> Result<super::context::ContextView, DurableError> {
+        self.ensure_open()?;
+        self.inner
+            .session
+            .context_view(conversation_id()?, options.at)
+            .await
+    }
+
     pub async fn entries(
         &self,
         query: super::storage::scan::EntryQuery,

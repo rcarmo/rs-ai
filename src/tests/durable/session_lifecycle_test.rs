@@ -430,6 +430,10 @@ mod tests {
                 .await,
             Err(DurableError::Poisoned)
         ));
+        assert!(matches!(
+            session.context_view(conversation, None).await,
+            Err(DurableError::Poisoned)
+        ));
         assert!(session.close().await.is_ok());
     }
 
@@ -438,7 +442,11 @@ mod tests {
         let (storage, admitted, release, _) = BarrierStorage::new(false);
         let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());
         let writer = session.clone();
-        let commit = tokio::spawn(async move { writer.commit(batch(1)).await });
+        let commit = tokio::spawn(async move {
+            let mut batch = batch(1);
+            batch.entries[0].value["text"] = json!("settled input");
+            writer.commit(batch).await
+        });
         admitted.notified().await;
         let reader = session.clone();
         let read = tokio::spawn(async move {
@@ -446,10 +454,24 @@ mod tests {
                 .entries(ConversationId::new(1).unwrap(), EntryQuery::default())
                 .await
         });
+        let viewer = session.clone();
+        let view_read = tokio::spawn(async move {
+            viewer
+                .context_view(ConversationId::new(1).unwrap(), None)
+                .await
+        });
         tokio::task::yield_now().await;
         assert!(!read.is_finished());
+        assert!(!view_read.is_finished());
         release.notify_waiters();
         commit.await.unwrap().unwrap();
+        let view = view_read.await.unwrap().unwrap();
+        assert_eq!(view.entries.len(), 1);
+        assert_eq!(view.contributions.len(), 1);
+        assert_eq!(view.contributions[0].len(), 1);
+        assert!(
+            matches!(&view.messages[0].content[0], crate::types::ContentBlock::Text { text, .. } if text == "settled input")
+        );
         let page = read.await.unwrap().unwrap();
         assert_eq!(page.items.len(), 1);
         assert_eq!(page.items[0].value["seq"], 1);
