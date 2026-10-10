@@ -456,6 +456,7 @@ mod tests {
             .commit(
                 &claim,
                 CommitBatch {
+                    generic_documents: vec![],
                     conversations: vec![],
                     seq,
                     next_id: 4,

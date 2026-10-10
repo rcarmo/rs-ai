@@ -21,6 +21,8 @@ pub struct StorageSnapshot {
     pub tasks: BTreeMap<TaskId, TaskRecord>,
     pub submissions: BTreeMap<SubmissionId, SubmissionRecord>,
     pub documents: BTreeMap<(ConversationId, String), DocumentRecord>,
+    pub generic_documents: BTreeMap<DocumentId, super::documents::GenericDocumentRecord>,
+    pub document_revisions: BTreeMap<DocumentId, BTreeMap<CommitSeq, serde_json::Value>>,
     pub request_ids: HashMap<(ConversationId, String), SubmissionId>,
 }
 
@@ -57,6 +59,11 @@ impl StorageSnapshot {
                 self.documents
                     .values()
                     .map(|document| document.conversation_id),
+            )
+            .chain(
+                self.generic_documents
+                    .values()
+                    .map(|document| document.address.conversation_id),
             );
         for id in ids {
             self.conversations.entry(id).or_insert(ConversationRecord {
@@ -142,6 +149,15 @@ impl StorageSnapshot {
                 record.clone(),
             );
         }
+        for record in &batch.generic_documents {
+            if record.history == super::documents::DocumentHistory::Rewindable {
+                self.document_revisions
+                    .entry(record.id)
+                    .or_default()
+                    .insert(batch.seq, record.value.clone());
+            }
+            self.generic_documents.insert(record.id, record.clone());
+        }
         // Reconstruct only newly mentioned legacy scopes, not the entire log
         // on every adoption. Explicit creations were installed above.
         for id in batch
@@ -156,6 +172,12 @@ impl StorageSnapshot {
                     .map(|record| record.conversation_id),
             )
             .chain(batch.documents.iter().map(|record| record.conversation_id))
+            .chain(
+                batch
+                    .generic_documents
+                    .iter()
+                    .map(|record| record.address.conversation_id),
+            )
         {
             self.conversations.entry(id).or_insert(ConversationRecord {
                 id,
@@ -309,6 +331,7 @@ pub fn validate_batch(
         .map(|id| id.get())
         .chain(snapshot.tasks.keys().map(|id| id.get()))
         .chain(snapshot.submissions.keys().map(|id| id.get()))
+        .chain(snapshot.generic_documents.keys().map(|id| id.get()))
         .chain(
             snapshot
                 .conversations
@@ -627,6 +650,61 @@ pub fn validate_batch(
         if submission.updated_seq != batch.seq {
             return Err(DurableError::Rejected(
                 "submission sequence mismatch".into(),
+            ));
+        }
+    }
+    let mut generic_ids = HashSet::new();
+    let mut addresses = HashSet::new();
+    for record in &batch.generic_documents {
+        record.shape()?;
+        let _ = encode_limited("document", &record.value, MAX_DOCUMENT_BYTES)?;
+        if record.updated_seq != batch.seq
+            || !generic_ids.insert(record.id)
+            || !addresses.insert(record.address.clone())
+            || record.retired_seq.is_some_and(|seq| seq != batch.seq)
+        {
+            return Err(DurableError::Rejected(
+                "invalid document update sequence/duplicates".into(),
+            ));
+        }
+        if let Some(previous) = snapshot.generic_documents.get(&record.id) {
+            if previous.retired_seq.is_some()
+                || previous.address != record.address
+                || previous.created_seq != record.created_seq
+                || previous.version != record.version
+                || previous.history != record.history
+                || previous.fork != record.fork
+            {
+                return Err(DurableError::Rejected(
+                    "document identity/retirement is immutable".into(),
+                ));
+            }
+        } else {
+            if record.created_seq != batch.seq
+                || record.retired_seq.is_some()
+                || record.id.get() < snapshot.next_id
+                || !allocated_ids.insert(record.id.get())
+            {
+                return Err(DurableError::Rejected(
+                    "invalid document incarnation creation".into(),
+                ));
+            }
+            max_new_id = max_new_id.max(record.id.get());
+            if snapshot.generic_documents.values().any(|previous| {
+                previous.address == record.address && previous.retired_seq.is_none()
+            }) {
+                return Err(DurableError::Rejected(
+                    "document address already alive".into(),
+                ));
+            }
+        }
+        if !(snapshot
+            .conversations
+            .contains_key(&record.address.conversation_id)
+            || new_conversations.contains(&record.address.conversation_id))
+        {
+            return Err(DurableError::Rejected(
+                "document conversation missing".into(),
             ));
         }
     }

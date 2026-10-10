@@ -44,6 +44,7 @@ macro_rules! durable_id {
 
 durable_id!(ConversationId);
 durable_id!(EntryId);
+durable_id!(DocumentId);
 durable_id!(TaskId);
 durable_id!(SubmissionId);
 durable_id!(CommitSeq);
@@ -175,6 +176,8 @@ pub struct CommitBatch {
     pub submissions: Vec<SubmissionRecord>,
     #[serde(default)]
     pub documents: Vec<DocumentRecord>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub generic_documents: Vec<super::documents::GenericDocumentRecord>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

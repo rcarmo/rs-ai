@@ -9,6 +9,7 @@ mod tests {
     fn batch(seq: u64) -> CommitBatch {
         let s = CommitSeq::new(seq).unwrap();
         CommitBatch {
+            generic_documents: vec![],
             conversations: vec![],
             seq: s,
             next_id: 2,
@@ -31,6 +32,7 @@ mod tests {
         let commit_seq = CommitSeq::new(seq).unwrap();
         let terminal = state.terminal();
         CommitBatch {
+            generic_documents: vec![],
             conversations: vec![],
             seq: commit_seq,
             next_id: 2,
@@ -208,6 +210,7 @@ mod tests {
         task.updated_seq = CommitSeq::new(state.next_seq).unwrap();
         session
             .commit(CommitBatch {
+                generic_documents: vec![],
                 conversations: vec![],
                 seq: task.updated_seq,
                 next_id: state.next_id,
@@ -227,6 +230,7 @@ mod tests {
         task.updated_seq = CommitSeq::new(state.next_seq).unwrap();
         session
             .commit(CommitBatch {
+                generic_documents: vec![],
                 conversations: vec![],
                 seq: task.updated_seq,
                 next_id: state.next_id,
@@ -398,6 +402,7 @@ mod tests {
             .collect();
         session
             .commit(CommitBatch {
+                generic_documents: vec![],
                 conversations: vec![],
                 seq,
                 next_id: 129,
@@ -797,6 +802,19 @@ mod tests {
         ));
         assert!(matches!(
             session.conversations(ConversationQuery::default()).await,
+            Err(DurableError::Poisoned)
+        ));
+        assert!(matches!(
+            session
+                .document(
+                    DocumentAddress {
+                        conversation_id: conversation,
+                        kind: "test".into(),
+                        key: None
+                    },
+                    DocumentPoint::Current
+                )
+                .await,
             Err(DurableError::Poisoned)
         ));
         assert!(matches!(

@@ -1,5 +1,6 @@
-//! Synchronous entry transactions executed on the session mutation line.
-//! Task/document/conversation writes and async callback operations are absent.
+//! Synchronous entry, conversation and whole-value document transactions.
+//! Task writes, tracked document drafts and async callback operations are absent.
+use super::documents::*;
 use super::entries::EntryDraft;
 use super::storage::{StorageSnapshot, scan::*};
 use super::types::*;
@@ -74,6 +75,7 @@ pub struct EntryTransaction<'a> {
     writing: bool,
     failure: Option<DurableError>,
     staged_bytes: usize,
+    document_bytes: usize,
     task_scope: Option<(TaskId, ConversationId)>,
 }
 impl<'a> EntryTransaction<'a> {
@@ -98,6 +100,7 @@ impl<'a> EntryTransaction<'a> {
         Ok(Self {
             state,
             batch: CommitBatch {
+                generic_documents: vec![],
                 conversations: vec![],
                 seq: CommitSeq::new(state.next_seq)?,
                 next_id: state.next_id,
@@ -110,6 +113,7 @@ impl<'a> EntryTransaction<'a> {
             writing: false,
             failure: None,
             staged_bytes: 0,
+            document_bytes: 0,
             task_scope,
         })
     }
@@ -141,8 +145,8 @@ impl<'a> EntryTransaction<'a> {
     ) -> Result<ConversationRecord, DurableError> {
         self.create_membership(ownership, None)
     }
-    /// Fork committed visible history through an inclusive cutoff. Native
-    /// document copying and newly-staged parent cutoffs are not implemented.
+    /// Fork committed visible history through an inclusive cutoff. Generic
+    /// conversation documents follow persisted fork policies; built-ins do not.
     pub fn fork_conversation(
         &mut self,
         parent: ConversationId,
@@ -227,7 +231,222 @@ impl<'a> EntryTransaction<'a> {
             };
             self.batch.next_id = next_id;
             self.batch.conversations.push(record.clone());
+            if let Some(parent) = &record.parent {
+                let cutoff = self
+                    .state
+                    .visible_entry(parent.conversation_id, parent.at)?
+                    .expect("validated fork entry");
+                let mut copies = Vec::new();
+                for document in self.state.generic_documents.values() {
+                    let point = match document.fork {
+                        DocumentFork::AsOf
+                            if document.address.conversation_id == cutoff.conversation_id
+                                && document.alive(DocumentPoint::At(cutoff.created_seq)) =>
+                        {
+                            DocumentPoint::At(cutoff.created_seq)
+                        }
+                        DocumentFork::Current
+                            if document.address.conversation_id == parent.conversation_id
+                                && document.alive(DocumentPoint::Current) =>
+                        {
+                            DocumentPoint::Current
+                        }
+                        _ => continue,
+                    };
+                    if copies.len() >= 4096 {
+                        return Err(DurableError::Rejected(
+                            "too many fork document copies".into(),
+                        ));
+                    }
+                    copies.push((document.id, point));
+                }
+                let mut addresses = std::collections::HashSet::new();
+                for (source_id, point) in copies {
+                    let source = self
+                        .state
+                        .document_value(&self.state.generic_documents[&source_id], point)?;
+                    let copy = DocumentDraft {
+                        address: DocumentAddress {
+                            conversation_id: id,
+                            kind: source.address.kind,
+                            key: source.address.key,
+                        },
+                        version: source.version,
+                        history: source.history,
+                        fork: source.fork,
+                        value: source.value,
+                    };
+                    if !addresses.insert(copy.address.clone()) {
+                        return Err(DurableError::Rejected(
+                            "fork selects duplicate document address".into(),
+                        ));
+                    }
+                    self.put_document(copy)?;
+                }
+            }
             Ok(record)
+        })();
+        if let Err(error) = &result {
+            self.failure = Some(error.clone());
+        }
+        result
+    }
+
+    /// Documents are available after table writes; reads prefer staged values.
+    pub fn document(
+        &self,
+        address: &DocumentAddress,
+        point: DocumentPoint,
+    ) -> Result<Option<GenericDocumentRecord>, DurableError> {
+        if matches!(point, DocumentPoint::Current)
+            && let Some(record) = self
+                .batch
+                .generic_documents
+                .iter()
+                .find(|record| record.address == *address)
+        {
+            return Ok(record.retired_seq.is_none().then(|| record.clone()));
+        }
+        self.state.document(address, point)
+    }
+    pub fn put_document(
+        &mut self,
+        draft: DocumentDraft,
+    ) -> Result<GenericDocumentRecord, DurableError> {
+        self.writing = true;
+        if let Some(error) = &self.failure {
+            return Err(error.clone());
+        }
+        let result = (|| {
+            if self.batch.generic_documents.len() >= 4096 {
+                return Err(DurableError::Rejected("too many staged documents".into()));
+            }
+            let current = self.document(&draft.address, DocumentPoint::Current)?;
+            let record = if let Some(current) = current {
+                if current.version != draft.version
+                    || current.history != draft.history
+                    || current.fork != draft.fork
+                {
+                    return Err(DurableError::Rejected(
+                        "document definition identity changed".into(),
+                    ));
+                }
+                GenericDocumentRecord {
+                    value: draft.value,
+                    updated_seq: self.batch.seq,
+                    ..current
+                }
+            } else {
+                if self
+                    .batch
+                    .generic_documents
+                    .iter()
+                    .any(|record| record.address == draft.address)
+                {
+                    return Err(DurableError::Rejected(
+                        "recreation in retirement transaction unsupported".into(),
+                    ));
+                }
+                let id = DocumentId::new(self.batch.next_id)?;
+                self.batch.next_id = id
+                    .get()
+                    .checked_add(1)
+                    .filter(|id| *id <= MAX_ID)
+                    .ok_or_else(|| DurableError::Range("next_id overflow".into()))?;
+                GenericDocumentRecord {
+                    id,
+                    address: draft.address,
+                    version: draft.version,
+                    history: draft.history,
+                    fork: draft.fork,
+                    value: draft.value,
+                    created_seq: self.batch.seq,
+                    updated_seq: self.batch.seq,
+                    retired_seq: None,
+                }
+            };
+            record.shape()?;
+            let size = super::documents::validate_size(&record.value)?;
+            let previous_size = self
+                .batch
+                .generic_documents
+                .iter()
+                .find(|previous| previous.id == record.id)
+                .map(|previous| super::documents::validate_size(&previous.value))
+                .transpose()?
+                .unwrap_or(0);
+            let total = self
+                .document_bytes
+                .saturating_sub(previous_size)
+                .saturating_add(size);
+            if total.saturating_add(self.staged_bytes) > MAX_COMMIT_BYTES {
+                return Err(DurableError::TooLarge {
+                    field: "staged documents",
+                    size: total,
+                    limit: MAX_COMMIT_BYTES,
+                });
+            }
+            self.document_bytes = total;
+            if let Some(index) = self
+                .batch
+                .generic_documents
+                .iter()
+                .position(|previous| previous.id == record.id)
+            {
+                self.batch.generic_documents[index] = record.clone();
+            } else {
+                self.batch.generic_documents.push(record.clone());
+            }
+            Ok(record)
+        })();
+        if let Err(error) = &result {
+            self.failure = Some(error.clone());
+        }
+        result
+    }
+    pub fn retire_document(&mut self, address: &DocumentAddress) -> Result<bool, DurableError> {
+        self.writing = true;
+        if let Some(error) = &self.failure {
+            return Err(error.clone());
+        }
+        let result = (|| {
+            let Some(mut record) = self.document(address, DocumentPoint::Current)? else {
+                return Ok(false);
+            };
+            if record.created_seq == self.batch.seq {
+                return Err(DurableError::Rejected(
+                    "retire newly staged document unsupported".into(),
+                ));
+            }
+            if !self
+                .batch
+                .generic_documents
+                .iter()
+                .any(|previous| previous.id == record.id)
+            {
+                let total = self
+                    .document_bytes
+                    .saturating_add(super::documents::validate_size(&record.value)?);
+                if total.saturating_add(self.staged_bytes) > MAX_COMMIT_BYTES {
+                    return Err(DurableError::Rejected(
+                        "staged documents exceed byte limit".into(),
+                    ));
+                }
+                self.document_bytes = total;
+            }
+            record.updated_seq = self.batch.seq;
+            record.retired_seq = Some(self.batch.seq);
+            if let Some(index) = self
+                .batch
+                .generic_documents
+                .iter()
+                .position(|previous| previous.id == record.id)
+            {
+                self.batch.generic_documents[index] = record;
+            } else {
+                self.batch.generic_documents.push(record);
+            }
+            Ok(true)
         })();
         if let Err(error) = &result {
             self.failure = Some(error.clone());
@@ -319,7 +538,7 @@ impl<'a> EntryTransaction<'a> {
             validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
             let encoded_bytes = entry_size(&entry)?;
             let bytes = self.staged_bytes.saturating_add(encoded_bytes);
-            if bytes > MAX_COMMIT_BYTES {
+            if bytes.saturating_add(self.document_bytes) > MAX_COMMIT_BYTES {
                 return Err(DurableError::TooLarge {
                     field: "staged entries",
                     size: bytes,
@@ -340,7 +559,10 @@ impl<'a> EntryTransaction<'a> {
         if let Some(error) = self.failure {
             return Err(error);
         }
-        if self.batch.entries.is_empty() && self.batch.conversations.is_empty() {
+        if self.batch.entries.is_empty()
+            && self.batch.conversations.is_empty()
+            && self.batch.generic_documents.is_empty()
+        {
             return Ok(None);
         }
         self.batch.next_seq = self

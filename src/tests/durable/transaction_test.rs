@@ -268,6 +268,7 @@ mod tests {
         };
         session
             .commit(CommitBatch {
+                generic_documents: vec![],
                 conversations: vec![],
                 seq,
                 next_id: 2,
@@ -317,6 +318,7 @@ mod tests {
             task.updated_seq = CommitSeq::new(snapshot.next_seq).unwrap();
             session
                 .commit(CommitBatch {
+                    generic_documents: vec![],
                     conversations: vec![],
                     seq: task.updated_seq,
                     next_id: snapshot.next_id,

@@ -78,6 +78,7 @@ pub(crate) fn build_initial_batch(
     let intent_value =
         serde_json::to_value(&intent).map_err(|error| DurableError::Rejected(error.to_string()))?;
     let mut batch = CommitBatch {
+        generic_documents: vec![],
         conversations: vec![],
         seq,
         next_id,

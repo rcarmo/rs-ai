@@ -44,6 +44,7 @@ mod tests {
         let seq = CommitSeq::new(2).unwrap();
         session
             .commit(CommitBatch {
+                generic_documents: vec![],
                 conversations: vec![],
                 seq,
                 next_id: 4,
@@ -165,6 +166,7 @@ mod tests {
             .unwrap();
         let seq = CommitSeq::new(1).unwrap();
         let batch = CommitBatch {
+            generic_documents: vec![],
             conversations: vec![],
             seq,
             next_id: 2,
@@ -265,6 +267,7 @@ mod tests {
             assert!(
                 session
                     .commit(CommitBatch {
+                        generic_documents: vec![],
                         conversations: records,
                         seq,
                         next_id: 3,
@@ -280,6 +283,7 @@ mod tests {
             assert_eq!(session.snapshot().await.unwrap(), before);
         }
         let cyclic = CommitBatch {
+            generic_documents: vec![],
             conversations: vec![
                 ConversationRecord {
                     id: ConversationId::new(2).unwrap(),

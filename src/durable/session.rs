@@ -70,6 +70,11 @@ enum SessionCommand {
         oneshot::Sender<Result<EntryRecord, DurableError>>,
     ),
     Snapshot(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
+    Document(
+        super::documents::DocumentAddress,
+        super::documents::DocumentPoint,
+        oneshot::Sender<Result<Option<super::documents::GenericDocumentRecord>, DurableError>>,
+    ),
     Conversation(
         ConversationId,
         oneshot::Sender<Result<Option<ConversationRecord>, DurableError>>,
@@ -422,6 +427,22 @@ impl DurableSession {
         result.await.unwrap_or(Err(DurableError::Closed))
     }
 
+    pub async fn document(
+        &self,
+        address: super::documents::DocumentAddress,
+        point: super::documents::DocumentPoint,
+    ) -> Result<Option<super::documents::GenericDocumentRecord>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Document(address, point, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
     pub async fn snapshot(&self) -> Result<StorageSnapshot, DurableError> {
         if self.sealed.load(Ordering::Acquire) {
             return Err(DurableError::Closed);
@@ -682,7 +703,7 @@ async fn session_worker(
                             Ok((draft.into_record(conversation, id, seq)?, next_id, next_seq))
                         })();
                         match record {
-                            Ok((entry, next_id, next_seq)) => SessionCommand::Commit(CommitBatch { conversations: vec![],
+                            Ok((entry, next_id, next_seq)) => SessionCommand::Commit(CommitBatch { generic_documents: vec![], conversations: vec![],
                                 seq: entry.created_seq, next_id, next_seq, entries: vec![entry.clone()], tasks: vec![], submissions: vec![], documents: vec![],
                             }, CommitReply::Entry(entry, reply)),
                             Err(error) => { let _ = reply.send(Err(error)); continue; }
@@ -758,6 +779,9 @@ async fn session_worker(
                     }
                     SessionCommand::Snapshot(reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { Ok(state.clone()) });
+                    }
+                    SessionCommand::Document(address, point, reply) => {
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.document(&address, point) });
                     }
                     SessionCommand::Conversation(id, reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { Ok(state.conversations.get(&id).cloned()) });
@@ -853,6 +877,9 @@ fn reject(command: SessionCommand) {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Snapshot(reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Document(_, _, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Conversation(_, reply) => {
