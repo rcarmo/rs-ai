@@ -27,10 +27,10 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | M | `packages/ai/src/api/llama-cpp-classify.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/mistral-conversations.ts` | IMPLEMENTED server-error finish delta | Mistral terminal `error` keeps raw reason and reports `Provider stopped with: error (server error)`. HTTP/SSE regression in `mistral_reasoning_mode_test.rs` verifies terminal error, partial text and billed usage. |
 | M | `packages/ai/src/api/openai-codex-responses.ts` | IMPLEMENTED configurable-header delta; null deletion gap | `src/provider/codex.rs` shares case-insensitive default/model/request header merging for SSE and WebSocket. Request `originator`/`User-Agent` override defaults; bearer/account identity is enforced last. SSE wire and WS handshake regression coverage; 49 focused Codex tests pass. Rust request headers hold strings, so upstream null deletion is not expressible. |
-| M | `packages/ai/src/api/openai-completions.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/api/openai-completions.ts` | IMPLEMENTED sampling/Azure deltas; full API audit pending | Five sampling tests include public HTTP dispatch for Completions/Responses/Azure, checking model -> effective level -> request precedence without mutating the model. Azure wire regressions check deployment identity and cache omission. |
 | A | `packages/ai/src/api/openai-decisions.lazy.ts` | PENDING | Not yet accepted |
 | A | `packages/ai/src/api/openai-decisions.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/api/openai-responses.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/api/openai-responses.ts` | IMPLEMENTED sampling delta; full API audit pending | `sampling_v110_test.rs` tests clamped level, off/summary defaults, request precedence and public HTTP dispatch across Responses/Azure. All five pass. |
 | M | `packages/ai/src/api/simple-options.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/system-one-shared.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/typesafe-system-one.ts` | PENDING | Not yet accepted |

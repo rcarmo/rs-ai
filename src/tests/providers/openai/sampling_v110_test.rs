@@ -41,6 +41,78 @@ fn payload(model: &Model, options: &StreamOptions) -> Value {
     }
 }
 
+#[tokio::test]
+async fn sampling_precedence_survives_public_http_dispatch() {
+    use futures::StreamExt;
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+    for api in [
+        "openai-completions",
+        "openai-responses",
+        "azure-openai-responses",
+    ] {
+        let server = MockServer::start().await;
+        let responses = api != "openai-completions";
+        let sse = if responses {
+            "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":1,\"output_tokens\":0,\"total_tokens\":1}}}\n\ndata: [DONE]\n\n"
+        } else {
+            "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        };
+        Mock::given(method("POST"))
+            .and(path(if responses {
+                "/v1/responses"
+            } else {
+                "/v1/chat/completions"
+            }))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .insert_header("content-type", "text/event-stream")
+                    .set_body_string(sse),
+            )
+            .expect(1)
+            .mount(&server)
+            .await;
+        let mut model = model(api);
+        model.base_url = format!("{}/v1", server.uri());
+        model.api_key = Some("test-key".into());
+        if api == "azure-openai-responses" {
+            model.provider = "azure".into();
+        }
+        let options = StreamOptions {
+            temperature: Some(0.0),
+            reasoning: Some(ThinkingLevel::Low),
+            sampling_params: Some(json!({"top_p":0.5})),
+            env: Some(HashMap::from([
+                ("AZURE_OPENAI_BASE_URL".into(), model.base_url.clone()),
+                ("AZURE_OPENAI_RESOURCE_NAME".into(), "".into()),
+                ("AZURE_OPENAI_DEPLOYMENT_NAME_MAP".into(), "".into()),
+            ])),
+            ..Default::default()
+        };
+        let context = Context {
+            system_prompt: None,
+            messages: vec![crate::user_message("Hello")],
+            tools: vec![],
+        };
+        let events = crate::registry::stream(&model, &context, &options)
+            .collect::<Vec<_>>()
+            .await;
+        assert!(
+            matches!(events.last(), Some(crate::events::Event::Done { .. })),
+            "{api}: {events:?}"
+        );
+        let requests = server.received_requests().await.unwrap();
+        let body: Value = serde_json::from_slice(&requests[0].body).unwrap();
+        assert_eq!(body["temperature"], json!(0.6), "{api}");
+        assert_eq!(body["top_p"], json!(0.5), "{api}");
+        assert_eq!(body["top_k"], json!(64), "{api}");
+        assert_eq!(
+            model.sampling_params.as_ref().unwrap()["top_p"],
+            json!(0.95)
+        );
+    }
+}
+
 #[test]
 fn direct_payloads_merge_model_effective_level_and_request_in_order() {
     for api in [
