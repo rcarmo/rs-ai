@@ -57,6 +57,59 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn session_worker_panic_terminates_watch_without_hanging_reader() {
+        let session = DurableSession::open_with_clock(
+            Box::new(MemoryStorage::new()),
+            std::sync::Arc::new(|| panic!("clock failure")),
+        )
+        .await
+        .unwrap();
+        let mut watch = session.watch().await.unwrap();
+        assert!(matches!(
+            watch.next().await,
+            Some(DurableEvent::Snapshot(_))
+        ));
+        let seq = CommitSeq::new(1).unwrap();
+        let task = TaskRecord {
+            id: TaskId::new(1).unwrap(),
+            conversation_id: ConversationId::new(1).unwrap(),
+            kind: "generation".into(),
+            version: 1,
+            owner_task_id: None,
+            state: TaskState::Running,
+            input: json!({}),
+            checkpoint: json!({}),
+            outcome: None,
+            abort_requested: false,
+            started_at: None,
+            ended_at: None,
+            updated_seq: seq,
+        };
+        assert!(
+            session
+                .commit(CommitBatch {
+                    seq,
+                    next_id: 2,
+                    next_seq: 2,
+                    entries: vec![],
+                    tasks: vec![task],
+                    submissions: vec![],
+                    documents: vec![]
+                })
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), watch.next())
+                .await
+                .unwrap(),
+            Some(DurableEvent::End(WatchEnd::Poisoned))
+        );
+        assert_eq!(watch.next().await, None);
+        assert!(session.close().await.is_err());
+    }
+
+    #[tokio::test]
     async fn stopped_and_dropped_watches_release_subscription_slots() {
         let session = DurableSession::open(Box::new(MemoryStorage::new()))
             .await
