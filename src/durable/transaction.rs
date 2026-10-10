@@ -240,13 +240,19 @@ impl<'a> EntryTransaction<'a> {
                 for document in self.state.generic_documents.values() {
                     let point = match document.fork {
                         DocumentFork::AsOf
-                            if document.address.conversation_id == cutoff.conversation_id
+                            if document.address.scope
+                                == (DocumentScope::Conversation {
+                                    conversation_id: cutoff.conversation_id,
+                                })
                                 && document.alive(DocumentPoint::At(cutoff.created_seq)) =>
                         {
                             DocumentPoint::At(cutoff.created_seq)
                         }
                         DocumentFork::Current
-                            if document.address.conversation_id == parent.conversation_id
+                            if document.address.scope
+                                == (DocumentScope::Conversation {
+                                    conversation_id: parent.conversation_id,
+                                })
                                 && document.alive(DocumentPoint::Current) =>
                         {
                             DocumentPoint::Current
@@ -267,7 +273,9 @@ impl<'a> EntryTransaction<'a> {
                         .document_value(&self.state.generic_documents[&source_id], point)?;
                     let copy = DocumentDraft {
                         address: DocumentAddress {
-                            conversation_id: id,
+                            scope: DocumentScope::Conversation {
+                                conversation_id: id,
+                            },
                             kind: source.address.kind,
                             key: source.address.key,
                         },
@@ -343,11 +351,33 @@ impl<'a> EntryTransaction<'a> {
     where
         D: serde::Serialize + serde::de::DeserializeOwned,
     {
+        self.edit_document_scoped(
+            definition,
+            DocumentScope::Conversation {
+                conversation_id: conversation,
+            },
+            key,
+            seed,
+            edit,
+        )
+    }
+    pub fn edit_document_scoped<D, I, T>(
+        &mut self,
+        definition: &super::document_definition::DocumentDefinition<D, I>,
+        scope: DocumentScope,
+        key: Option<&str>,
+        seed: &I,
+        edit: impl FnOnce(&mut D) -> Result<T, DurableError>,
+    ) -> Result<T, DurableError>
+    where
+        D: serde::Serialize + serde::de::DeserializeOwned,
+    {
         if let Some(error) = &self.failure {
             return Err(error.clone());
         }
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let address = definition.address(conversation, key)?;
+            let address = definition.address_scoped(scope, key)?;
+            self.check_document_owner(scope)?;
             let current = self.current_document(&address);
             if let Some(record) = current {
                 definition.check(record)?;
@@ -417,6 +447,7 @@ impl<'a> EntryTransaction<'a> {
             return Err(error.clone());
         }
         let result = (|| {
+            self.check_document_owner(draft.address.scope)?;
             if self.batch.generic_documents.len() >= 4096 {
                 return Err(DurableError::Rejected("too many staged documents".into()));
             }
@@ -502,6 +533,19 @@ impl<'a> EntryTransaction<'a> {
             self.failure = Some(error.clone());
         }
         result
+    }
+    fn check_document_owner(&self, scope: DocumentScope) -> Result<(), DurableError> {
+        if let DocumentScope::Task { task_id } = scope {
+            let task = self
+                .state
+                .tasks
+                .get(&task_id)
+                .ok_or_else(|| DurableError::Rejected("document task missing".into()))?;
+            if task.state.terminal() {
+                return Err(DurableError::Rejected("document task is terminal".into()));
+            }
+        }
+        Ok(())
     }
     pub fn retire_document(&mut self, address: &DocumentAddress) -> Result<bool, DurableError> {
         self.writing = true;

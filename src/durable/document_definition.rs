@@ -1,4 +1,4 @@
-//! Process-local typed tokens for native conversation documents. No registry or
+//! Process-local typed tokens for native scoped documents. No registry or
 //! tracked drafts; read migrations are detached. Typed edits persist migrated
 //! whole-value bases with versioned history through the transaction line.
 use super::documents::*;
@@ -10,7 +10,7 @@ use std::sync::Arc;
 type Initial<D, I> = Arc<dyn Fn(&I) -> Result<D, DurableError> + Send + Sync>;
 type Migration<D> = Arc<dyn Fn(Value, u32) -> Result<D, DurableError> + Send + Sync>;
 
-/// A conversation singleton (`I = ()`) or keyed family token. Cloning shares
+/// A scoped singleton (`I = ()`) or keyed family token. Cloning shares
 /// callbacks without requiring D or I to implement Clone. Tokens are not stored.
 pub struct DocumentDefinition<D, I = ()> {
     kind: String,
@@ -18,6 +18,7 @@ pub struct DocumentDefinition<D, I = ()> {
     history: DocumentHistory,
     fork: DocumentFork,
     family: bool,
+    scope_kind: DocumentScopeKind,
     initial: Initial<D, I>,
     migrate: Option<Migration<D>>,
 }
@@ -29,6 +30,7 @@ impl<D, I> Clone for DocumentDefinition<D, I> {
             history: self.history,
             fork: self.fork,
             family: self.family,
+            scope_kind: self.scope_kind,
             initial: self.initial.clone(),
             migrate: self.migrate.clone(),
         }
@@ -74,7 +76,9 @@ impl<D, I> DocumentDefinition<D, I> {
         GenericDocumentRecord {
             id: DocumentId::new(1)?,
             address: DocumentAddress {
-                conversation_id: ConversationId::new(1)?,
+                scope: DocumentScope::Conversation {
+                    conversation_id: ConversationId::new(1)?,
+                },
                 kind: kind.clone(),
                 key: None,
             },
@@ -93,9 +97,23 @@ impl<D, I> DocumentDefinition<D, I> {
             history,
             fork,
             family,
+            scope_kind: DocumentScopeKind::Conversation,
             initial,
             migrate: None,
         })
+    }
+    /// Select session or task lifetime semantics. Non-conversation tokens are
+    /// current-only and never fork-copied; use Latest/Initial constructor policies.
+    pub fn with_scope(mut self, scope: DocumentScopeKind) -> Result<Self, DurableError> {
+        if scope != DocumentScopeKind::Conversation
+            && (self.history != DocumentHistory::Latest || self.fork != DocumentFork::Initial)
+        {
+            return Err(DurableError::Rejected(
+                "invalid document scope/history/fork policy".into(),
+            ));
+        }
+        self.scope_kind = scope;
+        Ok(self)
     }
     /// Receive an owned old JSON object and its persisted version. The returned
     /// typed value is validated, detached and never persisted by a read.
@@ -123,6 +141,18 @@ impl<D, I> DocumentDefinition<D, I> {
         conversation_id: ConversationId,
         key: Option<&str>,
     ) -> Result<DocumentAddress, DurableError> {
+        self.address_scoped(DocumentScope::Conversation { conversation_id }, key)
+    }
+    pub fn address_scoped(
+        &self,
+        scope: DocumentScope,
+        key: Option<&str>,
+    ) -> Result<DocumentAddress, DurableError> {
+        if scope.kind() != self.scope_kind {
+            return Err(DurableError::Rejected(
+                "document token scope mismatch".into(),
+            ));
+        }
         if self.family != key.is_some() {
             return Err(DurableError::Rejected(
                 "document singleton/family key mismatch".into(),
@@ -134,13 +164,14 @@ impl<D, I> DocumentDefinition<D, I> {
             ));
         }
         Ok(DocumentAddress {
-            conversation_id,
+            scope,
             kind: self.kind.clone(),
             key: key.map(str::to_owned),
         })
     }
     pub(crate) fn check(&self, record: &GenericDocumentRecord) -> Result<(), DurableError> {
-        if record.address.kind != self.kind
+        if record.address.scope.kind() != self.scope_kind
+            || record.address.kind != self.kind
             || record.address.key.is_some() != self.family
             || record.history != self.history
             || record.fork != self.fork

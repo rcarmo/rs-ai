@@ -179,6 +179,9 @@ mod durable_document_lifecycle_test;
 #[path = "tests/durable/document_migration_test.rs"]
 mod durable_document_migration_test;
 #[cfg(test)]
+#[path = "tests/durable/document_scope_test.rs"]
+mod durable_document_scope_test;
+#[cfg(test)]
 #[path = "tests/durable/document_watch_test.rs"]
 mod durable_document_watch_test;
 #[cfg(test)]

@@ -5,7 +5,9 @@ mod tests {
 
     fn address(conversation: ConversationId, kind: &str) -> DocumentAddress {
         DocumentAddress {
-            conversation_id: conversation,
+            scope: DocumentScope::Conversation {
+                conversation_id: conversation,
+            },
             kind: kind.into(),
             key: None,
         }

@@ -61,11 +61,14 @@ impl StorageSnapshot {
                     .values()
                     .map(|document| document.conversation_id),
             )
-            .chain(
-                self.generic_documents
-                    .values()
-                    .map(|document| document.address.conversation_id),
-            );
+            .chain(self.generic_documents.values().filter_map(|document| {
+                match document.address.scope {
+                    super::documents::DocumentScope::Conversation { conversation_id } => {
+                        Some(conversation_id)
+                    }
+                    _ => None,
+                }
+            }));
         for id in ids {
             self.conversations.entry(id).or_insert(ConversationRecord {
                 id,
@@ -167,24 +170,27 @@ impl StorageSnapshot {
         }
         // Reconstruct only newly mentioned legacy scopes, not the entire log
         // on every adoption. Explicit creations were installed above.
-        for id in batch
-            .entries
-            .iter()
-            .map(|record| record.conversation_id)
-            .chain(batch.tasks.iter().map(|record| record.conversation_id))
-            .chain(
-                batch
-                    .submissions
-                    .iter()
-                    .map(|record| record.conversation_id),
-            )
-            .chain(batch.documents.iter().map(|record| record.conversation_id))
-            .chain(
-                batch
-                    .generic_documents
-                    .iter()
-                    .map(|record| record.address.conversation_id),
-            )
+        for id in
+            batch
+                .entries
+                .iter()
+                .map(|record| record.conversation_id)
+                .chain(batch.tasks.iter().map(|record| record.conversation_id))
+                .chain(
+                    batch
+                        .submissions
+                        .iter()
+                        .map(|record| record.conversation_id),
+                )
+                .chain(batch.documents.iter().map(|record| record.conversation_id))
+                .chain(batch.generic_documents.iter().filter_map(
+                    |record| match record.address.scope {
+                        super::documents::DocumentScope::Conversation { conversation_id } => {
+                            Some(conversation_id)
+                        }
+                        _ => None,
+                    },
+                ))
         {
             self.conversations.entry(id).or_insert(ConversationRecord {
                 id,
@@ -721,14 +727,49 @@ pub fn validate_batch(
             }
         }
         *live = record.retired_seq.is_none().then_some(record.id);
-        if !(snapshot
-            .conversations
-            .contains_key(&record.address.conversation_id)
-            || new_conversations.contains(&record.address.conversation_id))
-        {
-            return Err(DurableError::Rejected(
-                "document conversation missing".into(),
-            ));
+        match record.address.scope {
+            super::documents::DocumentScope::Session => {}
+            super::documents::DocumentScope::Conversation { conversation_id } => {
+                if !(snapshot.conversations.contains_key(&conversation_id)
+                    || new_conversations.contains(&conversation_id))
+                {
+                    return Err(DurableError::Rejected(
+                        "document conversation missing".into(),
+                    ));
+                }
+            }
+            super::documents::DocumentScope::Task { task_id } => {
+                let task = batch
+                    .tasks
+                    .iter()
+                    .find(|task| task.id == task_id)
+                    .or_else(|| snapshot.tasks.get(&task_id))
+                    .ok_or_else(|| DurableError::Rejected("document task missing".into()))?;
+                if snapshot
+                    .tasks
+                    .get(&task_id)
+                    .is_some_and(|task| task.state.terminal())
+                    || (task.state.terminal() && record.retired_seq != Some(batch.seq))
+                {
+                    return Err(DurableError::Rejected("document task is terminal".into()));
+                }
+            }
+        }
+    }
+    for task in batch.tasks.iter().filter(|task| task.state.terminal()) {
+        for document in snapshot.generic_documents.values().filter(|record| {
+            record.address.scope == (super::documents::DocumentScope::Task { task_id: task.id })
+                && record.retired_seq.is_none()
+        }) {
+            if !batch
+                .generic_documents
+                .iter()
+                .any(|record| record.id == document.id && record.retired_seq == Some(batch.seq))
+            {
+                return Err(DurableError::Rejected(
+                    "terminal task must retire documents".into(),
+                ));
+            }
         }
     }
     let expected_next_id = if max_new_id == 0 {

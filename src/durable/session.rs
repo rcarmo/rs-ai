@@ -478,8 +478,28 @@ impl DurableSession {
     where
         D: serde::Serialize + serde::de::DeserializeOwned,
     {
+        self.typed_document_scoped(
+            definition,
+            super::documents::DocumentScope::Conversation {
+                conversation_id: conversation,
+            },
+            key,
+            point,
+        )
+        .await
+    }
+    pub async fn typed_document_scoped<D, I>(
+        &self,
+        definition: &super::document_definition::DocumentDefinition<D, I>,
+        scope: super::documents::DocumentScope,
+        key: Option<&str>,
+        point: super::documents::DocumentPoint,
+    ) -> Result<Option<D>, DurableError>
+    where
+        D: serde::Serialize + serde::de::DeserializeOwned,
+    {
         let record = self
-            .document(definition.address(conversation, key)?, point)
+            .document(definition.address_scoped(scope, key)?, point)
             .await?;
         definition.decode(record.as_ref())
     }
@@ -788,6 +808,21 @@ async fn session_worker(
                             }
                             if task.state.terminal() && task.ended_at.is_none() {
                                 task.ended_at = Some(now());
+                            }
+                        }
+                        // Task-scoped documents retire atomically with owner terminal
+                        // settlement, including documents created in this same batch.
+                        let terminal = batch.tasks.iter().filter(|task|task.state.terminal()).map(|task|task.id).collect::<Vec<_>>();
+                        for record in &mut batch.generic_documents {
+                            if let super::documents::DocumentScope::Task {task_id}=record.address.scope && terminal.contains(&task_id) {
+                                record.retired_seq=Some(batch.seq);
+                            }
+                        }
+                        for record in state.generic_documents.values().filter(|record| record.retired_seq.is_none()) {
+                            if let super::documents::DocumentScope::Task {task_id}=record.address.scope && terminal.contains(&task_id)
+                                && !batch.generic_documents.iter().any(|staged|staged.id==record.id) {
+                                let mut retired=record.clone();retired.updated_seq=batch.seq;retired.retired_seq=Some(batch.seq);
+                                batch.generic_documents.push(retired);
                             }
                         }
                         // Native legacy assistants derive model identity from

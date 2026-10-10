@@ -808,7 +808,9 @@ mod tests {
             session
                 .document(
                     DocumentAddress {
-                        conversation_id: conversation,
+                        scope: DocumentScope::Conversation {
+                            conversation_id: conversation
+                        },
                         kind: "test".into(),
                         key: None
                     },

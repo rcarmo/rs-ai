@@ -26,7 +26,7 @@ pub use document_definition::DocumentDefinition;
 pub use document_watch::{DocumentEvent, DocumentWatch, DocumentWatchEnd};
 pub use documents::{
     DocumentAddress, DocumentDraft, DocumentFork, DocumentHistory, DocumentPoint, DocumentQuery,
-    DocumentRevision, GenericDocumentRecord,
+    DocumentRevision, DocumentScope, DocumentScopeKind, GenericDocumentRecord,
 };
 pub use entries::{DurableEntries, EntryDefinition, EntryDraft, EntryFuture};
 pub use events::{DurableEvent, DurableWatch, WatchEnd};

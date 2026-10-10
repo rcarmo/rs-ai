@@ -1,4 +1,4 @@
-//! Native conversation-scoped whole-value document incarnations. Built-in
+//! Native scoped whole-value document incarnations. Built-in
 //! runtime documents keep their existing storage and are not copied by this API.
 use super::storage::StorageSnapshot;
 use super::types::*;
@@ -20,12 +20,80 @@ pub enum DocumentFork {
     #[serde(rename = "asOf")]
     AsOf,
 }
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase", deny_unknown_fields)]
+pub enum DocumentScope {
+    Session,
+    Conversation { conversation_id: ConversationId },
+    Task { task_id: TaskId },
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DocumentScopeKind {
+    Session,
+    Conversation,
+    Task,
+}
+impl DocumentScope {
+    pub fn kind(self) -> DocumentScopeKind {
+        match self {
+            Self::Session => DocumentScopeKind::Session,
+            Self::Conversation { .. } => DocumentScopeKind::Conversation,
+            Self::Task { .. } => DocumentScopeKind::Task,
+        }
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct DocumentAddress {
-    pub conversation_id: ConversationId,
+    pub scope: DocumentScope,
     pub kind: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub key: Option<String>,
+}
+// Keep legacy conversation addresses byte-shape compatible. New scopes use an
+// explicit tagged owner; ambiguous owner fields fail closed on journal replay.
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AddressWire {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    conversation_id: Option<ConversationId>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    scope: Option<DocumentScope>,
+    kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    key: Option<String>,
+}
+impl Serialize for DocumentAddress {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let (conversation_id, scope) = match self.scope {
+            DocumentScope::Conversation { conversation_id } => (Some(conversation_id), None),
+            scope => (None, Some(scope)),
+        };
+        AddressWire {
+            conversation_id,
+            scope,
+            kind: self.kind.clone(),
+            key: self.key.clone(),
+        }
+        .serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for DocumentAddress {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let wire = AddressWire::deserialize(deserializer)?;
+        let scope = match (wire.conversation_id, wire.scope) {
+            (Some(conversation_id), None) => DocumentScope::Conversation { conversation_id },
+            (None, Some(scope)) => scope,
+            _ => {
+                return Err(serde::de::Error::custom(
+                    "document address requires exactly one scope",
+                ));
+            }
+        };
+        Ok(Self {
+            scope,
+            kind: wire.kind,
+            key: wire.key,
+        })
+    }
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DocumentDraft {
@@ -58,16 +126,25 @@ pub struct DocumentRevision {
 
 #[derive(Clone, Debug)]
 pub struct DocumentQuery {
-    pub conversation_id: ConversationId,
+    pub scope: DocumentScope,
     pub kind: Option<String>,
     pub fork: Option<DocumentFork>,
     pub point: DocumentPoint,
     pub scan: super::storage::scan::ScanOptions,
 }
 impl DocumentQuery {
+    pub fn scoped(scope: DocumentScope) -> Self {
+        Self {
+            scope,
+            kind: None,
+            fork: None,
+            point: DocumentPoint::Current,
+            scan: Default::default(),
+        }
+    }
     pub fn current(conversation_id: ConversationId) -> Self {
         Self {
-            conversation_id,
+            scope: DocumentScope::Conversation { conversation_id },
             kind: None,
             fork: None,
             point: DocumentPoint::Current,
@@ -151,7 +228,9 @@ impl GenericDocumentRecord {
                 "runtime document kind is reserved".into(),
             ));
         }
-        if self.version == 0
+        if (self.address.scope.kind() != DocumentScopeKind::Conversation
+            && (self.history != DocumentHistory::Latest || self.fork != DocumentFork::Initial))
+            || self.version == 0
             || (self.fork == DocumentFork::AsOf && self.history != DocumentHistory::Rewindable)
         {
             return Err(DurableError::Rejected(
@@ -185,8 +264,15 @@ impl StorageSnapshot {
         use super::storage::scan::{ScanCursor, ScanOrder, ScanPage, start};
         self.check_document_point(query.point)?;
         let (order, after) = start(&query.scan, ScanOrder::Ascending)?;
+        if !matches!(query.point, DocumentPoint::Current)
+            && query.scope.kind() != DocumentScopeKind::Conversation
+        {
+            return Err(DurableError::Rejected(
+                "non-conversation documents are current-only".into(),
+            ));
+        }
         let matches = |record: &&GenericDocumentRecord| {
-            record.address.conversation_id == query.conversation_id
+            record.address.scope == query.scope
                 && query
                     .kind
                     .as_ref()
@@ -234,6 +320,13 @@ impl StorageSnapshot {
         point: DocumentPoint,
     ) -> Result<Option<GenericDocumentRecord>, DurableError> {
         self.check_document_point(point)?;
+        if !matches!(point, DocumentPoint::Current)
+            && address.scope.kind() != DocumentScopeKind::Conversation
+        {
+            return Err(DurableError::Rejected(
+                "non-conversation documents are current-only".into(),
+            ));
+        }
         let record = self
             .generic_documents
             .values()

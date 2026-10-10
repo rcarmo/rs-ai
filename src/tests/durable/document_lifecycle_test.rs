@@ -13,7 +13,9 @@ mod tests {
     }
     fn address() -> DocumentAddress {
         DocumentAddress {
-            conversation_id: root(),
+            scope: DocumentScope::Conversation {
+                conversation_id: root(),
+            },
             kind: "custom.lifecycle".into(),
             key: None,
         }
@@ -504,7 +506,9 @@ mod tests {
             session
                 .document(
                     DocumentAddress {
-                        conversation_id: child.id,
+                        scope: DocumentScope::Conversation {
+                            conversation_id: child.id
+                        },
                         ..address()
                     },
                     DocumentPoint::Current
@@ -523,7 +527,9 @@ mod tests {
             session
                 .document(
                     DocumentAddress {
-                        conversation_id: old_child.id,
+                        scope: DocumentScope::Conversation {
+                            conversation_id: old_child.id
+                        },
                         ..address()
                     },
                     DocumentPoint::Current

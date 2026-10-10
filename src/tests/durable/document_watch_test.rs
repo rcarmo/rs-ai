@@ -12,7 +12,9 @@ mod tests {
 
     fn address() -> DocumentAddress {
         DocumentAddress {
-            conversation_id: ConversationId::new(1).unwrap(),
+            scope: DocumentScope::Conversation {
+                conversation_id: ConversationId::new(1).unwrap(),
+            },
             kind: "custom.watch".into(),
             key: None,
         }
