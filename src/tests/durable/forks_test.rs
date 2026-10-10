@@ -178,6 +178,101 @@ mod tests {
         reopened.close().await.unwrap();
         std::fs::remove_dir_all(root_dir).unwrap();
     }
+    #[tokio::test]
+    async fn ancestor_task_model_identity_update_invalidates_descendant_retained_context() {
+        crate::registry::register_builtin_models();
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let root = ConversationId::new(1).unwrap();
+        let model =
+            PinnedModel::from_model(&crate::registry::get_model("openai", "gpt-4o-mini").unwrap())
+                .unwrap();
+        let mut intent = ModelIntent {
+            model,
+            options: PinnedOptions::default(),
+            context_cutoff: 0,
+            logical_attempt: 1,
+            offered_tools: vec![],
+            system_prompt: None,
+            context: vec![],
+            provider_session_id: None,
+            native_messages: None,
+        };
+        let seq = CommitSeq::new(1).unwrap();
+        let task_id = TaskId::new(1).unwrap();
+        let entry_id = EntryId::new(2).unwrap();
+        let task = TaskRecord {
+            id: task_id,
+            conversation_id: root,
+            kind: "generation".into(),
+            version: 1,
+            owner_task_id: None,
+            state: TaskState::Pending,
+            input: serde_json::to_value(&intent).unwrap(),
+            checkpoint: json!({}),
+            outcome: None,
+            abort_requested: false,
+            started_at: None,
+            ended_at: None,
+            updated_seq: seq,
+        };
+        session
+            .commit(CommitBatch {
+                conversations: vec![],
+                seq,
+                next_id: 3,
+                next_seq: 2,
+                entries: vec![EntryRecord {
+                    id: entry_id,
+                    conversation_id: root,
+                    kind: "assistant".into(),
+                    value: json!({"text":"legacy answer"}),
+                    by_task_id: Some(task_id),
+                    created_seq: seq,
+                }],
+                tasks: vec![task],
+                submissions: vec![],
+                documents: vec![],
+            })
+            .await
+            .unwrap();
+        let child = session
+            .fork_conversation(root, entry_id, ConversationOwnership::Ownerless)
+            .await
+            .unwrap();
+        session.message_context(child.id, None).await.unwrap();
+        assert_eq!(session.context_cache_stats().await.0, 1);
+        intent.model =
+            PinnedModel::from_model(&crate::registry::get_model("openai", "gpt-4o").unwrap())
+                .unwrap();
+        let snapshot = session.snapshot().await.unwrap();
+        let mut task = snapshot.tasks[&task_id].clone();
+        task.input = serde_json::to_value(intent).unwrap();
+        task.updated_seq = CommitSeq::new(snapshot.next_seq).unwrap();
+        session
+            .commit(CommitBatch {
+                conversations: vec![],
+                seq: task.updated_seq,
+                next_id: snapshot.next_id,
+                next_seq: snapshot.next_seq + 1,
+                tasks: vec![task],
+                entries: vec![],
+                submissions: vec![],
+                documents: vec![],
+            })
+            .await
+            .unwrap();
+        assert_eq!(session.context_cache_stats().await.0, 0);
+        assert_eq!(
+            session.message_context(child.id, None).await.unwrap()[0]
+                .model
+                .as_deref(),
+            Some("gpt-4o")
+        );
+        session.close().await.unwrap();
+    }
+
     #[test]
     fn malformed_history_cycle_and_missing_parent_fail_closed() {
         let mut snapshot = StorageSnapshot::empty();

@@ -735,7 +735,10 @@ async fn session_worker(
                                 Ok(adopted) => {
                                     state = adopted;
                                     state.infer_conversations();
-                                    for conversation in invalidate { cache.values.remove(&conversation); }
+                                    if !invalidate.is_empty() {
+                                        cache.values.retain(|conversation, _| state.history_bounds(*conversation)
+                                            .is_ok_and(|history| !invalidate.iter().any(|changed| history.contains_key(changed))));
+                                    }
                                     cache.reconcile(&state, settings.context_retention);
                                     watches.values.retain(|watch: &std::sync::Weak<WatchQueue>| {
                                         if let Some(watch) = watch.upgrade() { if let Some((batch, size)) = &publication { watch.publish(batch, &state, *size); } true } else { false }
