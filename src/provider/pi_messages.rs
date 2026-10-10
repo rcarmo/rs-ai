@@ -365,6 +365,14 @@ pub fn stream_pi_messages<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+    crate::registry::time_assistant_stream(stream_pi_messages_untimed(model, context, opts))
+}
+
+fn stream_pi_messages_untimed<'a>(
+    model: &'a Model,
+    context: &'a Context,
+    opts: &'a StreamOptions,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     let api_key = match client_api_key(model, opts) {
         Some(k) => k,
         None => {

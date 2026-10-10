@@ -55,6 +55,63 @@ async fn adds_duration_to_done_and_error_terminal_messages() {
         );
     }
 }
+#[test]
+fn elapsed_duration_rounds_to_nearest_millisecond() {
+    use std::time::Duration;
+    assert_eq!(
+        crate::registry::round_duration_ms(Duration::from_micros(499)),
+        0
+    );
+    assert_eq!(
+        crate::registry::round_duration_ms(Duration::from_micros(500)),
+        1
+    );
+    assert_eq!(
+        crate::registry::round_duration_ms(Duration::from_micros(1499)),
+        1
+    );
+    assert_eq!(
+        crate::registry::round_duration_ms(Duration::from_micros(1500)),
+        2
+    );
+    assert_eq!(crate::registry::round_duration_ms(Duration::MAX), u64::MAX);
+}
+
+#[tokio::test]
+async fn direct_provider_entry_points_time_terminal_messages() {
+    use crate::types::{Context, StreamOptions};
+    use wiremock::matchers::method;
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+    let server = MockServer::start().await;
+    Mock::given(method("POST")).respond_with(ResponseTemplate::new(200)
+        .insert_header("content-type", "text/event-stream")
+        .set_body_string("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+        .mount(&server).await;
+    let mut model = crate::registry::get_model("openai", "gpt-4o-mini").unwrap();
+    model.base_url = server.uri();
+    model.api_key = Some("test-key".into());
+    let context = Context {
+        system_prompt: None,
+        messages: vec![],
+        tools: vec![],
+    };
+    let options = StreamOptions::default();
+    let events = crate::provider::openai::stream_openai(&model, &context, &options)
+        .collect::<Vec<_>>()
+        .await;
+    let Some(Event::Done { message, .. }) = events.last() else {
+        panic!("expected Done: {events:?}")
+    };
+    assert!(message.duration_ms.is_some());
+    let events = crate::provider::faux::stream_faux_text("hello", &model)
+        .collect::<Vec<_>>()
+        .await;
+    let Some(Event::Done { message, .. }) = events.last() else {
+        panic!("expected Done: {events:?}")
+    };
+    assert!(message.duration_ms.is_some());
+}
+
 #[tokio::test]
 async fn preserves_existing_duration_and_leaves_older_forwarded_response_untimed() {
     for (timestamp, duration) in [(0, None), (crate::utils::now_millis() + 1000, Some(1234))] {

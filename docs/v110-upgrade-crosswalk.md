@@ -52,7 +52,7 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | M | `packages/ai/src/providers/radius.ts` | IMPLEMENTED catalog replacement delta | `RuntimeProvider::radius` replaces shipped models with remote/cached organization models; `Some(empty)` is distinct from no catalog. HTTP empty-list and offline cached empty/nonempty regressions verify removed defaults are unavailable. Twenty-six runtime-refresh tests pass. |
 | M | `packages/ai/src/types.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/utils/estimate.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/utils/event-stream.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/utils/event-stream.ts` | ADAPTED terminal timing contract | Registry and exported provider stream entry points use `time_assistant_stream`; supplied durations and older forwarded messages are preserved. Nearest-ms monotonic rounding matches upstream. Four timing regressions include direct HTTP/faux entry points and rounding boundaries. Rust streams have no public EventStream subclass/end(result) surface. |
 | M | `packages/ai/src/utils/model-operations.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/utils/provider-retry.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/utils/retry.ts` | PENDING | Not yet accepted |

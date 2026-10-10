@@ -17,6 +17,14 @@ pub fn stream_mistral<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+    crate::registry::time_assistant_stream(stream_mistral_untimed(model, context, opts))
+}
+
+fn stream_mistral_untimed<'a>(
+    model: &'a Model,
+    context: &'a Context,
+    opts: &'a StreamOptions,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     let api_key = resolve_api_key(model, opts);
     if api_key.is_none() {
         let err = Event::Error {

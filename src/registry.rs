@@ -241,13 +241,18 @@ pub fn time_assistant_stream<'a>(mut source: EventStream<'a>) -> EventStream<'a>
             };
             if let Some(message) = message {
                 if !terminal_seen && message.duration_ms.is_none() && message.timestamp >= started_at {
-                    message.duration_ms = Some(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX));
+                    message.duration_ms = Some(round_duration_ms(started.elapsed()));
                 }
                 terminal_seen = true;
             }
             yield event;
         }
     })
+}
+
+pub(crate) fn round_duration_ms(duration: std::time::Duration) -> u64 {
+    // Upstream rounds performance.now() elapsed milliseconds to nearest integer.
+    u64::try_from(duration.as_nanos().saturating_add(500_000) / 1_000_000).unwrap_or(u64::MAX)
 }
 
 /// Simple completion dispatch surface. rs-ai's provider adapters share the same

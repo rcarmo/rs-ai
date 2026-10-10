@@ -818,6 +818,14 @@ pub fn stream_bedrock<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+    crate::registry::time_assistant_stream(stream_bedrock_untimed(model, context, opts))
+}
+
+fn stream_bedrock_untimed<'a>(
+    model: &'a Model,
+    context: &'a Context,
+    opts: &'a StreamOptions,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     Box::pin(async_stream::stream! {
         let mut loader = aws_config::defaults(BehaviorVersion::latest());
         if let Some(region) = resolve_bedrock_region_with_profile(model, opts.profile.as_deref()) {

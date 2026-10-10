@@ -18,7 +18,7 @@ pub fn stream_responses<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
-    stream_responses_inner(model, context, opts, false)
+    crate::registry::time_assistant_stream(stream_responses_inner(model, context, opts, false))
 }
 
 /// Start an Azure OpenAI Responses stream (api-key auth, api-version, session headers,
@@ -28,7 +28,7 @@ pub fn stream_azure_responses<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
-    stream_responses_inner(model, context, opts, true)
+    crate::registry::time_assistant_stream(stream_responses_inner(model, context, opts, true))
 }
 
 /// Normalize an Azure OpenAI base URL: ensure Azure hosts use the `/openai/v1` base

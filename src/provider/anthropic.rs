@@ -245,6 +245,14 @@ pub fn stream_anthropic<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+    crate::registry::time_assistant_stream(stream_anthropic_untimed(model, context, opts))
+}
+
+fn stream_anthropic_untimed<'a>(
+    model: &'a Model,
+    context: &'a Context,
+    opts: &'a StreamOptions,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     stream_anthropic_with_federation(
         model,
         context,

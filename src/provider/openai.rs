@@ -19,6 +19,14 @@ pub fn stream_openai<'a>(
     context: &'a Context,
     opts: &'a StreamOptions,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+    crate::registry::time_assistant_stream(stream_openai_untimed(model, context, opts))
+}
+
+fn stream_openai_untimed<'a>(
+    model: &'a Model,
+    context: &'a Context,
+    opts: &'a StreamOptions,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     let api_key = client_api_key(model, opts);
     if api_key.is_none() {
         let err = Event::Error {

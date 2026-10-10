@@ -620,13 +620,20 @@ pub fn stream_faux_text<'a>(
     text: &'a str,
     model: &'a Model,
 ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
+    crate::registry::time_assistant_stream(stream_faux_text_untimed(text, model))
+}
+
+fn stream_faux_text_untimed<'a>(
+    text: &'a str,
+    model: &'a Model,
+) -> std::pin::Pin<Box<dyn futures::Stream<Item = Event> + Send + 'a>> {
     let text = text.to_string();
     let model_clone = model.clone();
     Box::pin(async_stream::stream! {
         let partial = Message {
             role: Role::Assistant,
             content: Vec::new(),
-            timestamp: 0,
+            timestamp: crate::utils::now_millis(),
             duration_ms: None,
             api: Some(model_clone.api.clone()),
             provider: Some(model_clone.provider.clone()),
