@@ -141,6 +141,74 @@ mod tests {
     }
 
     #[test]
+    fn older_head_markers_keep_edits_but_only_newest_marker_contributes() {
+        use crate::durable::*;
+        use serde_json::json;
+        let conversation = ConversationId::new(1).unwrap();
+        let mut snapshot = StorageSnapshot::empty();
+        for (id, kind, value) in [
+            (1, "user", json!({"text":"target"})),
+            (2, "user", json!({"text":"kept"})),
+            (
+                3,
+                "context",
+                json!({"head":2,"messages":[crate::user_message("old-marker")],"edits":[{"type":"replace","target":1,"messages":[crate::user_message("replacement")]}]}),
+            ),
+            (
+                4,
+                "context",
+                json!({"head":1,"messages":[crate::user_message("new-marker")]}),
+            ),
+        ] {
+            let id = EntryId::new(id).unwrap();
+            snapshot.entries.insert(
+                id,
+                EntryRecord {
+                    id,
+                    conversation_id: conversation,
+                    kind: kind.into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: CommitSeq::new(1).unwrap(),
+                },
+            );
+        }
+        let text = |messages: Vec<Message>| {
+            messages
+                .into_iter()
+                .map(|message| match message.content.into_iter().next() {
+                    Some(ContentBlock::Text { text, .. }) => text,
+                    _ => String::new(),
+                })
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(
+            text(crate::durable::context::messages(&snapshot, conversation, None).unwrap()),
+            ["replacement", "kept", "new-marker"]
+        );
+        assert_eq!(
+            text(
+                crate::durable::context::messages(
+                    &snapshot,
+                    conversation,
+                    Some(EntryId::new(3).unwrap())
+                )
+                .unwrap()
+            ),
+            ["kept", "old-marker"]
+        );
+        snapshot
+            .entries
+            .get_mut(&EntryId::new(4).unwrap())
+            .unwrap()
+            .value["edits"] = json!([{"type":"omit","target":1}]);
+        assert_eq!(
+            text(crate::durable::context::messages(&snapshot, conversation, None).unwrap()),
+            ["kept", "new-marker"]
+        );
+    }
+
+    #[test]
     fn missing_results_are_synthesized_and_never_cross_next_assistant_boundary() {
         let messages = order_tool_results(vec![
             assistant(&["a"]),

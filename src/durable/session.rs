@@ -59,6 +59,29 @@ impl Default for SessionSettings {
     }
 }
 
+struct ContextSize(usize);
+impl std::io::Write for ContextSize {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        let size = self.0.saturating_add(bytes.len());
+        if size > MAX_TASK_FIELD_BYTES {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::FileTooLarge,
+                "context cache limit",
+            ));
+        }
+        self.0 = size;
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+fn context_size(messages: &[crate::types::Message]) -> Option<usize> {
+    let mut size = ContextSize(0);
+    serde_json::to_writer(&mut size, messages).ok()?;
+    Some(size.0)
+}
+
 struct ContextCache {
     values: HashMap<ConversationId, (Instant, Vec<crate::types::Message>, usize)>,
     #[cfg(test)]
@@ -417,11 +440,10 @@ async fn session_worker(
                         let result = super::context::messages(&state, conversation, at);
                         if at.is_none() && !settings.context_retention.is_zero() && let Ok(messages) = &result
                             && !messages.is_empty() && cache.values.len() < 64
+                            && let Some(bytes) = context_size(messages)
+                            && cache.retained_bytes().saturating_add(bytes) <= MAX_COMMIT_BYTES
                         {
-                            let bytes = serde_json::to_vec(messages).map_or(usize::MAX, |bytes| bytes.len());
-                            if bytes <= MAX_TASK_FIELD_BYTES && cache.retained_bytes().saturating_add(bytes) <= MAX_COMMIT_BYTES {
-                                cache.values.insert(conversation, (Instant::now(), messages.clone(), bytes));
-                            }
+                            cache.values.insert(conversation, (Instant::now(), messages.clone(), bytes));
                         }
                         let _ = reply.send(result);
                     }

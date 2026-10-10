@@ -381,6 +381,18 @@ fn text(entry: &EntryRecord) -> Result<String, DurableError> {
 /// Associate only the first matching result before the next assistant, emit in
 /// call order, synthesize missing results and discard orphan/duplicate results.
 pub(crate) fn order_tool_results(messages: Vec<Message>) -> Vec<Message> {
+    // The usual text-only transcript needs neither repair nor a second deep
+    // clone of every message. Preserve the owned buffer unchanged.
+    if !messages.iter().any(|message| {
+        message.role == Role::ToolResult
+            || (message.role == Role::Assistant
+                && message
+                    .content
+                    .iter()
+                    .any(|block| matches!(block, ContentBlock::ToolCall { .. })))
+    }) {
+        return messages;
+    }
     let mut result = Vec::new();
     for (index, message) in messages.iter().enumerate() {
         if message.role == Role::ToolResult {

@@ -211,6 +211,64 @@ mod tests {
         }
     }
 
+    async fn repeated_context_reads(retention: std::time::Duration) {
+        let session = DurableSession::open_with_settings(
+            Box::new(MemoryStorage::new()),
+            Arc::new(crate::utils::now_millis),
+            SessionSettings {
+                context_retention: retention,
+            },
+        )
+        .await
+        .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        let seq = CommitSeq::new(1).unwrap();
+        let entries = (1..=128)
+            .map(|id| EntryRecord {
+                id: EntryId::new(id).unwrap(),
+                conversation_id: conversation,
+                kind: "user".into(),
+                value: json!({"text":"x".repeat(256)}),
+                by_task_id: None,
+                created_seq: seq,
+            })
+            .collect();
+        session
+            .commit(CommitBatch {
+                seq,
+                next_id: 129,
+                next_seq: 2,
+                entries,
+                tasks: vec![],
+                submissions: vec![],
+                documents: vec![],
+            })
+            .await
+            .unwrap();
+        for _ in 0..64 {
+            let messages = session.message_context(conversation, None).await.unwrap();
+            assert_eq!(messages.len(), 128);
+            assert!(
+                matches!(messages[127].content.first(), Some(crate::types::ContentBlock::Text { text, .. }) if text.len() == 256)
+            );
+        }
+        assert_eq!(
+            session.context_cache_stats().await.1,
+            if retention.is_zero() { 64 } else { 1 }
+        );
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn repeated_native_context_reads_uncached() {
+        repeated_context_reads(std::time::Duration::ZERO).await;
+    }
+
+    #[tokio::test]
+    async fn repeated_native_context_reads_cached() {
+        repeated_context_reads(std::time::Duration::from_secs(600)).await;
+    }
+
     struct BarrierStorage {
         inner: MemoryStorage,
         inner_claim: WriterClaim,
