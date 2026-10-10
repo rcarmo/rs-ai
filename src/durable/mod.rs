@@ -6,6 +6,7 @@
 
 pub mod harness;
 pub mod model;
+pub mod models;
 mod provider;
 pub mod session;
 pub mod storage;
@@ -18,6 +19,7 @@ pub use model::{
     DurableContent, DurableMessage, DurableModelRunner, DurableUsage, ModelIntent, ModelRun,
     ModelTerminal, PinnedModel, PinnedOptions, RegistryModelRunner,
 };
+pub use models::{DurableModels, RegistryModels};
 pub use session::{DurableSession, LifecycleClock};
 pub use storage::journal::JournalStorage;
 pub use storage::memory::MemoryStorage;

@@ -147,6 +147,73 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn recovered_tool_receives_current_host_models_without_serializing_service() {
+        struct UsesCurrentModels(Arc<dyn DurableModels>, Arc<AtomicUsize>);
+        impl DurableTool for UsesCurrentModels {
+            fn execute<'a>(
+                &'a self,
+                execution: ToolExecution,
+            ) -> crate::durable::tool::ToolFuture<'a> {
+                assert!(Arc::ptr_eq(&self.0, &execution.models));
+                assert!(
+                    execution
+                        .models
+                        .get_model("openai", "gpt-4o-mini")
+                        .is_some()
+                );
+                self.1.fetch_add(1, Ordering::SeqCst);
+                Box::pin(async {
+                    Ok(ToolOutput {
+                        value: json!({"ok":true}),
+                        usage: None,
+                    })
+                })
+            }
+        }
+        let path =
+            std::env::temp_dir().join(format!("rs-ai-r1c-host-models-{}", std::process::id()));
+        assert!(!path.exists());
+        let host: Arc<dyn DurableModels> = Arc::new(RegistryModels);
+        let count = Arc::new(AtomicUsize::new(0));
+        let registry = Arc::new(DurableToolRegistry::default());
+        registry
+            .register(
+                definition(),
+                "impl",
+                "1",
+                ReplayPolicy::Safe,
+                Arc::new(UsesCurrentModels(host.clone(), count.clone())),
+            )
+            .unwrap();
+        let handle = seed_pending_tool(&path, registry.clone()).await;
+        assert_eq!(count.load(Ordering::SeqCst), 0);
+        let reopened = DurableHarness::open_with_tool_models(
+            Box::new(JournalStorage::open(&path).unwrap()),
+            Arc::new(FinalAnswer(Arc::new(AtomicUsize::new(0)))),
+            model(),
+            PinnedOptions::default(),
+            registry,
+            Arc::new(crate::utils::now_millis),
+            host,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            count.load(Ordering::SeqCst),
+            0,
+            "opening never dispatches recovered effects"
+        );
+        reopened.resume(handle.clone()).await.unwrap();
+        assert_eq!(
+            reopened.wait(handle).await.unwrap().answer.as_deref(),
+            Some("final")
+        );
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+        reopened.close().await.unwrap();
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[tokio::test]
     async fn unresumed_recovered_abort_settles_without_model_or_tool_effect() {
         let path =
             std::env::temp_dir().join(format!("rs-ai-r1c-unresumed-abort-{}", std::process::id()));

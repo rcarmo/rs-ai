@@ -33,6 +33,7 @@ pub struct DurableHarness {
 struct Inner {
     session: Arc<DurableSession>,
     runner: Arc<dyn DurableModelRunner>,
+    models: Arc<dyn crate::durable::models::DurableModels>,
     model: PinnedModel,
     options: PinnedOptions,
     tools: Arc<DurableToolRegistry>,
@@ -102,6 +103,27 @@ impl DurableHarness {
         tools: Arc<DurableToolRegistry>,
         now: crate::durable::session::LifecycleClock,
     ) -> Result<Self, DurableError> {
+        Self::open_with_tool_models(
+            storage,
+            runner,
+            model,
+            options,
+            tools,
+            now,
+            Arc::new(crate::durable::models::RegistryModels),
+        )
+        .await
+    }
+
+    pub async fn open_with_tool_models(
+        storage: Box<dyn DurableStorage>,
+        runner: Arc<dyn DurableModelRunner>,
+        model: PinnedModel,
+        options: PinnedOptions,
+        tools: Arc<DurableToolRegistry>,
+        now: crate::durable::session::LifecycleClock,
+        models: Arc<dyn crate::durable::models::DurableModels>,
+    ) -> Result<Self, DurableError> {
         model.validate()?;
         options.validate()?;
         tools.seal();
@@ -116,6 +138,7 @@ impl DurableHarness {
         let inner = Arc::new(Inner {
             session,
             runner,
+            models,
             model,
             options,
             tools,
@@ -1189,6 +1212,7 @@ async fn settle_tool_round(
             durable_idempotency_key: intent.durable_idempotency_key.clone(),
             arguments: intent.execution_arguments.clone(),
             cancel,
+            models: inner.models.clone(),
         };
         let started = std::time::Instant::now();
         let terminal = registered.executor.execute(execution).await;
@@ -1502,6 +1526,7 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
                         durable_idempotency_key: intent.durable_idempotency_key.clone(),
                         arguments: intent.execution_arguments.clone(),
                         cancel,
+                        models: inner.models.clone(),
                     })
                     .await;
                 let elapsed_ms = crate::registry::round_duration_ms(started.elapsed());

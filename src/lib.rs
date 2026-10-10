@@ -179,6 +179,9 @@ mod durable_harness_tool_test;
 #[path = "tests/durable/journal_recovery_test.rs"]
 mod durable_journal_recovery_test;
 #[cfg(test)]
+#[path = "tests/durable/models_test.rs"]
+mod durable_models_test;
+#[cfg(test)]
 #[path = "tests/durable/session_lifecycle_test.rs"]
 mod durable_session_lifecycle_test;
 #[cfg(test)]

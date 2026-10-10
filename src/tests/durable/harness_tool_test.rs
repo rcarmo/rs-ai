@@ -127,6 +127,132 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn tool_receives_same_injected_models_service_and_can_complete_nested_call() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        struct HostModels(AtomicUsize);
+        impl DurableModels for HostModels {
+            fn get_model(&self, provider: &str, id: &str) -> Option<Model> {
+                assert_eq!((provider, id), ("host", "nested"));
+                Some(model("http://unused".into()))
+            }
+            fn complete<'a>(
+                &'a self,
+                _: &'a Model,
+                context: &'a crate::types::Context,
+                _: &'a crate::types::StreamOptions,
+            ) -> crate::durable::models::CompletionFuture<'a> {
+                self.0.fetch_add(1, Ordering::SeqCst);
+                assert_eq!(context.messages.len(), 1);
+                Box::pin(async {
+                    let mut message = crate::user_message("nested answer");
+                    message.role = crate::types::Role::Assistant;
+                    Ok(message)
+                })
+            }
+            fn classify<'a>(
+                &'a self,
+                _: &'a crate::types::ClassifierModel,
+                _: &'a crate::types::ClassifierContext,
+                _: &'a crate::classifiers::ClassifierOptions,
+            ) -> crate::durable::models::ClassificationFuture<'a> {
+                panic!("classification not requested")
+            }
+        }
+        struct UsesModels(Arc<dyn DurableModels>);
+        impl DurableTool for UsesModels {
+            fn execute<'a>(
+                &'a self,
+                execution: ToolExecution,
+            ) -> crate::durable::tool::ToolFuture<'a> {
+                assert!(Arc::ptr_eq(&self.0, &execution.models));
+                Box::pin(async move {
+                    let model = execution.models.get_model("host", "nested").unwrap();
+                    let context = crate::types::Context {
+                        system_prompt: None,
+                        messages: vec![crate::user_message("nested")],
+                        tools: vec![],
+                    };
+                    let message = execution
+                        .models
+                        .complete(&model, &context, &crate::types::StreamOptions::default())
+                        .await
+                        .unwrap();
+                    assert!(
+                        matches!(message.content.first(), Some(crate::types::ContentBlock::Text { text, .. }) if text == "nested answer")
+                    );
+                    Ok(ToolOutput {
+                        value: json!({"nested":true}),
+                        usage: None,
+                    })
+                })
+            }
+        }
+        struct Runner(AtomicUsize);
+        impl DurableModelRunner for Runner {
+            fn run<'a>(&'a self, _: ModelIntent) -> crate::durable::model::ModelFuture<'a> {
+                let first = self.0.fetch_add(1, Ordering::SeqCst) == 0;
+                Box::pin(async move {
+                    ModelRun::one(if first {
+                        ModelTerminal::ToolCalls {
+                            calls: vec![DurableToolCall {
+                                provider_call_id: "call".into(),
+                                name: "echo".into(),
+                                original_arguments: json!({"value":"x"}),
+                            }],
+                            usage: DurableUsage::default(),
+                            assistant: json!({"role":"assistant","content":[],"timestamp":0}),
+                        }
+                    } else {
+                        ModelTerminal::Answer {
+                            content: vec![],
+                            text: "done".into(),
+                            usage: DurableUsage::default(),
+                            response_id: None,
+                            stop_reason: "stop".into(),
+                        }
+                    })
+                })
+            }
+        }
+        let host = Arc::new(HostModels(AtomicUsize::new(0)));
+        let models: Arc<dyn DurableModels> = host.clone();
+        let tools = Arc::new(DurableToolRegistry::default());
+        tools
+            .register(
+                definition(),
+                "nested",
+                "1",
+                ReplayPolicy::Safe,
+                Arc::new(UsesModels(models.clone())),
+            )
+            .unwrap();
+        let harness = DurableHarness::open_with_tool_models(
+            Box::new(MemoryStorage::new()),
+            Arc::new(Runner(AtomicUsize::new(0))),
+            PinnedModel::from_model(&model("http://unused".into())).unwrap(),
+            PinnedOptions::default(),
+            tools,
+            Arc::new(crate::utils::now_millis),
+            models,
+        )
+        .await
+        .unwrap();
+        let handle = harness
+            .submit(SubmitRequest {
+                request_id: "nested".into(),
+                content: "go".into(),
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            harness.wait(handle).await.unwrap().answer.as_deref(),
+            Some("done")
+        );
+        assert_eq!(host.0.load(Ordering::SeqCst), 1);
+        harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn unoffered_model_tool_call_terminalises_without_poisoning_fifo() {
         struct Unoffered;
         impl DurableModelRunner for Unoffered {

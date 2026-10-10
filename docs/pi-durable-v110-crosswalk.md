@@ -29,7 +29,7 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 | M | `packages/durable/src/harness/output.ts` | PENDING | Not yet accepted |
 | A | `packages/durable/src/harness/provider.ts` | PENDING | Not yet accepted |
 | M | `packages/durable/src/harness/scheduler.ts` | PENDING | Not yet accepted |
-| M | `packages/durable/src/harness/tool.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/tool.ts` | ADAPTED model access/timing subset; output/environment gaps | `ToolExecution.models` receives the same `Arc<dyn DurableModels>` in normal/recovered attempts. Host injection and default RegistryModels support completion/classification; tests verify pointer identity, nested call, recovered current host and HTTP completion/Decisions. Tool environment/progress-output windows and generic task/hook APIs are absent. |
 | M | `packages/durable/src/harness/types.ts` | PENDING | Not yet accepted |
 | M | `packages/durable/src/harness/view.ts` | PENDING | Not yet accepted |
 | M | `packages/durable/src/index.ts` | PENDING | Not yet accepted |

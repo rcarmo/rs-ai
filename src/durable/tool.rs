@@ -116,12 +116,24 @@ impl ToolIntent {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ToolExecution {
     pub durable_tool_id: String,
     pub durable_idempotency_key: String,
     pub arguments: Value,
     pub cancel: watch::Receiver<bool>,
+    pub models: Arc<dyn crate::durable::models::DurableModels>,
+}
+
+impl std::fmt::Debug for ToolExecution {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ToolExecution")
+            .field("durable_tool_id", &self.durable_tool_id)
+            .field("durable_idempotency_key", &self.durable_idempotency_key)
+            .field("arguments", &self.arguments)
+            .finish_non_exhaustive()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
