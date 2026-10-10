@@ -79,7 +79,13 @@ Fork traversal, conversation records, background-task filters, backend streaming
 
 The compatibility `context()` helper includes user/assistant text only. `message_context(ContextOptions { at })` returns native messages, including persisted assistant tool calls and tool results. Calls persist atomically with pending children before effects. Results appear immediately after their assistant in call order; the first matching result before the next assistant wins, missing results are synthesized as errors, and duplicates/orphans are dropped. Result durations survive reconstruction. Legacy text-only assistant records remain readable.
 
-New submissions persist native context in their intent so prior tool rounds survive follow-up dispatch and recovery. The native FIFO cutoff includes completed prior turns even when a queued input ID predates the prior answer, then places the active input last. Reconstructed messages do not acquire new timing. Fork ancestry, edits, head resets, full open-message assembly and incremental retention caching are not implemented.
+New submissions persist native context in their intent so prior tool rounds survive follow-up dispatch and recovery. The native FIFO cutoff includes completed prior turns even when a queued input ID predates the prior answer, then places the active input last. Reconstructed messages do not acquire new timing. Fork ancestry, edits, head resets, full open-message assembly and incremental range reuse are not implemented.
+
+## v1.1.0 native context retention
+
+`DurableSession::message_context` derives on the mutation queue. Current-context reads reuse same-revision messages with a sliding ten-minute idle expiry; historical cuts bypass the cache. Results are cloned so callers cannot mutate retained messages. Successful commits, poison and close clear retained context. A Tokio timer expires idle values, and `SessionSettings.context_retention = Duration::ZERO` disables retention. The cache is process-local, never journalled, and bounded to 64 conversations, 4 MiB encoded messages per conversation and 32 MiB total (Rust object overhead is additional).
+
+`DurableHarness::open_with_services` accepts `HarnessServices` containing the host tools, model service, lifecycle clock and session settings. Existing constructors keep their defaults. This cache reuses unchanged snapshots; it does not scan only appended ranges, retain while tasks are busy, or implement upstream head/edit/fork invalidation.
 
 ## Later required work
 

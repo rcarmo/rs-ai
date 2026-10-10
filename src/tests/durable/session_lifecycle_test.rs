@@ -121,6 +121,90 @@ mod tests {
         session.close().await.unwrap();
     }
 
+    #[tokio::test]
+    async fn native_context_cache_reuses_detached_reads_and_invalidates_on_commit() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        let mut first = batch(1);
+        first.entries[0].value = json!({"text":"first"});
+        session.commit(first).await.unwrap();
+        let mut messages = session.message_context(conversation, None).await.unwrap();
+        messages[0].content.clear();
+        assert!(
+            !session.message_context(conversation, None).await.unwrap()[0]
+                .content
+                .is_empty()
+        );
+        assert_eq!(session.context_cache_stats().await, (1, 1));
+        let mut second = batch(2);
+        second.entries[0].id = EntryId::new(2).unwrap();
+        second.entries[0].value = json!({"text":"second"});
+        second.next_id = 3;
+        session.commit(second).await.unwrap();
+        assert_eq!(session.context_cache_stats().await, (0, 1));
+        assert_eq!(
+            session
+                .message_context(conversation, None)
+                .await
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(session.context_cache_stats().await, (1, 2));
+        assert_eq!(
+            session
+                .message_context(conversation, Some(EntryId::new(1).unwrap()))
+                .await
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            session.context_cache_stats().await,
+            (1, 3),
+            "historical cut does not replace current cache"
+        );
+        session.close().await.unwrap();
+        assert!(matches!(
+            session.message_context(conversation, None).await,
+            Err(DurableError::Closed)
+        ));
+    }
+
+    #[tokio::test]
+    async fn context_retention_expiry_and_zero_mode_drop_cached_messages() {
+        for retention in [
+            std::time::Duration::ZERO,
+            std::time::Duration::from_millis(20),
+        ] {
+            let session = DurableSession::open_with_settings(
+                Box::new(MemoryStorage::new()),
+                Arc::new(crate::utils::now_millis),
+                SessionSettings {
+                    context_retention: retention,
+                },
+            )
+            .await
+            .unwrap();
+            let conversation = ConversationId::new(1).unwrap();
+            let mut first = batch(1);
+            first.entries[0].value = json!({"text":"first"});
+            session.commit(first).await.unwrap();
+            session.message_context(conversation, None).await.unwrap();
+            assert_eq!(
+                session.context_cache_stats().await.0,
+                usize::from(!retention.is_zero())
+            );
+            tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+            assert_eq!(session.context_cache_stats().await.0, 0);
+            session.message_context(conversation, None).await.unwrap();
+            assert_eq!(session.context_cache_stats().await.1, 2);
+            session.close().await.unwrap();
+        }
+    }
+
     struct BarrierStorage {
         inner: MemoryStorage,
         inner_claim: WriterClaim,

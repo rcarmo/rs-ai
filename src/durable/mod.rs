@@ -15,13 +15,13 @@ pub mod submission;
 pub mod tool;
 pub mod types;
 
-pub use harness::{ContextOptions, DurableHarness};
+pub use harness::{ContextOptions, DurableHarness, HarnessServices};
 pub use model::{
     DurableContent, DurableMessage, DurableModelRunner, DurableUsage, ModelIntent, ModelRun,
     ModelTerminal, PinnedModel, PinnedOptions, RegistryModelRunner,
 };
 pub use models::{DurableModels, RegistryModels};
-pub use session::{DurableSession, LifecycleClock};
+pub use session::{DurableSession, LifecycleClock, SessionSettings};
 pub use storage::journal::JournalStorage;
 pub use storage::memory::MemoryStorage;
 pub use storage::scan::{

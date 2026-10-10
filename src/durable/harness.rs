@@ -26,6 +26,23 @@ pub struct ContextOptions {
     pub at: Option<EntryId>,
 }
 
+pub struct HarnessServices {
+    pub tools: Arc<DurableToolRegistry>,
+    pub now: crate::durable::session::LifecycleClock,
+    pub models: Arc<dyn crate::durable::models::DurableModels>,
+    pub settings: super::session::SessionSettings,
+}
+impl Default for HarnessServices {
+    fn default() -> Self {
+        Self {
+            tools: Arc::new(DurableToolRegistry::default()),
+            now: Arc::new(crate::utils::now_millis),
+            models: Arc::new(super::models::RegistryModels),
+            settings: super::session::SessionSettings::default(),
+        }
+    }
+}
+
 pub struct DurableHarness {
     inner: Arc<Inner>,
 }
@@ -124,10 +141,38 @@ impl DurableHarness {
         now: crate::durable::session::LifecycleClock,
         models: Arc<dyn crate::durable::models::DurableModels>,
     ) -> Result<Self, DurableError> {
+        Self::open_with_services(
+            storage,
+            runner,
+            model,
+            options,
+            HarnessServices {
+                tools,
+                now,
+                models,
+                settings: super::session::SessionSettings::default(),
+            },
+        )
+        .await
+    }
+
+    pub async fn open_with_services(
+        storage: Box<dyn DurableStorage>,
+        runner: Arc<dyn DurableModelRunner>,
+        model: PinnedModel,
+        options: PinnedOptions,
+        services: HarnessServices,
+    ) -> Result<Self, DurableError> {
+        let HarnessServices {
+            tools,
+            now,
+            models,
+            settings,
+        } = services;
         model.validate()?;
         options.validate()?;
         tools.seal();
-        let session = Arc::new(DurableSession::open_with_clock(storage, now).await?);
+        let session = Arc::new(DurableSession::open_with_settings(storage, now, settings).await?);
         if let Err(error) = reconcile_running(&session).await {
             let _ = session.close().await;
             return Err(error);
@@ -295,8 +340,10 @@ impl DurableHarness {
         &self,
         options: ContextOptions,
     ) -> Result<Vec<crate::types::Message>, DurableError> {
-        let snapshot = self.inner.session.snapshot().await?;
-        super::context::messages(&snapshot, conversation_id()?, options.at)
+        self.inner
+            .session
+            .message_context(conversation_id()?, options.at)
+            .await
     }
 
     pub async fn entries(

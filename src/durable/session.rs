@@ -1,8 +1,10 @@
 use crate::durable::storage::scan::{EntryQuery, ScanPage, SubmissionQuery, TaskQuery};
 use crate::durable::storage::{DurableStorage, StorageSnapshot, WriterClaim};
 use crate::durable::types::*;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
 use tokio::sync::{Notify, mpsc, oneshot, watch};
 
 enum StorageCommand {
@@ -32,10 +34,61 @@ enum SessionCommand {
         SubmissionQuery,
         oneshot::Sender<Result<ScanPage<SubmissionRecord>, DurableError>>,
     ),
+    Context(
+        ConversationId,
+        Option<EntryId>,
+        oneshot::Sender<Result<Vec<crate::types::Message>, DurableError>>,
+    ),
+    #[cfg(test)]
+    CacheStats(oneshot::Sender<(usize, usize)>),
 }
 
 /// Wall-clock source used for durable task lifecycle timestamps.
 pub type LifecycleClock = Arc<dyn Fn() -> i64 + Send + Sync>;
+
+#[derive(Clone, Debug)]
+pub struct SessionSettings {
+    /// Idle retention for same-revision native context. Zero disables caching.
+    pub context_retention: Duration,
+}
+impl Default for SessionSettings {
+    fn default() -> Self {
+        Self {
+            context_retention: Duration::from_secs(10 * 60),
+        }
+    }
+}
+
+struct ContextCache {
+    values: HashMap<ConversationId, (Instant, Vec<crate::types::Message>, usize)>,
+    #[cfg(test)]
+    derivations: usize,
+}
+impl ContextCache {
+    fn new() -> Self {
+        Self {
+            values: HashMap::new(),
+            #[cfg(test)]
+            derivations: 0,
+        }
+    }
+    fn expire(&mut self, retention: Duration) {
+        self.values
+            .retain(|_, (used, _, _)| used.elapsed() < retention);
+    }
+    fn retained_bytes(&self) -> usize {
+        self.values
+            .values()
+            .map(|(_, _, bytes)| *bytes)
+            .fold(0usize, usize::saturating_add)
+    }
+    fn deadline(&self, retention: Duration) -> Option<Instant> {
+        self.values
+            .values()
+            .filter_map(|(used, _, _)| used.checked_add(retention))
+            .min()
+    }
+}
 
 pub struct DurableSession {
     tx: mpsc::Sender<SessionCommand>,
@@ -52,6 +105,14 @@ impl DurableSession {
     pub async fn open_with_clock(
         storage: Box<dyn DurableStorage>,
         now: LifecycleClock,
+    ) -> Result<Self, DurableError> {
+        Self::open_with_settings(storage, now, SessionSettings::default()).await
+    }
+
+    pub async fn open_with_settings(
+        storage: Box<dyn DurableStorage>,
+        now: LifecycleClock,
+        settings: SessionSettings,
     ) -> Result<Self, DurableError> {
         let claim = storage.claim_writer()?;
         let (storage_tx, mut storage_rx) = mpsc::channel::<StorageCommand>(16);
@@ -87,6 +148,7 @@ impl DurableSession {
                 &worker_sealed,
                 &worker_close_notify,
                 &now,
+                &settings,
             )
             .await;
             let _ = session_result_tx.send(result);
@@ -186,6 +248,34 @@ impl DurableSession {
         result.await.unwrap_or(Err(DurableError::Closed))
     }
 
+    /// Derive native messages on the session line; full-current reads reuse a
+    /// detached cache until idle expiry or any successfully committed mutation.
+    pub async fn message_context(
+        &self,
+        conversation: ConversationId,
+        at: Option<EntryId>,
+    ) -> Result<Vec<crate::types::Message>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Context(conversation, at, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn context_cache_stats(&self) -> (usize, usize) {
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::CacheStats(reply))
+            .await
+            .unwrap();
+        result.await.unwrap()
+    }
+
     pub async fn close(&self) -> Result<(), DurableError> {
         let first = !self.sealed.swap(true, Ordering::AcqRel);
         if first {
@@ -231,24 +321,34 @@ async fn session_worker(
     sealed: &AtomicBool,
     close_notify: &Notify,
     now: &LifecycleClock,
+    settings: &SessionSettings,
 ) -> Result<(), DurableError> {
     let mut poisoned = false;
+    let mut cache = ContextCache::new();
     loop {
         if sealed.load(Ordering::Acquire) {
+            cache.values.clear();
             reject_unadmitted(rx);
             return storage_close(storage).await;
         }
+        let expiry = cache.deadline(settings.context_retention);
         tokio::select! {
             biased;
+            _ = async {
+                if let Some(expiry) = expiry { tokio::time::sleep_until(expiry.into()).await; }
+                else { std::future::pending::<()>().await; }
+            } => { cache.expire(settings.context_retention); }
             _ = close_notify.notified() => {
                 if sealed.load(Ordering::Acquire) {
+                    cache.values.clear();
                     reject_unadmitted(rx);
                     return storage_close(storage).await;
                 }
             }
             command = rx.recv() => {
-                let Some(command) = command else { return storage_close(storage).await; };
+                let Some(command) = command else { cache.values.clear(); return storage_close(storage).await; };
                 if sealed.load(Ordering::Acquire) {
+                    cache.values.clear();
                     reject(command);
                     reject_unadmitted(rx);
                     return storage_close(storage).await;
@@ -282,10 +382,11 @@ async fn session_worker(
                         // caller drop or by close; close is observed on the next loop.
                         match result.await.unwrap_or(Err(DurableError::Uncertain("storage worker stopped".into()))) {
                             Ok(()) => match storage_load(storage).await {
-                                Ok(adopted) => { state = adopted; let _ = reply.send(Ok(state.clone())); }
-                                Err(error) => { poisoned = true; let _ = reply.send(Err(error)); }
+                                Ok(adopted) => { state = adopted; cache.values.clear(); let _ = reply.send(Ok(state.clone())); }
+                                Err(error) => { cache.values.clear(); poisoned = true; let _ = reply.send(Err(error)); }
                             },
                             Err(DurableError::Uncertain(error)) => {
+                                cache.values.clear();
                                 poisoned = true;
                                 let _ = reply.send(Err(DurableError::Uncertain(error)));
                             }
@@ -304,6 +405,28 @@ async fn session_worker(
                     SessionCommand::Submissions(conversation, query, reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_submissions(conversation, &query) });
                     }
+                    SessionCommand::Context(conversation, at, reply) => {
+                        if poisoned { cache.values.clear(); let _ = reply.send(Err(DurableError::Poisoned)); continue; }
+                        cache.expire(settings.context_retention);
+                        if at.is_none() && let Some((used, messages, _)) = cache.values.get_mut(&conversation) {
+                            *used = Instant::now();
+                            let _ = reply.send(Ok(messages.clone()));
+                            continue;
+                        }
+                        #[cfg(test)] { cache.derivations += 1; }
+                        let result = super::context::messages(&state, conversation, at);
+                        if at.is_none() && !settings.context_retention.is_zero() && let Ok(messages) = &result
+                            && !messages.is_empty() && cache.values.len() < 64
+                        {
+                            let bytes = serde_json::to_vec(messages).map_or(usize::MAX, |bytes| bytes.len());
+                            if bytes <= MAX_TASK_FIELD_BYTES && cache.retained_bytes().saturating_add(bytes) <= MAX_COMMIT_BYTES {
+                                cache.values.insert(conversation, (Instant::now(), messages.clone(), bytes));
+                            }
+                        }
+                        let _ = reply.send(result);
+                    }
+                    #[cfg(test)]
+                    SessionCommand::CacheStats(reply) => { cache.expire(settings.context_retention); let _ = reply.send((cache.values.len(), cache.derivations)); }
                 }
             }
         }
@@ -326,6 +449,13 @@ fn reject(command: SessionCommand) {
         }
         SessionCommand::Submissions(_, _, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Context(_, _, reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        #[cfg(test)]
+        SessionCommand::CacheStats(reply) => {
+            let _ = reply.send((0, 0));
         }
     }
 }
