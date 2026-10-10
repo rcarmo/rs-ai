@@ -247,6 +247,42 @@ async fn gateway_504_is_not_retried_but_503_is() {
 }
 
 #[tokio::test]
+async fn cancellation_after_headers_aborts_stalled_response_body() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::sync::{oneshot, watch};
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let (sent, received) = oneshot::channel();
+    let server = tokio::spawn(async move {
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut request = [0u8; 8192];
+        let _ = socket.read(&mut request).await.unwrap();
+        socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 1000\r\nConnection: close\r\n\r\n{").await.unwrap();
+        sent.send(()).unwrap();
+        std::future::pending::<()>().await;
+    });
+    let (tx, rx) = watch::channel(false);
+    let model = model(&format!("http://{address}"));
+    let context = context();
+    let options = ClassifierOptions {
+        api_key: Some("test-key".into()),
+        cancel: Some(rx),
+        ..Default::default()
+    };
+    let mut request = Box::pin(classify(&model, &context, &options));
+    tokio::select! { _ = received => {}, result = &mut request => panic!("request settled before body: {result:?}") }
+    tokio::select! { _ = tokio::time::sleep(std::time::Duration::from_millis(20)) => {}, result = &mut request => panic!("request should await body: {result:?}") }
+    tx.send(true).unwrap();
+    let result = tokio::time::timeout(std::time::Duration::from_secs(1), request)
+        .await
+        .unwrap();
+    assert_eq!(result.stop_reason, ClassifierStopReason::Aborted);
+    assert!(result.answers.is_empty());
+    server.abort();
+    let _ = server.await;
+}
+
+#[tokio::test]
 async fn model_capability_and_cancellation_fail_without_http() {
     let server = MockServer::start().await;
     let mut m = model(&server.uri());

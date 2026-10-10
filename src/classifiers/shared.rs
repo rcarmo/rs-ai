@@ -5,6 +5,29 @@ use crate::types::{ClassifierModel, Usage};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::future::Future;
+
+async fn with_cancel<T>(
+    operation: impl Future<Output = Result<T, String>>,
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> Result<T, String> {
+    let Some(mut cancel) = cancel else {
+        return operation.await;
+    };
+    if *cancel.borrow() {
+        return Err("Request aborted".into());
+    }
+    tokio::select! {
+        biased;
+        _ = async {
+            loop {
+                if *cancel.borrow_and_update() { return; }
+                if cancel.changed().await.is_err() { std::future::pending::<()>().await; }
+            }
+        } => Err("Request aborted".into()),
+        result = operation => result,
+    }
+}
 
 fn headers(model: &ClassifierModel, api_key: &str, options: &ClassifierOptions) -> HeaderMap {
     let mut values = HashMap::from([
@@ -82,7 +105,11 @@ pub(super) async fn post(
     .map_err(|error| error.to_string())?;
     let status = response.status().as_u16();
     if !response.status().is_success() {
-        let body = response.text().await.unwrap_or_default();
+        let body = with_cancel(
+            async { response.text().await.map_err(|error| error.to_string()) },
+            options.cancel.clone(),
+        )
+        .await?;
         if label == "OpenAI Decisions" && status == 504 {
             return Err("OpenAI Decisions error (504): the request timed out at the gateway. Very large inputs (above roughly 600K tokens) currently exceed its time limit.".into());
         }
@@ -102,7 +129,11 @@ pub(super) async fn post(
                 .map(|value| (key.as_str().to_owned(), value.to_owned()))
         })
         .collect();
-    let body = response.json().await.map_err(|error| error.to_string())?;
+    let body = with_cancel(
+        async { response.json().await.map_err(|error| error.to_string()) },
+        options.cancel.clone(),
+    )
+    .await?;
     if let Some(hook) = &options.on_response {
         hook(status, &response_headers, model);
     }

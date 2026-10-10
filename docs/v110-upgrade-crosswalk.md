@@ -21,7 +21,7 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | A | `packages/ai/src/api/azure-openai-config.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/azure-openai-responses.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/bedrock-converse-stream.ts` | IMPLEMENTED reasoning/model-family delta; broader audit pending | `src/provider/bedrock.rs` adds Haiku-5 adaptive/xhigh/binding/cache eligibility and flat GPT-OSS versus nested GPT reasoning fields. Added field-builder regressions exercise all GPT-OSS levels, custom maps and nonreasoning guard; two new tests pass. Live Bedrock verification has not run. |
-| A | `packages/ai/src/api/classifier-shared.ts` | PENDING | Not yet accepted |
+| A | `packages/ai/src/api/classifier-shared.ts` | IMPLEMENTED shared request/usage subset; adapter audit pending | `src/classifiers/shared.rs` handles auth/header hooks, retry exclusions, tier-aware usage and cancellation through response-body reads. Decisions HTTP stalled-body regression verifies prompt aborted result after headers. Seven Decisions tests pass; custom fetch and upstream fractional-token usage are not represented by native transport/u32 usage. |
 | M | `packages/ai/src/api/cloudflare-workers-ai-system-one.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/lazy.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/llama-cpp-classify.ts` | PENDING | Not yet accepted |
