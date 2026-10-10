@@ -1192,7 +1192,7 @@ async fn settle_tool_round(
         };
         let started = std::time::Instant::now();
         let terminal = registered.executor.execute(execution).await;
-        let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let elapsed_ms = crate::registry::round_duration_ms(started.elapsed());
         let mut duration_ms = Some(elapsed_ms);
         inner.tool_cancels.lock().await.remove(&child_id);
         let (value, is_error, usage, outcome) = match terminal {
@@ -1504,7 +1504,7 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
                         cancel,
                     })
                     .await;
-                let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+                let elapsed_ms = crate::registry::round_duration_ms(started.elapsed());
                 inner.tool_cancels.lock().await.remove(&child.id);
                 let aborted = inner
                     .session
