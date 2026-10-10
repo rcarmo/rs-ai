@@ -32,7 +32,7 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | A | `packages/ai/src/api/openai-decisions.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/openai-responses.ts` | IMPLEMENTED sampling delta; full API audit pending | `sampling_v110_test.rs` tests clamped level, off/summary defaults, request precedence and public HTTP dispatch across Responses/Azure. All five pass. |
 | M | `packages/ai/src/api/simple-options.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/api/system-one-shared.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/api/system-one-shared.ts` | IMPLEMENTED shared transport/usage delta | `src/classifiers/system_one.rs` uses shared POST/cancellable body reading, response hooks and tier-aware usage. Five System One HTTP tests cover TypeSafe/Cloudflare envelopes, billed malformed answers, pricing tier and stalled-body abort; image input is rejected before HTTP. Native custom-fetch/per-attempt hook differences are tracked separately. |
 | M | `packages/ai/src/api/typesafe-system-one.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/auth/oauth/anthropic.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/auth/oauth/openai-chatgpt.ts` | PENDING | Not yet accepted |

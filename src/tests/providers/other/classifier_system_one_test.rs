@@ -135,6 +135,81 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn system_one_cancellation_covers_stalled_success_body() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let (sent, received) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0; 8192];
+            socket.read(&mut request).await.unwrap();
+            socket.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 1000\r\n\r\n{").await.unwrap();
+            sent.send(()).unwrap();
+            std::future::pending::<()>().await;
+        });
+        let mut model = crate::classifiers::get_classifier_model("typesafe", "jev-latest").unwrap();
+        model.base_url = format!("http://{address}/v1");
+        let context = context();
+        let (tx, rx) = tokio::sync::watch::channel(false);
+        let options = ClassifierOptions {
+            api_key: Some("test-key".into()),
+            cancel: Some(rx),
+            ..Default::default()
+        };
+        let mut operation = Box::pin(classify(&model, &context, &options));
+        tokio::select! { _ = received => {}, result = &mut operation => panic!("settled early: {result:?}") }
+        tokio::select! { _ = tokio::time::sleep(std::time::Duration::from_millis(20)) => {}, result = &mut operation => panic!("stalled body settled: {result:?}") }
+        tx.send(true).unwrap();
+        assert_eq!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), operation)
+                .await
+                .unwrap()
+                .stop_reason,
+            ClassifierStopReason::Aborted
+        );
+        server.abort();
+        let _ = server.await;
+    }
+
+    #[tokio::test]
+    async fn system_one_usage_uses_prompt_length_pricing_tier() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/v1/systemone"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+                "answers": answers(),
+                "usage":{"input_tokens":200,"output_tokens":10}
+            })))
+            .mount(&server)
+            .await;
+        let mut model = crate::classifiers::get_classifier_model("typesafe", "jev-latest").unwrap();
+        model.base_url = format!("{}/v1", server.uri());
+        model.cost.output = 2.0;
+        model.cost.tiers = vec![crate::types::ModelCostTier {
+            input_tokens_above: 100,
+            input: 1.0,
+            output: 3.0,
+            cache_read: 0.0,
+            cache_write: 0.0,
+        }];
+        let result = classify(
+            &model,
+            &context(),
+            &ClassifierOptions {
+                api_key: Some("test-key".into()),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert_eq!(result.stop_reason, ClassifierStopReason::Stop);
+        let usage = result.usage.unwrap();
+        assert!((usage.cost.input - 0.0002).abs() < 1e-12);
+        assert!((usage.cost.output - 0.00003).abs() < 1e-12);
+        assert!((usage.cost.total - 0.00023).abs() < 1e-12);
+    }
+
+    #[tokio::test]
     async fn malformed_answers_keep_billed_usage() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))

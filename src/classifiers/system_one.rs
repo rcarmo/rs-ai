@@ -3,12 +3,9 @@
 use super::{ClassifierOptions, error_result};
 use crate::types::{
     ClassifierAnswer, ClassifierContext, ClassifierModel, ClassifierQuestion, ClassifierResult,
-    ClassifierStopReason, CostBreakdown, Usage,
+    ClassifierStopReason,
 };
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde_json::{Map, Value, json};
-use std::collections::HashMap;
-use std::time::Duration;
 
 #[derive(Clone, Copy)]
 enum Transport {
@@ -107,77 +104,6 @@ fn payload(transport: Transport, model: &ClassifierModel, context: &ClassifierCo
         }
         Transport::Cloudflare => json!({"model": model.id, "input": request}),
     }
-}
-
-fn request_headers(
-    model: &ClassifierModel,
-    api_key: &str,
-    options: &ClassifierOptions,
-) -> HeaderMap {
-    let mut merged = HashMap::<String, String>::new();
-    merged.insert("authorization".into(), format!("Bearer {api_key}"));
-    merged.insert("content-type".into(), "application/json".into());
-    if let Some(headers) = &model.headers {
-        for (key, value) in headers {
-            merged.insert(key.to_ascii_lowercase(), value.clone());
-        }
-    }
-    if let Some(headers) = &options.headers {
-        for (key, value) in headers {
-            let key = key.to_ascii_lowercase();
-            if let Some(value) = value {
-                merged.insert(key, value.clone());
-            } else {
-                merged.remove(&key);
-            }
-        }
-    }
-    let mut result = HeaderMap::new();
-    for (key, value) in merged {
-        if let (Ok(key), Ok(value)) = (
-            HeaderName::from_bytes(key.as_bytes()),
-            HeaderValue::from_str(&value),
-        ) {
-            result.insert(key, value);
-        }
-    }
-    result
-}
-
-fn classifier_usage(value: &Value, model: &ClassifierModel) -> Option<Usage> {
-    let object = value.as_object()?;
-    if !object.contains_key("input_tokens") && !object.contains_key("output_tokens") {
-        return None;
-    }
-    let input = object
-        .get("input_tokens")
-        .and_then(Value::as_f64)
-        .filter(|value| value.is_finite() && *value > 0.0)
-        .unwrap_or(0.0) as u32;
-    let output = object
-        .get("output_tokens")
-        .and_then(Value::as_f64)
-        .filter(|value| value.is_finite() && *value > 0.0)
-        .unwrap_or(0.0) as u32;
-    let million = 1_000_000.0;
-    let input_cost = f64::from(input) * model.cost.input / million;
-    let output_cost = f64::from(output) * model.cost.output / million;
-    Some(Usage {
-        input,
-        output,
-        cache_read: 0,
-        cache_write: 0,
-        cache_write_1h: None,
-        reasoning: None,
-        total_tokens: input + output,
-        cost: CostBreakdown {
-            input: input_cost,
-            output: output_cost,
-            cache_read: 0.0,
-            cache_write: 0.0,
-            total: input_cost + output_cost,
-        },
-    })
 }
 
 fn number(label: &str, value: Option<&Value>, field: &str) -> Result<f64, String> {
@@ -343,125 +269,48 @@ async fn classify_system_one(
             false,
         );
     }
-    let api_key = options
-        .api_key
-        .clone()
-        .or_else(|| model.api_key.clone())
-        .or_else(|| crate::env::get_env_api_key(&model.provider));
-    let Some(api_key) = api_key else {
-        return error_result(
-            model,
-            format!("No API key for provider: {}", model.provider),
-            false,
-        );
-    };
     let url = match request_url(transport, model, options) {
         Ok(url) => url,
         Err(error) => return error_result(model, error, false),
     };
-    let mut body = payload(transport, model, context);
-    if let Some(hook) = &options.on_payload {
-        match hook(body.clone(), model) {
-            Ok(next) => body = next,
-            Err(error) => return error_result(model, error, false),
-        }
-    }
-    let headers = request_headers(model, &api_key, options);
-    let client = crate::http_proxy::client_for_target(&url, options.env.as_ref());
-    let attempts = options.max_retries.unwrap_or(2);
-    let mut last_error = String::new();
-    for attempt in 0..=attempts {
-        if options
-            .cancel
-            .as_ref()
-            .is_some_and(|cancel| *cancel.borrow())
-        {
-            return error_result(model, "Request aborted", true);
-        }
-        let request = client.post(&url).headers(headers.clone()).json(&body);
-        let response = if let Some(timeout) = options.timeout {
-            match tokio::time::timeout(timeout, request.send()).await {
-                Ok(Ok(response)) => response,
-                Ok(Err(error)) => {
-                    last_error = error.to_string();
-                    if attempt < attempts {
-                        tokio::time::sleep(Duration::from_millis(10)).await;
-                        continue;
-                    }
-                    return error_result(model, last_error, false);
-                }
-                Err(_) => {
-                    last_error = format!("Request timed out after {}ms", timeout.as_millis());
-                    if attempt < attempts {
-                        continue;
-                    }
-                    return error_result(model, last_error, false);
-                }
-            }
-        } else {
-            match request.send().await {
-                Ok(response) => response,
-                Err(error) => {
-                    last_error = error.to_string();
-                    if attempt < attempts {
-                        tokio::time::sleep(Duration::from_millis(10)).await;
-                        continue;
-                    }
-                    return error_result(model, last_error, false);
-                }
-            }
-        };
-        let status = response.status().as_u16();
-        if crate::retry::is_retryable_status(status) && attempt < attempts {
-            let delay = crate::retry::retry_after_delay(response.headers())
-                .unwrap_or_else(|| Duration::from_millis(10));
-            let cap = options.max_retry_delay_ms.unwrap_or(u64::MAX);
-            tokio::time::sleep(delay.min(Duration::from_millis(cap))).await;
-            continue;
-        }
-        if !response.status().is_success() {
-            let text = response.text().await.unwrap_or_default();
+    let response_body = match super::shared::post(
+        transport.label(),
+        &url,
+        model,
+        payload(transport, model, context),
+        options,
+        &[],
+    )
+    .await
+    {
+        Ok(body) => body,
+        Err(error) => {
             return error_result(
                 model,
-                crate::error_body::format_provider_http_error(status, &text, None),
-                false,
+                error,
+                options
+                    .cancel
+                    .as_ref()
+                    .is_some_and(|cancel| *cancel.borrow()),
             );
         }
-        if let Some(hook) = &options.on_response {
-            let response_headers = response
-                .headers()
-                .iter()
-                .filter_map(|(key, value)| {
-                    value
-                        .to_str()
-                        .ok()
-                        .map(|value| (key.as_str().to_string(), value.to_string()))
-                })
-                .collect();
-            hook(status, &response_headers, model);
+    };
+    let output = match output_value(transport, response_body) {
+        Ok(value) => value,
+        Err(error) => return error_result(model, error, false),
+    };
+    result.usage = super::shared::parse_usage(output.get("usage"), model);
+    result.answers = match parse_answers(
+        transport.label(),
+        output.get("answers").unwrap_or(&Value::Null),
+        context,
+    ) {
+        Ok(answers) => answers,
+        Err(error) => {
+            result.stop_reason = ClassifierStopReason::Error;
+            result.error_message = Some(error);
+            return result;
         }
-        let response_body: Value = match response.json().await {
-            Ok(value) => value,
-            Err(error) => return error_result(model, error, false),
-        };
-        let output = match output_value(transport, response_body) {
-            Ok(value) => value,
-            Err(error) => return error_result(model, error, false),
-        };
-        result.usage = classifier_usage(output.get("usage").unwrap_or(&Value::Null), model);
-        result.answers = match parse_answers(
-            transport.label(),
-            output.get("answers").unwrap_or(&Value::Null),
-            context,
-        ) {
-            Ok(answers) => answers,
-            Err(error) => {
-                result.stop_reason = ClassifierStopReason::Error;
-                result.error_message = Some(error);
-                return result;
-            }
-        };
-        return result;
-    }
-    error_result(model, last_error, false)
+    };
+    result
 }
