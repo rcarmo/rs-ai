@@ -53,19 +53,17 @@ pub struct ContextUpdate {
 }
 
 pub(crate) fn validate_update(
-    snapshot: &StorageSnapshot,
-    conversation: ConversationId,
+    visible: impl Fn(EntryId) -> bool,
     id: EntryId,
     value: &Value,
 ) -> Result<(), DurableError> {
     let update: ContextUpdate = serde_json::from_value(value.clone())
         .map_err(|_| DurableError::Rejected("invalid native context update".into()))?;
-    validate_contribution(snapshot, conversation, id, &update, false)
+    validate_contribution(visible, id, &update, false)
 }
 
 pub(crate) fn validate_contribution(
-    snapshot: &StorageSnapshot,
-    conversation: ConversationId,
+    visible: impl Fn(EntryId) -> bool,
     id: EntryId,
     update: &ContextUpdate,
     allow_self: bool,
@@ -75,21 +73,16 @@ pub(crate) fn validate_contribution(
             "too many context messages/edits".into(),
         ));
     }
-    let visible = |target: EntryId| {
-        snapshot
-            .entries
-            .get(&target)
-            .is_some_and(|entry| target < id && entry.conversation_id == conversation)
-    };
+    let prior_visible = |target: EntryId| target < id && visible(target);
     if let Some(ContextHead::Entry(target)) = update.head
-        && !(visible(target) || (allow_self && target == id))
+        && !(prior_visible(target) || (allow_self && target == id))
     {
         return Err(DurableError::Rejected(
             "context head is not a visible prior entry".into(),
         ));
     }
     for edit in &update.edits {
-        if !visible(edit.target()) {
+        if !prior_visible(edit.target()) {
             return Err(DurableError::Rejected(
                 "context edit target is not a visible prior entry".into(),
             ));

@@ -96,6 +96,96 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn ordered_batch_heads_and_edits_can_target_earlier_same_batch_entries() {
+        for journal in [false, true] {
+            let root =
+                std::env::temp_dir().join(format!("rs-ai-entry-batch-{}", crate::utils::uuidv7()));
+            std::fs::create_dir(&root).unwrap();
+            let storage: Box<dyn DurableStorage> = if journal {
+                Box::new(JournalStorage::open(root.join("journal")).unwrap())
+            } else {
+                Box::new(MemoryStorage::new())
+            };
+            let session = DurableSession::open(storage).await.unwrap();
+            let conversation = ConversationId::new(1).unwrap();
+            let seq = CommitSeq::new(1).unwrap();
+            let batch = CommitBatch {
+                seq,
+                next_id: 4,
+                next_seq: 2,
+                entries: vec![
+                    EntryRecord {
+                        id: EntryId::new(1).unwrap(),
+                        conversation_id: conversation,
+                        kind: "note".into(),
+                        value: json!({"model":[crate::user_message("original")]}),
+                        by_task_id: None,
+                        created_seq: seq,
+                    },
+                    EntryRecord {
+                        id: EntryId::new(2).unwrap(),
+                        conversation_id: conversation,
+                        kind: "summary".into(),
+                        value: json!({"head":1,"model":[crate::user_message("summary")],"edits":[{"type":"replace","target":1,"messages":[crate::user_message("replacement")]}]}),
+                        by_task_id: None,
+                        created_seq: seq,
+                    },
+                    EntryRecord {
+                        id: EntryId::new(3).unwrap(),
+                        conversation_id: conversation,
+                        kind: "context".into(),
+                        value: json!({"edits":[{"type":"omit","target":2}]}),
+                        by_task_id: None,
+                        created_seq: seq,
+                    },
+                ],
+                tasks: vec![],
+                submissions: vec![],
+                documents: vec![],
+            };
+            let before = session.snapshot().await.unwrap();
+            let mut reordered = batch.clone();
+            reordered.entries.swap(0, 1);
+            assert!(session.commit(reordered).await.is_err());
+            assert_eq!(session.snapshot().await.unwrap(), before);
+            let mut foreign = batch.clone();
+            foreign.entries[0].conversation_id = ConversationId::new(2).unwrap();
+            assert!(session.commit(foreign).await.is_err());
+            assert_eq!(session.snapshot().await.unwrap(), before);
+            session.commit(batch).await.unwrap();
+            let view = session.context_view(conversation, None).await.unwrap();
+            assert_eq!(text(&view.messages), ["replacement"]);
+            assert_eq!(
+                view.entries
+                    .iter()
+                    .map(|entry| entry.id.get())
+                    .collect::<Vec<_>>(),
+                [2, 1, 3]
+            );
+            session.close().await.unwrap();
+            if journal {
+                let reopened = DurableSession::open(Box::new(
+                    JournalStorage::open(root.join("journal")).unwrap(),
+                ))
+                .await
+                .unwrap();
+                assert_eq!(
+                    text(
+                        &reopened
+                            .context_view(conversation, None)
+                            .await
+                            .unwrap()
+                            .messages
+                    ),
+                    ["replacement"]
+                );
+                reopened.close().await.unwrap();
+            }
+            std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[tokio::test]
     async fn concurrent_appends_assign_unique_ids_on_session_line() {
         let session = Arc::new(
             DurableSession::open(Box::new(MemoryStorage::new()))

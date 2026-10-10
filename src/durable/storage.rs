@@ -207,6 +207,9 @@ pub fn validate_batch(
         .chain(snapshot.submissions.keys().map(|id| id.get()))
         .collect::<HashSet<_>>();
     let mut max_new_id = 0u64;
+    // Entry writes are ordered within a transaction. Later writes can refer to
+    // an earlier entry in this batch, but never a forward/foreign entry.
+    let mut batch_prior_entries = HashMap::<EntryId, &EntryRecord>::new();
 
     for entry in &batch.entries {
         super::entries::validate_kind(&entry.kind)?;
@@ -216,13 +219,15 @@ pub fn validate_batch(
         // Reject excessive JSON before cloning/deserializing context payloads.
         validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
         let _ = encode_limited("entry", &entry.value, MAX_ENTRY_BYTES)?;
+        let visible = |target: EntryId| {
+            snapshot
+                .entries
+                .get(&target)
+                .or_else(|| batch_prior_entries.get(&target).copied())
+                .is_some_and(|prior| prior.conversation_id == entry.conversation_id)
+        };
         if entry.kind == "context" {
-            super::context::validate_update(
-                snapshot,
-                entry.conversation_id,
-                entry.id,
-                &entry.value,
-            )?;
+            super::context::validate_update(visible, entry.id, &entry.value)?;
         }
         if !super::entries::native_kind(&entry.kind) {
             let update = super::entries::EntryPayload::decode(&entry.value)?.context();
@@ -231,13 +236,7 @@ pub fn validate_batch(
                     "generic stored head must be resolved".into(),
                 ));
             }
-            super::context::validate_contribution(
-                snapshot,
-                entry.conversation_id,
-                entry.id,
-                &update,
-                true,
-            )?;
+            super::context::validate_contribution(visible, entry.id, &update, true)?;
         }
         if entry.id.get() < snapshot.next_id {
             return Err(DurableError::Rejected("entry id is below next_id".into()));
@@ -249,6 +248,7 @@ pub fn validate_batch(
         if entry.created_seq != batch.seq {
             return Err(DurableError::Rejected("entry sequence mismatch".into()));
         }
+        batch_prior_entries.insert(entry.id, entry);
     }
 
     let mut task_ids = snapshot.tasks.keys().copied().collect::<HashSet<_>>();
