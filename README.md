@@ -1,24 +1,24 @@
 # rs-ai
 
 [![CI](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml)
-[![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.99.1/sbom.cdx.json)
+[![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/v1.0.1/sbom.cdx.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Rust port of [@earendil-works/pi-ai](https://www.npmjs.com/package/@earendil-works/pi-ai) with model discovery, streaming events, tool calls, OAuth helpers, image generation, and multi-provider request plumbing.
 
-> **Experimental.** This crate is still pre-`v1` and is not published to crates.io. The accepted v0.99.1 runtime audit embeds 1523 text/chat models across 41 providers and 10 text/chat API protocols, 57 image models, and 12 classifier models.
+> **Experimental.** This crate is not published to crates.io. `main` contains the runtime from the annotated [`v1.0.1` tag](https://github.com/rcarmo/rs-ai/tree/v1.0.1), plus this README update: 1,536 chat models, 59 image models and 20 classifiers. All post-v1.0.1 changes are preserved on [`release/v1.1.0`](https://github.com/rcarmo/rs-ai/tree/release/v1.1.0). That development branch is unfinished and paused; work on the upgrade has stopped.
 
 ## Documentation
 
 - [RELEASE.md](RELEASE.md) records upstream release bounds, catalog counts, runtime evidence, CI/SBOM evidence, and rollback notes.
 - [docs/upstream-parity-gaps.md](docs/upstream-parity-gaps.md) tracks current parity decisions, adapted surfaces, and documented N/A cases.
 - [docs/local-tests-shared.md](docs/local-tests-shared.md) records local gate history and shared test evidence.
-- [docs/v0991-160-test-crosswalk.md](docs/v0991-160-test-crosswalk.md), [docs/manifests/v0991-changed-paths-169.txt](docs/manifests/v0991-changed-paths-169.txt), and [docs/manifests/v0991-test-corpus-basename-160.txt](docs/manifests/v0991-test-corpus-basename-160.txt) capture the accepted v0.99.1 audit inventory. The v0.87.1, v0.87.0, and v0.85.1 crosswalks and manifests remain in `docs/` as historical evidence.
+- [docs/v101-171-test-crosswalk.md](docs/v101-171-test-crosswalk.md) records the v1.0.1 test mapping. Earlier crosswalks and manifests remain in `docs/` as historical references.
 
 ## Features
 
 - Public `stream` and `complete` entry points over registered provider implementations.
-- Generated text/chat, image, and classifier model registries regenerated from the pinned upstream v0.99.1 release data.
+- Generated text/chat, image, and classifier model registries regenerated from the pinned upstream v1.0.1 release data.
 - JSON-compatible message, context, tool, usage, diagnostics, assistant-frame, deferred-tool, and stream-option types for cross-language transcript hand-off.
 - Tool calling with JSON Schema parameters, strict/constrained sampling helpers where providers expose them, partial JSON parsing for streamed arguments, and deferred tool loading metadata.
 - Reasoning/thinking support, including provider thinking levels, signed/redacted thinking replay, raw stop reasons, and provider-specific compatibility flags.
@@ -33,10 +33,10 @@ This repository is currently intended for source or Git dependency use rather th
 
 ```toml
 [dependencies]
-rs-ai = { git = "https://github.com/rcarmo/rs-ai" }
+rs-ai = { git = "https://github.com/rcarmo/rs-ai", tag = "v1.0.1" }
 ```
 
-For local development, clone the repository and run the standard Rust gates:
+For local development, clone `main`. Set `CARGO_HOME`, `CARGO_TARGET_DIR` and `TMPDIR` to project-owned directories before running the standard Rust checks; the portable scratch tooling added after v1.0.1 is preserved on the paused development branch.
 
 ```bash
 cargo fmt -- --check
@@ -49,7 +49,7 @@ The default feature set includes Bedrock support. To avoid the AWS SDK dependenc
 
 ```toml
 [dependencies]
-rs-ai = { git = "https://github.com/rcarmo/rs-ai", default-features = false }
+rs-ai = { git = "https://github.com/rcarmo/rs-ai", tag = "v1.0.1", default-features = false }
 ```
 
 ## Quick start
@@ -148,7 +148,7 @@ The generated catalog also includes provider metadata for OpenRouter, xAI, Groq,
 
 ## Compatibility/versioning
 
-The current accepted runtime tracks upstream `@earendil-works/pi-ai` v0.99.1. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
+The current tagged runtime tracks upstream `@earendil-works/pi-ai` v1.0.1. `main` uses the tagged runtime source; unfinished v1.1.0 APIs and behaviour are isolated on `release/v1.1.0`. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
 
 Release audits update `RELEASE.md`, regenerated catalogs, and the per-release manifests in `docs/`. Repository tags should be treated as upstream-aligned checkpoints for the audited Rust port rather than a guarantee that every upstream JavaScript runtime surface exists unchanged in Rust.
 
@@ -158,7 +158,7 @@ This project is a derivative port of [@earendil-works/pi-ai](https://www.npmjs.c
 
 ## Supply-chain metadata
 
-The accepted v0.99.1 runtime is [`32b07c7fb3ab336f6a9709bf5eb14286af73958c`](https://github.com/rcarmo/rs-ai/commit/32b07c7fb3ab336f6a9709bf5eb14286af73958c). GitHub Actions run [`36634981815`](https://github.com/rcarmo/rs-ai/actions/runs/36634981815) produced the accepted CycloneDX 1.5 SBOM artifact `11064098033` with 278 components and 279 dependencies; the archive SHA-256 is `8019316813ac7e0a350688142a4b573ccdecd768756428b191212197082bf354`, and the embedded `sbom.cdx.json` SHA-256 is `986785a7d292e348234f81b88f59145c2e1ec58806e83140714c120d22fe734e`. Durable version-pinned assets use [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.99.1/sbom.cdx.json) and [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.99.1/sbom.cdx.json.sha256). Regenerate and validate the same data locally with `make sbom && make sbom-check`; the dispatch-only publisher checks the explicit accepted runtime ref before creating or replacing assets.
+The annotated `v1.0.1` tag points to [`ecc458f525f0eeb5e7c2eb28544efc7a04c755e1`](https://github.com/rcarmo/rs-ai/commit/ecc458f525f0eeb5e7c2eb28544efc7a04c755e1). Published assets are [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/v1.0.1/sbom.cdx.json) and [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/v1.0.1/sbom.cdx.json.sha256). [RELEASE.md](RELEASE.md) retains the release details. No v1.1.0 release or release assets have been published.
 
 ## License
 
