@@ -247,6 +247,39 @@ async fn gateway_504_is_not_retried_but_503_is() {
 }
 
 #[tokio::test]
+async fn response_hook_observes_errors_and_malformed_bodies_before_parsing() {
+    use std::sync::{Arc, Mutex};
+    for status in [200, 400] {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .respond_with(
+                ResponseTemplate::new(status)
+                    .insert_header("x-response-id", "seen")
+                    .set_body_string("not-json"),
+            )
+            .mount(&server)
+            .await;
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let capture = seen.clone();
+        let options = ClassifierOptions {
+            api_key: Some("test-key".into()),
+            on_response: Some(Arc::new(move |status, headers, model| {
+                assert_eq!(model.id, "gpt-6-luna");
+                assert_eq!(
+                    headers.get("x-response-id").map(String::as_str),
+                    Some("seen")
+                );
+                capture.lock().unwrap().push(status);
+            })),
+            ..Default::default()
+        };
+        let result = classify(&model(&server.uri()), &context(), &options).await;
+        assert_eq!(result.stop_reason, ClassifierStopReason::Error);
+        assert_eq!(&*seen.lock().unwrap(), &[status]);
+    }
+}
+
+#[tokio::test]
 async fn cancellation_after_headers_aborts_stalled_response_body() {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tokio::sync::{oneshot, watch};

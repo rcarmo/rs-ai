@@ -104,6 +104,21 @@ pub(super) async fn post(
     .await
     .map_err(|error| error.to_string())?;
     let status = response.status().as_u16();
+    if let Some(hook) = &options.on_response {
+        let headers = response
+            .headers()
+            .iter()
+            .filter_map(|(key, value)| {
+                value
+                    .to_str()
+                    .ok()
+                    .map(|value| (key.as_str().to_owned(), value.to_owned()))
+            })
+            .collect();
+        // Observe the HTTP response before parsing/reading its body, including
+        // non-success and malformed responses, matching upstream fetch hooks.
+        hook(status, &headers, model);
+    }
     if !response.status().is_success() {
         let body = with_cancel(
             async { response.text().await.map_err(|error| error.to_string()) },
@@ -119,24 +134,11 @@ pub(super) async fn post(
             Some(&format!("{label} error")),
         ));
     }
-    let response_headers = response
-        .headers()
-        .iter()
-        .filter_map(|(key, value)| {
-            value
-                .to_str()
-                .ok()
-                .map(|value| (key.as_str().to_owned(), value.to_owned()))
-        })
-        .collect();
     let body = with_cancel(
         async { response.json().await.map_err(|error| error.to_string()) },
         options.cancel.clone(),
     )
     .await?;
-    if let Some(hook) = &options.on_response {
-        hook(status, &response_headers, model);
-    }
     Ok(body)
 }
 
