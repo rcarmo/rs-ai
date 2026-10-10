@@ -103,7 +103,11 @@ Azure models use provider ID `azure` and support both Responses and Completions,
 
 The native `durable` module provides a partial R1 implementation with memory/journal storage, writer fencing, submissions, model/tool execution and recovery. Sessions persist a `pi.provider` document containing the provider session UUID; generation intents forward it as `StreamOptions.session_id`. Tasks expose optional `started_at`/`ended_at` timestamps, and completed executions record `durationMs`. Snapshot scans preserve cursor direction; `context_with_options(ContextOptions { at })` provides inclusive historical cuts of the native user/assistant text context without dispatching work.
 
-Full pi-durable parity is unfinished. Generic tasks/documents, forks, inbox modes, events, hooks, partial output, deferred polling, compaction, subagents, remote/SQLite storage and cross-process leases need further implementation or verification. The [durable crosswalk](docs/pi-durable-v110-crosswalk.md) lists the source and test scope; [native design](docs/durable-native-design.md) describes the implemented subset.
+`message_context` reconstructs tool-call history, with call-ordered results and errors for missing results. `update_context` accepts idle-only heads and omit/replace edits. `context_view` returns the resolved head, retained entries, per-entry message contributions and assembled messages; its historical reads are detached and never dispatch. `HarnessServices` supplies host tools, shared model access, the lifecycle clock and context-retention settings.
+
+`watch()` atomically attaches a snapshot and subscribes to adopted commits. Slow readers reconcile from replacement snapshots; stop, close, uncertain settlement and worker failure terminate the watch. This native committed-state feed has no transient tool progress or full upstream AgentEvent taxonomy.
+
+Full pi-durable parity is unfinished. Generic entries/tasks/documents, forks, inbox modes, full events, hooks, partial output, deferred polling, compaction, subagents, remote/SQLite storage and cross-process leases need further implementation or verification. Context updates during pending work reject; incremental range reuse and busy-task retention are absent. The [durable crosswalk](docs/pi-durable-v110-crosswalk.md) lists the source and test scope; [native design](docs/durable-native-design.md) describes the implemented subset.
 
 ## Package/source layout
 
