@@ -6,7 +6,7 @@
 
 A Rust port of [@earendil-works/pi-ai](https://www.npmjs.com/package/@earendil-works/pi-ai) with model discovery, streaming events, tool calls, OAuth helpers, image generation, and multi-provider request plumbing.
 
-> **Experimental.** This crate is not published to crates.io. `main` contains the v1.1.0 upgrade in development, with 1,563 chat models, 61 image models and 26 classifiers. The latest accepted release is v1.0.1; the v1.1.0 contract audit and release checks are incomplete.
+> **Paused v1.1.0 development branch.** This crate is not published to crates.io. `release/v1.1.0` preserves all work after v1.0.1, including unfinished pi-ai and pi-durable changes. Implementation is stopped; this branch is not an accepted release. Use [`main`](https://github.com/rcarmo/rs-ai/tree/main) or the [`v1.0.1` tag](https://github.com/rcarmo/rs-ai/tree/v1.0.1) for the last tagged runtime.
 
 ## Documentation
 
@@ -91,7 +91,7 @@ async fn main() {
 
 Set provider API keys in the process environment or pass per-request credentials through `StreamOptions`. Provider-specific headers, environment overlays, OAuth credentials, retry settings, timeout settings, and request/response hooks are also carried through `StreamOptions`.
 
-## v1.1.0 API changes on main
+## v1.1.0 API changes on this branch
 
 Assistant messages expose optional `duration_ms` (serialized as `durationMs`). Terminal stream timing uses a monotonic clock, preserves supplied durations and leaves replayed messages untouched. Token estimates use 3.5 UTF-16 code units per token and include system tool-definition updates. Sampling resolves model defaults, clamped thinking-level defaults, then request overrides.
 
@@ -179,7 +179,7 @@ The generated catalog also includes provider metadata for OpenRouter, xAI, Groq,
 
 ## Compatibility/versioning
 
-The latest accepted runtime tracks upstream `@earendil-works/pi-ai` v1.0.1. `main` targets official pi-ai and pi-durable v1.1.0, with final acceptance still open. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
+The latest accepted runtime tracks upstream `@earendil-works/pi-ai` v1.0.1. This paused `release/v1.1.0` branch contains unfinished alignment with official pi-ai and pi-durable v1.1.0. `main` retains the v1.0.1 runtime. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
 
 Release audits update `RELEASE.md`, regenerated catalogs, and the per-release manifests in `docs/`. Repository tags should be treated as upstream-aligned checkpoints for the audited Rust port rather than a guarantee that every upstream JavaScript runtime surface exists unchanged in Rust.
 
