@@ -62,6 +62,85 @@ mod tests {
     }
 
     #[test]
+    fn context_excludes_aborted_error_deferred_assistants_and_their_orphan_results() {
+        use crate::durable::*;
+        let mut snapshot = StorageSnapshot::empty();
+        let conversation = ConversationId::new(1).unwrap();
+        for (index, stop) in [
+            crate::types::StopReason::Aborted,
+            crate::types::StopReason::Error,
+            crate::types::StopReason::Deferred,
+            crate::types::StopReason::ToolUse,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let id = EntryId::new(index as u64 * 2 + 1).unwrap();
+            let mut message = assistant(&[&format!("call-{index}")]);
+            message.stop_reason = Some(stop);
+            snapshot.entries.insert(
+                id,
+                EntryRecord {
+                    id,
+                    conversation_id: conversation,
+                    kind: "assistant".into(),
+                    value: serde_json::json!({"message":message}),
+                    by_task_id: None,
+                    created_seq: CommitSeq::new(1).unwrap(),
+                },
+            );
+            let id = EntryId::new(index as u64 * 2 + 2).unwrap();
+            snapshot.entries.insert(id, EntryRecord { id, conversation_id: conversation, kind: "tool_result".into(), value: serde_json::json!({"tool_call_id":format!("call-{index}"),"tool_name":"tool","result":"ok"}), by_task_id: None, created_seq: CommitSeq::new(1).unwrap() });
+        }
+        let messages = crate::durable::context::messages(&snapshot, conversation, None).unwrap();
+        assert_eq!(messages.len(), 2);
+        assert_eq!(
+            messages[0].stop_reason,
+            Some(crate::types::StopReason::ToolUse)
+        );
+        assert_eq!(messages[1].tool_call_id.as_deref(), Some("call-3"));
+        assert!(
+            crate::durable::context::messages(
+                &snapshot,
+                ConversationId::new(2).unwrap(),
+                Some(EntryId::new(1).unwrap())
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn malformed_native_context_fails_without_mutating_records() {
+        use crate::durable::*;
+        let conversation = ConversationId::new(1).unwrap();
+        for (kind, value) in [
+            ("user", serde_json::json!({})),
+            ("assistant", serde_json::json!({"message":{"role":"user"}})),
+            ("tool_result", serde_json::json!({"result":true})),
+        ] {
+            let mut snapshot = StorageSnapshot::empty();
+            let id = EntryId::new(1).unwrap();
+            snapshot.entries.insert(
+                id,
+                EntryRecord {
+                    id,
+                    conversation_id: conversation,
+                    kind: kind.into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: CommitSeq::new(1).unwrap(),
+                },
+            );
+            let before = snapshot.clone();
+            assert!(matches!(
+                crate::durable::context::messages(&snapshot, conversation, None),
+                Err(DurableError::Corrupt(_))
+            ));
+            assert_eq!(snapshot, before);
+        }
+    }
+
+    #[test]
     fn missing_results_are_synthesized_and_never_cross_next_assistant_boundary() {
         let messages = order_tool_results(vec![
             assistant(&["a"]),

@@ -3,7 +3,7 @@
 use super::model::{DurableContent, DurableMessage, ModelIntent, to_message_for_durable};
 use super::storage::StorageSnapshot;
 use super::types::*;
-use crate::types::{ContentBlock, Message, Role};
+use crate::types::{ContentBlock, Message, Role, StopReason};
 use serde_json::{Value, json};
 
 pub(crate) fn messages(
@@ -121,6 +121,15 @@ fn derive<'a>(
                         }
                     }
                     message.duration_ms = entry.value.get("durationMs").and_then(Value::as_u64);
+                    message.stop_reason = entry
+                        .value
+                        .get("stop_reason")
+                        .map(|value| {
+                            serde_json::from_value(value.clone()).map_err(|_| {
+                                DurableError::Corrupt("invalid assistant stop reason".into())
+                            })
+                        })
+                        .transpose()?;
                     message.response_id = entry
                         .value
                         .get("response_id")
@@ -171,6 +180,14 @@ fn derive<'a>(
         // for reconstructed messages or count them as newly streamed responses.
         if entry.value.get("message").is_none() {
             message.timestamp = 0;
+        }
+        if message.role == Role::Assistant
+            && matches!(
+                message.stop_reason,
+                Some(StopReason::Aborted | StopReason::Error | StopReason::Deferred)
+            )
+        {
+            continue;
         }
         result.push(message);
     }

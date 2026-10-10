@@ -138,6 +138,12 @@ mod tests {
                 .is_empty()
         );
         assert_eq!(session.context_cache_stats().await, (1, 1));
+        assert!(session.commit(batch(1)).await.is_err());
+        assert_eq!(
+            session.context_cache_stats().await,
+            (1, 1),
+            "rejected mutation does not invalidate derived context"
+        );
         let mut second = batch(2);
         second.entries[0].id = EntryId::new(2).unwrap();
         second.entries[0].value = json!({"text":"second"});
