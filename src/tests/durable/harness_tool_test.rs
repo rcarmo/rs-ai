@@ -405,7 +405,7 @@ mod tests {
         );
         let retained_entries = saved_entries.lock().unwrap().clone().unwrap();
         assert!(
-            matches!(retained_entries.append(EntryDraft::new("late")).await, Err(DurableError::Rejected(error)) if error == "transaction task is terminal")
+            matches!(retained_entries.append(EntryDraft::new("late")).await, Err(DurableError::Rejected(error)) if error == "tool invocation ended")
         );
         assert!(
             retained_entries

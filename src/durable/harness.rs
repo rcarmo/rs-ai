@@ -77,10 +77,25 @@ struct Inner {
     successor_phase_barrier: Mutex<Option<(oneshot::Sender<()>, oneshot::Receiver<()>)>>,
 }
 
+struct InvocationEnd(Arc<AtomicBool>);
+impl Drop for InvocationEnd {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
+}
+fn check_invocation(active: &AtomicBool) -> Result<(), DurableError> {
+    if active.load(Ordering::Acquire) {
+        Ok(())
+    } else {
+        Err(DurableError::Rejected("tool invocation ended".into()))
+    }
+}
+
 struct TaskEntries {
     inner: std::sync::Weak<Inner>,
     task: TaskId,
     conversation: ConversationId,
+    active: Arc<AtomicBool>,
 }
 impl super::entries::DurableEntries for TaskEntries {
     fn append<'a>(
@@ -88,12 +103,19 @@ impl super::entries::DurableEntries for TaskEntries {
         draft: super::entries::EntryDraft,
     ) -> super::entries::EntryFuture<'a, EntryRecord> {
         Box::pin(async move {
+            check_invocation(&self.active)?;
             let inner = self.inner.upgrade().ok_or(DurableError::Closed)?;
             let _operation = inner.operations.lock().await;
             let conversation = self.conversation;
             let entry = inner
                 .session
-                .transact_task_entries(self.task, move |tx| tx.append_entry(conversation, draft))
+                .transact_task_entries(self.task, {
+                    let active = self.active.clone();
+                    move |tx| {
+                        check_invocation(&active)?;
+                        tx.append_entry(conversation, draft)
+                    }
+                })
                 .await?;
             bump_revision(&inner);
             Ok(entry)
@@ -101,13 +123,45 @@ impl super::entries::DurableEntries for TaskEntries {
     }
     fn entry<'a>(&'a self, id: EntryId) -> super::entries::EntryFuture<'a, Option<EntryRecord>> {
         Box::pin(async move {
+            check_invocation(&self.active)?;
             let inner = self.inner.upgrade().ok_or(DurableError::Closed)?;
             let conversation = self.conversation;
             inner
                 .session
-                .transact_task_entries(self.task, move |tx| tx.entry(conversation, id))
+                .transact_task_entries(self.task, {
+                    let active = self.active.clone();
+                    move |tx| {
+                        check_invocation(&active)?;
+                        tx.entry(conversation, id)
+                    }
+                })
                 .await
         })
+    }
+}
+
+#[cfg(test)]
+mod invocation_tests {
+    use super::*;
+    #[test]
+    fn invocation_guard_ends_on_return_and_unwind() {
+        for panic in [false, true] {
+            let active = Arc::new(AtomicBool::new(true));
+            let observed = active.clone();
+            let owned = active.clone();
+            let result = std::panic::catch_unwind(move || {
+                let _guard = InvocationEnd(owned);
+                assert!(check_invocation(&observed).is_ok());
+                if panic {
+                    panic!("injected invocation unwind");
+                }
+            });
+            assert_eq!(result.is_err(), panic);
+            assert!(matches!(
+                check_invocation(&active),
+                Err(DurableError::Rejected(_))
+            ));
+        }
     }
 }
 
@@ -1431,6 +1485,8 @@ async fn settle_tool_round(
                 .await?;
             bump_revision(inner);
         }
+        let active = Arc::new(AtomicBool::new(true));
+        let invocation = InvocationEnd(active.clone());
         let execution = crate::durable::tool::ToolExecution {
             durable_tool_id: intent.durable_tool_id.clone(),
             durable_idempotency_key: intent.durable_idempotency_key.clone(),
@@ -1441,10 +1497,12 @@ async fn settle_tool_round(
                 inner: Arc::downgrade(inner),
                 task: child_id,
                 conversation: conversation_id()?,
+                active,
             }),
         };
         let started = std::time::Instant::now();
         let terminal = registered.executor.execute(execution).await;
+        drop(invocation);
         let elapsed_ms = crate::registry::round_duration_ms(started.elapsed());
         let mut duration_ms = Some(elapsed_ms);
         inner.tool_cancels.lock().await.remove(&child_id);
@@ -1747,6 +1805,8 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
         }
         match replay_registration(&inner.tools, &intent) {
             Ok(registered) => {
+                let active = Arc::new(AtomicBool::new(true));
+                let invocation = InvocationEnd(active.clone());
                 let started = std::time::Instant::now();
                 let result = registered
                     .executor
@@ -1760,9 +1820,11 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
                             inner: Arc::downgrade(&inner),
                             task: child.id,
                             conversation: child.conversation_id,
+                            active,
                         }),
                     })
                     .await;
+                drop(invocation);
                 let elapsed_ms = crate::registry::round_duration_ms(started.elapsed());
                 inner.tool_cancels.lock().await.remove(&child.id);
                 let aborted = inner
