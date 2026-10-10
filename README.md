@@ -1,5 +1,8 @@
 # rs-ai
 
+> [!WARNING]
+> Work on this project is paused. Unfinished v1.1.0 work is preserved on the [`release/v1.1.0` branch](https://github.com/rcarmo/rs-ai/tree/release/v1.1.0); `main` retains the v1.0.1 runtime.
+
 [![CI](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml)
 [![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/v1.0.1/sbom.cdx.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
