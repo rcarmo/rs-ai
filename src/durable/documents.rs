@@ -48,6 +48,14 @@ pub struct GenericDocumentRecord {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub retired_seq: Option<CommitSeq>,
 }
+/// Final content and its schema version at one committed revision. The live
+/// incarnation's version may advance without relabelling historical values.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DocumentRevision {
+    pub version: u32,
+    pub value: Value,
+}
+
 #[derive(Clone, Debug)]
 pub struct DocumentQuery {
     pub conversation_id: ConversationId,
@@ -255,10 +263,10 @@ impl StorageSnapshot {
             return Ok(GenericDocumentRecord {
                 id: record.id,
                 address: record.address.clone(),
-                version: record.version,
+                version: revision.1.version,
                 history: record.history,
                 fork: record.fork,
-                value: revision.1.clone(),
+                value: revision.1.value.clone(),
                 created_seq: record.created_seq,
                 updated_seq: *revision.0,
                 retired_seq: record.retired_seq,

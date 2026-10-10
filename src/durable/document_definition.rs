@@ -1,5 +1,6 @@
 //! Process-local typed tokens for native conversation documents. No registry or
-//! tracked drafts; read migrations are detached and never rewrite the journal.
+//! tracked drafts; read migrations are detached. Typed edits persist migrated
+//! whole-value bases with versioned history through the transaction line.
 use super::documents::*;
 use super::types::*;
 use serde::{Serialize, de::DeserializeOwned};

@@ -330,7 +330,8 @@ impl<'a> EntryTransaction<'a> {
     /// Acquire or lazily initialise a typed native document, edit an owned value
     /// synchronously and stage its whole-value replacement. No borrowed draft
     /// escapes; caught callback/validation failures still roll back this Tx.
-    /// Seeds are ignored for existing members. Cross-version writes reject.
+    /// Seeds are ignored for existing members. A newer token with a migration
+    /// stages its final whole-value base even if content is unchanged.
     pub fn edit_document<D, I, T>(
         &mut self,
         definition: &super::document_definition::DocumentDefinition<D, I>,
@@ -350,12 +351,8 @@ impl<'a> EntryTransaction<'a> {
             let current = self.current_document(&address);
             if let Some(record) = current {
                 definition.check(record)?;
-                if record.version != definition.version() {
-                    return Err(DurableError::Rejected(
-                        "document migration persistence unsupported".into(),
-                    ));
-                }
             }
+            let migrating = current.is_some_and(|record| record.version < definition.version());
             let mut value = match current {
                 Some(record) => definition.decode(Some(record))?.unwrap(),
                 None => {
@@ -371,14 +368,18 @@ impl<'a> EntryTransaction<'a> {
             if current
                 .as_ref()
                 .is_none_or(|record| record.value != encoded)
+                || migrating
             {
-                self.put_document(DocumentDraft {
-                    address,
-                    version: definition.version(),
-                    history: definition.history(),
-                    fork: definition.fork(),
-                    value: encoded,
-                })?;
+                self.stage_document(
+                    DocumentDraft {
+                        address,
+                        version: definition.version(),
+                        history: definition.history(),
+                        fork: definition.fork(),
+                        value: encoded,
+                    },
+                    migrating,
+                )?;
             }
             Ok(output)
         }))
@@ -397,6 +398,20 @@ impl<'a> EntryTransaction<'a> {
         &mut self,
         draft: DocumentDraft,
     ) -> Result<GenericDocumentRecord, DurableError> {
+        let id = self.stage_document(draft, false)?;
+        Ok(self
+            .batch
+            .generic_documents
+            .iter()
+            .find(|record| record.id == id)
+            .expect("staged document")
+            .clone())
+    }
+    fn stage_document(
+        &mut self,
+        draft: DocumentDraft,
+        migrating: bool,
+    ) -> Result<DocumentId, DurableError> {
         self.writing = true;
         if let Some(error) = &self.failure {
             return Err(error.clone());
@@ -419,7 +434,8 @@ impl<'a> EntryTransaction<'a> {
                 })
                 .filter(|record| record.retired_seq.is_none());
             let record = if let Some(current) = current {
-                if current.version != draft.version
+                if (current.version != draft.version
+                    && !(migrating && current.version < draft.version))
                     || current.history != draft.history
                     || current.fork != draft.fork
                 {
@@ -430,7 +446,7 @@ impl<'a> EntryTransaction<'a> {
                 GenericDocumentRecord {
                     id: current.id,
                     address: current.address.clone(),
-                    version: current.version,
+                    version: draft.version,
                     history: current.history,
                     fork: current.fork,
                     value: draft.value,
@@ -489,17 +505,18 @@ impl<'a> EntryTransaction<'a> {
                 });
             }
             self.document_bytes = total;
+            let id = record.id;
             if let Some(index) = self
                 .batch
                 .generic_documents
                 .iter()
-                .position(|previous| previous.id == record.id)
+                .position(|previous| previous.id == id)
             {
-                self.batch.generic_documents[index] = record.clone();
+                self.batch.generic_documents[index] = record;
             } else {
-                self.batch.generic_documents.push(record.clone());
+                self.batch.generic_documents.push(record);
             }
-            Ok(record)
+            Ok(id)
         })();
         if let Err(error) = &result {
             self.failure = Some(error.clone());

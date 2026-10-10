@@ -665,7 +665,7 @@ mod tests {
             let mut record = original.clone();
             record.updated_seq = CommitSeq::new(before.next_seq).unwrap();
             match change {
-                0 => record.version = 2,
+                0 => record.version = 0,
                 1 => record.address.kind = "changed".into(),
                 2 => record.created_seq = record.updated_seq,
                 _ => record.fork = DocumentFork::Current,

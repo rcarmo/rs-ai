@@ -330,15 +330,6 @@ mod tests {
         }
         assert_eq!(calls.load(Ordering::SeqCst), 2);
         assert_eq!(session.snapshot().await.unwrap(), state);
-        let tx_token = new.clone();
-        let err = session
-            .transact_entries(move |tx| tx.edit_document(&tx_token, root(), None, &(), |_| Ok(())))
-            .await
-            .unwrap_err();
-        assert_eq!(
-            err,
-            DurableError::Rejected("document migration persistence unsupported".into())
-        );
         assert!(
             tokio::time::timeout(Duration::from_millis(10), watch.next())
                 .await

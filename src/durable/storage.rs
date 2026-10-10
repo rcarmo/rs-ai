@@ -22,7 +22,8 @@ pub struct StorageSnapshot {
     pub submissions: BTreeMap<SubmissionId, SubmissionRecord>,
     pub documents: BTreeMap<(ConversationId, String), DocumentRecord>,
     pub generic_documents: BTreeMap<DocumentId, super::documents::GenericDocumentRecord>,
-    pub document_revisions: BTreeMap<DocumentId, BTreeMap<CommitSeq, serde_json::Value>>,
+    pub document_revisions:
+        BTreeMap<DocumentId, BTreeMap<CommitSeq, super::documents::DocumentRevision>>,
     pub request_ids: HashMap<(ConversationId, String), SubmissionId>,
 }
 
@@ -154,7 +155,13 @@ impl StorageSnapshot {
                 self.document_revisions
                     .entry(record.id)
                     .or_default()
-                    .insert(batch.seq, record.value.clone());
+                    .insert(
+                        batch.seq,
+                        super::documents::DocumentRevision {
+                            version: record.version,
+                            value: record.value.clone(),
+                        },
+                    );
             }
             self.generic_documents.insert(record.id, record.clone());
         }
@@ -671,7 +678,7 @@ pub fn validate_batch(
             if previous.retired_seq.is_some()
                 || previous.address != record.address
                 || previous.created_seq != record.created_seq
-                || previous.version != record.version
+                || previous.version > record.version
                 || previous.history != record.history
                 || previous.fork != record.fork
             {
