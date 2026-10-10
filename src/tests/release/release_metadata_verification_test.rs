@@ -9,6 +9,38 @@ mod tests {
     use std::process::Command;
 
     #[test]
+    fn v110_full_record_catalog_delta_and_independent_faults_are_enforced() {
+        let run = |fault: &str| {
+            Command::new("python3")
+                .arg("-B")
+                .arg("scripts/verify_v110_baseline_delta.py")
+                .args(["--fault", fault])
+                .env("PYTHONDONTWRITEBYTECODE", "1")
+                .current_dir(env!("CARGO_MANIFEST_DIR"))
+                .output()
+                .unwrap()
+        };
+        let result = run("");
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        let stdout = String::from_utf8(result.stdout).unwrap();
+        assert!(stdout.contains("chat=1536->1563 +79/-52/199 changed"));
+        assert!(stdout.contains("image=59->61 +2/-0/0 changed"));
+        assert!(stdout.contains("classifier=20->26 +6/-0/1 changed"));
+        for kind in ["chat", "image", "classifier"] {
+            let result = run(&format!("{kind}-record"));
+            assert!(!result.status.success(), "{kind} fault must fail");
+            assert!(
+                String::from_utf8_lossy(&result.stderr)
+                    .contains(&format!("{kind} full-record delta mismatch"))
+            );
+        }
+    }
+
+    #[test]
     fn sbom_consumers_use_project_owned_paths() {
         let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let ci = std::fs::read_to_string(root.join(".github/workflows/ci.yml")).unwrap();
