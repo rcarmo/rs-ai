@@ -26,7 +26,7 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | M | `packages/ai/src/api/lazy.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/llama-cpp-classify.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/mistral-conversations.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/api/openai-codex-responses.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/api/openai-codex-responses.ts` | IMPLEMENTED configurable-header delta; null deletion gap | `src/provider/codex.rs` shares case-insensitive default/model/request header merging for SSE and WebSocket. Request `originator`/`User-Agent` override defaults; bearer/account identity is enforced last. SSE wire and WS handshake regression coverage; 49 focused Codex tests pass. Rust request headers hold strings, so upstream null deletion is not expressible. |
 | M | `packages/ai/src/api/openai-completions.ts` | PENDING | Not yet accepted |
 | A | `packages/ai/src/api/openai-decisions.lazy.ts` | PENDING | Not yet accepted |
 | A | `packages/ai/src/api/openai-decisions.ts` | PENDING | Not yet accepted |

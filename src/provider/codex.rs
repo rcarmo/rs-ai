@@ -1,5 +1,6 @@
 //! OpenAI Codex Responses provider (WebSocket + SSE fallback).
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::env::resolve_api_key;
@@ -106,6 +107,33 @@ fn record_ws_fallback(cache_key: Option<&str>) {
     {
         set.insert(s.to_string());
     }
+}
+
+/// Merge configurable client identity before enforcing credential identity.
+fn codex_request_headers(
+    model: &Model,
+    opts: &StreamOptions,
+    api_key: &str,
+    account_id: Option<&str>,
+) -> HashMap<String, String> {
+    let mut headers = HashMap::from([
+        ("originator".into(), "pi".into()),
+        ("user-agent".into(), codex_user_agent()),
+    ]);
+    for source in [model.headers.as_ref(), opts.headers.as_ref()]
+        .into_iter()
+        .flatten()
+    {
+        for (name, value) in source {
+            headers.insert(name.to_ascii_lowercase(), value.clone());
+        }
+    }
+    headers.insert("authorization".into(), format!("Bearer {api_key}"));
+    headers.remove("chatgpt-account-id");
+    if let Some(account_id) = account_id {
+        headers.insert("chatgpt-account-id".into(), account_id.into());
+    }
+    headers
 }
 
 /// Clear the recorded WebSocket-fallback state for a session (or all sessions).
@@ -240,28 +268,19 @@ pub fn stream_codex<'a>(
         if do_sse {
                 // Fallback to SSE using the Codex request body and headers.
                 let url = format!("{}/responses", model.base_url.trim_end_matches('/'));
-                let user_agent = codex_user_agent();
                 let client = crate::http_proxy::client_for_target(&url, None);
                 let mut req = client
                     .post(&url)
                     .header("accept", "text/event-stream")
-                    .header("OpenAI-Beta", "responses=experimental")
-                    .header("authorization", format!("Bearer {}", api_key))
-                    .header("originator", "pi")
-                    .header("User-Agent", user_agent);
-                if let Some(ref aid) = account_id {
-                    req = req.header("chatgpt-account-id", aid);
-                }
+                    .header("OpenAI-Beta", "responses=experimental");
                 if let Some(sid) = opts.session_id.as_deref().filter(|s| !s.is_empty()) {
                     let sid = crate::prompt_cache::clamp_openai_prompt_cache_key(sid);
                     req = req
                         .header("session-id", &sid)
                         .header("x-client-request-id", &sid);
                 }
-                if let Some(ref mh) = model.headers {
-                    for (k, v) in mh {
-                        req = req.header(k, v);
-                    }
+                for (name, value) in codex_request_headers(model, opts, &api_key, account_id.as_deref()) {
+                    req = req.header(name, value);
                 }
                 // The Codex backend decodes `Content-Encoding: zstd` request bodies on
                 // the SSE responses endpoint (matching the official Codex client). Compress
@@ -422,7 +441,6 @@ async fn try_websocket(
     use tokio_tungstenite::connect_async;
 
     let account_id = crate::oauth::codex_account_id(api_key);
-    let user_agent = codex_user_agent();
     // Upstream: `clampOpenAIPromptCacheKey(sessionId) || createCodexRequestId()`
     // (truthy), so an empty session id gets a fresh request id rather than being
     // used verbatim; long session ids are clamped to the OpenAI 64-char limit.
@@ -454,19 +472,11 @@ async fn try_websocket(
             "Sec-WebSocket-Key",
             tungstenite::handshake::client::generate_key(),
         )
-        .header("Authorization", format!("Bearer {}", api_key))
-        .header("originator", "pi")
-        .header("User-Agent", user_agent)
         .header("OpenAI-Beta", "responses_websockets=2026-02-06")
         .header("x-client-request-id", &request_id)
         .header("session-id", &request_id);
-    if let Some(ref aid) = account_id {
-        builder = builder.header("chatgpt-account-id", aid);
-    }
-    if let Some(ref mh) = model.headers {
-        for (k, v) in mh {
-            builder = builder.header(k.as_str(), v.as_str());
-        }
+    for (name, value) in codex_request_headers(model, opts, api_key, account_id.as_deref()) {
+        builder = builder.header(name, value);
     }
     let request = builder.body(()).map_err(|e| e.to_string())?;
 

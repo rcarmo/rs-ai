@@ -152,6 +152,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn caller_identity_headers_override_defaults_but_not_credentials() {
+        let (_, reason, headers, _) = run(
+            COMPLETED_SSE,
+            StreamOptions {
+                headers: Some(HashMap::from([
+                    ("Originator".into(), "rs-ai-host".into()),
+                    ("User-Agent".into(), "rs-ai-test/1.1".into()),
+                    ("Authorization".into(), "Bearer attacker".into()),
+                    ("chatgpt-account-id".into(), "injected-account".into()),
+                    ("x-host-custom".into(), "present".into()),
+                ])),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert_eq!(reason, StopReason::Stop);
+        assert_eq!(headers["originator"], "rs-ai-host");
+        assert_eq!(headers["user-agent"], "rs-ai-test/1.1");
+        assert_eq!(headers["authorization"], "Bearer a.b.c");
+        assert!(!headers.contains_key("chatgpt-account-id"));
+        assert_eq!(headers["x-host-custom"], "present");
+    }
+
+    #[tokio::test]
     async fn streams_sse_responses_into_assistant_message() {
         let (text, reason, _h, _b) = run(COMPLETED_SSE, StreamOptions::default()).await;
         assert_eq!(text, "Hello");

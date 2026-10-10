@@ -95,7 +95,7 @@ Set provider API keys in the process environment or pass per-request credentials
 
 Assistant messages expose optional `duration_ms` (serialized as `durationMs`). Terminal stream timing uses a monotonic clock, preserves supplied durations and leaves replayed messages untouched. Token estimates use 3.5 UTF-16 code units per token and include system tool-definition updates. Sampling resolves model defaults, clamped thinking-level defaults, then request overrides.
 
-Azure models use provider ID `azure` and support both Responses and Completions, with request-scoped endpoint, API version and deployment configuration. ChatGPT OAuth hosts can override the login agent name; Anthropic callback binding falls back to an ephemeral port when port 53692 is occupied.
+Azure models use provider ID `azure` and support both Responses and Completions, with request-scoped endpoint, API version and deployment configuration. ChatGPT OAuth hosts can override the login agent name; Anthropic callback binding falls back to an ephemeral port when port 53692 is occupied. Codex SSE and WebSocket requests accept `originator` and `User-Agent` overrides through `StreamOptions.headers`; credential authorization and account identity stay enforced.
 
 `auth::ProviderAuth.oauth` takes `Arc<dyn OAuthAuth>`. Stored OAuth refreshes wait cancellably for the provider lock, then persist any admitted token rotation before releasing it -- even after the caller cancels or drops its future. The worker has an independent 15-second timeout. Model-catalog refresh shares that path; offline refresh does not rotate credentials. `InMemoryCredentialStore::clone` shares credentials and locks.
 
@@ -160,7 +160,8 @@ The generated catalog also includes provider metadata for OpenRouter, xAI, Groq,
 - Live-provider smoke tests that require credentials stay out of the local gate. Deterministic wire, parser, replay, catalog, OAuth, and validation tests are preferred, with live-only gaps labelled in the crosswalk.
 - Cancellation is idiomatic Rust cancellation: drop the returned stream, wrap it in `tokio::time::timeout`, or use `tokio::select!`. The HTTP providers do not expose an `AbortSignal` option or synthesize an upstream-style aborted terminal event.
 - `StreamOptions.timeout_ms` controls the explicit `reqwest` request timeout. If it is absent, this crate does not add an extra timeout on top of the underlying transport.
-- Bedrock request construction uses the typed AWS SDK `ConverseStream` builder, so JSON `on_payload` mutation hooks apply to HTTP JSON providers but not to the Bedrock SDK builder path.
+* Bedrock request construction uses the typed AWS SDK `ConverseStream` builder, so JSON `on_payload` mutation hooks apply to HTTP JSON providers but not to the Bedrock SDK builder path.
+* `StreamOptions.headers` stores string values. Upstream request-header null deletion has no direct representation in this map.
 
 ## Compatibility/versioning
 

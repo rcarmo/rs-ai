@@ -94,10 +94,18 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let received: Arc<Mutex<Option<serde_json::Value>>> = Arc::new(Mutex::new(None));
         let sink = received.clone();
+        let headers = Arc::new(Mutex::new(None));
+        let header_sink = headers.clone();
 
         let server = tokio::spawn(async move {
+            // tungstenite fixes the callback's error type to an unboxed HTTP response.
+            #[allow(clippy::result_large_err)]
+            let capture = move |request: &tokio_tungstenite::tungstenite::handshake::server::Request, response: tokio_tungstenite::tungstenite::handshake::server::Response| {
+                *header_sink.lock().unwrap() = Some(request.headers().clone());
+                Ok(response)
+            };
             if let Ok((stream, _)) = listener.accept().await
-                && let Ok(mut ws) = tokio_tungstenite::accept_async(stream).await
+                && let Ok(mut ws) = tokio_tungstenite::accept_hdr_async(stream, capture).await
             {
                 // Capture the outbound response.create frame.
                 if let Some(Ok(WsMessage::Text(t))) = ws.next().await
@@ -118,11 +126,21 @@ mod tests {
             }
         });
 
-        let model = codex_model(&format!("http://{addr}"));
+        let mut model = codex_model(&format!("http://{addr}"));
+        model.headers = Some(std::collections::HashMap::from([
+            ("originator".into(), "model-host".into()),
+            ("authorization".into(), "Bearer model-attacker".into()),
+        ]));
         let provider_events = Arc::new(Mutex::new(Vec::new()));
         let captured_events = provider_events.clone();
         let opts = StreamOptions {
             transport: Some(Transport::Auto),
+            headers: Some(std::collections::HashMap::from([
+                ("Originator".into(), "caller-host".into()),
+                ("User-Agent".into(), "caller-agent/1.1".into()),
+                ("Authorization".into(), "Bearer caller-attacker".into()),
+                ("chatgpt-account-id".into(), "injected-account".into()),
+            ])),
             reasoning: Some(crate::types::ThinkingLevel::High),
             on_provider_stream_event: Some(Arc::new(move |event, event_model| {
                 assert_eq!(event_model.id, "codex-mini");
@@ -157,6 +175,12 @@ mod tests {
             .await
             .expect("codex ws stream timed out");
         let _ = server.await;
+
+        let headers = headers.lock().unwrap().take().expect("handshake captured");
+        assert_eq!(headers["originator"], "caller-host");
+        assert_eq!(headers["user-agent"], "caller-agent/1.1");
+        assert_eq!(headers["authorization"], "Bearer test-key");
+        assert!(!headers.contains_key("chatgpt-account-id"));
 
         // Outbound payload carries the model id.
         let payload = received
