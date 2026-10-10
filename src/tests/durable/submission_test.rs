@@ -123,6 +123,86 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn historical_context_options_cut_inclusively_without_mutation_or_dispatch() {
+        let calls = Arc::new(Mutex::new(0));
+        let harness = DurableHarness::open(
+            Box::new(MemoryStorage::new()),
+            Arc::new(ImmediateRunner {
+                calls: calls.clone(),
+            }),
+            model(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        let first = harness.passive_write("before".into()).await.unwrap();
+        let handle = harness
+            .submit(SubmitRequest {
+                request_id: "cut".into(),
+                content: "question".into(),
+            })
+            .await
+            .unwrap();
+        let view = harness.wait(handle.clone()).await.unwrap();
+        assert_eq!(view.answer.as_deref(), Some("answer"));
+        let tail = harness.passive_write("after".into()).await.unwrap();
+        let snapshot = harness.test_snapshot().await.unwrap();
+        let submission = &snapshot.submissions[&handle.id];
+        let cut = harness
+            .context_with_options(ContextOptions { at: Some(first) })
+            .await
+            .unwrap();
+        assert_eq!(
+            cut.iter()
+                .map(|message| message.text.as_str())
+                .collect::<Vec<_>>(),
+            ["before"]
+        );
+        let cut = harness
+            .context_with_options(ContextOptions {
+                at: Some(submission.entry_id),
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            cut.iter()
+                .map(|message| message.text.as_str())
+                .collect::<Vec<_>>(),
+            ["before", "question"]
+        );
+        let cut = harness
+            .context_with_options(ContextOptions {
+                at: submission.answer_id,
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            cut.iter()
+                .map(|message| message.text.as_str())
+                .collect::<Vec<_>>(),
+            ["before", "question", "answer"]
+        );
+        assert_eq!(
+            harness
+                .context_with_options(ContextOptions { at: Some(tail) })
+                .await
+                .unwrap(),
+            harness.context().await.unwrap()
+        );
+        assert!(matches!(
+            harness
+                .context_with_options(ContextOptions {
+                    at: Some(EntryId::new(99999).unwrap())
+                })
+                .await,
+            Err(DurableError::Rejected(_))
+        ));
+        assert_eq!(harness.test_snapshot().await.unwrap(), snapshot);
+        assert_eq!(*calls.lock().unwrap(), 1);
+        harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn passive_entry_and_prior_answer_are_in_follow_up_context_order() {
         struct CaptureRunner {
             contexts: Arc<Mutex<Vec<Vec<DurableMessage>>>>,

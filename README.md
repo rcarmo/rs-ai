@@ -101,7 +101,7 @@ Azure models use provider ID `azure` and support both Responses and Completions,
 
 ## Durable sessions
 
-The native `durable` module provides a partial R1 implementation with memory/journal storage, writer fencing, submissions, model/tool execution and recovery. Sessions persist a `pi.provider` document containing the provider session UUID; generation intents forward it as `StreamOptions.session_id`. Tasks expose optional `started_at`/`ended_at` timestamps, and completed executions record `durationMs`.
+The native `durable` module provides a partial R1 implementation with memory/journal storage, writer fencing, submissions, model/tool execution and recovery. Sessions persist a `pi.provider` document containing the provider session UUID; generation intents forward it as `StreamOptions.session_id`. Tasks expose optional `started_at`/`ended_at` timestamps, and completed executions record `durationMs`. Snapshot scans preserve cursor direction; `context_with_options(ContextOptions { at })` provides inclusive historical cuts of the native user/assistant text context without dispatching work.
 
 Full pi-durable parity is unfinished. Generic tasks/documents, forks, inbox modes, events, hooks, partial output, deferred polling, compaction, subagents, remote/SQLite storage and cross-process leases need further implementation or verification. The [durable crosswalk](docs/pi-durable-v110-crosswalk.md) lists the source and test scope; [native design](docs/durable-native-design.md) describes the implemented subset.
 

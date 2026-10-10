@@ -61,6 +61,12 @@ Sizes use encoded JSON bytes. There is no truncation.
 
 These methods operate on an already-loaded snapshot. They do not add backend query/streaming APIs, conversation records, kind/range filters, fork traversal or SQLite storage. Rust cursor IDs use the existing positive-i64 contract, including zero as an exclusive boundary; upstream uses JavaScript safe integers. Conformance regressions cover both directions, defaults, pagination, isolation, detached values, cursor errors and rejected-commit snapshot atomicity.
 
+## v1.1.0 historical text context
+
+`DurableHarness::context_with_options(ContextOptions { at: Some(entry_id) })` returns the native text context through a visible entry, inclusive. `at: None` matches `context()`. Unknown or foreign-conversation IDs fail; the query neither commits nor dispatches effects. Ordering follows the native `(created_seq, id)` sequence. Tests cut before a submission, at its user/answer entries and at the tail, then compare state before and after the query.
+
+The native text context includes user and assistant text only. Upstream fork ancestry, edits, head resets, tool-result repair and open-message assembly are not implemented by this helper.
+
 ## Later required work
 
 R1c supplies the executable tool registry, intent-before-effect, exact implementation/version/schema replay gate, generation→tool ownership, completing drain and bottom-up abort needed for the useful vertical. Same-version v1.0.1 retagging still requires local/hosted acceptance and publication authority; this document records implementation scope only.

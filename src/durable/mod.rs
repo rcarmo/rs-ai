@@ -13,7 +13,7 @@ pub mod submission;
 pub mod tool;
 pub mod types;
 
-pub use harness::DurableHarness;
+pub use harness::{ContextOptions, DurableHarness};
 pub use model::{
     DurableContent, DurableMessage, DurableModelRunner, DurableUsage, ModelIntent, ModelRun,
     ModelTerminal, PinnedModel, PinnedOptions, RegistryModelRunner,

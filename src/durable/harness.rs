@@ -20,6 +20,12 @@ type AbortResult = Option<Result<(), DurableError>>;
 type AbortReceiver = watch::Receiver<AbortResult>;
 type AbortMap = HashMap<(SubmissionId, TaskId), AbortReceiver>;
 
+/// Inclusive context cut for the native single-conversation text subset.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ContextOptions {
+    pub at: Option<EntryId>,
+}
+
 pub struct DurableHarness {
     inner: Arc<Inner>,
 }
@@ -231,8 +237,15 @@ impl DurableHarness {
     }
 
     pub async fn context(&self) -> Result<Vec<DurableMessage>, DurableError> {
+        self.context_with_options(ContextOptions::default()).await
+    }
+
+    pub async fn context_with_options(
+        &self,
+        options: ContextOptions,
+    ) -> Result<Vec<DurableMessage>, DurableError> {
         let snapshot = self.inner.session.snapshot().await?;
-        context_from_snapshot(&snapshot)
+        context_from_snapshot(&snapshot, options)
     }
 
     pub async fn inspect_documents(
@@ -2181,12 +2194,30 @@ fn context_for_task(
 
 fn context_from_snapshot(
     snapshot: &crate::durable::storage::StorageSnapshot,
+    options: ContextOptions,
 ) -> Result<Vec<DurableMessage>, DurableError> {
     let conversation = conversation_id()?;
+    let cut = options
+        .at
+        .map(|at| {
+            snapshot
+                .entries
+                .get(&at)
+                .filter(|entry| entry.conversation_id == conversation)
+                .map(|entry| (entry.created_seq, entry.id.get()))
+                .ok_or_else(|| {
+                    DurableError::Rejected(format!(
+                        "entry {} is not visible in this conversation",
+                        at.get()
+                    ))
+                })
+        })
+        .transpose()?;
     let mut entries = snapshot
         .entries
         .values()
         .filter(|entry| entry.conversation_id == conversation)
+        .filter(|entry| cut.is_none_or(|cut| (entry.created_seq, entry.id.get()) <= cut))
         .filter_map(|entry| {
             let role = match entry.kind.as_str() {
                 "user" => "user",
