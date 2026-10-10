@@ -233,6 +233,206 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn context_updates_apply_latest_edits_heads_and_historical_cutoffs() {
+        let calls = Arc::new(Mutex::new(0));
+        let harness = DurableHarness::open(
+            Box::new(MemoryStorage::new()),
+            Arc::new(ImmediateRunner {
+                calls: calls.clone(),
+            }),
+            model(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        let first = harness.passive_write("first".into()).await.unwrap();
+        let second = harness.passive_write("second".into()).await.unwrap();
+        let replacement = harness
+            .update_context(ContextUpdate {
+                edits: vec![ContextEdit::Replace {
+                    target: first,
+                    messages: vec![crate::user_message("replacement")],
+                }],
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        let messages = harness
+            .message_context(ContextOptions::default())
+            .await
+            .unwrap();
+        assert!(
+            matches!(messages[0].content.first(), Some(crate::types::ContentBlock::Text { text, .. }) if text == "replacement")
+        );
+        harness
+            .update_context(ContextUpdate {
+                edits: vec![ContextEdit::Omit { target: first }],
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            harness
+                .message_context(ContextOptions::default())
+                .await
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            harness
+                .message_context(ContextOptions {
+                    at: Some(replacement)
+                })
+                .await
+                .unwrap()
+                .len(),
+            2
+        );
+        let mut system = crate::user_message("baseline");
+        system.role = crate::types::Role::System;
+        harness
+            .update_context(ContextUpdate {
+                head: Some(ContextHead::Entry(second)),
+                messages: vec![system],
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            harness
+                .message_context(ContextOptions::default())
+                .await
+                .unwrap()[0]
+                .role,
+            crate::types::Role::System
+        );
+        let reset = harness
+            .update_context(ContextUpdate {
+                head: Some(ContextHead::SelfEntry(SelfHead::SelfEntry)),
+                messages: vec![crate::user_message("handoff")],
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        let current = harness
+            .message_context(ContextOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(current.len(), 1);
+        assert!(
+            matches!(current[0].content.first(), Some(crate::types::ContentBlock::Text { text, .. }) if text == "handoff")
+        );
+        assert_eq!(
+            serde_json::to_value(
+                harness
+                    .message_context(ContextOptions { at: Some(reset) })
+                    .await
+                    .unwrap()
+            )
+            .unwrap(),
+            serde_json::to_value(current).unwrap()
+        );
+        let before = harness.test_snapshot().await.unwrap();
+        assert!(
+            harness
+                .update_context(ContextUpdate {
+                    edits: vec![ContextEdit::Omit {
+                        target: EntryId::new(99999).unwrap()
+                    }],
+                    ..Default::default()
+                })
+                .await
+                .is_err()
+        );
+        assert_eq!(harness.test_snapshot().await.unwrap(), before);
+        assert_eq!(*calls.lock().unwrap(), 0);
+        harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn context_reset_is_persisted_and_forwarded_to_next_provider_intent() {
+        struct Capture(Arc<Mutex<Vec<ModelIntent>>>);
+        impl DurableModelRunner for Capture {
+            fn run<'a>(&'a self, intent: ModelIntent) -> crate::durable::model::ModelFuture<'a> {
+                self.0.lock().unwrap().push(intent);
+                Box::pin(async {
+                    ModelRun::one(ModelTerminal::Answer {
+                        content: vec![],
+                        text: "done".into(),
+                        usage: DurableUsage::default(),
+                        response_id: None,
+                        stop_reason: "stop".into(),
+                    })
+                })
+            }
+        }
+        let root =
+            std::env::temp_dir().join(format!("rs-ai-context-update-{}", crate::utils::uuidv7()));
+        std::fs::create_dir(&root).unwrap();
+        let path = root.join("journal");
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let harness = DurableHarness::open(
+            Box::new(JournalStorage::open(&path).unwrap()),
+            Arc::new(Capture(seen.clone())),
+            model(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        harness.passive_write("old".into()).await.unwrap();
+        harness
+            .update_context(ContextUpdate {
+                head: Some(ContextHead::SelfEntry(SelfHead::SelfEntry)),
+                messages: vec![crate::user_message("handoff")],
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        harness.close().await.unwrap();
+        let reopened = DurableHarness::open(
+            Box::new(JournalStorage::open(&path).unwrap()),
+            Arc::new(Capture(seen.clone())),
+            model(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        assert!(seen.lock().unwrap().is_empty());
+        let handle = reopened
+            .submit(SubmitRequest {
+                request_id: "after-reset".into(),
+                content: "new".into(),
+            })
+            .await
+            .unwrap();
+        reopened.wait(handle).await.unwrap();
+        {
+            let seen = seen.lock().unwrap();
+            let messages = seen[0].native_messages.as_ref().unwrap();
+            let text = messages
+                .iter()
+                .map(|message| match message.content.first() {
+                    Some(crate::types::ContentBlock::Text { text, .. }) => text.as_str(),
+                    _ => "",
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(text, ["handoff", "new"]);
+            assert_eq!(
+                seen[0]
+                    .context
+                    .iter()
+                    .map(|message| message.text.as_str())
+                    .collect::<Vec<_>>(),
+                ["handoff", "new"],
+                "text-runner compatibility obeys reset too"
+            );
+        }
+        reopened.close().await.unwrap();
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[tokio::test]
     async fn historical_context_options_cut_inclusively_without_mutation_or_dispatch() {
         let calls = Arc::new(Mutex::new(0));
         let harness = DurableHarness::open(

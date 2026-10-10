@@ -1,10 +1,97 @@
 //! Native durable message reconstruction for the single-conversation entry log.
-//! Fork ancestry, edits and head markers are separate, unimplemented contracts.
+//! Native context-update entries adapt heads/edits; fork ancestry remains absent.
 use super::model::{DurableContent, DurableMessage, ModelIntent, to_message_for_durable};
 use super::storage::StorageSnapshot;
 use super::types::*;
 use crate::types::{ContentBlock, Message, Role, StopReason};
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
+use std::collections::HashMap;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase", deny_unknown_fields)]
+pub enum ContextEdit {
+    Omit {
+        target: EntryId,
+    },
+    Replace {
+        target: EntryId,
+        messages: Vec<Message>,
+    },
+}
+impl ContextEdit {
+    fn target(&self) -> EntryId {
+        match self {
+            Self::Omit { target } | Self::Replace { target, .. } => *target,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ContextHead {
+    Entry(EntryId),
+    SelfEntry(SelfHead),
+}
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum SelfHead {
+    #[serde(rename = "self")]
+    SelfEntry,
+}
+
+/// Native log contribution. Heads select a retained lower bound; edits can omit
+/// or replace a visible earlier entry. These values never dispatch model work.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ContextUpdate {
+    #[serde(default)]
+    pub messages: Vec<Message>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub head: Option<ContextHead>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub edits: Vec<ContextEdit>,
+}
+
+pub(crate) fn validate_update(
+    snapshot: &StorageSnapshot,
+    conversation: ConversationId,
+    id: EntryId,
+    value: &Value,
+) -> Result<(), DurableError> {
+    let update: ContextUpdate = serde_json::from_value(value.clone())
+        .map_err(|_| DurableError::Rejected("invalid native context update".into()))?;
+    if update.messages.len() > 4096 || update.edits.len() > 4096 {
+        return Err(DurableError::Rejected(
+            "too many context messages/edits".into(),
+        ));
+    }
+    let visible = |target: EntryId| {
+        snapshot
+            .entries
+            .get(&target)
+            .is_some_and(|entry| target < id && entry.conversation_id == conversation)
+    };
+    if let Some(ContextHead::Entry(target)) = update.head
+        && !visible(target)
+    {
+        return Err(DurableError::Rejected(
+            "context head is not a visible prior entry".into(),
+        ));
+    }
+    for edit in &update.edits {
+        if !visible(edit.target()) {
+            return Err(DurableError::Rejected(
+                "context edit target is not a visible prior entry".into(),
+            ));
+        }
+        if matches!(edit, ContextEdit::Replace { messages, .. } if messages.len() > 4096) {
+            return Err(DurableError::Rejected(
+                "too many replacement messages".into(),
+            ));
+        }
+    }
+    Ok(())
+}
 
 pub(crate) fn messages(
     snapshot: &StorageSnapshot,
@@ -72,8 +159,51 @@ fn derive<'a>(
     snapshot: &StorageSnapshot,
     entries: impl Iterator<Item = &'a EntryRecord>,
 ) -> Result<Vec<Message>, DurableError> {
+    let entries = entries.collect::<Vec<_>>();
+    let mut head = None;
+    let mut marker = None;
+    let mut edits = HashMap::new();
+    let mut updates = HashMap::new();
+    for entry in &entries {
+        if entry.kind != "context" {
+            continue;
+        }
+        let update: ContextUpdate = serde_json::from_value(entry.value.clone())
+            .map_err(|_| DurableError::Corrupt("invalid persisted context update".into()))?;
+        if let Some(value) = update.head {
+            head = Some(match value {
+                ContextHead::Entry(id) => id,
+                ContextHead::SelfEntry(_) => entry.id,
+            });
+            marker = Some(entry.id);
+        }
+        for edit in &update.edits {
+            edits.insert(edit.target(), edit.clone());
+        }
+        updates.insert(entry.id, update);
+    }
     let mut result = Vec::new();
     for entry in entries {
+        if head.is_some_and(|head| entry.id < head) {
+            continue;
+        }
+        if let Some(update) = updates.get(&entry.id) {
+            // Older head markers do not contribute even when the latest marker
+            // points backwards. Their edits still participate in latest-wins.
+            if update.head.is_some() && marker != Some(entry.id) {
+                continue;
+            }
+        }
+        if let Some(edit) = edits.get(&entry.id) {
+            if let ContextEdit::Replace { messages, .. } = edit {
+                result.extend(messages.clone());
+            }
+            continue;
+        }
+        if let Some(update) = updates.get(&entry.id) {
+            result.extend(update.messages.clone());
+            continue;
+        }
         let mut message = match entry.kind.as_str() {
             "user" => to_message_for_durable(&DurableMessage {
                 role: "user".into(),
@@ -191,7 +321,52 @@ fn derive<'a>(
         }
         result.push(message);
     }
+    result.retain(|message| {
+        message.role != Role::Assistant
+            || !matches!(
+                message.stop_reason,
+                Some(StopReason::Aborted | StopReason::Error | StopReason::Deferred)
+            )
+    });
+    // Lead with baseline system metadata only while preceding messages are user
+    // inputs, matching upstream provider prompt/cache prefix ordering.
+    if let Some(index) = result.iter().position(|message| message.role != Role::User)
+        && result[index].role == Role::System
+        && index > 0
+    {
+        let system = result.remove(index);
+        result.insert(0, system);
+    }
     Ok(order_tool_results(result))
+}
+
+pub(crate) fn text_messages(messages: Vec<Message>) -> Vec<DurableMessage> {
+    messages
+        .into_iter()
+        .filter_map(|message| {
+            let role = match message.role {
+                Role::User => "user",
+                Role::Assistant => "assistant",
+                _ => return None,
+            };
+            let text = message
+                .content
+                .into_iter()
+                .filter_map(|block| match block {
+                    ContentBlock::Text { text, .. } => Some(text),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+                .join("");
+            if text.is_empty() {
+                return None;
+            }
+            Some(DurableMessage {
+                role: role.into(),
+                text,
+            })
+        })
+        .collect()
 }
 
 fn text(entry: &EntryRecord) -> Result<String, DurableError> {

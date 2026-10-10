@@ -569,6 +569,59 @@ mod tests {
     }
 
     #[test]
+    fn context_update_references_and_edit_shapes_fail_before_mutation() {
+        let mut snapshot = StorageSnapshot::empty();
+        snapshot.apply(&batch(1)).unwrap();
+        let before = snapshot.clone();
+        for value in [
+            json!({"head":3}),
+            json!({"head":99999}),
+            json!({"edits":[{"type":"omit","target":2,"messages":[]}]}),
+            json!({"edits":[{"type":"replace","target":2}]}),
+            json!({"edits":[{"type":"omit","target":99999}]}),
+        ] {
+            let seq = CommitSeq::new(2).unwrap();
+            let update = CommitBatch {
+                seq,
+                next_id: 6,
+                next_seq: 3,
+                entries: vec![EntryRecord {
+                    id: EntryId::new(5).unwrap(),
+                    conversation_id: ConversationId::new(1).unwrap(),
+                    kind: "context".into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: seq,
+                }],
+                tasks: vec![],
+                submissions: vec![],
+                documents: vec![],
+            };
+            assert!(snapshot.apply(&update).is_err());
+            assert_eq!(snapshot, before);
+        }
+        let seq = CommitSeq::new(2).unwrap();
+        let foreign = CommitBatch {
+            seq,
+            next_id: 6,
+            next_seq: 3,
+            entries: vec![EntryRecord {
+                id: EntryId::new(5).unwrap(),
+                conversation_id: ConversationId::new(2).unwrap(),
+                kind: "context".into(),
+                value: json!({"head":2}),
+                by_task_id: None,
+                created_seq: seq,
+            }],
+            tasks: vec![],
+            submissions: vec![],
+            documents: vec![],
+        };
+        assert!(snapshot.apply(&foreign).is_err());
+        assert_eq!(snapshot, before);
+    }
+
+    #[test]
     fn ids_references_high_water_and_sizes_fail_closed() {
         assert!(ConversationId::new(0).is_err());
         assert!(ConversationId::new((i64::MAX as u64) + 1).is_err());

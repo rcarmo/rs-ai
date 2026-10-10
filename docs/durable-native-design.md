@@ -79,7 +79,13 @@ Fork traversal, conversation records, background-task filters, backend streaming
 
 The compatibility `context()` helper includes user/assistant text only. `message_context(ContextOptions { at })` returns native messages, including persisted assistant tool calls and tool results. Calls persist atomically with pending children before effects. Results appear immediately after their assistant in call order; the first matching result before the next assistant wins, missing results are synthesized as errors, and duplicates/orphans are dropped. Result durations survive reconstruction. Legacy text-only assistant records remain readable.
 
-New submissions persist native context in their intent so prior tool rounds survive follow-up dispatch and recovery. The native FIFO cutoff includes completed prior turns even when a queued input ID predates the prior answer, then places the active input last. Reconstructed messages do not acquire new timing. Fork ancestry, edits, head resets, full open-message assembly and incremental range reuse are not implemented.
+New submissions persist native context in their intent so prior tool rounds survive follow-up dispatch and recovery. The native FIFO cutoff includes completed prior turns even when a queued input ID predates the prior answer, then places the active input last. Reconstructed messages do not acquire new timing. Fork ancestry, busy-boundary context updates, full open-message assembly and incremental range reuse are not implemented.
+
+## Native context heads and edits
+
+`update_context(ContextUpdate)` writes a native `context` entry while idle. Its optional head points to a visible prior entry or `ContextHead::SelfEntry(SelfHead::SelfEntry)`; omit/replace edits target earlier entries in the same conversation. Validation rejects future/foreign/non-entry targets, invalid edit shapes and oversized message/edit lists before mutation. A replacement contributes its message sequence at the target's position; latest visible edits win, including those recorded in older head markers. Only the newest visible head marker contributes messages; historical cuts apply only updates at/before their cutoff. A leading system contribution moves ahead of preceding user-only messages.
+
+Both native provider context and the text-runner compatibility view apply these rules. Reads never dispatch. Reopen preserves updates, and cache invalidation follows successful commits. Updates during pending work reject; upstream boundary scheduling, forks and generic entry drafts are absent. The native journal kind/schema is an adaptation, not upstream's generic EntryDraft wire format.
 
 ## v1.1.0 native context retention
 

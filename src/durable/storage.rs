@@ -212,10 +212,18 @@ pub fn validate_batch(
         require_kind(
             "entry kind",
             &entry.kind,
-            &["user", "assistant", "tool_result", "model_error"],
+            &["user", "assistant", "tool_result", "model_error", "context"],
         )?;
         if entry.conversation_id.get() > MAX_ID {
             return Err(DurableError::Range("conversation id outside range".into()));
+        }
+        if entry.kind == "context" {
+            super::context::validate_update(
+                snapshot,
+                entry.conversation_id,
+                entry.id,
+                &entry.value,
+            )?;
         }
         validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
         let _ = encode_limited("entry", &entry.value, MAX_ENTRY_BYTES)?;

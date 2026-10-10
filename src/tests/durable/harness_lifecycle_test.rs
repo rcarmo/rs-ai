@@ -146,6 +146,10 @@ mod tests {
             harness.passive_write("note".into()).await,
             Err(DurableError::Rejected(_))
         ));
+        assert!(matches!(
+            harness.update_context(ContextUpdate::default()).await,
+            Err(DurableError::Rejected(_))
+        ));
         release.notify_one();
         assert_eq!(harness.wait(first).await.unwrap().status, "done");
         let documents = harness.inspect_documents().await.unwrap();

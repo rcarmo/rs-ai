@@ -15,6 +15,7 @@ pub mod submission;
 pub mod tool;
 pub mod types;
 
+pub use context::{ContextEdit, ContextHead, ContextUpdate, SelfHead};
 pub use harness::{ContextOptions, DurableHarness, HarnessServices};
 pub use model::{
     DurableContent, DurableMessage, DurableModelRunner, DurableUsage, ModelIntent, ModelRun,

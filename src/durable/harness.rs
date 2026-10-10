@@ -383,6 +383,50 @@ impl DurableHarness {
             .collect())
     }
 
+    /// Admit a native head/edit/message contribution only while the conversation
+    /// is idle. Busy-boundary scheduling is not implemented by this method.
+    pub async fn update_context(
+        &self,
+        update: super::context::ContextUpdate,
+    ) -> Result<EntryId, DurableError> {
+        self.ensure_open()?;
+        let _operation = self.inner.operations.lock().await;
+        self.ensure_open()?;
+        let snapshot = self.inner.session.snapshot().await?;
+        if snapshot
+            .submissions
+            .values()
+            .any(|submission| submission.status == "pending")
+        {
+            return Err(DurableError::Rejected("conversation busy".into()));
+        }
+        let id = EntryId::new(snapshot.next_id)?;
+        let seq = CommitSeq::new(snapshot.next_seq)?;
+        let value = serde_json::to_value(update)
+            .map_err(|error| DurableError::Rejected(error.to_string()))?;
+        self.inner
+            .session
+            .commit(CommitBatch {
+                seq,
+                next_id: increment(id.get())?,
+                next_seq: increment(seq.get())?,
+                entries: vec![EntryRecord {
+                    id,
+                    conversation_id: conversation_id()?,
+                    kind: "context".into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: seq,
+                }],
+                tasks: vec![],
+                submissions: vec![],
+                documents: vec![],
+            })
+            .await?;
+        bump_revision(&self.inner);
+        Ok(id)
+    }
+
     pub async fn passive_write(&self, content: String) -> Result<EntryId, DurableError> {
         self.ensure_open()?;
         if content.is_empty() || content.len() > MAX_SUBMISSION_BYTES {
@@ -789,11 +833,12 @@ async fn execute(inner: Arc<Inner>, task_id: TaskId) -> Result<(), DurableError>
         let mut intent: ModelIntent = serde_json::from_value(task.input.clone())
             .map_err(|_| DurableError::Corrupt("invalid persisted model intent".into()))?;
         if intent.context.is_empty() {
-            let context = context_for_task(&snapshot, task_id)?;
+            let native = super::context::for_task(&snapshot, task_id)?;
+            let context = super::context::text_messages(native.clone());
             intent.context_cutoff = u32::try_from(context.len())
                 .map_err(|_| DurableError::Range("context length overflow".into()))?;
             intent.context = context;
-            intent.native_messages = Some(super::context::for_task(&snapshot, task_id)?);
+            intent.native_messages = Some(native);
         }
         if intent.offered_tools.is_empty() {
             intent.offered_tools = inner
@@ -2263,124 +2308,15 @@ async fn reconcile_running(session: &Arc<DurableSession>) -> Result<(), DurableE
     Ok(())
 }
 
-fn context_for_task(
-    snapshot: &crate::durable::storage::StorageSnapshot,
-    task_id: TaskId,
-) -> Result<Vec<DurableMessage>, DurableError> {
-    let target_entry = snapshot
-        .entries
-        .values()
-        .find(|entry| entry.by_task_id == Some(task_id) && entry.kind == "user")
-        .ok_or_else(|| DurableError::Corrupt("generation lacks input entry".into()))?;
-    let submissions = snapshot
-        .submissions
-        .values()
-        .filter(|submission| submission.conversation_id == target_entry.conversation_id)
-        .map(|submission| (submission.entry_id, submission))
-        .collect::<std::collections::HashMap<_, _>>();
-    let mut entries = snapshot
-        .entries
-        .values()
-        .filter(|entry| {
-            entry.conversation_id == target_entry.conversation_id
-                && entry.id.get() <= target_entry.id.get()
-        })
-        .collect::<Vec<_>>();
-    entries.sort_by_key(|entry| entry.id.get());
-    let mut context = Vec::new();
-    for entry in entries {
-        if entry.kind != "user" {
-            continue;
-        }
-        let input = entry
-            .value
-            .get("text")
-            .and_then(Value::as_str)
-            .ok_or_else(|| DurableError::Corrupt("invalid context user entry".into()))?;
-        context.push(DurableMessage {
-            role: "user".into(),
-            text: input.into(),
-        });
-        if entry.id == target_entry.id {
-            break;
-        }
-        if let Some(answer_id) = submissions
-            .get(&entry.id)
-            .and_then(|submission| submission.answer_id)
-        {
-            let answer = snapshot
-                .entries
-                .get(&answer_id)
-                .and_then(|value| value.value.get("text"))
-                .and_then(Value::as_str)
-                .ok_or_else(|| DurableError::Corrupt("invalid submission answer entry".into()))?;
-            context.push(DurableMessage {
-                role: "assistant".into(),
-                text: answer.into(),
-            });
-        }
-    }
-    if context.last().is_none_or(|message| {
-        message.text
-            != target_entry
-                .value
-                .get("text")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-    }) {
-        return Err(DurableError::Corrupt(
-            "target submission missing from context".into(),
-        ));
-    }
-    Ok(context)
-}
-
 fn context_from_snapshot(
     snapshot: &crate::durable::storage::StorageSnapshot,
     options: ContextOptions,
 ) -> Result<Vec<DurableMessage>, DurableError> {
-    let conversation = conversation_id()?;
-    let cut = options
-        .at
-        .map(|at| {
-            snapshot
-                .entries
-                .get(&at)
-                .filter(|entry| entry.conversation_id == conversation)
-                .map(|entry| (entry.created_seq, entry.id.get()))
-                .ok_or_else(|| {
-                    DurableError::Rejected(format!(
-                        "entry {} is not visible in this conversation",
-                        at.get()
-                    ))
-                })
-        })
-        .transpose()?;
-    let mut entries = snapshot
-        .entries
-        .values()
-        .filter(|entry| entry.conversation_id == conversation)
-        .filter(|entry| cut.is_none_or(|cut| (entry.created_seq, entry.id.get()) <= cut))
-        .filter_map(|entry| {
-            let role = match entry.kind.as_str() {
-                "user" => "user",
-                "assistant" => "assistant",
-                _ => return None,
-            };
-            entry.value.get("text").and_then(Value::as_str).map(|text| {
-                (
-                    entry.created_seq,
-                    entry.id.get(),
-                    DurableMessage {
-                        role: role.into(),
-                        text: text.into(),
-                    },
-                )
-            })
-        })
-        .collect::<Vec<_>>();
-    entries.sort_by_key(|(seq, id, _)| (*seq, *id));
-    Ok(entries.into_iter().map(|(_, _, value)| value).collect())
+    Ok(super::context::text_messages(super::context::messages(
+        snapshot,
+        conversation_id()?,
+        options.at,
+    )?))
 }
 
 fn aggregate_usage(
