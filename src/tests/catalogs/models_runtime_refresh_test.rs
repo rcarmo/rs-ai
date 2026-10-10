@@ -88,6 +88,204 @@ mod tests {
         }
     }
 
+    struct CatalogOAuth {
+        entered: Arc<tokio::sync::Semaphore>,
+        release: Arc<tokio::sync::Semaphore>,
+        count: Arc<AtomicUsize>,
+    }
+    #[async_trait::async_trait]
+    impl crate::auth::OAuthAuth for CatalogOAuth {
+        async fn refresh(
+            &self,
+            _credential: &crate::auth::OAuthCredential,
+        ) -> Result<crate::auth::OAuthCredential, ModelsError> {
+            self.count.fetch_add(1, Ordering::SeqCst);
+            self.entered.add_permits(1);
+            self.release.acquire().await.unwrap().forget();
+            Ok(crate::auth::OAuthCredential {
+                access: "fresh-catalog".into(),
+                refresh: Some("rotated".into()),
+                expires: crate::utils::now_millis() + 600_000,
+                account_id: None,
+            })
+        }
+        async fn to_auth(
+            &self,
+            _credential: &crate::auth::OAuthCredential,
+        ) -> Result<crate::auth::ModelAuth, ModelsError> {
+            panic!("catalog refresh uses the credential, not model request auth")
+        }
+    }
+
+    #[tokio::test]
+    async fn cancelled_model_refresh_preserves_rotation_then_reuses_fresh_credential() {
+        let runtime = ModelsRuntime::new();
+        runtime
+            .credentials
+            .modify::<_, _, std::convert::Infallible>("dyn", |_| async {
+                Ok(Some(Credential::OAuth(crate::auth::OAuthCredential {
+                    access: "old".into(),
+                    refresh: Some("old-refresh".into()),
+                    expires: 0,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let entered = Arc::new(tokio::sync::Semaphore::new(0));
+        let release = Arc::new(tokio::sync::Semaphore::new(0));
+        let rotations = Arc::new(AtomicUsize::new(0));
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let seen_cb = seen.clone();
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "Dynamic",
+            ProviderAuth {
+                api_key: None,
+                oauth: Some(Arc::new(CatalogOAuth {
+                    entered: entered.clone(),
+                    release: release.clone(),
+                    count: rotations.clone(),
+                })),
+            },
+            vec![],
+            move |ctx| {
+                let seen = seen_cb.clone();
+                async move {
+                    let Some(Credential::OAuth(credential)) = ctx.credential else {
+                        panic!("missing OAuth credential")
+                    };
+                    seen.lock().unwrap().push(credential.access);
+                    Ok(vec![model("dyn", "fresh")])
+                }
+            },
+        ));
+        let (tx, rx) = watch::channel(false);
+        let mut first = Box::pin(runtime.refresh(RefreshOptions {
+            allow_network: true,
+            cancel: Some(rx),
+            ..Default::default()
+        }));
+        tokio::select! {
+            _ = entered.acquire() => {},
+            _ = &mut first => panic!("refresh settled before OAuth release"),
+        }
+        tx.send(true).unwrap();
+        let result = tokio::time::timeout(std::time::Duration::from_secs(1), first)
+            .await
+            .unwrap();
+        assert!(result.aborted);
+        assert!(result.errors.is_empty());
+        assert!(
+            seen.lock().unwrap().is_empty(),
+            "cancelled refresh must not call model source"
+        );
+        release.add_permits(1);
+        let result = runtime
+            .refresh(RefreshOptions {
+                allow_network: true,
+                ..Default::default()
+            })
+            .await;
+        assert!(!result.aborted);
+        assert!(result.errors.is_empty());
+        assert_eq!(&*seen.lock().unwrap(), &["fresh-catalog"]);
+        assert_eq!(rotations.load(Ordering::SeqCst), 1);
+        assert!(
+            matches!(runtime.credentials.read("dyn"), Some(Credential::OAuth(c)) if c.refresh.as_deref() == Some("rotated"))
+        );
+        assert!(runtime.get_model("dyn", "fresh").is_some());
+    }
+
+    #[tokio::test]
+    async fn superseding_catalog_refresh_reuses_admitted_rotation_without_stale_publish() {
+        let runtime = ModelsRuntime::new();
+        runtime
+            .credentials
+            .modify::<_, _, std::convert::Infallible>("dyn", |_| async {
+                Ok(Some(Credential::OAuth(crate::auth::OAuthCredential {
+                    access: "old".into(),
+                    refresh: Some("old-refresh".into()),
+                    expires: 0,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let entered = Arc::new(tokio::sync::Semaphore::new(0));
+        let release = Arc::new(tokio::sync::Semaphore::new(0));
+        let rotations = Arc::new(AtomicUsize::new(0));
+        let sources = Arc::new(AtomicUsize::new(0));
+        let source_count = sources.clone();
+        runtime.set_provider(RuntimeProvider::dynamic("dyn", "Dynamic", ProviderAuth {
+            api_key: None,
+            oauth: Some(Arc::new(CatalogOAuth { entered: entered.clone(), release: release.clone(), count: rotations.clone() })),
+        }, vec![], move |ctx| {
+            let sources = source_count.clone();
+            async move {
+                assert!(matches!(ctx.credential, Some(Credential::OAuth(c)) if c.access == "fresh-catalog"));
+                sources.fetch_add(1, Ordering::SeqCst);
+                Ok(vec![model("dyn", "fresh")])
+            }
+        }));
+        let options = RefreshOptions {
+            allow_network: true,
+            ..Default::default()
+        };
+        let mut first = Box::pin(runtime.refresh(options.clone()));
+        tokio::select! {
+            _ = entered.acquire() => {},
+            _ = &mut first => panic!("first refresh settled before rotation"),
+        }
+        let mut second = Box::pin(runtime.refresh(options));
+        assert!(futures::poll!(&mut second).is_pending());
+        release.add_permits(1);
+        let (a, b) = tokio::join!(first, second);
+        assert!(a.errors.is_empty() && b.errors.is_empty());
+        assert_eq!(rotations.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            sources.load(Ordering::SeqCst),
+            1,
+            "superseded attempt never calls the source"
+        );
+        assert!(runtime.get_model("dyn", "fresh").is_some());
+    }
+
+    #[tokio::test]
+    async fn offline_model_refresh_never_rotates_expired_credentials() {
+        let runtime = ModelsRuntime::new();
+        runtime
+            .credentials
+            .modify::<_, _, std::convert::Infallible>("dyn", |_| async {
+                Ok(Some(Credential::OAuth(crate::auth::OAuthCredential {
+                    access: "old".into(),
+                    refresh: None,
+                    expires: 0,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let rotations = Arc::new(AtomicUsize::new(0));
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "Dynamic",
+            ProviderAuth {
+                api_key: None,
+                oauth: Some(Arc::new(CatalogOAuth {
+                    entered: Arc::new(tokio::sync::Semaphore::new(0)),
+                    release: Arc::new(tokio::sync::Semaphore::new(0)),
+                    count: rotations.clone(),
+                })),
+            },
+            vec![],
+            |_| async { panic!("offline refresh must not call source") },
+        ));
+        let result = runtime.refresh(RefreshOptions::default()).await;
+        assert!(result.errors.is_empty());
+        assert_eq!(rotations.load(Ordering::SeqCst), 0);
+    }
+
     #[tokio::test]
     async fn dynamic_refresh_replaces_removes_and_restores_provider_scoped_catalog() {
         let store = Arc::new(InMemoryModelsStore::new());

@@ -181,7 +181,11 @@ impl RuntimeProvider {
         baseline: Vec<Model>,
     ) -> Self {
         let gateway = crate::oauth::normalize_radius_gateway_url(&gateway.into());
-        let mut provider = Self::dynamic(id, name, ProviderAuth::default(), baseline, move |ctx| {
+        let auth = ProviderAuth {
+            api_key: None,
+            oauth: Some(Arc::new(crate::auth_providers::RadiusOAuth::new(&gateway))),
+        };
+        let mut provider = Self::dynamic(id, name, auth, baseline, move |ctx| {
             let gateway = gateway.clone();
             async move {
                 let api_key = match ctx.credential.as_ref() {
@@ -248,7 +252,11 @@ impl RuntimeProvider {
         provider
     }
 
-    async fn refresh_models(&self, ctx: RefreshModelsContext) -> Result<(), ModelsError> {
+    async fn refresh_models(
+        &self,
+        mut ctx: RefreshModelsContext,
+        credentials: Option<&InMemoryCredentialStore>,
+    ) -> Result<(), ModelsError> {
         let Some(refresh_fn) = self.refresh.clone() else {
             return Ok(());
         };
@@ -266,6 +274,27 @@ impl RuntimeProvider {
         }
         if !ctx.allow_network || *ctx.cancel.borrow() {
             return Ok(());
+        }
+        if let (Some(credentials), Some(oauth), Some(Credential::OAuth(_))) = (
+            credentials,
+            self.auth.oauth.as_ref(),
+            ctx.credential.as_ref(),
+        ) {
+            let refreshed = tokio::select! {
+                biased;
+                _ = wait_for_cancel(ctx.cancel.clone()) => return Ok(()),
+                result = crate::auth::refresh_stored_oauth_credential(
+                    credentials,
+                    &self.id,
+                    oauth.clone(),
+                    |credential| crate::utils::now_millis() + 5 * 60 * 1000 >= credential.expires,
+                    Some(ctx.cancel.clone()),
+                ) => result?,
+            };
+            if *ctx.cancel.borrow() || self.generation.load(Ordering::SeqCst) != generation {
+                return Ok(());
+            }
+            ctx.credential = refreshed.map(Credential::OAuth);
         }
         let mut refresh_task = tokio::spawn(refresh_fn(ctx.clone()));
         let refreshed = tokio::select! {
@@ -440,9 +469,10 @@ impl ModelsRuntime {
                         force: options.force,
                         cancel: cancel.clone(),
                     };
-                    match provider.refresh_models(ctx).await {
+                    match provider.refresh_models(ctx, Some(&creds)).await {
                         Ok(()) => (provider.id.clone(), None),
                         Err(err) => {
+                            let was_cancelled = *cancel.borrow();
                             let restore_ctx = RefreshModelsContext {
                                 credential: stored,
                                 store,
@@ -450,8 +480,11 @@ impl ModelsRuntime {
                                 force: false,
                                 cancel,
                             };
-                            let _ = provider.refresh_models(restore_ctx).await;
-                            (provider.id.clone(), Some(err))
+                            let _ = provider.refresh_models(restore_ctx, None).await;
+                            (
+                                provider.id.clone(),
+                                if was_cancelled { None } else { Some(err) },
+                            )
                         }
                     }
                 }

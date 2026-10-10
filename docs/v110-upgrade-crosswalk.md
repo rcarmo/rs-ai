@@ -41,7 +41,7 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | M | `packages/ai/src/auth/types.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/env-api-keys.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/models.generated.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/models.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/models.ts` | IMPLEMENTED OAuth refresh delta; broader runtime audit pending | `src/models_runtime.rs` calls the shared stored-OAuth refresh helper before model-source work; cancellation/supersession keep rotated credentials and fence stale source calls. Seventeen runtime-refresh tests pass, including three new OAuth integration cases. Publication/storage race review is incomplete. |
 | M | `packages/ai/src/providers/all.ts` | PENDING | Not yet accepted |
 | D | `packages/ai/src/providers/azure-openai-responses.models.ts` | PENDING | Not yet accepted |
 | D | `packages/ai/src/providers/azure-openai-responses.ts` | PENDING | Not yet accepted |
