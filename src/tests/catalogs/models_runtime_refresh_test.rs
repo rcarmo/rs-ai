@@ -43,6 +43,358 @@ mod tests {
         }
     }
 
+    struct GatedModelsStore {
+        inner: InMemoryModelsStore,
+        writes: AtomicUsize,
+        entered: tokio::sync::Semaphore,
+        release: tokio::sync::Semaphore,
+        fail_first: bool,
+    }
+    impl GatedModelsStore {
+        fn new(fail_first: bool) -> Self {
+            Self {
+                inner: InMemoryModelsStore::new(),
+                writes: AtomicUsize::new(0),
+                entered: tokio::sync::Semaphore::new(0),
+                release: tokio::sync::Semaphore::new(0),
+                fail_first,
+            }
+        }
+    }
+    #[async_trait::async_trait]
+    impl ModelsStore for GatedModelsStore {
+        async fn read(&self, id: &str) -> Result<Option<ModelsStoreEntry>, ModelsError> {
+            self.inner.read(id).await
+        }
+        async fn write(&self, id: &str, entry: ModelsStoreEntry) -> Result<(), ModelsError> {
+            if self.writes.fetch_add(1, Ordering::SeqCst) == 0 {
+                self.entered.add_permits(1);
+                self.release.acquire().await.unwrap().forget();
+                if self.fail_first {
+                    return Err(ModelsError::new(
+                        ModelsErrorCode::ModelSource,
+                        "write rejected",
+                    ));
+                }
+            }
+            self.inner.write(id, entry).await
+        }
+        async fn delete(&self, id: &str) -> Result<(), ModelsError> {
+            self.inner.delete(id).await
+        }
+    }
+
+    #[tokio::test]
+    async fn in_flight_publications_are_serialized_and_publish_memory_only_after_storage() {
+        let store = Arc::new(GatedModelsStore::new(false));
+        let runtime = ModelsRuntime::with_models_store(store.clone());
+        let calls = Arc::new(AtomicUsize::new(0));
+        let calls_cb = calls.clone();
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "Dynamic",
+            ProviderAuth::default(),
+            vec![],
+            move |_| {
+                let calls = calls_cb.clone();
+                async move {
+                    Ok(vec![model(
+                        "dyn",
+                        &format!("generation-{}", calls.fetch_add(1, Ordering::SeqCst) + 1),
+                    )])
+                }
+            },
+        ));
+        let options = RefreshOptions {
+            allow_network: true,
+            ..Default::default()
+        };
+        let mut first = Box::pin(runtime.refresh(options.clone()));
+        tokio::select! {
+            _ = store.entered.acquire() => {},
+            _ = &mut first => panic!("publication should wait on storage"),
+        }
+        assert!(runtime.get_model("dyn", "generation-1").is_none());
+        let mut second = Box::pin(runtime.refresh(options));
+        assert!(futures::poll!(&mut second).is_pending());
+        store.release.add_permits(1);
+        let (a, b) = tokio::join!(first, second);
+        assert!(a.errors.is_empty() && b.errors.is_empty());
+        assert_eq!(
+            store.inner.read("dyn").await.unwrap().unwrap().models[0].id,
+            "generation-2"
+        );
+        assert!(runtime.get_model("dyn", "generation-2").is_some());
+        assert!(runtime.get_model("dyn", "generation-1").is_none());
+    }
+
+    #[tokio::test]
+    async fn cancelled_admitted_write_settles_without_publishing_cancelled_memory() {
+        let store = Arc::new(GatedModelsStore::new(false));
+        let runtime = ModelsRuntime::with_models_store(store.clone());
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "Dynamic",
+            ProviderAuth::default(),
+            vec![],
+            |_| async { Ok(vec![model("dyn", "fresh")]) },
+        ));
+        let (tx, rx) = watch::channel(false);
+        let mut first = Box::pin(runtime.refresh(RefreshOptions {
+            allow_network: true,
+            cancel: Some(rx),
+            ..Default::default()
+        }));
+        tokio::select! { _ = store.entered.acquire() => {}, _ = &mut first => panic!("write not admitted") }
+        tx.send(true).unwrap();
+        let result = tokio::time::timeout(std::time::Duration::from_secs(1), first)
+            .await
+            .unwrap();
+        assert!(result.aborted && result.errors.is_empty());
+        assert!(runtime.get_model("dyn", "fresh").is_none());
+        store.release.add_permits(1);
+        tokio::time::timeout(std::time::Duration::from_secs(1), async {
+            while store.inner.read("dyn").await.unwrap().is_none() {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        assert!(runtime.get_model("dyn", "fresh").is_none());
+    }
+
+    #[tokio::test]
+    async fn failed_publication_preserves_prior_memory_and_cache() {
+        let store = Arc::new(GatedModelsStore::new(true));
+        store
+            .inner
+            .write(
+                "dyn",
+                ModelsStoreEntry {
+                    models: vec![model("dyn", "cached")],
+                    last_modified: None,
+                    checked_at: None,
+                    etag: None,
+                },
+            )
+            .await
+            .unwrap();
+        store.release.add_permits(1);
+        let runtime = ModelsRuntime::with_models_store(store.clone());
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "Dynamic",
+            ProviderAuth::default(),
+            vec![],
+            |_| async { Ok(vec![model("dyn", "fresh")]) },
+        ));
+        let result = runtime
+            .refresh(RefreshOptions {
+                allow_network: true,
+                ..Default::default()
+            })
+            .await;
+        assert!(result.errors.contains_key("dyn"));
+        assert!(runtime.get_model("dyn", "cached").is_some());
+        assert!(runtime.get_model("dyn", "fresh").is_none());
+        assert_eq!(
+            store.inner.read("dyn").await.unwrap().unwrap().models[0].id,
+            "cached"
+        );
+    }
+
+    #[tokio::test]
+    async fn replaced_provider_supersedes_source_and_fences_captured_store_mutations() {
+        let runtime = ModelsRuntime::new();
+        let captured = Arc::new(Mutex::new(None));
+        let capture = captured.clone();
+        let entered = Arc::new(tokio::sync::Semaphore::new(0));
+        let enter = entered.clone();
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "Old",
+            ProviderAuth::default(),
+            vec![],
+            move |ctx| {
+                let capture = capture.clone();
+                let entered = enter.clone();
+                async move {
+                    *capture.lock().unwrap() = Some(ctx.store);
+                    entered.add_permits(1);
+                    std::future::pending().await
+                }
+            },
+        ));
+        let mut first = Box::pin(runtime.refresh(RefreshOptions {
+            allow_network: true,
+            ..Default::default()
+        }));
+        tokio::select! { _ = entered.acquire() => {}, _ = &mut first => panic!("old source did not start") }
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "New",
+            ProviderAuth::default(),
+            vec![],
+            |_| async { Ok(vec![model("dyn", "new")]) },
+        ));
+        let second = runtime
+            .refresh(RefreshOptions {
+                allow_network: true,
+                ..Default::default()
+            })
+            .await;
+        assert!(second.errors.is_empty());
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), first)
+                .await
+                .unwrap()
+                .errors
+                .is_empty()
+        );
+        let stale: crate::models_runtime::ProviderModelsStore =
+            captured.lock().unwrap().take().unwrap();
+        stale.delete().await.unwrap();
+        stale
+            .write(ModelsStoreEntry {
+                models: vec![model("dyn", "stale")],
+                last_modified: None,
+                checked_at: None,
+                etag: None,
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            runtime
+                .models_store
+                .read("dyn")
+                .await
+                .unwrap()
+                .unwrap()
+                .models[0]
+                .id,
+            "new"
+        );
+        assert!(runtime.get_model("dyn", "new").is_some());
+    }
+
+    #[tokio::test]
+    async fn provider_delete_and_clear_cancel_pending_sources() {
+        for clear in [false, true] {
+            let runtime = ModelsRuntime::new();
+            let entered = Arc::new(tokio::sync::Semaphore::new(0));
+            let enter = entered.clone();
+            runtime.set_provider(RuntimeProvider::dynamic(
+                "dyn",
+                "Dynamic",
+                ProviderAuth::default(),
+                vec![],
+                move |_| {
+                    let entered = enter.clone();
+                    async move {
+                        entered.add_permits(1);
+                        std::future::pending().await
+                    }
+                },
+            ));
+            let mut refresh = Box::pin(runtime.refresh(RefreshOptions {
+                allow_network: true,
+                ..Default::default()
+            }));
+            tokio::select! { _ = entered.acquire() => {}, _ = &mut refresh => panic!("source did not start") }
+            if clear {
+                runtime.clear_providers();
+            } else {
+                runtime.delete_provider("dyn");
+            }
+            let result = tokio::time::timeout(std::time::Duration::from_secs(1), refresh)
+                .await
+                .unwrap();
+            assert!(!result.aborted && result.errors.is_empty());
+            assert!(runtime.get_models(None).is_empty());
+            assert!(runtime.models_store.read("dyn").await.unwrap().is_none());
+        }
+    }
+
+    #[tokio::test]
+    async fn replacement_waits_for_older_admitted_write_before_final_publication() {
+        let store = Arc::new(GatedModelsStore::new(false));
+        let runtime = ModelsRuntime::with_models_store(store.clone());
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "Old",
+            ProviderAuth::default(),
+            vec![],
+            |_| async { Ok(vec![model("dyn", "old")]) },
+        ));
+        let options = RefreshOptions {
+            allow_network: true,
+            ..Default::default()
+        };
+        let mut old = Box::pin(runtime.refresh(options.clone()));
+        tokio::select! { _ = store.entered.acquire() => {}, _ = &mut old => panic!("write not admitted") }
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "New",
+            ProviderAuth::default(),
+            vec![],
+            |_| async { Ok(vec![model("dyn", "new")]) },
+        ));
+        let mut new = Box::pin(runtime.refresh(options));
+        assert!(futures::poll!(&mut new).is_pending());
+        assert!(runtime.get_model("dyn", "new").is_none());
+        store.release.add_permits(1);
+        let (a, b) = tokio::join!(old, new);
+        assert!(a.errors.is_empty() && b.errors.is_empty());
+        assert_eq!(
+            store.inner.read("dyn").await.unwrap().unwrap().models[0].id,
+            "new"
+        );
+        assert!(runtime.get_model("dyn", "new").is_some());
+        assert!(runtime.get_model("dyn", "old").is_none());
+    }
+
+    #[tokio::test]
+    async fn dropping_refresh_aborts_owned_source_task() {
+        struct DropNotice(Arc<tokio::sync::Semaphore>);
+        impl Drop for DropNotice {
+            fn drop(&mut self) {
+                self.0.add_permits(1);
+            }
+        }
+        let runtime = ModelsRuntime::new();
+        let entered = Arc::new(tokio::sync::Semaphore::new(0));
+        let dropped = Arc::new(tokio::sync::Semaphore::new(0));
+        let enter = entered.clone();
+        let drop_signal = dropped.clone();
+        runtime.set_provider(RuntimeProvider::dynamic(
+            "dyn",
+            "Dynamic",
+            ProviderAuth::default(),
+            vec![],
+            move |_| {
+                let entered = enter.clone();
+                let dropped = drop_signal.clone();
+                async move {
+                    let _guard = DropNotice(dropped);
+                    entered.add_permits(1);
+                    std::future::pending().await
+                }
+            },
+        ));
+        let mut refresh = Box::pin(runtime.refresh(RefreshOptions {
+            allow_network: true,
+            ..Default::default()
+        }));
+        tokio::select! { _ = entered.acquire() => {}, _ = &mut refresh => panic!("source did not start") }
+        drop(refresh);
+        tokio::time::timeout(std::time::Duration::from_secs(1), dropped.acquire())
+            .await
+            .unwrap()
+            .unwrap()
+            .forget();
+        assert!(runtime.models_store.read("dyn").await.unwrap().is_none());
+    }
+
     struct ConfigSeq {
         calls: Arc<AtomicUsize>,
         responses: Vec<(u16, serde_json::Value)>,
@@ -680,7 +1032,8 @@ mod tests {
             .await;
         assert!(second.errors.is_empty());
         assert!(runtime.get_model("dynamic", "generation-2").is_some());
-        finish_first_tx.send(()).unwrap();
+        // Supersession may abort the old source before it consumes the release.
+        let _ = finish_first_tx.send(());
         let first_result = first.await.unwrap();
         assert!(first_result.errors.is_empty());
         assert!(runtime.get_model("dynamic", "generation-2").is_some());

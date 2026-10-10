@@ -60,10 +60,76 @@ impl ModelsStore for InMemoryModelsStore {
     }
 }
 
+#[derive(Default)]
+struct RefreshState {
+    generation: AtomicU64,
+    cancel: Mutex<Option<watch::Sender<bool>>>,
+    publication: Arc<tokio::sync::Mutex<()>>,
+}
+
+impl RefreshState {
+    fn supersede(&self) {
+        self.generation.fetch_add(1, Ordering::SeqCst);
+        if let Some(cancel) = self.cancel.lock().unwrap().take() {
+            let _ = cancel.send(true);
+        }
+    }
+
+    fn begin(self: &Arc<Self>, caller: watch::Receiver<bool>) -> RefreshAttempt {
+        let mut previous = self.cancel.lock().unwrap();
+        if let Some(cancel) = previous.take() {
+            let _ = cancel.send(true);
+        }
+        let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
+        let (sender, cancel) = watch::channel(*caller.borrow());
+        *previous = Some(sender.clone());
+        let relay_sender = sender.clone();
+        let relay = tokio::spawn(async move {
+            wait_for_cancel(caller).await;
+            let _ = relay_sender.send(true);
+        });
+        RefreshAttempt {
+            generation,
+            cancel,
+            sender,
+            relay,
+        }
+    }
+}
+
+struct RefreshAttempt {
+    generation: u64,
+    cancel: watch::Receiver<bool>,
+    sender: watch::Sender<bool>,
+    relay: tokio::task::JoinHandle<()>,
+}
+impl Drop for RefreshAttempt {
+    fn drop(&mut self) {
+        let _ = self.sender.send(true);
+        self.relay.abort();
+    }
+}
+
+#[derive(Clone)]
+struct PublicationFence {
+    state: Arc<RefreshState>,
+    generation: u64,
+    cancel: watch::Receiver<bool>,
+    caller_cancel: watch::Receiver<bool>,
+}
+impl PublicationFence {
+    fn current(&self) -> bool {
+        !*self.cancel.borrow()
+            && !*self.caller_cancel.borrow()
+            && self.state.generation.load(Ordering::SeqCst) == self.generation
+    }
+}
+
 #[derive(Clone)]
 pub struct ProviderModelsStore {
     provider_id: String,
     inner: Arc<dyn ModelsStore>,
+    fence: Option<PublicationFence>,
 }
 
 impl ProviderModelsStore {
@@ -71,10 +137,44 @@ impl ProviderModelsStore {
         self.inner.read(&self.provider_id).await
     }
     pub async fn write(&self, entry: ModelsStoreEntry) -> Result<(), ModelsError> {
-        self.inner.write(&self.provider_id, entry).await
+        self.publish(Some(entry)).await
     }
     pub async fn delete(&self) -> Result<(), ModelsError> {
-        self.inner.delete(&self.provider_id).await
+        self.publish(None).await
+    }
+    async fn publish(&self, entry: Option<ModelsStoreEntry>) -> Result<(), ModelsError> {
+        let Some(fence) = self.fence.clone() else {
+            return match entry {
+                Some(entry) => self.inner.write(&self.provider_id, entry).await,
+                None => self.inner.delete(&self.provider_id).await,
+            };
+        };
+        let lock = tokio::select! {
+            biased;
+            _ = wait_for_cancel(fence.cancel.clone()) => return Ok(()),
+            lock = fence.state.publication.clone().lock_owned() => lock,
+        };
+        if !fence.current() {
+            return Ok(());
+        }
+        let store = self.inner.clone();
+        let id = self.provider_id.clone();
+        // Once admitted, settle persistence even if the caller disappears. Later
+        // publications wait for this lock and therefore cannot be overwritten.
+        let worker = tokio::spawn(async move {
+            let _lock = lock;
+            match entry {
+                Some(entry) => store.write(&id, entry).await,
+                None => store.delete(&id).await,
+            }
+        });
+        tokio::select! {
+            biased;
+            _ = wait_for_cancel(fence.cancel) => Ok(()),
+            result = worker => result.map_err(|error| ModelsError::with_cause(
+                ModelsErrorCode::ModelSource, "Model publication worker failed", error,
+            ))?,
+        }
     }
 }
 
@@ -90,6 +190,13 @@ pub struct RefreshModelsContext {
 type RefreshFuture = Pin<Box<dyn Future<Output = Result<Vec<Model>, ModelsError>> + Send>>;
 type RefreshFn = Arc<dyn Fn(RefreshModelsContext) -> RefreshFuture + Send + Sync>;
 
+struct SourceTask(tokio::task::JoinHandle<Result<Vec<Model>, ModelsError>>);
+impl Drop for SourceTask {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
+}
+
 pub struct RuntimeProvider {
     pub id: String,
     pub name: String,
@@ -98,7 +205,7 @@ pub struct RuntimeProvider {
     dynamic: Mutex<Option<Vec<Model>>>,
     replace_baseline: bool,
     refresh: Option<RefreshFn>,
-    generation: AtomicU64,
+    refresh_state: Arc<RefreshState>,
 }
 
 impl RuntimeProvider {
@@ -116,7 +223,7 @@ impl RuntimeProvider {
             dynamic: Mutex::new(None),
             replace_baseline: false,
             refresh: None,
-            generation: AtomicU64::new(0),
+            refresh_state: Arc::new(RefreshState::default()),
         }
     }
 
@@ -139,7 +246,7 @@ impl RuntimeProvider {
             dynamic: Mutex::new(None),
             replace_baseline: false,
             refresh: Some(Arc::new(move |ctx| Box::pin(refresh(ctx)))),
-            generation: AtomicU64::new(0),
+            refresh_state: Arc::new(RefreshState::default()),
         }
     }
 
@@ -262,9 +369,27 @@ impl RuntimeProvider {
         };
         // Mark this refresh as the newest attempt immediately so a later refresh can
         // supersede a non-cooperative earlier one before it publishes.
-        let generation = self.generation.fetch_add(1, Ordering::SeqCst) + 1;
-
-        if let Some(stored) = ctx.store.read().await? {
+        let caller_cancel = ctx.cancel.clone();
+        let attempt = self.refresh_state.begin(ctx.cancel.clone());
+        ctx.cancel = attempt.cancel.clone();
+        let fence = PublicationFence {
+            state: self.refresh_state.clone(),
+            generation: attempt.generation,
+            cancel: ctx.cancel.clone(),
+            caller_cancel,
+        };
+        ctx.store.fence = Some(fence.clone());
+        let stored = tokio::select! {
+            biased;
+            result = ctx.store.read() => result?,
+            _ = wait_for_cancel(ctx.cancel.clone()) => return Ok(()),
+        };
+        // A ready cache read restores offline state even for pre-cancellation;
+        // superseded generations must never replace a newer cached view.
+        if self.refresh_state.generation.load(Ordering::SeqCst) != attempt.generation {
+            return Ok(());
+        }
+        if let Some(stored) = stored {
             let filtered = stored
                 .models
                 .into_iter()
@@ -291,19 +416,19 @@ impl RuntimeProvider {
                     Some(ctx.cancel.clone()),
                 ) => result?,
             };
-            if *ctx.cancel.borrow() || self.generation.load(Ordering::SeqCst) != generation {
+            if !fence.current() {
                 return Ok(());
             }
             ctx.credential = refreshed.map(Credential::OAuth);
         }
-        let mut refresh_task = tokio::spawn(refresh_fn(ctx.clone()));
+        let mut refresh_task = SourceTask(tokio::spawn(refresh_fn(ctx.clone())));
         let refreshed = tokio::select! {
             biased;
             _ = wait_for_cancel(ctx.cancel.clone()) => {
-                refresh_task.abort();
+                refresh_task.0.abort();
                 return Ok(());
             }
-            joined = &mut refresh_task => match joined {
+            joined = &mut refresh_task.0 => match joined {
                 Ok(result) => result?,
                 Err(e) => return Err(ModelsError::with_cause(
                     ModelsErrorCode::ModelSource,
@@ -312,18 +437,21 @@ impl RuntimeProvider {
                 )),
             },
         };
-        if *ctx.cancel.borrow() || self.generation.load(Ordering::SeqCst) != generation {
+        if !fence.current() {
             return Ok(());
         }
-        *self.dynamic.lock().unwrap() = Some(refreshed.clone());
         ctx.store
             .write(ModelsStoreEntry {
-                models: refreshed,
+                models: refreshed.clone(),
                 last_modified: None,
                 checked_at: Some(crate::utils::now_millis()),
                 etag: None,
             })
-            .await
+            .await?;
+        if fence.current() {
+            *self.dynamic.lock().unwrap() = Some(refreshed);
+        }
+        Ok(())
     }
 }
 
@@ -353,6 +481,7 @@ pub struct RefreshResult {
 
 pub struct ModelsRuntime {
     providers: Mutex<HashMap<String, Arc<RuntimeProvider>>>,
+    refresh_states: Mutex<HashMap<String, Arc<RefreshState>>>,
     pub credentials: Arc<InMemoryCredentialStore>,
     pub models_store: Arc<dyn ModelsStore>,
 }
@@ -361,6 +490,7 @@ impl ModelsRuntime {
     pub fn new() -> Self {
         Self {
             providers: Mutex::new(HashMap::new()),
+            refresh_states: Mutex::new(HashMap::new()),
             credentials: Arc::new(InMemoryCredentialStore::new()),
             models_store: Arc::new(InMemoryModelsStore::new()),
         }
@@ -368,21 +498,35 @@ impl ModelsRuntime {
     pub fn with_models_store(models_store: Arc<dyn ModelsStore>) -> Self {
         Self {
             providers: Mutex::new(HashMap::new()),
+            refresh_states: Mutex::new(HashMap::new()),
             credentials: Arc::new(InMemoryCredentialStore::new()),
             models_store,
         }
     }
-    pub fn set_provider(&self, provider: RuntimeProvider) {
-        self.providers
+    pub fn set_provider(&self, mut provider: RuntimeProvider) {
+        let mut providers = self.providers.lock().unwrap();
+        let state = self
+            .refresh_states
             .lock()
             .unwrap()
-            .insert(provider.id.clone(), Arc::new(provider));
+            .entry(provider.id.clone())
+            .or_default()
+            .clone();
+        state.supersede();
+        provider.refresh_state = state;
+        providers.insert(provider.id.clone(), Arc::new(provider));
     }
     pub fn delete_provider(&self, id: &str) {
-        self.providers.lock().unwrap().remove(id);
+        if let Some(provider) = self.providers.lock().unwrap().remove(id) {
+            provider.refresh_state.supersede();
+        }
     }
     pub fn clear_providers(&self) {
-        self.providers.lock().unwrap().clear();
+        let mut providers = self.providers.lock().unwrap();
+        for provider in providers.values() {
+            provider.refresh_state.supersede();
+        }
+        providers.clear();
     }
     pub fn get_models(&self, provider: Option<&str>) -> Vec<Model> {
         let providers = self.providers.lock().unwrap();
@@ -456,6 +600,7 @@ impl ModelsRuntime {
                 let store = ProviderModelsStore {
                     provider_id: provider.id.clone(),
                     inner: self.models_store.clone(),
+                    fence: None,
                 };
                 let creds = self.credentials.clone();
                 let cancel = cancel.clone();
@@ -471,21 +616,10 @@ impl ModelsRuntime {
                     };
                     match provider.refresh_models(ctx, Some(&creds)).await {
                         Ok(()) => (provider.id.clone(), None),
-                        Err(err) => {
-                            let was_cancelled = *cancel.borrow();
-                            let restore_ctx = RefreshModelsContext {
-                                credential: stored,
-                                store,
-                                allow_network: false,
-                                force: false,
-                                cancel,
-                            };
-                            let _ = provider.refresh_models(restore_ctx, None).await;
-                            (
-                                provider.id.clone(),
-                                if was_cancelled { None } else { Some(err) },
-                            )
-                        }
+                        Err(err) => (
+                            provider.id.clone(),
+                            if *cancel.borrow() { None } else { Some(err) },
+                        ),
                     }
                 }
             });
