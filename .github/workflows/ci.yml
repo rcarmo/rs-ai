@@ -76,7 +76,7 @@ jobs:
         with:
           name: rs-ai-sbom-${{ github.sha }}
           path: |
-            artifacts/sbom.cdx.json
-            artifacts/sbom.cdx.json.sha256
+            ${{ env.PROJECT_TMP_ROOT }}/build/artifacts/sbom.cdx.json
+            ${{ env.PROJECT_TMP_ROOT }}/build/artifacts/sbom.cdx.json.sha256
           if-no-files-found: error
           retention-days: 30

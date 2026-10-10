@@ -107,12 +107,12 @@ jobs:
           make security-check
 
       - name: Record resolved runtime ref
-        run: git rev-parse HEAD > .runtime-ref
+        run: git rev-parse HEAD > "${RS_AI_RUN_DIR}/runtime-ref"
 
       - name: Verify SBOM provenance and normalize release asset names
         run: |
           set -euo pipefail
-          resolved_ref="$(cat .runtime-ref)"
+          resolved_ref="$(cat "${RS_AI_RUN_DIR}/runtime-ref")"
           if [[ "${resolved_ref}" != "${RUNTIME_REF_LOWER}" ]]; then
             echo "Checked-out HEAD ${resolved_ref} does not match runtime_ref ${RUNTIME_REF_LOWER}" >&2
             exit 1
@@ -123,8 +123,8 @@ jobs:
           import os
           from pathlib import Path
 
-          sbom_path = Path("artifacts/sbom.cdx.json")
-          expected = Path(".runtime-ref").read_text().strip()
+          sbom_path = Path(os.environ["PROJECT_TMP_ROOT"]) / "build/artifacts/sbom.cdx.json"
+          expected = (Path(os.environ["RS_AI_RUN_DIR"]) / "runtime-ref").read_text().strip()
           data = json.loads(sbom_path.read_text())
           root = data.get("metadata", {}).get("component", {})
           props = root.get("properties", [])
@@ -143,11 +143,12 @@ jobs:
           print(f"SBOM provenance revision verified: {revision}")
           PY
 
-          mkdir -p dist
-          cp artifacts/sbom.cdx.json dist/sbom.cdx.json
-          sha256sum dist/sbom.cdx.json | sed 's#  dist/#  #' > dist/sbom.cdx.json.sha256
-          test "$(awk '{print $2}' dist/sbom.cdx.json.sha256)" = "sbom.cdx.json"
-          (cd dist && sha256sum --check sbom.cdx.json.sha256 --strict --status)
+          asset_dir="${RS_AI_RUN_DIR}/release-assets"
+          mkdir -p "${asset_dir}"
+          cp "${PROJECT_TMP_ROOT}/build/artifacts/sbom.cdx.json" "${asset_dir}/sbom.cdx.json"
+          (cd "${asset_dir}" && sha256sum sbom.cdx.json > sbom.cdx.json.sha256)
+          test "$(awk '{print $2}' "${asset_dir}/sbom.cdx.json.sha256")" = "sbom.cdx.json"
+          (cd "${asset_dir}" && sha256sum --check sbom.cdx.json.sha256 --strict --status)
 
       - name: Create or update release assets
         env:
@@ -225,6 +226,6 @@ jobs:
               --notes "${notes}"
           fi
           gh release upload "${RELEASE_TAG}" \
-            dist/sbom.cdx.json \
-            dist/sbom.cdx.json.sha256 \
+            "${RS_AI_RUN_DIR}/release-assets/sbom.cdx.json" \
+            "${RS_AI_RUN_DIR}/release-assets/sbom.cdx.json.sha256" \
             --clobber

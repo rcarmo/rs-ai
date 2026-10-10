@@ -14,7 +14,7 @@ import subprocess
 import sys
 from collections import deque
 from pathlib import Path
-from workspace_paths import configure_process_env, named_temporary_file
+from workspace_paths import configure_process_env, named_temporary_file, project_tmp_root
 
 configure_process_env("sbom")
 from urllib.parse import quote
@@ -23,8 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATOR_NAME = "rs-ai-sbom.py"
 GENERATOR_VERSION = "1.0.0"
 SPEC_VERSION = "1.5"
-DEFAULT_SBOM = ROOT / "artifacts/sbom.cdx.json"
-DEFAULT_SHA = ROOT / "artifacts/sbom.cdx.json.sha256"
+DEFAULT_SBOM = project_tmp_root() / "build/artifacts/sbom.cdx.json"
+DEFAULT_SHA = project_tmp_root() / "build/artifacts/sbom.cdx.json.sha256"
 
 
 def run(cmd: list[str], cwd: Path = ROOT) -> str:

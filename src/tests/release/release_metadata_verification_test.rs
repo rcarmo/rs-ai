@@ -9,6 +9,24 @@ mod tests {
     use std::process::Command;
 
     #[test]
+    fn sbom_consumers_use_project_owned_paths() {
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let ci = std::fs::read_to_string(root.join(".github/workflows/ci.yml")).unwrap();
+        assert!(ci.contains("${{ env.PROJECT_TMP_ROOT }}/build/artifacts/sbom.cdx.json"));
+        let publisher =
+            std::fs::read_to_string(root.join(".github/workflows/publish-sbom-release.yml"))
+                .unwrap();
+        assert!(publisher.contains("${RS_AI_RUN_DIR}/release-assets/sbom.cdx.json"));
+        assert!(!publisher.contains("dist/sbom.cdx.json"));
+        assert!(!publisher.contains(".runtime-ref"));
+        let script = std::fs::read_to_string(root.join("scripts/sbom.py")).unwrap();
+        assert!(
+            script
+                .contains("DEFAULT_SBOM = project_tmp_root() / \"build/artifacts/sbom.cdx.json\"")
+        );
+    }
+
+    #[test]
     fn v110_manifest_structure_is_exact_and_acceptance_fails_closed() {
         let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let run = |args: &[&str]| {
