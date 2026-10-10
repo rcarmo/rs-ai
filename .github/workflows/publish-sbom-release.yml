@@ -24,7 +24,25 @@ jobs:
     env:
       RELEASE_TAG: ${{ inputs.release_tag }}
       RUNTIME_REF: ${{ inputs.runtime_ref }}
+      PROJECT_TMP_BASE: ${{ runner.temp }}
+      PROJECT_TMP_ROOT: ${{ runner.temp }}/rs-ai
+      RS_AI_TMP_ROOT: ${{ runner.temp }}/rs-ai
+      RS_AI_RUN_DIR: ${{ runner.temp }}/rs-ai/runs/publisher/${{ github.run_id }}-${{ github.run_attempt }}
+      CARGO_HOME: ${{ runner.temp }}/rs-ai/cache/cargo
+      CARGO_TARGET_DIR: ${{ runner.temp }}/rs-ai/build/cargo-target
+      PYTHONPYCACHEPREFIX: ${{ runner.temp }}/rs-ai/cache/python/pycache
+      npm_config_cache: ${{ runner.temp }}/rs-ai/cache/npm
+      BUN_INSTALL_CACHE_DIR: ${{ runner.temp }}/rs-ai/cache/bun
+      XDG_CACHE_HOME: ${{ runner.temp }}/rs-ai/cache/xdg
+      TMPDIR: ${{ runner.temp }}/rs-ai/runs/publisher/${{ github.run_id }}-${{ github.run_attempt }}/tmp
+      TMP: ${{ runner.temp }}/rs-ai/runs/publisher/${{ github.run_id }}-${{ github.run_attempt }}/tmp
+      TEMP: ${{ runner.temp }}/rs-ai/runs/publisher/${{ github.run_id }}-${{ github.run_attempt }}/tmp
     steps:
+      - name: Initialize project cache and scratch paths
+        run: |
+          mkdir -p "${CARGO_HOME}" "${CARGO_TARGET_DIR}" "${PYTHONPYCACHEPREFIX}" \
+            "${npm_config_cache}" "${BUN_INSTALL_CACHE_DIR}" "${XDG_CACHE_HOME}" "${TMPDIR}"
+          echo "${CARGO_HOME}/bin" >> "${GITHUB_PATH}"
       - name: Validate workflow inputs
         run: |
           set -euo pipefail
@@ -70,10 +88,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin/cargo-audit
-            target
+            ${{ env.CARGO_HOME }}/registry
+            ${{ env.CARGO_HOME }}/git
+            ${{ env.CARGO_HOME }}/bin/cargo-audit
+            ${{ env.CARGO_TARGET_DIR }}
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install pinned cargo-audit

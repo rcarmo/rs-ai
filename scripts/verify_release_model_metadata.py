@@ -22,8 +22,11 @@ import shutil
 import subprocess
 import sys
 import tarfile
-import tempfile
 from pathlib import Path
+
+from workspace_paths import configure_process_env, temporary_directory
+
+configure_process_env("verify-release-model-metadata")
 
 ROOT = Path(__file__).resolve().parents[1]
 TIMESTAMP_RE = re.compile(r"//! Generated: .*", re.MULTILINE)
@@ -152,7 +155,7 @@ def main() -> int:
     ap.add_argument("--fault", default="", choices=["", "text-name", "image-name", "classifier-name"], help="test-only metadata fault injection")
     args = ap.parse_args()
 
-    with tempfile.TemporaryDirectory(prefix="rs-ai-model-meta-") as tmp:
+    with temporary_directory("verify-release-model-metadata", prefix="rs-ai-model-meta-") as tmp:
         work = Path(tmp)
         package_dir = extract_npm_package(args.package, work, args.package_sha256)
         data_dir = package_dir / "dist/providers/data"

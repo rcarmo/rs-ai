@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import argparse
 import sys
-import tempfile
 from pathlib import Path
+
+from workspace_paths import temporary_directory
 
 import verify_v0851_baseline_delta as baseline
 
@@ -22,7 +23,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fault", choices=["", "baseline-record"], default="")
     args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="rs-ai-v0871-delta-") as tmp:
+    with temporary_directory("verify-v0871-delta", prefix="rs-ai-v0871-delta-") as tmp:
         work = Path(tmp)
         old_pkg = baseline.extract_package(OLD_PACKAGE, OLD_PACKAGE_SHA256, work)
         new_pkg = baseline.extract_package(NEW_PACKAGE, NEW_PACKAGE_SHA256, work)

@@ -3,9 +3,9 @@
 
 Usage:
     # First dump image models to JSON via bun:
-    bun --eval "import { IMAGE_MODELS } from 'path/to/image-models.generated.js'; process.stdout.write(JSON.stringify(IMAGE_MODELS));" > /tmp/image_models.json
+    bun --eval "import { IMAGE_MODELS } from 'path/to/image-models.generated.js'; process.stdout.write(JSON.stringify(IMAGE_MODELS));" > /workspace/tmp/rs-ai/runs/model-generation/<run-id>/image_models.json
     # Then generate:
-    python3 scripts/generate_image_models.py /tmp/image_models.json
+    python3 scripts/generate_image_models.py /workspace/tmp/rs-ai/runs/model-generation/<run-id>/image_models.json
 """
 
 import json
@@ -111,7 +111,7 @@ def gen_model(m) -> str:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 scripts/generate_image_models.py /tmp/image_models.json", file=sys.stderr)
+        print("Usage: python3 scripts/generate_image_models.py /workspace/tmp/rs-ai/runs/model-generation/<run-id>/image_models.json", file=sys.stderr)
         sys.exit(1)
 
     input_path = Path(sys.argv[1])

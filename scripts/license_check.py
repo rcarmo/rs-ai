@@ -17,6 +17,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+from workspace_paths import configure_process_env
+
+configure_process_env("license-check")
 ROOT = Path(__file__).resolve().parents[1]
 APPROVED = {
     "Apache-2.0",

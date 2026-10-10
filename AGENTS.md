@@ -1,3 +1,17 @@
+<!-- RUI-PROFILE-LIFECYCLE-20261005 -->
+## Current profiling and cleanup rule — supersedes older text below
+
+Rui's explicit rule: **profile and tune during pre-release tests; remove profiling data immediately after analysis/use.** Ordinary development tests do not require profiling on every run. Targeted diagnostic profiling is optional when useful and follows the same disposal rule.
+
+- During pre-release verification, capture CPU and heap/allocation behaviour, analyse hotspots and tune avoidable allocations/repeated work. Compare equivalent workloads without weakening correctness/security/numerical contracts. For Go, inspect CPU, alloc_space and alloc_objects; coverage alone is not profiling.
+- Keep captures and matching artifacts only while the current analysis needs them. Once used, immediately delete raw profiles, traces, matching test binaries, temporary fixtures and disposable logs, including failed/probe artifacts after diagnosis. Retain only concise conclusions and important measurements/limitations. Do not keep indefinite raw archives or copy them into exports/reports/evidence to evade cleanup.
+- Remove all completed disposable cache/build/test/run data promptly. Never delete files still in use: finish or safely pause the owning job and clean at a safe boundary. Preserve source, installed toolchains, durable datasets/checkpoints and intentional release assets. Minimise disk usage; no random exports or redundant snapshots.
+- This rule overrides **every conflicting older paragraph in this file and linked local guidance**, including “profile every test”, “unprofiled tests prohibited”, “retain all raw evidence”, “never delete profiles” and cleanup exclusions based only on an evidence/profiles directory name. Update helper/CI cleanup behaviour accordingly; do not weaken pre-release analysis.
+- Existing no-agent-contact and execution-pause rules remain unchanged. This policy grants no unsolicited coordination or automatic job restart.
+<!-- /RUI-PROFILE-LIFECYCLE-20261005 -->
+
+
+
 # Coding
 
 ## Change discipline
@@ -20,13 +34,30 @@
   - `git config --global user.email "rui.carmo@gmail.com"`
 - Final state must be clean and synced with `origin/main`.
 
+## Project-scoped caches and temporary files
+
+The preferred local disposable root is `/workspace/tmp/rs-ai/`. `scripts/project-tmp.sh` and `scripts/project_tmp.py` vendor the portable resolver. They snapshot the inherited `TMPDIR` and resolve once before child temp variables are exported. An explicit usable absolute `PROJECT_TMP_BASE` selects `<base>/rs-ai`; the compatible `PROJECT_TMP_ROOT` override may remain, and both must agree when supplied. Invalid or unusable explicit overrides fail instead of falling back. CI resolves `${RUNNER_TEMP}/rs-ai`, then the original inherited `${TMPDIR}/rs-ai`, then the platform temporary directory plus `/rs-ai`, even when `/workspace/tmp` exists. Local hosts resolve writable `/workspace/tmp/rs-ai`, then the platform temporary directory plus `/rs-ai`.
+
+Every resolved root uses the same layout:
+
+- `cache/<tool>/` stores reproducible/downloadable caches. Host Cargo uses `cache/cargo`; Python, npm, Bun and XDG caches use their named subdirectories.
+- `build/` stores generated build output. Host Cargo uses `build/cargo-target` through `CARGO_TARGET_DIR`.
+- `tests/` and `logs/` hold disposable test and log scratch when used.
+- `runs/<purpose>/<run-id>/` stores isolated disposable scratch. `TMPDIR`, `TMP` and `TEMP` must point into the current run directory.
+
+Use `make tmp-init` before direct tool commands, or run tools through a Make target. The Makefile calls the vendored resolver and exports `RS_AI_TMP_ROOT`, `RS_AI_RUN_DIR`, `CARGO_HOME`, `CARGO_TARGET_DIR`, `PYTHONPYCACHEPREFIX`, `npm_config_cache`, `BUN_INSTALL_CACHE_DIR`, `XDG_CACHE_HOME`, `TMPDIR`, `TMP` and `TEMP`. Python tools call `scripts/workspace_paths.py`, which uses the vendored Python resolver and passes the environment to subprocesses. CI and hosts without `/workspace` do not depend on `/workspace/Makefile` or any other unvendored helper.
+
+Do not use bare /tmp, home caches, repository target/ or ad-hoc rs-ai-* roots. Preserve filesystem isolation, source/Git, installed toolchains, durable fixtures/datasets, concise conclusions and release artifacts. Raw CPU/heap captures, matching test binaries and disposable logs are deleted immediately after analysis/use; active-job files must wait for a safe boundary.
+
+GitHub-hosted workflows set `PROJECT_TMP_ROOT=${{ runner.temp }}/rs-ai`. Their environment variables and cache paths preserve the same project-owned hierarchy without recursively appending `rs-ai` after `TMPDIR` changes.
+
 ## Source tree layout
 
 - Production crate modules live directly under `src/` and existing public module/API paths should remain stable unless an API-neutral mechanical move is explicitly requested.
 - Provider runtime implementations live under `src/provider/`; transport helpers live under `src/transports/`; image model support lives under `src/images/`.
 - Crate-root unit test modules live under `src/tests/` by domain (`core`, `providers/*`, `transports`, `auth/oauth`, `catalogs`, `release`). Keep declarations in `src/lib.rs` using `#[cfg(test)]` and explicit `#[path = "tests/.../file.rs"]` so crate-private access and module names remain stable.
 - Generated text catalog source is `src/models_generated.rs`; generated image catalog source is `src/images/models_generated.rs`. Do not hand-edit generated catalog files; regenerate them from pinned inputs.
-- SBOM outputs are generated under gitignored `artifacts/` and are not committed.
+- Disposable SBOM outputs default to `<PROJECT_TMP_ROOT>/build/artifacts/` and are not committed. Intentional public release assets retain their publication lifecycle.
 
 ## Official release discovery and bounds
 
@@ -54,7 +85,7 @@ For every future `@earendil-works/pi-ai` upstream release audit:
 
 ## Local gates and review
 
-Run and record local gates before pushing:
+Use project-path-aware Make targets for local gates. Pre-release verification must profile and tune CPU/allocation behaviour; direct Cargo commands use the same environment and capture when profiling is required. Ordinary development tests may run without capture. Delete profiling artifacts immediately after analysis and retain concise conclusions only.
 
 - focused production-path tests for each changed behavior;
 - `cargo fmt -- --check`;
@@ -79,9 +110,9 @@ Inspect diffs before committing, including generated-source drift and generated-
 
 ## Supply chain and SBOM
 
-- `make sbom` must generate CycloneDX JSON plus SHA-256 checksum under the gitignored stable artifact directory:
-  - `artifacts/sbom.cdx.json`
-  - `artifacts/sbom.cdx.json.sha256`
+- `make sbom` generates CycloneDX JSON and SHA-256 checksum under the resolved project build directory:
+  - `<PROJECT_TMP_ROOT>/build/artifacts/sbom.cdx.json`
+  - `<PROJECT_TMP_ROOT>/build/artifacts/sbom.cdx.json.sha256`
 - `make sbom-check` must validate schema-required fields, root crate identity/revision, non-empty direct+transitive dependency components, checksum correctness, and stale/malformed/empty artifacts.
 - The SBOM generator is pinned by the committed `scripts/sbom.py` `GENERATOR_NAME`/`GENERATOR_VERSION` and the git revision. It consumes `cargo metadata --locked --all-features` and `Cargo.lock`; it must not embed secrets, absolute local paths, or volatile host data.
 - SBOM artifacts are intentionally not committed. Commit only the generator, policy, workflow, and lockfile inputs.

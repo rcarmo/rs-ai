@@ -8,9 +8,11 @@ import json
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
+from workspace_paths import configure_process_env, temporary_directory
+
+configure_process_env("test-hydrate-v101-catalog")
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (
     ROOT / "src/models_generated.rs",
@@ -57,7 +59,7 @@ def recompute_manifest(data_dir: Path) -> None:
 
 
 def validator_fixture_cases(artifact: Path) -> None:
-    with tempfile.TemporaryDirectory(prefix="rs-ai-v101-validation-") as tmp:
+    with temporary_directory("test-hydrate-v101-catalog", prefix="rs-ai-v101-validation-") as tmp:
         work = Path(tmp)
         subprocess.run(["tar", "-xzf", str(artifact), "-C", str(work)], check=True)
         pristine = work / "package/dist/providers/data"

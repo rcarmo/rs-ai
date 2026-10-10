@@ -6,9 +6,10 @@ import contextlib
 import importlib.util
 import io
 import json
-import tempfile
 from datetime import date
 from pathlib import Path
+
+from workspace_paths import temporary_directory
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location("vuln_check", ROOT / "scripts/vuln_check.py")
@@ -123,7 +124,7 @@ def test_approved_advisory_passes() -> None:
 
 
 def test_legacy_dependency_policy_fails_closed() -> None:
-    with tempfile.TemporaryDirectory(prefix="rs-ai-lock-selftest-") as tmp:
+    with temporary_directory("vuln-check-selftest", prefix="rs-ai-lock-selftest-") as tmp:
         lock = Path(tmp) / "Cargo.lock"
         lock.write_text('''version = 4
 
@@ -153,7 +154,7 @@ version = "0.103.15"
 
 
 def test_main_rejects_mock_scanner_error_exit_with_empty_json() -> None:
-    with tempfile.TemporaryDirectory(prefix="rs-ai-vuln-selftest-") as tmp:
+    with temporary_directory("vuln-check-selftest", prefix="rs-ai-vuln-selftest-") as tmp:
         mock = Path(tmp) / "cargo-audit"
         mock.write_text(
             "#!/bin/sh\n"

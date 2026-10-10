@@ -9,8 +9,9 @@ import shutil
 import subprocess
 import sys
 import tarfile
-import tempfile
 from pathlib import Path
+
+from workspace_paths import temporary_directory
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -135,7 +136,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fault", choices=["", "baseline-record"], default="")
     args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="rs-ai-v0850-delta-") as tmp:
+    with temporary_directory("verify-v0850-delta", prefix="rs-ai-v0850-delta-") as tmp:
         work = Path(tmp)
         old_pkg = extract_package(OLD_PACKAGE, OLD_PACKAGE_SHA256, work)
         new_pkg = extract_package(NEW_PACKAGE, NEW_PACKAGE_SHA256, work)

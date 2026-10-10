@@ -5,8 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import tempfile
 from pathlib import Path
+
+from workspace_paths import temporary_directory
 from typing import Any
 
 import verify_release_model_metadata as metadata
@@ -94,7 +95,7 @@ def main() -> int:
         default="",
     )
     args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix="rs-ai-v0991-delta-") as tmp:
+    with temporary_directory("verify-v0991-delta", prefix="rs-ai-v0991-delta-") as tmp:
         work = Path(tmp)
         old_work = work / "old"
         new_work = work / "new"

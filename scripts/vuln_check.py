@@ -18,6 +18,9 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from workspace_paths import configure_process_env
+
+configure_process_env("vuln-check")
 ROOT = Path(__file__).resolve().parents[1]
 PINNED_CARGO_AUDIT_VERSION = "0.22.2"
 # cargo-audit returns 0 for no findings and 1 for reported vulnerabilities /

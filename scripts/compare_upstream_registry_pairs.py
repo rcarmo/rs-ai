@@ -4,12 +4,12 @@
 This intentionally imports/flattens upstream TypeScript exports with Bun instead of
 regex-counting provider files. For v0.81+ generated-provider JSON shards, set
 PI_AI_MODEL_DATA_DIR to the hydrated JSON output directory (e.g.
-/workspace/tmp/pi-v0811-json); the script then reads models.json directly while
+/workspace/tmp/rs-ai/runs/catalog-compare/<run-id>/model-data); the script then reads models.json directly while
 still checking image IMAGE_MODELS from the tag. It checks both text MODELS and
 image IMAGE_MODELS.
 
 Usage:
-  python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3
+  python3 scripts/compare_upstream_registry_pairs.py /workspace/tmp/rs-ai/runs/catalog-compare/<run-id>/pi-src 0e6909f050eeb15e8f6c05185511f3788357ddb3
 
 The second argument is optional but recommended; when provided, the script verifies
 that the upstream worktree's HEAD is exactly that commit.
@@ -22,9 +22,11 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
+from workspace_paths import configure_process_env, named_temporary_file
+
+configure_process_env("compare-upstream-registry-pairs")
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -80,7 +82,7 @@ const pairs = values.map((m) => [m.provider, m.id]).sort((a, b) =>
 );
 process.stdout.write(JSON.stringify(pairs));
 """.replace("__EXPORT__", export_name).replace("__MODULE__", json.dumps(module.as_uri()))
-    with tempfile.NamedTemporaryFile("w", suffix=".mjs", delete=False) as f:
+    with named_temporary_file("compare-upstream-registry-pairs", "w", suffix=".mjs", delete=False) as f:
         f.write(script)
         script_path = Path(f.name)
     try:

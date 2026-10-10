@@ -8,9 +8,11 @@ import shutil
 import subprocess
 import sys
 import tarfile
-import tempfile
 from pathlib import Path
 
+from workspace_paths import configure_process_env, temporary_directory
+
+configure_process_env("hydrate-v101-catalog")
 ROOT = Path(__file__).resolve().parents[1]
 TARGETS = (
     Path("src/models_generated.rs"),
@@ -37,7 +39,7 @@ def hydrate(artifact: Path, validate_only: bool = False, fault: str = "") -> Non
     if sha256(artifact) != EXPECTED_SHA256:
         raise RuntimeError("v1.0.1 artifact SHA-256 mismatch")
     before = {target: (ROOT / target).read_bytes() for target in TARGETS}
-    with tempfile.TemporaryDirectory(prefix="rs-ai-v101-hydrate-") as tmp:
+    with temporary_directory("hydrate-v101-catalog", prefix="rs-ai-v101-hydrate-") as tmp:
         work = Path(tmp)
         unpack = work / "unpack"
         unpack.mkdir()

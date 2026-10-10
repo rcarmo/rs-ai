@@ -3,9 +3,9 @@
 
 Usage:
     # First dump models to JSON via bun:
-    bun --eval "import { MODELS } from 'path/to/models.generated.js'; process.stdout.write(JSON.stringify(MODELS));" > /tmp/models.json
+    bun --eval "import { MODELS } from 'path/to/models.generated.js'; process.stdout.write(JSON.stringify(MODELS));" > /workspace/tmp/rs-ai/runs/model-generation/<run-id>/models.json
     # Then generate:
-    python3 scripts/generate_models.py /tmp/models.json
+    python3 scripts/generate_models.py /workspace/tmp/rs-ai/runs/model-generation/<run-id>/models.json
 """
 
 import json
@@ -204,7 +204,7 @@ def gen_model(m) -> str:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python3 scripts/generate_models.py /tmp/models.json", file=sys.stderr)
+        print("Usage: python3 scripts/generate_models.py /workspace/tmp/rs-ai/runs/model-generation/<run-id>/models.json", file=sys.stderr)
         sys.exit(1)
     
     input_path = Path(sys.argv[1])

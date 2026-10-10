@@ -12,9 +12,11 @@ import hashlib
 import json
 import subprocess
 import sys
-import tempfile
 from collections import deque
 from pathlib import Path
+from workspace_paths import configure_process_env, named_temporary_file
+
+configure_process_env("sbom")
 from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -232,7 +234,7 @@ def check_artifacts(sbom_path: Path, checksum_path: Path) -> None:
 
     expected = canonical_json_bytes(build_sbom())
     if raw != expected:
-        with tempfile.NamedTemporaryFile("wb", prefix="rs-ai-sbom-expected-", suffix=".json", delete=False) as fh:
+        with named_temporary_file("sbom", "wb", prefix="rs-ai-sbom-expected-", suffix=".json", delete=False) as fh:
             fh.write(expected)
             expected_path = fh.name
         raise SystemExit(f"SBOM is stale; run `make sbom` (expected snapshot: {expected_path})")

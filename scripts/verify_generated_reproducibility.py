@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import argparse
 import sys
-import tempfile
 from pathlib import Path
 
 import verify_release_model_metadata as meta
+from workspace_paths import temporary_directory
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PACKAGE = "@earendil-works/pi-ai@1.0.1"
@@ -48,7 +48,7 @@ def main() -> int:
     parser.add_argument("--package-sha256", default=DEFAULT_PACKAGE_SHA256)
     args = parser.parse_args()
 
-    with tempfile.TemporaryDirectory(prefix="rs-ai-generated-repro-") as tmp:
+    with temporary_directory("verify-generated-reproducibility", prefix="rs-ai-generated-repro-") as tmp:
         work = Path(tmp)
         package_dir = meta.extract_npm_package(args.package, work, args.package_sha256)
         data_dir = package_dir / "dist/providers/data"
