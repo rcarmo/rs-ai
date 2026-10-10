@@ -7,6 +7,15 @@ use crate::types::Message;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
+/// Task-bound passive entry service supplied to normal and recovered tools.
+/// The service is process-local, never serialized, and has no session control.
+pub type EntryFuture<'a, T> =
+    std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, DurableError>> + Send + 'a>>;
+pub trait DurableEntries: Send + Sync + 'static {
+    fn append<'a>(&'a self, draft: EntryDraft) -> EntryFuture<'a, EntryRecord>;
+    fn entry<'a>(&'a self, id: EntryId) -> EntryFuture<'a, Option<EntryRecord>>;
+}
+
 /// Process-local typed kind token. It is not registered, serialized or retained
 /// in durable state. `matches` checks identity only; `decode` validates host data.
 #[derive(Debug)]

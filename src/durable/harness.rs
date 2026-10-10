@@ -77,6 +77,40 @@ struct Inner {
     successor_phase_barrier: Mutex<Option<(oneshot::Sender<()>, oneshot::Receiver<()>)>>,
 }
 
+struct TaskEntries {
+    inner: std::sync::Weak<Inner>,
+    task: TaskId,
+    conversation: ConversationId,
+}
+impl super::entries::DurableEntries for TaskEntries {
+    fn append<'a>(
+        &'a self,
+        draft: super::entries::EntryDraft,
+    ) -> super::entries::EntryFuture<'a, EntryRecord> {
+        Box::pin(async move {
+            let inner = self.inner.upgrade().ok_or(DurableError::Closed)?;
+            let _operation = inner.operations.lock().await;
+            let conversation = self.conversation;
+            let entry = inner
+                .session
+                .transact_task_entries(self.task, move |tx| tx.append_entry(conversation, draft))
+                .await?;
+            bump_revision(&inner);
+            Ok(entry)
+        })
+    }
+    fn entry<'a>(&'a self, id: EntryId) -> super::entries::EntryFuture<'a, Option<EntryRecord>> {
+        Box::pin(async move {
+            let inner = self.inner.upgrade().ok_or(DurableError::Closed)?;
+            let conversation = self.conversation;
+            inner
+                .session
+                .transact_task_entries(self.task, move |tx| tx.entry(conversation, id))
+                .await
+        })
+    }
+}
+
 impl DurableHarness {
     pub async fn open(
         storage: Box<dyn DurableStorage>,
@@ -1403,6 +1437,11 @@ async fn settle_tool_round(
             arguments: intent.execution_arguments.clone(),
             cancel,
             models: inner.models.clone(),
+            entries: Arc::new(TaskEntries {
+                inner: Arc::downgrade(inner),
+                task: child_id,
+                conversation: conversation_id()?,
+            }),
         };
         let started = std::time::Instant::now();
         let terminal = registered.executor.execute(execution).await;
@@ -1717,6 +1756,11 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
                         arguments: intent.execution_arguments.clone(),
                         cancel,
                         models: inner.models.clone(),
+                        entries: Arc::new(TaskEntries {
+                            inner: Arc::downgrade(&inner),
+                            task: child.id,
+                            conversation: child.conversation_id,
+                        }),
                     })
                     .await;
                 let elapsed_ms = crate::registry::round_duration_ms(started.elapsed());

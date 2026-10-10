@@ -123,6 +123,8 @@ pub struct ToolExecution {
     pub arguments: Value,
     pub cancel: watch::Receiver<bool>,
     pub models: Arc<dyn crate::durable::models::DurableModels>,
+    /// Passive transcript access scoped to this nonterminal tool task.
+    pub entries: Arc<dyn crate::durable::entries::DurableEntries>,
 }
 
 impl std::fmt::Debug for ToolExecution {

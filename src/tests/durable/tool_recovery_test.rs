@@ -162,7 +162,17 @@ mod tests {
                         .is_some()
                 );
                 self.1.fetch_add(1, Ordering::SeqCst);
-                Box::pin(async {
+                Box::pin(async move {
+                    let entry = execution
+                        .entries
+                        .append(EntryDraft::new("recovered.note"))
+                        .await
+                        .unwrap();
+                    assert!(entry.by_task_id.is_some());
+                    assert_eq!(
+                        execution.entries.entry(entry.id).await.unwrap().unwrap(),
+                        entry
+                    );
                     Ok(ToolOutput {
                         value: json!({"ok":true}),
                         usage: None,

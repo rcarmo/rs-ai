@@ -298,14 +298,28 @@ mod tests {
                 panic!("classification not requested")
             }
         }
-        struct UsesModels(Arc<dyn DurableModels>);
+        struct UsesModels(
+            Arc<dyn DurableModels>,
+            Arc<Mutex<Option<Arc<dyn DurableEntries>>>>,
+        );
         impl DurableTool for UsesModels {
             fn execute<'a>(
                 &'a self,
                 execution: ToolExecution,
             ) -> crate::durable::tool::ToolFuture<'a> {
                 assert!(Arc::ptr_eq(&self.0, &execution.models));
+                *self.1.lock().unwrap() = Some(execution.entries.clone());
                 Box::pin(async move {
+                    let entry = execution
+                        .entries
+                        .append(EntryDraft::new("tool.note"))
+                        .await
+                        .unwrap();
+                    assert!(entry.by_task_id.is_some());
+                    assert_eq!(
+                        execution.entries.entry(entry.id).await.unwrap().unwrap(),
+                        entry
+                    );
                     let model = execution.models.get_model("host", "nested").unwrap();
                     let context = crate::types::Context {
                         system_prompt: None,
@@ -356,6 +370,7 @@ mod tests {
         }
         let host = Arc::new(HostModels(AtomicUsize::new(0)));
         let models: Arc<dyn DurableModels> = host.clone();
+        let saved_entries = Arc::new(Mutex::new(None));
         let tools = Arc::new(DurableToolRegistry::default());
         tools
             .register(
@@ -363,7 +378,7 @@ mod tests {
                 "nested",
                 "1",
                 ReplayPolicy::Safe,
-                Arc::new(UsesModels(models.clone())),
+                Arc::new(UsesModels(models.clone(), saved_entries.clone())),
             )
             .unwrap();
         let harness = DurableHarness::open_with_tool_models(
@@ -387,6 +402,16 @@ mod tests {
         assert_eq!(
             harness.wait(handle).await.unwrap().answer.as_deref(),
             Some("done")
+        );
+        let retained_entries = saved_entries.lock().unwrap().clone().unwrap();
+        assert!(
+            matches!(retained_entries.append(EntryDraft::new("late")).await, Err(DurableError::Rejected(error)) if error == "transaction task is terminal")
+        );
+        assert!(
+            retained_entries
+                .entry(EntryId::new(1).unwrap())
+                .await
+                .is_err()
         );
         assert_eq!(host.0.load(Ordering::SeqCst), 1);
         harness.close().await.unwrap();

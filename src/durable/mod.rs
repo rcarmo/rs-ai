@@ -19,7 +19,7 @@ pub mod transaction;
 pub mod types;
 
 pub use context::{ContextEdit, ContextHead, ContextMarker, ContextUpdate, ContextView, SelfHead};
-pub use entries::{EntryDefinition, EntryDraft};
+pub use entries::{DurableEntries, EntryDefinition, EntryDraft, EntryFuture};
 pub use events::{DurableEvent, DurableWatch, WatchEnd};
 pub use harness::{ContextOptions, DurableHarness, HarnessServices};
 pub use model::{
