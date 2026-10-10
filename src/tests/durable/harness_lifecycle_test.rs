@@ -575,6 +575,7 @@ mod tests {
                     ModelRun {
                         terminal: Some(ModelTerminal::Malformed { code: "one".into() }),
                         terminal_count: 2,
+                        duration_ms: None,
                     }
                 })
             }

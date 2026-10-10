@@ -123,6 +123,14 @@ mod tests {
             .unwrap();
         assert!(tool_result["durationMs"].as_u64().is_some());
         assert_eq!(seen.lock().unwrap().len(), 1);
+        let context = harness
+            .message_context(ContextOptions::default())
+            .await
+            .unwrap();
+        assert!(
+            context.last().unwrap().duration_ms.is_some(),
+            "successor answer duration persisted"
+        );
         harness.close().await.unwrap();
     }
 

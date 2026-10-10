@@ -859,6 +859,7 @@ async fn settle(inner: &Arc<Inner>, task_id: TaskId, run: ModelRun) -> Result<()
     let mut settled_task = task;
     let mut settled_submission = submission;
     let mut entries = Vec::new();
+    let duration_ms = run.duration_ms;
     let outcome = match terminal {
         ModelTerminal::Answer {
             content,
@@ -868,15 +869,19 @@ async fn settle(inner: &Arc<Inner>, task_id: TaskId, run: ModelRun) -> Result<()
             stop_reason,
         } => {
             let answer_id = EntryId::new(snapshot.next_id)?;
+            let mut value = json!({
+                "text":text,"content":content,
+                "model": serde_json::from_value::<ModelIntent>(settled_task.input.clone()).map_err(|_| DurableError::Corrupt("invalid persisted model intent".into()))?.model,
+                "response_id":response_id,"stop_reason":stop_reason,"usage":usage,
+            });
+            if let Some(duration_ms) = duration_ms {
+                value["durationMs"] = json!(duration_ms);
+            }
             entries.push(EntryRecord {
                 id: answer_id,
                 conversation_id: settled_task.conversation_id,
                 kind: "assistant".into(),
-                value: json!({
-                    "text":text,"content":content,
-                    "model": serde_json::from_value::<ModelIntent>(settled_task.input.clone()).map_err(|_| DurableError::Corrupt("invalid persisted model intent".into()))?.model,
-                    "response_id":response_id,"stop_reason":stop_reason,"usage":usage,
-                }),
+                value,
                 by_task_id: Some(task_id),
                 created_seq: seq,
             });
@@ -2002,11 +2007,15 @@ async fn settle_completing(
             submission.status = "done".into();
             submission.answer_id = Some(answer_id);
             submission.updated_seq = seq;
+            let mut value = json!({"text":text,"content":content,"response_id":response_id,"stop_reason":stop_reason,"usage":usage});
+            if let Some(duration_ms) = run.duration_ms {
+                value["durationMs"] = json!(duration_ms);
+            }
             let entry = EntryRecord {
                 id: answer_id,
                 conversation_id: task.conversation_id,
                 kind: "assistant".into(),
-                value: json!({"text":text,"content":content,"response_id":response_id,"stop_reason":stop_reason,"usage":usage}),
+                value,
                 by_task_id: Some(task.id),
                 created_seq: seq,
             };

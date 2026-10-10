@@ -63,7 +63,7 @@ The host owns credentials, cancellation/options and nested-call accounting. Nest
 
 ## v1.1.0 lifecycle clock
 
-`DurableSession::open_with_clock` accepts a shared `LifecycleClock` (`Arc<dyn Fn() -> i64 + Send + Sync>`); `DurableHarness::open_with_tools_and_clock` forwards it. Existing constructors use wall-clock milliseconds. The clock stamps missing task starts/ends at commit admission, is called only when a timestamp is needed, and preserves existing starts through recovery. Invalid negative values fail storage validation without changing the snapshot. Execution durations continue to use monotonic `Instant`, independent of the host clock.
+`DurableSession::open_with_clock` accepts a shared `LifecycleClock` (`Arc<dyn Fn() -> i64 + Send + Sync>`); `DurableHarness::open_with_tools_and_clock` forwards it. Existing constructors use wall-clock milliseconds. The clock stamps missing task starts/ends at commit admission, is called only when a timestamp is needed, and preserves existing starts through recovery. Invalid negative values fail storage validation without changing the snapshot. Execution durations continue to use monotonic `Instant`, independent of the host clock. `ModelRun.duration_ms` carries terminal stream timing through initial/successor answer settlement into `durationMs` entries; native context reads retain it after journal reopen. `ModelRun::one` defaults to no duration, while direct struct construction must include the new optional field.
 
 ## v1.1.0 snapshot scans
 

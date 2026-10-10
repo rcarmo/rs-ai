@@ -120,6 +120,7 @@ fn derive<'a>(
                                 .collect();
                         }
                     }
+                    message.duration_ms = entry.value.get("durationMs").and_then(Value::as_u64);
                     message.response_id = entry
                         .value
                         .get("response_id")

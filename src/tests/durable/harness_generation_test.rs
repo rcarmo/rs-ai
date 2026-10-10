@@ -66,6 +66,21 @@ mod tests {
             .unwrap();
         let result = harness.wait(handle).await.unwrap();
         assert_eq!(result.answer.as_deref(), Some("real"), "{result:?}");
+        let entries = harness
+            .entries(EntryQuery {
+                kind: Some("assistant".into()),
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        let duration = entries.items[0].value["durationMs"]
+            .as_u64()
+            .expect("stream duration persisted");
+        let context = harness
+            .message_context(ContextOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(context.last().unwrap().duration_ms, Some(duration));
         assert_eq!(
             result.usage.unwrap()["cost"]["total"],
             serde_json::json!(0.3)
@@ -92,6 +107,84 @@ mod tests {
             "hello"
         );
         harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn supplied_answer_duration_survives_journal_reopen_without_dispatch() {
+        struct Timed;
+        impl DurableModelRunner for Timed {
+            fn run<'a>(&'a self, _: ModelIntent) -> crate::durable::model::ModelFuture<'a> {
+                Box::pin(async {
+                    let mut run = ModelRun::one(ModelTerminal::Answer {
+                        content: vec![],
+                        text: "timed".into(),
+                        usage: DurableUsage::default(),
+                        response_id: None,
+                        stop_reason: "stop".into(),
+                    });
+                    run.duration_ms = Some(1234);
+                    run
+                })
+            }
+        }
+        struct Never;
+        impl DurableModelRunner for Never {
+            fn run<'a>(&'a self, _: ModelIntent) -> crate::durable::model::ModelFuture<'a> {
+                panic!("context read must not dispatch")
+            }
+        }
+        let root = std::env::temp_dir().join(format!("rs-ai-duration-{}", crate::utils::uuidv7()));
+        std::fs::create_dir(&root).unwrap();
+        let path = root.join("journal");
+        let pinned =
+            PinnedModel::from_model(&model("http://unused".into(), "timed", "test")).unwrap();
+        let harness = DurableHarness::open(
+            Box::new(JournalStorage::open(&path).unwrap()),
+            Arc::new(Timed),
+            pinned.clone(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        let handle = harness
+            .submit(SubmitRequest {
+                request_id: "timed".into(),
+                content: "go".into(),
+            })
+            .await
+            .unwrap();
+        harness.wait(handle).await.unwrap();
+        assert_eq!(
+            harness
+                .message_context(ContextOptions::default())
+                .await
+                .unwrap()
+                .last()
+                .unwrap()
+                .duration_ms,
+            Some(1234)
+        );
+        harness.close().await.unwrap();
+        let reopened = DurableHarness::open(
+            Box::new(JournalStorage::open(&path).unwrap()),
+            Arc::new(Never),
+            pinned,
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            reopened
+                .message_context(ContextOptions::default())
+                .await
+                .unwrap()
+                .last()
+                .unwrap()
+                .duration_ms,
+            Some(1234)
+        );
+        reopened.close().await.unwrap();
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[tokio::test]

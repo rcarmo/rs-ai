@@ -316,6 +316,8 @@ pub enum ModelTerminal {
 pub struct ModelRun {
     pub terminal: Option<ModelTerminal>,
     pub terminal_count: u8,
+    /// Duration supplied by the terminal assistant stream message, if any.
+    pub duration_ms: Option<u64>,
 }
 
 impl ModelRun {
@@ -323,6 +325,7 @@ impl ModelRun {
         Self {
             terminal: Some(terminal),
             terminal_count: 1,
+            duration_ms: None,
         }
     }
 
@@ -430,6 +433,7 @@ impl DurableModelRunner for RegistryModelRunner {
             let mut stream = crate::registry::stream(&model, &context, &options);
             let mut terminal = None;
             let mut terminal_count = 0u8;
+            let mut duration_ms = None;
             let mut saw_tool = false;
             while let Some(event) = stream.next().await {
                 let next = match event {
@@ -440,6 +444,9 @@ impl DurableModelRunner for RegistryModelRunner {
                         None
                     }
                     Event::Done { reason, message } => {
+                        if terminal_count == 0 {
+                            duration_ms = message.duration_ms;
+                        }
                         Some(done_terminal(&intent.model, reason, message).await)
                     }
                     Event::Error { message, .. } => Some(error_terminal(message)),
@@ -459,6 +466,7 @@ impl DurableModelRunner for RegistryModelRunner {
             ModelRun {
                 terminal,
                 terminal_count,
+                duration_ms,
             }
         })
     }
