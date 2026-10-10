@@ -294,6 +294,68 @@ mod tests {
         session.close().await.unwrap();
     }
 
+    #[tokio::test]
+    async fn typed_entry_tokens_match_kind_and_decode_data_without_registration() {
+        #[derive(Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+        struct Note {
+            text: String,
+            count: u64,
+        }
+        let definition = EntryDefinition::<Note>::new("custom.note").unwrap();
+        assert_eq!(definition.clone().kind(), "custom.note"); // Note need not be Clone
+        let same_kind = EntryDefinition::<Note>::new("custom.note").unwrap();
+        assert_eq!(definition.kind(), "custom.note");
+        assert!(!definition.matches(None));
+        assert!(EntryDefinition::<Note>::new("").is_err());
+        assert!(EntryDefinition::<Note>::new("user").is_err());
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        let draft = definition
+            .draft(Note {
+                text: "typed".into(),
+                count: 3,
+            })
+            .unwrap();
+        let record = session.append_entry(conversation, draft).await.unwrap();
+        assert!(same_kind.matches(Some(&record)));
+        assert_eq!(
+            same_kind.decode(Some(&record)).unwrap(),
+            Some(Note {
+                text: "typed".into(),
+                count: 3
+            })
+        );
+        assert!(same_kind.decode(None).unwrap().is_none());
+        let different = EntryDefinition::<Note>::new("other").unwrap();
+        assert!(different.decode(Some(&record)).unwrap().is_none());
+        let malformed = session
+            .append_entry(conversation, EntryDraft::new("custom.note"))
+            .await
+            .unwrap();
+        assert!(same_kind.matches(Some(&malformed))); // kind guard does not validate payload
+        assert!(same_kind.decode(Some(&malformed)).is_err());
+        let mut wrong_shape = EntryDraft::new("custom.note");
+        wrong_shape.data = Some(json!({"text":42,"count":3}));
+        let wrong_shape = session
+            .append_entry(conversation, wrong_shape)
+            .await
+            .unwrap();
+        assert!(same_kind.decode(Some(&wrong_shape)).is_err());
+        let null_kind = EntryDefinition::<Option<Note>>::new("nullable").unwrap();
+        let null = session
+            .append_entry(conversation, null_kind.draft(None).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(null_kind.decode(Some(&null)).unwrap(), Some(None));
+        let state = session.snapshot().await.unwrap();
+        assert!(state.tasks.is_empty());
+        assert!(state.submissions.is_empty());
+        assert!(state.documents.is_empty());
+        session.close().await.unwrap();
+    }
+
     #[test]
     fn draft_json_distinguishes_absent_data_from_explicit_null() {
         let absent: EntryDraft = serde_json::from_value(json!({"kind":"note"})).unwrap();

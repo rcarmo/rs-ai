@@ -93,7 +93,9 @@ Both native provider context and the text-runner compatibility view apply these 
 
 Generic records keep their custom kind and store draft fields inside native `EntryRecord.value`. They contribute context through the same head/edit/result-repair derivation, while model-less records remain visible with empty contributions. Storage validates JSON shape/size, model/edit counts, resolved heads and prior same-conversation edit references before mutation. Within an ordered CommitBatch, later entries can refer to earlier entries in that batch; forward, reordered and foreign references reject the whole batch. Journal replay applies the same rules. Rejected/dropped-before-admission writes consume no IDs; admitted writes settle and publish even after caller drop. Appends create no submission/task and journal reopen dispatches nothing.
 
-Conversation existence/fork visibility, typed entry-definition tokens, scoped task attribution, generic transactions and queued busy-boundary writes are unimplemented. The native session still accepts explicit conversation IDs without a conversation table; the harness restricts writes to its root.
+`EntryDefinition<D>` is a process-local kind token: `draft(data)` builds a generic draft with required Serde-serializable data, `matches` tests only kind identity, and `decode` reads typed data or returns None for missing/foreign records. Matching malformed or absent data returns an error; nullable data uses `Option<D>`. Definitions require no registry and persist no schema. Use an untyped EntryDraft for model-only records without data.
+
+Conversation existence/fork visibility, scoped task attribution, generic transactions and queued busy-boundary writes are unimplemented. The native session still accepts explicit conversation IDs without a conversation table; the harness restricts writes to its root.
 
 ## Native context views
 

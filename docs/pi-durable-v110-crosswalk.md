@@ -150,7 +150,7 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 | `packages/durable/test/session-forks.test.ts` | PENDING | Not yet accepted |
 | `packages/durable/test/session-states.test.ts` | PENDING | Not yet accepted |
 | `packages/durable/test/session-support.ts` | INVENTORIED SUPPORT | Not yet accepted |
-| `packages/durable/test/session-tables.test.ts` | ADAPTED generic append subset | Seven tests in `src/tests/durable/entries_test.rs` plus lifecycle cancellation/poison checks cover custom kinds, self heads, optional data/model, unique allocation, detached records, rejected writes and memory/journal context. Other table/transaction contracts are unreviewed. |
+| `packages/durable/test/session-tables.test.ts` | ADAPTED generic append subset | Eight tests in `src/tests/durable/entries_test.rs` plus lifecycle cancellation/poison checks cover custom kinds, self heads, optional data/model, unique allocation, detached records, rejected writes and memory/journal context. Other table/transaction contracts are unreviewed. |
 | `packages/durable/test/session-watches.test.ts` | PENDING | Not yet accepted |
 | `packages/durable/test/spec-usage.test.ts` | PENDING | Not yet accepted |
 | `packages/durable/test/sqlite-cloudflare.test.ts` | PENDING | Not yet accepted |
@@ -172,7 +172,7 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 | Official path | Disposition | Native evidence |
 |---|---|---|
 | `packages/durable/src/documents.ts` | PENDING | No full-contract acceptance yet |
-| `packages/durable/src/entries.ts` | ADAPTED generic passive draft subset | `src/durable/entries.rs` accepts custom kinds, optional data/model, resolved self heads and edits; `src/tests/durable/entries_test.rs` covers wire omission/null, model-less entries, contributions and recovery. Typed entry tokens and flat upstream record encoding are absent. |
+| `packages/durable/src/entries.ts` | ADAPTED generic passive draft subset | `src/durable/entries.rs` accepts custom kinds, optional data/model, resolved self heads and edits; `src/tests/durable/entries_test.rs` covers wire omission/null, model-less entries, contributions and recovery. `EntryDefinition<D>` adapts unregistered kind tokens, required typed draft data, kind-only matching and Serde decoding. A regression covers equal-kind tokens, cloning without data Clone, malformed/missing/null data and no persistent definitions. Flat upstream record encoding is absent. |
 | `packages/durable/src/env/decode.ts` | PENDING | No full-contract acceptance yet |
 | `packages/durable/src/env/index.ts` | PENDING | No full-contract acceptance yet |
 | `packages/durable/src/env/line-scan.ts` | PENDING | No full-contract acceptance yet |
@@ -206,7 +206,7 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 | `packages/durable/src/session/forks.ts` | PENDING | No full-contract acceptance yet |
 | `packages/durable/src/session/observation.ts` | PENDING | No full-contract acceptance yet |
 | `packages/durable/src/session/session.ts` | PENDING | No full-contract acceptance yet |
-| `packages/durable/src/session/transaction.ts` | ADAPTED native append and lifecycle subset | Session-line `append_entry` assigns IDs/seq, validates references, adopts/publishes after settlement and survives admitted caller drop. Seven generic tests plus two lifecycle regressions include ordered same-batch references, concurrent IDs, tombstoning, poison, journal reopen and no dispatch. Conversation table, scoped task attribution and full generic transaction semantics are absent. |
+| `packages/durable/src/session/transaction.ts` | ADAPTED native append and lifecycle subset | Session-line `append_entry` assigns IDs/seq, validates references, adopts/publishes after settlement and survives admitted caller drop. Eight generic tests plus two lifecycle regressions include ordered same-batch references, concurrent IDs, tombstoning, poison, journal reopen and no dispatch. Conversation table, scoped task attribution and full generic transaction semantics are absent. |
 | `packages/durable/src/storage/jsonl/index.ts` | PENDING | No full-contract acceptance yet |
 | `packages/durable/src/storage/jsonl/node.ts` | PENDING | No full-contract acceptance yet |
 | `packages/durable/src/storage/jsonl/storage.ts` | PENDING | No full-contract acceptance yet |

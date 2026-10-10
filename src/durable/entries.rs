@@ -4,8 +4,71 @@
 use super::context::{ContextEdit, ContextHead, ContextUpdate};
 use super::types::*;
 use crate::types::Message;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
+
+/// Process-local typed kind token. It is not registered, serialized or retained
+/// in durable state. `matches` checks identity only; `decode` validates host data.
+#[derive(Debug)]
+pub struct EntryDefinition<D> {
+    kind: String,
+    data: std::marker::PhantomData<fn() -> D>,
+}
+impl<D> Clone for EntryDefinition<D> {
+    fn clone(&self) -> Self {
+        Self {
+            kind: self.kind.clone(),
+            data: std::marker::PhantomData,
+        }
+    }
+}
+impl<D> EntryDefinition<D> {
+    pub fn new(kind: impl Into<String>) -> Result<Self, DurableError> {
+        let kind = kind.into();
+        validate_kind(&kind)?;
+        if native_kind(&kind) {
+            return Err(DurableError::Rejected(
+                "native execution entry kind is reserved".into(),
+            ));
+        }
+        Ok(Self {
+            kind,
+            data: std::marker::PhantomData,
+        })
+    }
+    pub fn kind(&self) -> &str {
+        &self.kind
+    }
+    pub fn matches(&self, entry: Option<&EntryRecord>) -> bool {
+        entry.is_some_and(|entry| entry.kind == self.kind)
+    }
+}
+impl<D: Serialize> EntryDefinition<D> {
+    /// Required typed data; set draft model/head/edits before appending normally.
+    pub fn draft(&self, data: D) -> Result<EntryDraft, DurableError> {
+        let mut draft = EntryDraft::new(&self.kind);
+        draft.data = Some(
+            serde_json::to_value(data)
+                .map_err(|error| DurableError::Rejected(error.to_string()))?,
+        );
+        Ok(draft)
+    }
+}
+impl<D: DeserializeOwned> EntryDefinition<D> {
+    /// Missing/foreign kind returns None; matching malformed data returns Err.
+    pub fn decode(&self, entry: Option<&EntryRecord>) -> Result<Option<D>, DurableError> {
+        let Some(entry) = entry.filter(|entry| self.matches(Some(entry))) else {
+            return Ok(None);
+        };
+        let payload = EntryPayload::decode(&entry.value)?;
+        let data = payload
+            .data
+            .ok_or_else(|| DurableError::Rejected("typed entry data missing".into()))?;
+        serde_json::from_value(data)
+            .map(Some)
+            .map_err(|error| DurableError::Rejected(format!("invalid typed entry data: {error}")))
+    }
+}
 
 /// A passive transcript entry with host-defined kind and optional model context.
 /// Native execution kinds are reserved; upstream `pi.*` kinds are permitted.
