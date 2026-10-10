@@ -128,11 +128,11 @@ impl std::error::Error for ModelsError {}
 /// `provider.id`, one credential per provider; writes are serialized per
 /// provider so a read-modify-write (OAuth refresh, login-during-refresh) sees a
 /// consistent current value and cannot double-refresh a rotated token.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct InMemoryCredentialStore {
-    credentials: Mutex<HashMap<String, Credential>>,
+    credentials: Arc<Mutex<HashMap<String, Credential>>>,
     /// Per-provider async locks providing the serialized write path.
-    locks: Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>,
+    locks: Arc<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>>,
 }
 
 impl InMemoryCredentialStore {
@@ -266,7 +266,8 @@ pub trait OAuthAuth: Send + Sync {
 #[derive(Default)]
 pub struct ProviderAuth {
     pub api_key: Option<Box<dyn ApiKeyAuth>>,
-    pub oauth: Option<Box<dyn OAuthAuth>>,
+    /// Shared ownership lets admitted token rotations settle after caller cancellation.
+    pub oauth: Option<Arc<dyn OAuthAuth>>,
 }
 
 /// Request-scoped overrides (mirrors AuthResolutionOverrides).
@@ -291,15 +292,40 @@ pub async fn resolve_provider_auth(
     base_ctx: &dyn AuthContext,
     overrides: Option<&AuthResolutionOverrides>,
 ) -> Result<Option<AuthResult>, ModelsError> {
-    let pre_cancelled = overrides
-        .and_then(|o| o.cancel.as_ref())
-        .is_some_and(|rx| *rx.borrow());
-    // Pre-cancelled OAuth credentials still flow into the provider refresh seam so
-    // concrete OAuth providers can receive the caller-owned signal. Non-OAuth auth
-    // resolution aborts immediately.
-    if pre_cancelled && !matches!(credentials.read(provider_id), Some(Credential::OAuth(_))) {
+    let cancel = overrides.and_then(|o| o.cancel.clone());
+    if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
         return Err(cancelled_auth_error());
     }
+    tokio::select! {
+        biased;
+        _ = wait_auth_cancel(cancel) => Err(cancelled_auth_error()),
+        result = resolve_provider_auth_inner(provider_id, auth, model, credentials, base_ctx, overrides) => result,
+    }
+}
+
+async fn wait_auth_cancel(cancel: Option<watch::Receiver<bool>>) {
+    let Some(mut cancel) = cancel else {
+        return std::future::pending().await;
+    };
+    loop {
+        if *cancel.borrow_and_update() {
+            return;
+        }
+        if cancel.changed().await.is_err() {
+            // Dropping the sender does not cancel an operation.
+            return std::future::pending().await;
+        }
+    }
+}
+
+async fn resolve_provider_auth_inner(
+    provider_id: &str,
+    auth: &ProviderAuth,
+    model: &crate::types::Model,
+    credentials: &InMemoryCredentialStore,
+    base_ctx: &dyn AuthContext,
+    overrides: Option<&AuthResolutionOverrides>,
+) -> Result<Option<AuthResult>, ModelsError> {
     // An env overlay (if any) wins over the ambient context for this request.
     let overlay_ctx = overrides
         .and_then(|o| o.env.clone())
@@ -329,7 +355,7 @@ pub async fn resolve_provider_auth(
                     return resolve_stored_oauth(
                         credentials,
                         provider_id,
-                        oauth.as_ref(),
+                        oauth.clone(),
                         o,
                         overrides.and_then(|o| o.min_oauth_validity_ms),
                         overrides.and_then(|o| o.cancel.clone()),
@@ -375,51 +401,101 @@ async fn resolve_api_key(
     })
 }
 
+/// Refresh under the provider lock. Cancellation affects lock admission only;
+/// admitted rotations persist before unlocking even if the caller drops its future.
+/// Provider operations are bounded by an independent 15-second timeout.
+pub async fn refresh_stored_oauth_credential<F>(
+    credentials: &InMemoryCredentialStore,
+    provider_id: &str,
+    oauth: Arc<dyn OAuthAuth>,
+    needs_refresh: F,
+    cancel: Option<watch::Receiver<bool>>,
+) -> Result<Option<OAuthCredential>, ModelsError>
+where
+    F: FnOnce(&OAuthCredential) -> bool + Send + 'static,
+{
+    let lock = credentials.provider_lock(provider_id);
+    let guard = tokio::select! {
+        biased;
+        _ = wait_auth_cancel(cancel.clone()) => return Err(cancelled_auth_error()),
+        guard = lock.lock_owned() => guard,
+    };
+    if cancel.as_ref().is_some_and(|rx| *rx.borrow()) {
+        return Err(cancelled_auth_error());
+    }
+    let credentials = credentials.clone();
+    let provider_id = provider_id.to_owned();
+    tokio::spawn(async move {
+        let _guard = guard;
+        let Some(Credential::OAuth(current)) = credentials.read(&provider_id) else {
+            return Ok(None);
+        };
+        if !needs_refresh(&current) {
+            return Ok(Some(current));
+        }
+        // Never forward the caller signal after admission: a rotated refresh
+        // token may already have invalidated the credential in storage.
+        let (_timeout_owner, timeout_signal) = watch::channel(false);
+        let refreshed = tokio::time::timeout(
+            std::time::Duration::from_secs(15),
+            oauth.refresh_with_cancel(&current, Some(timeout_signal)),
+        )
+        .await
+        .map_err(|_| {
+            ModelsError::new(
+                ModelsErrorCode::OAuth,
+                format!("OAuth refresh failed for {provider_id}: timed out after 15000 ms"),
+            )
+        })?
+        .map_err(|error| {
+            ModelsError::with_cause(
+                ModelsErrorCode::OAuth,
+                format!("OAuth refresh failed for {provider_id}"),
+                error,
+            )
+        })?;
+        credentials
+            .credentials
+            .lock()
+            .unwrap()
+            .insert(provider_id, Credential::OAuth(refreshed.clone()));
+        Ok(Some(refreshed))
+    })
+    .await
+    .map_err(|error| {
+        ModelsError::with_cause(ModelsErrorCode::OAuth, "OAuth refresh worker failed", error)
+    })?
+}
+
 /// OAuth resolution with double-checked locking: valid tokens cost zero locks;
 /// expired tokens lock, re-check expiry under the lock, refresh once globally,
 /// and persist the rotated credential before release.
 async fn resolve_stored_oauth(
     credentials: &InMemoryCredentialStore,
     provider_id: &str,
-    oauth: &dyn OAuthAuth,
+    oauth: Arc<dyn OAuthAuth>,
     stored: OAuthCredential,
     min_validity_ms: Option<i64>,
     cancel: Option<watch::Receiver<bool>>,
 ) -> Result<Option<AuthResult>, ModelsError> {
     const DEFAULT_MIN_OAUTH_VALIDITY_MS: i64 = 5 * 60 * 1000;
+    let explicit_validity = min_validity_ms.is_some();
     let min_validity_ms = min_validity_ms
         .unwrap_or(0)
         .max(DEFAULT_MIN_OAUTH_VALIDITY_MS);
     let mut credential = stored;
     if now_millis() + min_validity_ms >= credential.expires {
-        let post = credentials
-            .modify(provider_id, |current| async move {
-                match current {
-                    // Logged out meanwhile.
-                    Some(Credential::OAuth(cur)) => {
-                        // Another request/process refreshed under the lock.
-                        if now_millis() + min_validity_ms < cur.expires {
-                            return Ok(None);
-                        }
-                        let refreshed = oauth
-                            .refresh_with_cancel(&cur, cancel.clone())
-                            .await
-                            .map_err(|e| {
-                                ModelsError::with_cause(
-                                    ModelsErrorCode::OAuth,
-                                    format!("OAuth refresh failed for {provider_id}"),
-                                    e,
-                                )
-                            })?;
-                        Ok(Some(Credential::OAuth(refreshed)))
-                    }
-                    _ => Ok(None),
-                }
-            })
-            .await?;
+        let post = refresh_stored_oauth_credential(
+            credentials,
+            provider_id,
+            oauth.clone(),
+            move |current| now_millis() + min_validity_ms >= current.expires,
+            cancel,
+        )
+        .await?;
         match post {
-            Some(Credential::OAuth(c)) => {
-                if now_millis() + min_validity_ms >= c.expires {
+            Some(c) => {
+                if explicit_validity && now_millis() + min_validity_ms >= c.expires {
                     return Err(ModelsError::new(
                         ModelsErrorCode::OAuth,
                         format!(
@@ -429,11 +505,8 @@ async fn resolve_stored_oauth(
                 }
                 credential = c
             }
-            // Logged out, or the lock re-check returned None (already-valid). Re-read.
-            _ => match credentials.read(provider_id) {
-                Some(Credential::OAuth(c)) => credential = c,
-                _ => return Ok(None),
-            },
+            // Logout or replacement with another credential type under the lock.
+            None => return Ok(None),
         }
     }
     let auth = oauth.to_auth(&credential).await.map_err(|e| {
@@ -896,7 +969,7 @@ mod tests {
         let refreshes = Arc::new(AtomicUsize::new(0));
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(CountingOAuth {
+            oauth: Some(Arc::new(CountingOAuth {
                 refreshes: refreshes.clone(),
             })),
         };
@@ -968,19 +1041,37 @@ mod tests {
         let refreshes = Arc::new(AtomicUsize::new(0));
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(DeltaOAuth {
+            oauth: Some(Arc::new(DeltaOAuth {
                 refreshes: refreshes.clone(),
                 delta_ms: 60_000,
             })),
         };
         let ctx = EnvAuthContext::new();
-        let err = resolve_provider_auth(
+        let auth = resolve_provider_auth(
             "anthropic",
             &provider,
             &test_model("anthropic"),
             &store,
             &ctx,
             None,
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(auth.auth.api_key.as_deref(), Some("fresh-60000"));
+
+        // Only an explicit minimum imposes a post-refresh validity contract.
+        let overrides = AuthResolutionOverrides {
+            min_oauth_validity_ms: Some(0),
+            ..Default::default()
+        };
+        let err = resolve_provider_auth(
+            "anthropic",
+            &provider,
+            &test_model("anthropic"),
+            &store,
+            &ctx,
+            Some(&overrides),
         )
         .await
         .unwrap_err();
@@ -999,7 +1090,7 @@ mod tests {
             .unwrap();
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(DeltaOAuth {
+            oauth: Some(Arc::new(DeltaOAuth {
                 refreshes: refreshes.clone(),
                 delta_ms: 900_000,
             })),
@@ -1041,7 +1132,7 @@ mod tests {
         let saw_signal = Arc::new(AtomicBool::new(false));
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(CancelAwareOAuth {
+            oauth: Some(Arc::new(CancelAwareOAuth {
                 saw_signal: saw_signal.clone(),
             })),
         };
@@ -1069,6 +1160,261 @@ mod tests {
             Some(Credential::OAuth(o)) => assert_eq!(o.access, "fresh-cancel-aware"),
             other => panic!("unexpected: {other:?}"),
         }
+    }
+
+    struct GatedRotation {
+        entered: Arc<tokio::sync::Semaphore>,
+        release: Arc<tokio::sync::Semaphore>,
+        refreshes: Arc<AtomicUsize>,
+    }
+
+    #[async_trait::async_trait]
+    impl OAuthAuth for GatedRotation {
+        async fn refresh(&self, current: &OAuthCredential) -> Result<OAuthCredential, ModelsError> {
+            self.refreshes.fetch_add(1, Ordering::SeqCst);
+            self.entered.add_permits(1);
+            self.release.acquire().await.unwrap().forget();
+            assert_eq!(current.refresh.as_deref(), Some("r"));
+            Ok(OAuthCredential {
+                access: "rotated".into(),
+                refresh: Some("rotated-refresh".into()),
+                expires: now_millis() + 600_000,
+                account_id: None,
+            })
+        }
+        async fn to_auth(&self, current: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+            Ok(ModelAuth {
+                api_key: Some(current.access.clone()),
+                ..Default::default()
+            })
+        }
+    }
+
+    async fn rotation_fixture() -> (
+        InMemoryCredentialStore,
+        ProviderAuth,
+        Arc<tokio::sync::Semaphore>,
+        Arc<tokio::sync::Semaphore>,
+        Arc<AtomicUsize>,
+    ) {
+        let store = InMemoryCredentialStore::new();
+        store
+            .modify::<_, _, std::convert::Infallible>("p", |_| async {
+                Ok(Some(Credential::OAuth(OAuthCredential {
+                    access: "old".into(),
+                    refresh: Some("r".into()),
+                    expires: 0,
+                    account_id: None,
+                })))
+            })
+            .await
+            .unwrap();
+        let entered = Arc::new(tokio::sync::Semaphore::new(0));
+        let release = Arc::new(tokio::sync::Semaphore::new(0));
+        let count = Arc::new(AtomicUsize::new(0));
+        let provider = ProviderAuth {
+            api_key: None,
+            oauth: Some(Arc::new(GatedRotation {
+                entered: entered.clone(),
+                release: release.clone(),
+                refreshes: count.clone(),
+            })),
+        };
+        (store, provider, entered, release, count)
+    }
+
+    #[tokio::test]
+    async fn cancelled_auth_returns_promptly_but_admitted_rotation_persists_once() {
+        let (store, provider, entered, release, count) = rotation_fixture().await;
+        let (tx, rx) = watch::channel(false);
+        let overrides = AuthResolutionOverrides {
+            cancel: Some(rx),
+            ..Default::default()
+        };
+        let model = test_model("p");
+        let ctx = EnvAuthContext::new();
+        let mut first = Box::pin(resolve_provider_auth(
+            "p",
+            &provider,
+            &model,
+            &store,
+            &ctx,
+            Some(&overrides),
+        ));
+        tokio::select! {
+            _ = entered.acquire() => {},
+            result = &mut first => panic!("refresh returned before release: {result:?}"),
+        }
+        tx.send(true).unwrap();
+        let err = tokio::time::timeout(std::time::Duration::from_secs(1), first)
+            .await
+            .unwrap()
+            .unwrap_err();
+        assert!(err.message.contains("aborted"));
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+        release.add_permits(1);
+        // A concurrent resolver waits for persistence, then reuses the rotated token.
+        let result = resolve_provider_auth("p", &provider, &model, &store, &ctx, None)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.auth.api_key.as_deref(), Some("rotated"));
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+        let Some(Credential::OAuth(stored)) = store.read("p") else {
+            panic!("missing credential")
+        };
+        assert_eq!(stored.refresh.as_deref(), Some("rotated-refresh"));
+    }
+
+    #[tokio::test]
+    async fn dropped_auth_future_does_not_discard_rotated_credentials() {
+        let (store, provider, entered, release, count) = rotation_fixture().await;
+        let model = test_model("p");
+        let ctx = EnvAuthContext::new();
+        let mut first = Box::pin(resolve_provider_auth(
+            "p", &provider, &model, &store, &ctx, None,
+        ));
+        tokio::select! {
+            _ = entered.acquire() => {},
+            result = &mut first => panic!("refresh returned before release: {result:?}"),
+        }
+        drop(first);
+        release.add_permits(1);
+        let result = resolve_provider_auth("p", &provider, &model, &store, &ctx, None)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.auth.api_key.as_deref(), Some("rotated"));
+        assert_eq!(count.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn cancellation_while_waiting_for_lock_never_starts_refresh() {
+        let (store, provider, _entered, _release, count) = rotation_fixture().await;
+        let lock = store.provider_lock("p");
+        let guard = lock.lock().await;
+        let (tx, rx) = watch::channel(false);
+        let overrides = AuthResolutionOverrides {
+            cancel: Some(rx),
+            ..Default::default()
+        };
+        let model = test_model("p");
+        let ctx = EnvAuthContext::new();
+        let mut pending = Box::pin(resolve_provider_auth(
+            "p",
+            &provider,
+            &model,
+            &store,
+            &ctx,
+            Some(&overrides),
+        ));
+        assert!(futures::poll!(&mut pending).is_pending());
+        tx.send(true).unwrap();
+        assert!(pending.await.unwrap_err().message.contains("aborted"));
+        drop(guard);
+        tokio::task::yield_now().await;
+        assert_eq!(count.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn precancelled_oauth_never_calls_provider_even_with_valid_token() {
+        let (store, provider, _entered, _release, count) = rotation_fixture().await;
+        store
+            .modify::<_, _, std::convert::Infallible>("p", |current| async {
+                let Some(Credential::OAuth(mut current)) = current else {
+                    panic!("missing token")
+                };
+                current.expires = now_millis() + 600_000;
+                Ok(Some(Credential::OAuth(current)))
+            })
+            .await
+            .unwrap();
+        let (_tx, rx) = watch::channel(true);
+        let overrides = AuthResolutionOverrides {
+            cancel: Some(rx),
+            ..Default::default()
+        };
+        assert!(
+            resolve_provider_auth(
+                "p",
+                &provider,
+                &test_model("p"),
+                &store,
+                &EnvAuthContext::new(),
+                Some(&overrides)
+            )
+            .await
+            .unwrap_err()
+            .message
+            .contains("aborted")
+        );
+        assert_eq!(count.load(Ordering::SeqCst), 0);
+    }
+
+    struct NeverReturnsOAuth;
+    #[async_trait::async_trait]
+    impl OAuthAuth for NeverReturnsOAuth {
+        async fn refresh(
+            &self,
+            _current: &OAuthCredential,
+        ) -> Result<OAuthCredential, ModelsError> {
+            std::future::pending().await
+        }
+        async fn to_auth(&self, _current: &OAuthCredential) -> Result<ModelAuth, ModelsError> {
+            panic!("timed-out refresh cannot derive auth")
+        }
+    }
+
+    #[tokio::test]
+    async fn admitted_refresh_has_independent_timeout_and_releases_lock() {
+        let (store, _, _, _, _) = rotation_fixture().await;
+        let error = tokio::time::timeout(
+            std::time::Duration::from_secs(17),
+            refresh_stored_oauth_credential(
+                &store,
+                "p",
+                Arc::new(NeverReturnsOAuth),
+                |_| true,
+                None,
+            ),
+        )
+        .await
+        .unwrap()
+        .unwrap_err();
+        assert_eq!(error.code, ModelsErrorCode::OAuth);
+        assert!(error.message.contains("15000 ms"));
+        // Failure preserves the credential and releases the lock for logout.
+        assert!(
+            matches!(store.read("p"), Some(Credential::OAuth(current)) if current.access == "old")
+        );
+        tokio::time::timeout(std::time::Duration::from_secs(1), store.delete("p"))
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn dropped_cancel_sender_does_not_cancel_auth_resolution() {
+        let (store, provider, _, release, count) = rotation_fixture().await;
+        let (tx, rx) = watch::channel(false);
+        drop(tx);
+        release.add_permits(1);
+        let overrides = AuthResolutionOverrides {
+            cancel: Some(rx),
+            ..Default::default()
+        };
+        let result = resolve_provider_auth(
+            "p",
+            &provider,
+            &test_model("p"),
+            &store,
+            &EnvAuthContext::new(),
+            Some(&overrides),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(result.auth.api_key.as_deref(), Some("rotated"));
+        assert_eq!(count.load(Ordering::SeqCst), 1);
     }
 
     #[test]
@@ -1114,7 +1460,7 @@ mod tests {
         let refreshes = Arc::new(AtomicUsize::new(0));
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(CountingOAuth {
+            oauth: Some(Arc::new(CountingOAuth {
                 refreshes: refreshes.clone(),
             })),
         };
@@ -1156,7 +1502,7 @@ mod tests {
         let refreshes = Arc::new(AtomicUsize::new(0));
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(CountingOAuth {
+            oauth: Some(Arc::new(CountingOAuth {
                 refreshes: refreshes.clone(),
             })),
         };

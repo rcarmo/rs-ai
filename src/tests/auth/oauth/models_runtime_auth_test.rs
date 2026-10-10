@@ -128,7 +128,7 @@ mod tests {
             .unwrap();
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(FailingRefreshOAuth)),
+            oauth: Some(Arc::new(FailingRefreshOAuth)),
         };
         let ctx = EnvAuthContext::new();
         let err = resolve_provider_auth("p1", &provider, &model(), &store, &ctx, None)
@@ -187,7 +187,7 @@ mod tests {
         let resolve = |store: Arc<InMemoryCredentialStore>, refreshes: Arc<AtomicUsize>| async move {
             let provider = ProviderAuth {
                 api_key: None,
-                oauth: Some(Box::new(CountingRefreshOAuth { refreshes })),
+                oauth: Some(Arc::new(CountingRefreshOAuth { refreshes })),
             };
             let ctx = EnvAuthContext::new();
             resolve_provider_auth("p1", &provider, &model(), &store, &ctx, None)

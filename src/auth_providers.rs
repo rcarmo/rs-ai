@@ -759,6 +759,7 @@ mod tests {
     };
     use crate::types::{Model, ModelCost};
     use crate::utils::now_millis;
+    use std::sync::Arc;
     use tokio::sync::watch;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -822,7 +823,7 @@ mod tests {
 
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(CodexOAuth {
+            oauth: Some(Arc::new(CodexOAuth {
                 token_url: Some(format!("{}/oauth/token", server.uri())),
             })),
         };
@@ -879,7 +880,7 @@ mod tests {
                 "anthropic".into(),
                 ProviderAuth {
                     api_key: None,
-                    oauth: Some(Box::new(AnthropicOAuth {
+                    oauth: Some(Arc::new(AnthropicOAuth {
                         token_url: Some(format!("{base}/oauth/token")),
                     })),
                 },
@@ -888,7 +889,7 @@ mod tests {
                 "openai-codex".into(),
                 ProviderAuth {
                     api_key: None,
-                    oauth: Some(Box::new(CodexOAuth {
+                    oauth: Some(Arc::new(CodexOAuth {
                         token_url: Some(format!("{base}/oauth/token")),
                     })),
                 },
@@ -897,7 +898,7 @@ mod tests {
                 "kimi-coding".into(),
                 ProviderAuth {
                     api_key: None,
-                    oauth: Some(Box::new(KimiCodeOAuth {
+                    oauth: Some(Arc::new(KimiCodeOAuth {
                         oauth_host: Some(base),
                     })),
                 },
@@ -906,7 +907,7 @@ mod tests {
                 "xai".into(),
                 ProviderAuth {
                     api_key: None,
-                    oauth: Some(Box::new(XaiOAuth {
+                    oauth: Some(Arc::new(XaiOAuth {
                         token_url: Some(format!("{base}/token")),
                     })),
                 },
@@ -915,7 +916,7 @@ mod tests {
                 "radius".into(),
                 ProviderAuth {
                     api_key: None,
-                    oauth: Some(Box::new(RadiusOAuth::new(base))),
+                    oauth: Some(Arc::new(RadiusOAuth::new(base))),
                 },
             ),
         }
@@ -1042,7 +1043,7 @@ mod tests {
             )
             .await
             .unwrap_err();
-            assert_eq!(err.code, ModelsErrorCode::OAuth, "case {case:?}: {err}");
+            assert_eq!(err.code, ModelsErrorCode::Auth, "case {case:?}: {err}");
             assert!(err.message.contains("AbortError"), "case {case:?}: {err}");
             assert!(
                 server.received_requests().await.unwrap().is_empty(),
@@ -1056,7 +1057,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn real_oauth_providers_mid_refresh_cancel_without_rotation() {
+    async fn real_oauth_providers_mid_refresh_cancel_persists_rotation() {
         for case in [
             RealOAuthCase::Anthropic,
             RealOAuthCase::Codex,
@@ -1084,20 +1085,59 @@ mod tests {
                 &env_ctx,
                 Some(&overrides),
             );
-            let err = tokio::time::timeout(std::time::Duration::from_millis(500), async {
+            let err = tokio::time::timeout(std::time::Duration::from_secs(2), async {
                 tokio::pin!(fut);
-                tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+                // Poll resolution until the real provider has sent its token request.
+                loop {
+                    tokio::select! {
+                        result = &mut fut => panic!("case {case:?}: settled before cancellation: {result:?}"),
+                        _ = tokio::time::sleep(std::time::Duration::from_millis(5)) => {},
+                    }
+                    if server.received_requests().await.unwrap().iter().any(|request| request.method.as_str() == "POST") {
+                        break;
+                    }
+                }
                 tx.send(true).unwrap();
                 fut.await.unwrap_err()
             })
             .await
             .expect("cancelled OAuth refresh must finish promptly");
-            assert_eq!(err.code, ModelsErrorCode::OAuth, "case {case:?}: {err}");
+            assert_eq!(err.code, ModelsErrorCode::Auth, "case {case:?}: {err}");
             assert!(err.message.contains("AbortError"), "case {case:?}: {err}");
+            // The lock remains owned until the admitted refresh persists.
+            let resolved = tokio::time::timeout(
+                std::time::Duration::from_secs(2),
+                resolve_provider_auth(
+                    &provider_id,
+                    &provider,
+                    &request_model,
+                    &store,
+                    &env_ctx,
+                    None,
+                ),
+            )
+            .await
+            .unwrap()
+            .unwrap();
+            assert!(resolved.is_some(), "case {case:?}");
             match store.read(&provider_id) {
-                Some(Credential::OAuth(o)) => assert_eq!(o.access, "old-access", "case {case:?}"),
+                Some(Credential::OAuth(o)) => {
+                    assert_ne!(o.access, "old-access", "case {case:?}");
+                    assert_eq!(o.refresh.as_deref(), Some("fresh-refresh"), "case {case:?}");
+                }
                 other => panic!("case {case:?}: unexpected {other:?}"),
             }
+            assert_eq!(
+                server
+                    .received_requests()
+                    .await
+                    .unwrap()
+                    .iter()
+                    .filter(|request| request.method.as_str() == "POST")
+                    .count(),
+                1,
+                "case {case:?}: refresh only once"
+            );
         }
     }
 
@@ -1105,7 +1145,7 @@ mod tests {
     async fn openrouter_oauth_honors_pre_cancel_without_mutation() {
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(OpenRouterOAuth { token_url: None })),
+            oauth: Some(Arc::new(OpenRouterOAuth { token_url: None })),
         };
         let store = InMemoryCredentialStore::new();
         seed_expired(&store, "openrouter").await;
@@ -1123,7 +1163,7 @@ mod tests {
         )
         .await
         .unwrap_err();
-        assert_eq!(err.code, ModelsErrorCode::OAuth);
+        assert_eq!(err.code, ModelsErrorCode::Auth);
         assert!(err.message.contains("AbortError"));
     }
 

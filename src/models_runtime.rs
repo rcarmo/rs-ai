@@ -479,31 +479,31 @@ fn builtin_provider_auth(provider_id: &str) -> ProviderAuth {
     match provider_id {
         "openrouter" => ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(crate::auth_providers::OpenRouterOAuth {
+            oauth: Some(Arc::new(crate::auth_providers::OpenRouterOAuth {
                 token_url: None,
             })),
         },
         "kimi-coding" => ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(crate::auth_providers::KimiCodeOAuth {
+            oauth: Some(Arc::new(crate::auth_providers::KimiCodeOAuth {
                 oauth_host: None,
             })),
         },
         "xai" => ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(crate::auth_providers::XaiOAuth::new())),
+            oauth: Some(Arc::new(crate::auth_providers::XaiOAuth::new())),
         },
         "meta" => ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(crate::auth_providers::MetaOAuth::new())),
+            oauth: Some(Arc::new(crate::auth_providers::MetaOAuth::new())),
         },
         "openai-codex" => ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(crate::auth_providers::CodexOAuth::new())),
+            oauth: Some(Arc::new(crate::auth_providers::CodexOAuth::new())),
         },
         "anthropic" => ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(crate::auth_providers::AnthropicOAuth::new())),
+            oauth: Some(Arc::new(crate::auth_providers::AnthropicOAuth::new())),
         },
         _ => ProviderAuth::default(),
     }

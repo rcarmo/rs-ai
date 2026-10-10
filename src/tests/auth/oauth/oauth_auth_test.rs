@@ -15,6 +15,7 @@ mod tests {
     use crate::auth_providers::{AnthropicOAuth, CodexOAuth};
     use crate::types::{Model, ModelCost};
     use crate::utils::now_millis;
+    use std::sync::Arc;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -115,7 +116,7 @@ mod tests {
             .unwrap();
         let provider = ProviderAuth {
             api_key: None,
-            oauth: Some(Box::new(AnthropicOAuth::new())),
+            oauth: Some(Arc::new(AnthropicOAuth::new())),
         };
         let ctx = EnvAuthContext::new();
         let result = resolve_provider_auth(

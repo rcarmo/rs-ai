@@ -37,7 +37,7 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | M | `packages/ai/src/auth/oauth/anthropic.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/auth/oauth/openai-chatgpt.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/auth/oauth/openai-codex.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/auth/resolve.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/auth/resolve.ts` | IMPLEMENTED DELTA; final acceptance pending | `src/auth.rs`: `refresh_stored_oauth_credential` rechecks under lock; admitted rotations persist after cancellation/drop, bounded by 15 s; explicit-only post-refresh validity check. Six added regression tests plus real-provider HTTP cancellation/persistence cases. `ProviderAuth.oauth` uses `Arc` for worker ownership. |
 | M | `packages/ai/src/auth/types.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/env-api-keys.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/models.generated.ts` | PENDING | Not yet accepted |
