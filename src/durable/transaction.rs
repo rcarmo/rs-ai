@@ -331,7 +331,19 @@ impl<'a> EntryTransaction<'a> {
             if self.batch.generic_documents.len() >= 4096 {
                 return Err(DurableError::Rejected("too many staged documents".into()));
             }
-            let current = self.document(&draft.address, DocumentPoint::Current)?;
+            // Borrow only identity metadata; replacement never needs a clone
+            // of the previous whole JSON value.
+            let current = self
+                .batch
+                .generic_documents
+                .iter()
+                .find(|record| record.address == draft.address)
+                .or_else(|| {
+                    self.state.generic_documents.values().find(|record| {
+                        record.address == draft.address && record.retired_seq.is_none()
+                    })
+                })
+                .filter(|record| record.retired_seq.is_none());
             let record = if let Some(current) = current {
                 if current.version != draft.version
                     || current.history != draft.history
@@ -342,9 +354,15 @@ impl<'a> EntryTransaction<'a> {
                     ));
                 }
                 GenericDocumentRecord {
+                    id: current.id,
+                    address: current.address.clone(),
+                    version: current.version,
+                    history: current.history,
+                    fork: current.fork,
                     value: draft.value,
+                    created_seq: current.created_seq,
                     updated_seq: self.batch.seq,
-                    ..current
+                    retired_seq: None,
                 }
             } else {
                 if self

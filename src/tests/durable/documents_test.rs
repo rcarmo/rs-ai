@@ -455,6 +455,65 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn repeated_document_updates_and_fork_copies_profile_workload() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let root = ConversationId::new(1).unwrap();
+        let cutoff = session
+            .transact_entries(move |tx| {
+                let mut value = draft(
+                    root,
+                    "profile-doc",
+                    0,
+                    DocumentHistory::Rewindable,
+                    DocumentFork::Current,
+                );
+                value.value = json!({"text":"x".repeat(4096),"index":0});
+                tx.put_document(value)?;
+                tx.append_entry(root, EntryDraft::new("cut"))
+            })
+            .await
+            .unwrap();
+        for index in 1..=64 {
+            session
+                .transact_entries(move |tx| {
+                    let mut value = draft(
+                        root,
+                        "profile-doc",
+                        index,
+                        DocumentHistory::Rewindable,
+                        DocumentFork::Current,
+                    );
+                    value.value = json!({"text":"x".repeat(4096),"index":index});
+                    tx.put_document(value)
+                })
+                .await
+                .unwrap();
+        }
+        for _ in 0..16 {
+            let child = session
+                .fork_conversation(root, cutoff.id, ConversationOwnership::Ownerless)
+                .await
+                .unwrap();
+            assert_eq!(
+                session
+                    .document(address(child.id, "profile-doc"), DocumentPoint::Current)
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .value["index"],
+                64
+            );
+        }
+        assert_eq!(
+            session.snapshot().await.unwrap().generic_documents.len(),
+            17
+        );
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn document_pages_filter_membership_and_preserve_historical_cursor_direction() {
         let session = DurableSession::open(Box::new(MemoryStorage::new()))
             .await
