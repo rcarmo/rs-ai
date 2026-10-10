@@ -1,30 +1,31 @@
 # rs-ai
 
 [![CI](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/rcarmo/rs-ai/actions/workflows/ci.yml)
-[![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.99.1/sbom.cdx.json)
+[![CycloneDX SBOM](https://img.shields.io/badge/SBOM-CycloneDX-4c1.svg)](https://github.com/rcarmo/rs-ai/releases/download/v1.0.1/sbom.cdx.json)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Rust port of [@earendil-works/pi-ai](https://www.npmjs.com/package/@earendil-works/pi-ai) with model discovery, streaming events, tool calls, OAuth helpers, image generation, and multi-provider request plumbing.
 
-> **Experimental.** This crate is still pre-`v1` and is not published to crates.io. The accepted v0.99.1 runtime audit embeds 1523 text/chat models across 41 providers and 10 text/chat API protocols, 57 image models, and 12 classifier models.
+> **Experimental.** This crate is not published to crates.io. `main` contains the v1.1.0 upgrade in development, with 1,563 chat models, 61 image models and 26 classifiers. The latest accepted release is v1.0.1; the v1.1.0 contract audit and release checks are incomplete.
 
 ## Documentation
 
 - [RELEASE.md](RELEASE.md) records upstream release bounds, catalog counts, runtime evidence, CI/SBOM evidence, and rollback notes.
 - [docs/upstream-parity-gaps.md](docs/upstream-parity-gaps.md) tracks current parity decisions, adapted surfaces, and documented N/A cases.
 - [docs/local-tests-shared.md](docs/local-tests-shared.md) records local gate history and shared test evidence.
-- [docs/v0991-160-test-crosswalk.md](docs/v0991-160-test-crosswalk.md), [docs/manifests/v0991-changed-paths-169.txt](docs/manifests/v0991-changed-paths-169.txt), and [docs/manifests/v0991-test-corpus-basename-160.txt](docs/manifests/v0991-test-corpus-basename-160.txt) capture the accepted v0.99.1 audit inventory. The v0.87.1, v0.87.0, and v0.85.1 crosswalks and manifests remain in `docs/` as historical evidence.
+* [docs/v110-upgrade-crosswalk.md](docs/v110-upgrade-crosswalk.md) and [docs/pi-durable-v110-crosswalk.md](docs/pi-durable-v110-crosswalk.md) track the current upgrade and unfinished contracts.
+* [docs/v101-171-test-crosswalk.md](docs/v101-171-test-crosswalk.md) records the accepted v1.0.1 AI audit. Earlier crosswalks and manifests stay in `docs/` as historical records.
 
 ## Features
 
 - Public `stream` and `complete` entry points over registered provider implementations.
-- Generated text/chat, image, and classifier model registries regenerated from the pinned upstream v0.99.1 release data.
+* Generated chat, image and classifier registries from the pinned official v1.1.0 artifact, with offline metadata and regeneration checks.
 - JSON-compatible message, context, tool, usage, diagnostics, assistant-frame, deferred-tool, and stream-option types for cross-language transcript hand-off.
 - Tool calling with JSON Schema parameters, strict/constrained sampling helpers where providers expose them, partial JSON parsing for streamed arguments, and deferred tool loading metadata.
 - Reasoning/thinking support, including provider thinking levels, signed/redacted thinking replay, raw stop reasons, and provider-specific compatibility flags.
 - OAuth and credential helpers for Anthropic, OpenAI ChatGPT, OpenAI Codex, GitHub Copilot, Kimi Coding, xAI, Meta, and Radius flows.
 - HTTP/SSE transports, OpenAI Codex WebSocket support, retry/proxy helpers, request/response hooks, cancellation-by-drop, and deterministic faux-provider tests.
-- Image generation through the `images` module, plus classifier operations for TypeSafe System One, Cloudflare Workers AI, and llama.cpp.
+* Image generation through `images`, plus classifiers for TypeSafe System One, Cloudflare Workers AI, llama.cpp and OpenAI Decisions. Decisions accepts image inputs and named choice, score and predicate answers.
 - Local release gates for regenerated catalog drift, full-record baseline deltas, manifest/crosswalk integrity, SBOM generation, license policy, RustSec scanning, and reproducible test runs.
 
 ## Installation
@@ -36,14 +37,13 @@ This repository is currently intended for source or Git dependency use rather th
 rs-ai = { git = "https://github.com/rcarmo/rs-ai" }
 ```
 
-For local development, clone the repository and run the standard Rust gates:
+For local development, use the Make targets so Cargo and test scratch stay outside the source tree:
 
 ```bash
-cargo fmt -- --check
-cargo build
-cargo test --all-targets --all-features
-cargo clippy --all-targets --all-features -- -D warnings
+make fmt build test-all clippy
 ```
+
+The vendored resolver uses `/workspace/tmp/rs-ai` locally when writable, otherwise the platform temporary directory plus `/rs-ai`. CI prefers `RUNNER_TEMP`, then the inherited `TMPDIR`, then platform temp. An absolute `PROJECT_TMP_BASE` override selects `<base>/rs-ai`; `PROJECT_TMP_ROOT` must be absolute and end in `rs-ai`. See [AGENTS.md](AGENTS.md#project-scoped-caches-and-temporary-files) for direct-command environment setup and safe cleanup.
 
 The default feature set includes Bedrock support. To avoid the AWS SDK dependencies in a lightweight build, disable default features:
 
@@ -91,6 +91,20 @@ async fn main() {
 
 Set provider API keys in the process environment or pass per-request credentials through `StreamOptions`. Provider-specific headers, environment overlays, OAuth credentials, retry settings, timeout settings, and request/response hooks are also carried through `StreamOptions`.
 
+## v1.1.0 API changes on main
+
+Assistant messages expose optional `duration_ms` (serialized as `durationMs`). Terminal stream timing uses a monotonic clock, preserves supplied durations and leaves replayed messages untouched. Token estimates use 3.5 UTF-16 code units per token and include system tool-definition updates. Sampling resolves model defaults, clamped thinking-level defaults, then request overrides.
+
+Azure models use provider ID `azure` and support both Responses and Completions, with request-scoped endpoint, API version and deployment configuration. ChatGPT OAuth hosts can override the login agent name; Anthropic callback binding falls back to an ephemeral port when port 53692 is occupied.
+
+`auth::ProviderAuth.oauth` takes `Arc<dyn OAuthAuth>`. Stored OAuth refreshes wait cancellably for the provider lock, then persist any admitted token rotation before releasing it -- even after the caller cancels or drops its future. The worker has an independent 15-second timeout. Model-catalog refresh shares that path; offline refresh does not rotate credentials. `InMemoryCredentialStore::clone` shares credentials and locks.
+
+## Durable sessions
+
+The native `durable` module provides a partial R1 implementation with memory/journal storage, writer fencing, submissions, model/tool execution and recovery. Sessions persist a `pi.provider` document containing the provider session UUID; generation intents forward it as `StreamOptions.session_id`. Tasks expose optional `started_at`/`ended_at` timestamps, and completed executions record `durationMs`.
+
+Full pi-durable parity is unfinished. Generic tasks/documents, forks, inbox modes, events, hooks, partial output, deferred polling, compaction, subagents, remote/SQLite storage and cross-process leases need further implementation or verification. The [durable crosswalk](docs/pi-durable-v110-crosswalk.md) lists the source and test scope; [native design](docs/durable-native-design.md) describes the implemented subset.
+
 ## Package/source layout
 
 ```text
@@ -109,6 +123,8 @@ rs-ai/
 │   ├── provider/                # text/chat provider implementations
 │   ├── transports/              # SSE and transport primitives
 │   ├── images/                  # image API, OpenRouter provider, generated image registry
+│   ├── classifiers/             # classifier APIs and generated registry
+│   ├── durable/                 # partial native session/execution/recovery runtime
 │   └── tests/                   # crate-private deterministic parity tests
 ├── docs/                        # parity ledgers and upstream test crosswalks
 ├── scripts/                     # catalog, manifest, release, and SBOM validation gates
@@ -124,7 +140,7 @@ rs-ai/
 | Surface | Status |
 |---|---|
 | OpenAI Chat Completions and compatible APIs | Implemented |
-| OpenAI Responses and Azure OpenAI Responses | Implemented |
+| OpenAI Responses; Azure Responses and Completions | Implemented |
 | OpenAI Codex Responses, SSE and WebSocket paths | Implemented |
 | Anthropic Messages, including managed effort and signed-thinking replay | Implemented |
 | Google Generative AI and Google Vertex REST path | Implemented |
@@ -148,7 +164,7 @@ The generated catalog also includes provider metadata for OpenRouter, xAI, Groq,
 
 ## Compatibility/versioning
 
-The current accepted runtime tracks upstream `@earendil-works/pi-ai` v0.99.1. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
+The latest accepted runtime tracks upstream `@earendil-works/pi-ai` v1.0.1. `main` targets official pi-ai and pi-durable v1.1.0, with final acceptance still open. Contexts, messages, events, tools, usage, assistant frames, catalog records, and provider compatibility fields are intended to serialize in the same shape as upstream where the Rust surface overlaps.
 
 Release audits update `RELEASE.md`, regenerated catalogs, and the per-release manifests in `docs/`. Repository tags should be treated as upstream-aligned checkpoints for the audited Rust port rather than a guarantee that every upstream JavaScript runtime surface exists unchanged in Rust.
 
@@ -158,7 +174,7 @@ This project is a derivative port of [@earendil-works/pi-ai](https://www.npmjs.c
 
 ## Supply-chain metadata
 
-The accepted v0.99.1 runtime is [`32b07c7fb3ab336f6a9709bf5eb14286af73958c`](https://github.com/rcarmo/rs-ai/commit/32b07c7fb3ab336f6a9709bf5eb14286af73958c). GitHub Actions run [`36634981815`](https://github.com/rcarmo/rs-ai/actions/runs/36634981815) produced the accepted CycloneDX 1.5 SBOM artifact `11064098033` with 278 components and 279 dependencies; the archive SHA-256 is `8019316813ac7e0a350688142a4b573ccdecd768756428b191212197082bf354`, and the embedded `sbom.cdx.json` SHA-256 is `986785a7d292e348234f81b88f59145c2e1ec58806e83140714c120d22fe734e`. Durable version-pinned assets use [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.99.1/sbom.cdx.json) and [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/upstream-v0.99.1/sbom.cdx.json.sha256). Regenerate and validate the same data locally with `make sbom && make sbom-check`; the dispatch-only publisher checks the explicit accepted runtime ref before creating or replacing assets.
+The accepted v1.0.1 release publishes [`sbom.cdx.json`](https://github.com/rcarmo/rs-ai/releases/download/v1.0.1/sbom.cdx.json) and [`sbom.cdx.json.sha256`](https://github.com/rcarmo/rs-ai/releases/download/v1.0.1/sbom.cdx.json.sha256). [RELEASE.md](RELEASE.md) records the runtime, hosted checks and asset receipts. The v1.1.0 development checkpoints have no accepted release SBOM yet. Generate and validate one locally with `make sbom && make sbom-check`; the publisher validates the explicit accepted runtime ref.
 
 ## License
 
