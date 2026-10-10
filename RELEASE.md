@@ -18,6 +18,8 @@ The v1.1.0 upgrade is in progress. Local checkpoints are pushed with `[skip ci]`
 - Durable historical text context now accepts `ContextOptions { at }` through `context_with_options`, retaining the existing no-argument `context()`. Inclusive cuts validate visibility and perform no mutation or dispatch. Submission tests cover passive/user/answer/tail cuts; default library tests passed 1,208/0, strict all-feature Clippy passed. Tool/edit/head/fork context contracts are absent from the native subset.
 - Contract review still includes model-refresh publication/storage races, remaining provider cases and broader durable storage/context semantics. The durable R1 vertical retains its documented baseline gaps.
 
+`scripts/validate_v110_manifests.py` verifies the pinned hashes, cardinalities and ordered crosswalk rows for both packages. AI inventories contain 82 changed paths, 197 source paths and 174 test/support paths (167 executable tests); durable inventories contain 59/67/90 paths (49 executable tests). `--require-complete` fails with unresolved rows, separately from structural validation. Inventory/crosswalk fault sentinels fail for both packages. The full library suite passed 1,209/0 and strict all-feature Clippy passed after adding the validator regression. Source/test rows are tracked independently and duplicate references count separately in unresolved totals.
+
 These are development checks. No v1.1.0 release or parity acceptance is recorded.
 
 ## Accepted v1.0.1 audit

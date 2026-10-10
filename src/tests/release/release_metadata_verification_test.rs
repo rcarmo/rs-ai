@@ -9,6 +9,39 @@ mod tests {
     use std::process::Command;
 
     #[test]
+    fn v110_manifest_structure_is_exact_and_acceptance_fails_closed() {
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let run = |args: &[&str]| {
+            Command::new("python3")
+                .arg("-B")
+                .arg("scripts/validate_v110_manifests.py")
+                .args(args)
+                .env("PYTHONDONTWRITEBYTECODE", "1")
+                .current_dir(&root)
+                .output()
+                .unwrap()
+        };
+        let result = run(&[]);
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stdout)
+        );
+        let stdout = String::from_utf8(result.stdout).unwrap();
+        assert!(stdout.contains("ai: changed=82 source=197 corpus=174 tests=167"));
+        assert!(stdout.contains("durable: changed=59 source=67 corpus=90 tests=49"));
+        for package in ["ai", "durable"] {
+            let result = run(&["--package", package, "--require-complete"]);
+            assert!(!result.status.success());
+            assert!(String::from_utf8_lossy(&result.stdout).contains("acceptance incomplete"));
+            for fault in ["inventory", "crosswalk"] {
+                let result = run(&["--package", package, "--fault", fault]);
+                assert!(!result.status.success(), "{package}/{fault} must fail");
+            }
+        }
+    }
+
+    #[test]
     fn release_metadata_verifier_clean_run_succeeds_with_expected_counts() {
         let output = Command::new("python3")
             .env("PYTHONDONTWRITEBYTECODE", "1")
