@@ -214,6 +214,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn repeated_entry_transactions_profile_workload() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        for _ in 0..64 {
+            session
+                .transact_entries(|tx| {
+                    for _ in 0..2 {
+                        let mut draft = EntryDraft::new("note");
+                        draft.data = Some(json!({"text":"x".repeat(256)}));
+                        tx.append_entry(ConversationId::new(1)?, draft)?;
+                    }
+                    Ok(())
+                })
+                .await
+                .unwrap();
+        }
+        let snapshot = session.snapshot().await.unwrap();
+        assert_eq!(snapshot.entries.len(), 128);
+        assert_eq!(snapshot.next_seq, 65);
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn task_scoped_transactions_stamp_entries_and_reject_invalid_scopes() {
         let session = DurableSession::open(Box::new(MemoryStorage::new()))
             .await

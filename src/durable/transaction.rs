@@ -4,6 +4,67 @@ use super::entries::EntryDraft;
 use super::storage::{StorageSnapshot, scan::*};
 use super::types::*;
 
+// Count the same serialized record bytes as staging previously encoded, but
+// retain no throwaway byte buffer. Final storage validation still encodes.
+fn entry_size(entry: &EntryRecord) -> Result<usize, DurableError> {
+    struct Counter(usize);
+    impl std::io::Write for Counter {
+        fn write(&mut self, input: &[u8]) -> std::io::Result<usize> {
+            let next = self.0.saturating_add(input.len());
+            if next > MAX_ENTRY_BYTES {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::FileTooLarge,
+                    "entry exceeds byte limit",
+                ));
+            }
+            self.0 = next;
+            Ok(input.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut counter = Counter(0);
+    serde_json::to_writer(&mut counter, entry).map_err(|error| {
+        if error.io_error_kind() == Some(std::io::ErrorKind::FileTooLarge) {
+            DurableError::TooLarge {
+                field: "entry",
+                size: counter.0.saturating_add(1),
+                limit: MAX_ENTRY_BYTES,
+            }
+        } else {
+            DurableError::Rejected(error.to_string())
+        }
+    })?;
+    Ok(counter.0)
+}
+
+#[cfg(test)]
+mod size_tests {
+    use super::*;
+    #[test]
+    fn staging_counter_matches_encoded_record_with_escaping_and_unicode() {
+        let entry = EntryRecord {
+            id: EntryId::new(1).unwrap(),
+            conversation_id: ConversationId::new(1).unwrap(),
+            kind: "custom".into(),
+            value: serde_json::json!({"data":"quotes\"\n\t\\ unicode 𐐀"}),
+            by_task_id: None,
+            created_seq: CommitSeq::new(1).unwrap(),
+        };
+        assert_eq!(
+            entry_size(&entry).unwrap(),
+            serde_json::to_vec(&entry).unwrap().len()
+        );
+        let mut oversized = entry;
+        oversized.value = serde_json::json!("x".repeat(MAX_ENTRY_BYTES));
+        assert!(matches!(
+            entry_size(&oversized),
+            Err(DurableError::TooLarge { .. })
+        ));
+    }
+}
+
 /// Read committed tables before the first append, then stage passive entries.
 /// The handle borrows the admitted snapshot and cannot outlive its callback.
 /// Callbacks must be short and nonblocking; do not call the owning session.
@@ -124,8 +185,8 @@ impl<'a> EntryTransaction<'a> {
             let mut entry = draft.into_record(conversation, id, self.batch.seq)?;
             entry.by_task_id = self.task_scope.map(|(task, _)| task);
             validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
-            let encoded = super::storage::encode_limited("entry", &entry, MAX_ENTRY_BYTES)?;
-            let bytes = self.staged_bytes.saturating_add(encoded.len());
+            let encoded_bytes = entry_size(&entry)?;
+            let bytes = self.staged_bytes.saturating_add(encoded_bytes);
             if bytes > MAX_COMMIT_BYTES {
                 return Err(DurableError::TooLarge {
                     field: "staged entries",
