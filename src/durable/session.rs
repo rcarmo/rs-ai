@@ -8,18 +8,26 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::{Notify, mpsc, oneshot, watch};
 
+type TransactionCallback = Box<
+    dyn FnOnce(&StorageSnapshot) -> Result<(Option<CommitBatch>, TransactionReply), DurableError>
+        + Send,
+>;
+type TransactionReply = Box<dyn FnOnce(Result<(), DurableError>) + Send>;
+
 enum CommitReply {
     Snapshot(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
     Entry(
         EntryRecord,
         oneshot::Sender<Result<EntryRecord, DurableError>>,
     ),
+    Transaction(TransactionReply),
 }
 impl CommitReply {
     fn is_closed(&self) -> bool {
         match self {
             Self::Snapshot(reply) => reply.is_closed(),
             Self::Entry(_, reply) => reply.is_closed(),
+            Self::Transaction(_) => false, // callback already admitted
         }
     }
     fn adopted(self, state: &StorageSnapshot) {
@@ -30,12 +38,17 @@ impl CommitReply {
             Self::Entry(entry, reply) => {
                 let _ = reply.send(Ok(entry));
             }
+            Self::Transaction(reply) => reply(Ok(())),
         }
     }
     fn send(self, result: Result<StorageSnapshot, DurableError>) -> Result<(), ()> {
         match self {
             Self::Snapshot(reply) => reply.send(result).map_err(|_| ()),
             Self::Entry(entry, reply) => reply.send(result.map(|_| entry)).map_err(|_| ()),
+            Self::Transaction(reply) => {
+                reply(result.map(|_| ()));
+                Ok(())
+            }
         }
     }
 }
@@ -48,6 +61,7 @@ enum StorageCommand {
 
 enum SessionCommand {
     Commit(CommitBatch, CommitReply),
+    Transaction(TransactionCallback, oneshot::Sender<DurableError>),
     Append(
         ConversationId,
         super::entries::EntryDraft,
@@ -278,6 +292,50 @@ impl DurableSession {
             .await
             .map_err(|_| DurableError::Closed)?;
         result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
+    /// Run a synchronous read-then-append callback atomically on the session
+    /// line. Callback error/panic discards staged writes; once admitted, caller
+    /// drop cannot cancel settlement. Do not block or reenter this session.
+    pub async fn transact_entries<T: Send + 'static>(
+        &self,
+        callback: impl for<'a> FnOnce(
+            &mut super::transaction::EntryTransaction<'a>,
+        ) -> Result<T, DurableError>
+        + Send
+        + 'static,
+    ) -> Result<T, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, mut result) = oneshot::channel();
+        let (error_tx, mut errors) = oneshot::channel();
+        let operation: TransactionCallback = Box::new(move |state| {
+            let mut transaction = super::transaction::EntryTransaction::new(state)?;
+            let value = callback(&mut transaction)?;
+            let batch = transaction.finish()?;
+            let complete: TransactionReply = Box::new(move |settled| {
+                let _ = reply.send(settled.map(|_| value));
+            });
+            Ok((batch, complete))
+        });
+        self.tx
+            .send(SessionCommand::Transaction(operation, error_tx))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        tokio::select! {
+            // A failed callback drops its result sender; prefer its actual error
+            // over interpreting that drop as a closed session.
+            biased;
+            error = &mut errors => match error {
+                Ok(error) => Err(error),
+                Err(_) => result.await.unwrap_or(Err(DurableError::Closed)),
+            },
+            result = &mut result => match result {
+                Ok(result) => result,
+                Err(_) => Err(errors.await.unwrap_or(DurableError::Closed)),
+            },
+        }
     }
 
     pub async fn snapshot(&self) -> Result<StorageSnapshot, DurableError> {
@@ -519,6 +577,16 @@ async fn session_worker(
                 // Assign generic identities on the same line as adoption, never
                 // from a caller snapshot that concurrent appends could stale.
                 let command = match command {
+                    SessionCommand::Transaction(callback, errors) => {
+                        if errors.is_closed() { continue; }
+                        if poisoned { let _ = errors.send(DurableError::Poisoned); continue; }
+                        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| callback(&state))) {
+                            Ok(Ok((Some(batch), reply))) => SessionCommand::Commit(batch, CommitReply::Transaction(reply)),
+                            Ok(Ok((None, reply))) => { reply(Ok(())); continue; }
+                            Ok(Err(error)) => { let _ = errors.send(error); continue; }
+                            Err(_) => { let _ = errors.send(DurableError::Rejected("entry transaction callback panicked".into())); continue; }
+                        }
+                    }
                     SessionCommand::Append(conversation, draft, reply) => {
                         if reply.is_closed() { continue; }
                         if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
@@ -539,7 +607,7 @@ async fn session_worker(
                     command => command,
                 };
                 match command {
-                    SessionCommand::Append(_, _, _) => unreachable!("append normalized to commit"),
+                    SessionCommand::Append(_, _, _) | SessionCommand::Transaction(_, _) => unreachable!("write normalized to commit"),
                     SessionCommand::Commit(mut batch, reply) => {
                         if reply.is_closed() { continue; }
                         if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
@@ -681,6 +749,9 @@ async fn session_worker(
 
 fn reject(command: SessionCommand) {
     match command {
+        SessionCommand::Transaction(_, errors) => {
+            let _ = errors.send(DurableError::Closed);
+        }
         SessionCommand::Append(_, _, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }

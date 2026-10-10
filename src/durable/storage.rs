@@ -123,7 +123,7 @@ impl Write for LimitedWriter {
     }
 }
 
-fn encode_limited<T: serde::Serialize>(
+pub(crate) fn encode_limited<T: serde::Serialize>(
     field: &'static str,
     value: &T,
     limit: usize,

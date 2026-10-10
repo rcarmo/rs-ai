@@ -499,6 +499,99 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn entry_transaction_cancellation_before_and_after_storage_admission() {
+        let (storage, admitted, release, commits) = BarrierStorage::new(false);
+        let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());
+        let writer = session.clone();
+        let first = tokio::spawn(async move {
+            writer
+                .transact_entries(|tx| {
+                    tx.append_entry(ConversationId::new(1)?, EntryDraft::new("first"))?;
+                    tx.append_entry(ConversationId::new(1)?, EntryDraft::new("second"))?;
+                    Ok(())
+                })
+                .await
+        });
+        admitted.notified().await;
+        let called = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let callback_called = called.clone();
+        let mut queued = Box::pin(session.transact_entries(move |tx| {
+            callback_called.store(true, std::sync::atomic::Ordering::SeqCst);
+            tx.append_entry(ConversationId::new(1)?, EntryDraft::new("cancelled"))?;
+            Ok(())
+        }));
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(10), &mut queued)
+                .await
+                .is_err()
+        );
+        drop(queued);
+        first.abort();
+        let _ = first.await;
+        release.notify_waiters();
+        let state = session.snapshot().await.unwrap();
+        assert_eq!(state.entries.len(), 2);
+        assert_eq!(state.next_id, 3);
+        assert_eq!(state.next_seq, 2);
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+        assert_eq!(*commits.lock().unwrap(), 1);
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn entry_transaction_uncertainty_poisons_and_close_waits_for_batch_settlement() {
+        for uncertain in [false, true] {
+            let (storage, admitted, release, _) = BarrierStorage::new(uncertain);
+            let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());
+            let mut watch = session.watch().await.unwrap();
+            watch.next().await.unwrap();
+            let writer = session.clone();
+            let transaction = tokio::spawn(async move {
+                writer
+                    .transact_entries(|tx| {
+                        tx.append_entry(ConversationId::new(1)?, EntryDraft::new("one"))?;
+                        tx.append_entry(ConversationId::new(1)?, EntryDraft::new("two"))?;
+                        Ok(42)
+                    })
+                    .await
+            });
+            admitted.notified().await;
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_millis(10), watch.next())
+                    .await
+                    .is_err()
+            );
+            if uncertain {
+                release.notify_waiters();
+                assert!(matches!(
+                    transaction.await.unwrap(),
+                    Err(DurableError::Uncertain(_))
+                ));
+                assert_eq!(
+                    watch.next().await,
+                    Some(DurableEvent::End(WatchEnd::Poisoned))
+                );
+                assert!(matches!(
+                    session.transact_entries(|_| Ok(())).await,
+                    Err(DurableError::Poisoned)
+                ));
+                session.close().await.unwrap();
+            } else {
+                let closer = session.clone();
+                let close = tokio::spawn(async move { closer.close().await });
+                tokio::task::yield_now().await;
+                assert!(!close.is_finished());
+                release.notify_waiters();
+                assert_eq!(transaction.await.unwrap().unwrap(), 42);
+                assert!(
+                    matches!(watch.next().await,Some(DurableEvent::Commit(batch)) if batch.entries.len()==2)
+                );
+                close.await.unwrap().unwrap();
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn generic_append_dropped_before_dequeue_does_not_consume_identity() {
         let (storage, admitted, release, commits) = BarrierStorage::new(false);
         let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());

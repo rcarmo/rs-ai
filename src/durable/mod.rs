@@ -15,6 +15,7 @@ pub mod session;
 pub mod storage;
 pub mod submission;
 pub mod tool;
+pub mod transaction;
 pub mod types;
 
 pub use context::{ContextEdit, ContextHead, ContextMarker, ContextUpdate, ContextView, SelfHead};
@@ -38,4 +39,5 @@ pub use tool::{
     DurableTool, DurableToolCall, DurableToolRegistry, ReplayPolicy, ToolBinding, ToolExecution,
     ToolFailure, ToolIntent, ToolOutput,
 };
+pub use transaction::EntryTransaction;
 pub use types::*;

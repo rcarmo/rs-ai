@@ -95,7 +95,15 @@ Generic records keep their custom kind and store draft fields inside native `Ent
 
 `EntryDefinition<D>` is a process-local kind token: `draft(data)` builds a generic draft with required Serde-serializable data, `matches` tests only kind identity, and `decode` reads typed data or returns None for missing/foreign records. Matching malformed or absent data returns an error; nullable data uses `Option<D>`. Definitions require no registry and persist no schema. Use an untyped EntryDraft for model-only records without data.
 
-Conversation existence/fork visibility, scoped task attribution, generic transactions and queued busy-boundary writes are unimplemented. The native session still accepts explicit conversation IDs without a conversation table; the harness restricts writes to its root.
+Conversation existence/fork visibility, scoped task attribution, full task/document transactions and queued busy-boundary writes are unimplemented. The native session still accepts explicit conversation IDs without a conversation table; the harness restricts writes to its root.
+
+## Atomic entry transactions
+
+`DurableSession::transact_entries` runs a synchronous `FnOnce` on the session mutation line and returns its value after storage settlement. `EntryTransaction` borrows the admitted state, allows detached entry/task/submission table reads before writing, and stages generic appends with assigned IDs. The first append starts the write phase; later table reads reject with `table read after write`. Later appends may refer to earlier staged entries. Read-only callbacks consume no sequence and publish nothing.
+
+Callback errors, caught staging failures, invalid final references and unwinding panics discard the whole batch without consuming IDs. Panics become rejected transactions; aborting-process panic handlers cannot be recovered. Staging enforces JSON shape/entry size and aggregate byte limits, followed by final storage validation. One adopted batch publishes after settlement. Cancellation before dequeue skips the callback; admitted settlement survives caller drop, close waits for it, and uncertainty poisons later operations.
+
+Callbacks must be short, nonblocking and must not reenter their session. The borrowed handle cannot escape; external effects are the caller's responsibility and cannot be rolled back. Async callbacks, pending-operation drains, task/document/conversation writes and transaction task-attribution are absent. This is a native entry-only transaction API, separate from upstream's full Tx contract.
 
 ## Native context views
 

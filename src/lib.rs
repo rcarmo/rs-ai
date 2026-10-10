@@ -203,6 +203,9 @@ mod durable_submission_test;
 #[path = "tests/durable/tool_recovery_test.rs"]
 mod durable_tool_recovery_test;
 #[cfg(test)]
+#[path = "tests/durable/transaction_test.rs"]
+mod durable_transaction_test;
+#[cfg(test)]
 #[path = "tests/core/duration_v110_test.rs"]
 mod duration_v110_test;
 #[cfg(test)]
