@@ -83,6 +83,45 @@ mod tests {
             .expect("payload captured before request failure")
     }
 
+    #[tokio::test]
+    async fn v110_server_error_finish_reason_preserves_raw_reason_and_content() {
+        use wiremock::matchers::method;
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+        let server = MockServer::start().await;
+        Mock::given(method("POST")).respond_with(ResponseTemplate::new(200)
+            .insert_header("content-type", "text/event-stream")
+            .set_body_string(concat!(
+                "data: {\"choices\":[{\"delta\":{\"content\":\"partial\"},\"finish_reason\":null}]}\n\n",
+                "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"error\"}],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":1,\"total_tokens\":3}}\n\n",
+                "data: [DONE]\n\n",
+            ))).mount(&server).await;
+        let mut model = mistral("mistral-small-2603");
+        model.base_url = server.uri();
+        model.api_key = Some("test-key".into());
+        let context = make_context();
+        let options = StreamOptions::default();
+        let events = stream_mistral(&model, &context, &options)
+            .collect::<Vec<_>>()
+            .await;
+        let Some(Event::Error {
+            message: Some(message),
+            ..
+        }) = events.last()
+        else {
+            panic!("expected terminal assistant error: {events:?}")
+        };
+        assert_eq!(message.raw_stop_reason.as_deref(), Some("error"));
+        assert_eq!(message.stop_reason, Some(crate::types::StopReason::Error));
+        assert_eq!(
+            message.error_message.as_deref(),
+            Some("Provider stopped with: error (server error)")
+        );
+        assert!(
+            matches!(message.content.first(), Some(crate::types::ContentBlock::Text { text, .. }) if text == "partial")
+        );
+        assert_eq!(message.usage.as_ref().unwrap().total_tokens, 3);
+    }
+
     fn mistral(id: &str) -> Model {
         get_model("mistral", id).unwrap_or_else(|| panic!("missing catalog model mistral/{id}"))
     }

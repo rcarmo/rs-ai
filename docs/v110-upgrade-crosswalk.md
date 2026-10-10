@@ -20,12 +20,12 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | M | `packages/ai/scripts/openrouter-catalog.ts` | PENDING | Not yet accepted |
 | A | `packages/ai/src/api/azure-openai-config.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/azure-openai-responses.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/api/bedrock-converse-stream.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/api/bedrock-converse-stream.ts` | IMPLEMENTED reasoning/model-family delta; broader audit pending | `src/provider/bedrock.rs` adds Haiku-5 adaptive/xhigh/binding/cache eligibility and flat GPT-OSS versus nested GPT reasoning fields. Added field-builder regressions exercise all GPT-OSS levels, custom maps and nonreasoning guard; two new tests pass. Live Bedrock verification has not run. |
 | A | `packages/ai/src/api/classifier-shared.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/cloudflare-workers-ai-system-one.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/lazy.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/api/llama-cpp-classify.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/api/mistral-conversations.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/api/mistral-conversations.ts` | IMPLEMENTED server-error finish delta | Mistral terminal `error` keeps raw reason and reports `Provider stopped with: error (server error)`. HTTP/SSE regression in `mistral_reasoning_mode_test.rs` verifies terminal error, partial text and billed usage. |
 | M | `packages/ai/src/api/openai-codex-responses.ts` | IMPLEMENTED configurable-header delta; null deletion gap | `src/provider/codex.rs` shares case-insensitive default/model/request header merging for SSE and WebSocket. Request `originator`/`User-Agent` override defaults; bearer/account identity is enforced last. SSE wire and WS handshake regression coverage; 49 focused Codex tests pass. Rust request headers hold strings, so upstream null deletion is not expressible. |
 | M | `packages/ai/src/api/openai-completions.ts` | PENDING | Not yet accepted |
 | A | `packages/ai/src/api/openai-decisions.lazy.ts` | PENDING | Not yet accepted |

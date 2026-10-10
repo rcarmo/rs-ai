@@ -2012,6 +2012,90 @@ mod tests {
         assert!(f.is_none());
     }
 
+    fn bedrock_model(id: &str, reasoning: bool) -> super::Model {
+        let mut model = crate::models_generated::builtin_models()
+            .into_iter()
+            .find(|model| model.api == "bedrock-converse-stream")
+            .unwrap();
+        model.id = id.into();
+        model.name = id.into();
+        model.reasoning = reasoning;
+        model.thinking_level_map = None;
+        model.compat = Default::default();
+        model.max_tokens = 64000;
+        model
+    }
+
+    #[test]
+    fn v110_haiku_5_adaptive_binding_and_native_xhigh() {
+        use super::*;
+        let model = bedrock_model("anthropic.claude-haiku-5-5-v1", true);
+        assert!(bedrock_supports_adaptive_thinking(&model));
+        assert!(bedrock_supports_native_xhigh_effort(&model));
+        assert!(bedrock_supports_thinking_block_binding(&model));
+        assert!(supports_bedrock_prompt_caching(&model));
+        let options = StreamOptions {
+            reasoning: Some(ThinkingLevel::XHigh),
+            ..Default::default()
+        };
+        let (fields, adjusted) = bedrock_thinking_fields(&model, &options).unwrap();
+        assert_eq!(fields["thinking"]["type"], "adaptive");
+        assert_eq!(fields["output_config"]["effort"], "xhigh");
+        assert_eq!(adjusted, None);
+    }
+
+    #[test]
+    fn v110_bedrock_gpt_reasoning_shape_and_effort_mapping() {
+        use super::*;
+        for (level, expected) in [
+            (ThinkingLevel::Minimal, "low"),
+            (ThinkingLevel::Low, "low"),
+            (ThinkingLevel::Medium, "medium"),
+            (ThinkingLevel::High, "high"),
+            (ThinkingLevel::XHigh, "high"),
+            (ThinkingLevel::Max, "high"),
+        ] {
+            let model = bedrock_model("openai.gpt-oss-120b", true);
+            let options = StreamOptions {
+                reasoning: Some(level),
+                ..Default::default()
+            };
+            let (fields, adjusted) = bedrock_thinking_fields(&model, &options).unwrap();
+            assert_eq!(fields, serde_json::json!({"reasoning_effort": expected}));
+            assert_eq!(adjusted, None);
+        }
+        let mut model = bedrock_model("openai.gpt-6", true);
+        model.thinking_level_map = Some(std::collections::HashMap::from([(
+            "high".into(),
+            Some("provider-high".into()),
+        )]));
+        for (level, expected) in [
+            (ThinkingLevel::High, "provider-high"),
+            (ThinkingLevel::Minimal, "low"),
+        ] {
+            let options = StreamOptions {
+                reasoning: Some(level),
+                ..Default::default()
+            };
+            let (fields, _) = bedrock_thinking_fields(&model, &options).unwrap();
+            assert_eq!(
+                fields,
+                serde_json::json!({"reasoning": {"effort": expected}})
+            );
+        }
+        model.reasoning = false;
+        assert!(
+            bedrock_thinking_fields(
+                &model,
+                &StreamOptions {
+                    reasoning: Some(ThinkingLevel::High),
+                    ..Default::default()
+                }
+            )
+            .is_none()
+        );
+    }
+
     #[test]
     fn test_supports_bedrock_prompt_caching() {
         use super::supports_bedrock_prompt_caching;
