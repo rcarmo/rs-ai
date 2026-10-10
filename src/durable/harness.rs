@@ -83,10 +83,29 @@ impl DurableHarness {
         options: PinnedOptions,
         tools: Arc<DurableToolRegistry>,
     ) -> Result<Self, DurableError> {
+        Self::open_with_tools_and_clock(
+            storage,
+            runner,
+            model,
+            options,
+            tools,
+            Arc::new(crate::utils::now_millis),
+        )
+        .await
+    }
+
+    pub async fn open_with_tools_and_clock(
+        storage: Box<dyn DurableStorage>,
+        runner: Arc<dyn DurableModelRunner>,
+        model: PinnedModel,
+        options: PinnedOptions,
+        tools: Arc<DurableToolRegistry>,
+        now: crate::durable::session::LifecycleClock,
+    ) -> Result<Self, DurableError> {
         model.validate()?;
         options.validate()?;
         tools.seal();
-        let session = Arc::new(DurableSession::open(storage).await?);
+        let session = Arc::new(DurableSession::open_with_clock(storage, now).await?);
         if let Err(error) = reconcile_running(&session).await {
             let _ = session.close().await;
             return Err(error);

@@ -56,6 +56,37 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn harness_forwards_injected_lifecycle_clock() {
+        let harness = DurableHarness::open_with_tools_and_clock(
+            Box::new(MemoryStorage::new()),
+            Arc::new(ImmediateRunner {
+                calls: Arc::new(Mutex::new(0)),
+            }),
+            model(),
+            PinnedOptions::default(),
+            Arc::new(DurableToolRegistry::default()),
+            Arc::new(|| 12345),
+        )
+        .await
+        .unwrap();
+        let handle = harness
+            .submit(SubmitRequest {
+                request_id: "clock".into(),
+                content: "hello".into(),
+            })
+            .await
+            .unwrap();
+        harness.wait(handle).await.unwrap();
+        let snapshot = harness.test_snapshot().await.unwrap();
+        assert!(!snapshot.tasks.is_empty());
+        for task in snapshot.tasks.values() {
+            assert_eq!(task.started_at, Some(12345));
+            assert_eq!(task.ended_at, Some(12345));
+        }
+        harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn request_id_reacquires_same_winner_and_conflict_is_rejected() {
         let calls = Arc::new(Mutex::new(0));
         let harness = DurableHarness::open(

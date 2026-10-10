@@ -18,6 +18,9 @@ enum SessionCommand {
     Snapshot(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
 }
 
+/// Wall-clock source used for durable task lifecycle timestamps.
+pub type LifecycleClock = Arc<dyn Fn() -> i64 + Send + Sync>;
+
 pub struct DurableSession {
     tx: mpsc::Sender<SessionCommand>,
     sealed: Arc<AtomicBool>,
@@ -27,6 +30,13 @@ pub struct DurableSession {
 
 impl DurableSession {
     pub async fn open(storage: Box<dyn DurableStorage>) -> Result<Self, DurableError> {
+        Self::open_with_clock(storage, Arc::new(crate::utils::now_millis)).await
+    }
+
+    pub async fn open_with_clock(
+        storage: Box<dyn DurableStorage>,
+        now: LifecycleClock,
+    ) -> Result<Self, DurableError> {
         let claim = storage.claim_writer()?;
         let (storage_tx, mut storage_rx) = mpsc::channel::<StorageCommand>(16);
         let storage_task = tokio::spawn(async move {
@@ -60,6 +70,7 @@ impl DurableSession {
                 &session_storage,
                 &worker_sealed,
                 &worker_close_notify,
+                &now,
             )
             .await;
             let _ = session_result_tx.send(result);
@@ -155,6 +166,7 @@ async fn session_worker(
     storage: &mpsc::Sender<StorageCommand>,
     sealed: &AtomicBool,
     close_notify: &Notify,
+    now: &LifecycleClock,
 ) -> Result<(), DurableError> {
     let mut poisoned = false;
     loop {
@@ -183,7 +195,6 @@ async fn session_worker(
                         if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
                         // Stamp at mutation-line admission, before storage settlement.
                         // Existing starts survive recovery; legacy records may be untimed.
-                        let now = crate::utils::now_millis();
                         for task in &mut batch.tasks {
                             if task.started_at.is_none()
                                 && let Some(previous) = state.tasks.get(&task.id)
@@ -191,10 +202,10 @@ async fn session_worker(
                                 task.started_at = previous.started_at;
                             }
                             if task.state == TaskState::Running && task.started_at.is_none() {
-                                task.started_at = Some(now);
+                                task.started_at = Some(now());
                             }
                             if task.state.terminal() && task.ended_at.is_none() {
-                                task.ended_at = Some(now);
+                                task.ended_at = Some(now());
                             }
                         }
                         let (done, result) = oneshot::channel();

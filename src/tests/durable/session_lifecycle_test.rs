@@ -26,6 +26,101 @@ mod tests {
         }
     }
 
+    fn task_batch(seq: u64, state: TaskState, started_at: Option<i64>) -> CommitBatch {
+        let commit_seq = CommitSeq::new(seq).unwrap();
+        let terminal = state.terminal();
+        CommitBatch {
+            seq: commit_seq,
+            next_id: 2,
+            next_seq: seq + 1,
+            entries: vec![],
+            tasks: vec![TaskRecord {
+                id: TaskId::new(1).unwrap(),
+                conversation_id: ConversationId::new(1).unwrap(),
+                kind: "generation".into(),
+                version: 1,
+                owner_task_id: None,
+                state,
+                input: json!({}),
+                checkpoint: json!({}),
+                outcome: terminal.then(|| json!({"ok":true})),
+                abort_requested: false,
+                started_at,
+                ended_at: None,
+                updated_seq: commit_seq,
+            }],
+            submissions: vec![],
+            documents: vec![],
+        }
+    }
+
+    #[tokio::test]
+    async fn injected_clock_stamps_only_lifecycle_transitions_and_preserves_recovery_start() {
+        let clock = Arc::new(std::sync::atomic::AtomicI64::new(100));
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let now = clock.clone();
+        let count = calls.clone();
+        let session = DurableSession::open_with_clock(
+            Box::new(MemoryStorage::new()),
+            Arc::new(move || {
+                count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                now.load(std::sync::atomic::Ordering::SeqCst)
+            }),
+        )
+        .await
+        .unwrap();
+        session
+            .commit(task_batch(1, TaskState::Pending, None))
+            .await
+            .unwrap();
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+        session
+            .commit(task_batch(2, TaskState::Running, None))
+            .await
+            .unwrap();
+        clock.store(200, std::sync::atomic::Ordering::SeqCst);
+        session
+            .commit(task_batch(3, TaskState::Pending, None))
+            .await
+            .unwrap();
+        session
+            .commit(task_batch(4, TaskState::Running, None))
+            .await
+            .unwrap();
+        let running = session.snapshot().await.unwrap();
+        assert_eq!(
+            running.tasks[&TaskId::new(1).unwrap()].started_at,
+            Some(100)
+        );
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+        session
+            .commit(task_batch(5, TaskState::Succeeded, None))
+            .await
+            .unwrap();
+        let task = session.snapshot().await.unwrap().tasks[&TaskId::new(1).unwrap()].clone();
+        assert_eq!(task.started_at, Some(100));
+        assert_eq!(task.ended_at, Some(200));
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn invalid_clock_timestamp_rejects_without_mutating_state() {
+        let session =
+            DurableSession::open_with_clock(Box::new(MemoryStorage::new()), Arc::new(|| -1))
+                .await
+                .unwrap();
+        let before = session.snapshot().await.unwrap();
+        assert!(matches!(
+            session
+                .commit(task_batch(1, TaskState::Running, None))
+                .await,
+            Err(DurableError::Rejected(_))
+        ));
+        assert_eq!(session.snapshot().await.unwrap(), before);
+        session.close().await.unwrap();
+    }
+
     struct BarrierStorage {
         inner: MemoryStorage,
         inner_claim: WriterClaim,

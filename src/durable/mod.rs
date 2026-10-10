@@ -18,7 +18,7 @@ pub use model::{
     DurableContent, DurableMessage, DurableModelRunner, DurableUsage, ModelIntent, ModelRun,
     ModelTerminal, PinnedModel, PinnedOptions, RegistryModelRunner,
 };
-pub use session::DurableSession;
+pub use session::{DurableSession, LifecycleClock};
 pub use storage::journal::JournalStorage;
 pub use storage::memory::MemoryStorage;
 pub use storage::scan::{ScanCursor, ScanOptions, ScanOrder, ScanPage};

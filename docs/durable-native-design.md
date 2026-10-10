@@ -55,6 +55,10 @@ On reopen, a legal partial final-frame prefix is ignored and truncated after exc
 
 Sizes use encoded JSON bytes. There is no truncation.
 
+## v1.1.0 lifecycle clock
+
+`DurableSession::open_with_clock` accepts a shared `LifecycleClock` (`Arc<dyn Fn() -> i64 + Send + Sync>`); `DurableHarness::open_with_tools_and_clock` forwards it. Existing constructors use wall-clock milliseconds. The clock stamps missing task starts/ends at commit admission, is called only when a timestamp is needed, and preserves existing starts through recovery. Invalid negative values fail storage validation without changing the snapshot. Execution durations continue to use monotonic `Instant`, independent of the host clock.
+
 ## v1.1.0 snapshot scans
 
 `StorageSnapshot::scan_entries`, `scan_tasks` and `scan_submissions` return owned pages filtered by conversation. Entries default to descending ID order; tasks and submissions default to ascending. `ScanCursor` stores the exclusive last ID and direction. Continuations can omit order, but a conflicting order fails. Legacy cursors without direction use the record type's default. Limits must be positive; page values are detached from snapshot JSON.

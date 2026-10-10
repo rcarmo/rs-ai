@@ -33,8 +33,8 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 | M | `packages/durable/src/harness/types.ts` | PENDING | Not yet accepted |
 | M | `packages/durable/src/harness/view.ts` | PENDING | Not yet accepted |
 | M | `packages/durable/src/index.ts` | PENDING | Not yet accepted |
-| M | `packages/durable/src/session/session.ts` | PENDING | Not yet accepted |
-| M | `packages/durable/src/session/transaction.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/session/session.ts` | IMPLEMENTED injectable lifecycle clock delta | `DurableSession::open_with_clock` accepts `LifecycleClock`; the default constructor uses wall-clock milliseconds. `DurableHarness::open_with_tools_and_clock` forwards the host clock. Tests verify exact start/end stamps, no clock calls for unstamped pending work, preserved recovered starts, negative-time rejection and harness propagation. |
+| M | `packages/durable/src/session/transaction.ts` | ADAPTED task lifecycle subset | Session commit admission stamps missing start/end values using the host clock and preserves existing starts; storage rejects changed starts, negative times and nonterminal end times. Native CommitBatch replaces upstream generic transaction/task APIs; those baseline APIs are incomplete. |
 | M | `packages/durable/src/storage/memory.ts` | PENDING | Not yet accepted |
 | A | `packages/durable/src/storage/scan.ts` | ADAPTED snapshot scan subset | `src/durable/storage/scan.rs`: entries default descending, tasks/submissions ascending; cursors preserve order and reject conflicts; legacy cursors use defaults. Detached page values and positive limits are tested. Rust IDs use positive i64 rather than JS safe integers. Native conversations, backend query APIs, range/kind filters and SQLite scans are not implemented. |
 | A | `packages/durable/src/storage/sqlite/cloudflare.ts` | PENDING | Not yet accepted |
