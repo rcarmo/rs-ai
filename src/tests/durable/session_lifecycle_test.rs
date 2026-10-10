@@ -509,6 +509,10 @@ mod tests {
             session.context_view(conversation, None).await,
             Err(DurableError::Poisoned)
         ));
+        assert!(matches!(
+            session.entry(conversation, EntryId::new(1).unwrap()).await,
+            Err(DurableError::Poisoned)
+        ));
         assert!(session.close().await.is_ok());
     }
 
@@ -535,9 +539,16 @@ mod tests {
                 .context_view(ConversationId::new(1).unwrap(), None)
                 .await
         });
+        let lookup = session.clone();
+        let entry_read = tokio::spawn(async move {
+            lookup
+                .entry(ConversationId::new(1).unwrap(), EntryId::new(1).unwrap())
+                .await
+        });
         tokio::task::yield_now().await;
         assert!(!read.is_finished());
         assert!(!view_read.is_finished());
+        assert!(!entry_read.is_finished());
         release.notify_waiters();
         commit.await.unwrap().unwrap();
         let view = view_read.await.unwrap().unwrap();
@@ -548,6 +559,7 @@ mod tests {
             matches!(&view.messages[0].content[0], crate::types::ContentBlock::Text { text, .. } if text == "settled input")
         );
         let page = read.await.unwrap().unwrap();
+        assert_eq!(entry_read.await.unwrap().unwrap().unwrap(), page.items[0]);
         assert_eq!(page.items.len(), 1);
         assert_eq!(page.items[0].value["seq"], 1);
         session.close().await.unwrap();

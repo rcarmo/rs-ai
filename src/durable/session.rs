@@ -54,6 +54,11 @@ enum SessionCommand {
         oneshot::Sender<Result<EntryRecord, DurableError>>,
     ),
     Snapshot(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
+    Entry(
+        ConversationId,
+        EntryId,
+        oneshot::Sender<Result<Option<EntryRecord>, DurableError>>,
+    ),
     Entries(
         ConversationId,
         EntryQuery,
@@ -278,6 +283,24 @@ impl DurableSession {
         let (reply, result) = oneshot::channel();
         self.tx
             .send(SessionCommand::Snapshot(reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
+    /// Read one detached entry visible in the native conversation. Missing or
+    /// foreign IDs return None; admission serializes with committed appends.
+    pub async fn entry(
+        &self,
+        conversation: ConversationId,
+        id: EntryId,
+    ) -> Result<Option<EntryRecord>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Entry(conversation, id, reply))
             .await
             .map_err(|_| DurableError::Closed)?;
         result.await.unwrap_or(Err(DurableError::Closed))
@@ -550,6 +573,11 @@ async fn session_worker(
                     SessionCommand::Snapshot(reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { Ok(state.clone()) });
                     }
+                    SessionCommand::Entry(conversation, id, reply) => {
+                        let result = if poisoned { Err(DurableError::Poisoned) }
+                            else { Ok(state.entries.get(&id).filter(|entry| entry.conversation_id == conversation).cloned()) };
+                        let _ = reply.send(result);
+                    }
                     SessionCommand::Entries(conversation, query, reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_entries(conversation, &query) });
                     }
@@ -608,6 +636,9 @@ fn reject(command: SessionCommand) {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Snapshot(reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Entry(_, _, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Entries(_, _, reply) => {

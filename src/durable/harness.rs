@@ -362,6 +362,12 @@ impl DurableHarness {
             .await
     }
 
+    /// Read one detached root-conversation entry without cloning session state.
+    pub async fn entry(&self, id: EntryId) -> Result<Option<EntryRecord>, DurableError> {
+        self.ensure_open()?;
+        self.inner.session.entry(conversation_id()?, id).await
+    }
+
     pub async fn entries(
         &self,
         query: super::storage::scan::EntryQuery,

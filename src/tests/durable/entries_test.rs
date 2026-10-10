@@ -71,6 +71,23 @@ mod tests {
         assert_eq!(historic.entries.len(), 2);
         assert!(historic.contributions[0].is_empty());
         assert_eq!(text(&historic.messages), ["old"]);
+        let mut lookup = session.entry(conversation, note.id).await.unwrap().unwrap();
+        assert_eq!(lookup, note);
+        lookup.value = json!(null);
+        assert!(
+            session
+                .entry(ConversationId::new(2).unwrap(), note.id)
+                .await
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            session
+                .entry(conversation, EntryId::new(99999).unwrap())
+                .await
+                .unwrap()
+                .is_none()
+        );
         note.value["data"]["nested"][0] = json!("mutated");
         let records = session
             .entries(
@@ -87,6 +104,10 @@ mod tests {
         assert!(state.tasks.is_empty());
         assert!(state.submissions.is_empty());
         session.close().await.unwrap();
+        assert!(matches!(
+            session.entry(conversation, note.id).await,
+            Err(DurableError::Closed)
+        ));
         assert!(matches!(
             session
                 .append_entry(conversation, EntryDraft::new("note"))
@@ -368,6 +389,7 @@ mod tests {
         .await
         .unwrap();
         assert!(seen.lock().unwrap().is_empty());
+        assert_eq!(reopened.entry(entry.id).await.unwrap().unwrap(), entry);
         assert_eq!(
             reopened
                 .context_view(ContextOptions::default())
