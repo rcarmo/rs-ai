@@ -37,15 +37,16 @@ mod tests {
         };
         assert_eq!(classifier.context_window, 65_536);
         assert_eq!(classifier.cost.input, 0.04);
-        assert_eq!(builtin_any_models().len(), 1615);
-        assert_eq!(crate::models_generated::builtin_models().len(), 1536);
+        // Current v1.1.0 catalog; preserve v1.0.0 classifier pricing regressions.
+        assert_eq!(builtin_any_models().len(), 1650);
+        assert_eq!(crate::models_generated::builtin_models().len(), 1563);
         assert_eq!(
             crate::images::models_generated::builtin_image_models().len(),
-            59
+            61
         );
         assert_eq!(
             crate::classifier_models_generated::builtin_classifier_models().len(),
-            20
+            26
         );
     }
 

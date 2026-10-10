@@ -8,6 +8,7 @@ use crate::types::{Context, Model, StreamOptions};
 use tokio_stream::Stream;
 
 pub mod anthropic;
+pub(crate) mod azure_config;
 #[cfg(feature = "bedrock")]
 pub mod bedrock;
 pub mod codex;

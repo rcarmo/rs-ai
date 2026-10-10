@@ -18,6 +18,38 @@ mod tests {
 
     const DEVICE_ID: &str = "e61bbe28-07ef-466d-8e5d-a344f94ab305";
 
+    #[test]
+    fn configurable_agent_identity_is_url_encoded_and_default_remains_pi() {
+        let pkce = crate::oauth::generate_pkce();
+        let custom = crate::openai_chatgpt_oauth::build_authorize_url_with_agent_name(
+            DEVICE_ID,
+            &pkce,
+            "state",
+            "nonce",
+            "Rui's Rust agent & tools",
+        )
+        .unwrap();
+        let url = url::Url::parse(&custom).unwrap();
+        assert_eq!(
+            url.query_pairs()
+                .find(|(key, _)| key == "agent_name_hint")
+                .unwrap()
+                .1,
+            "Rui's Rust agent & tools"
+        );
+        let default =
+            url::Url::parse(&build_authorize_url(DEVICE_ID, &pkce, "state", "nonce").unwrap())
+                .unwrap();
+        assert_eq!(
+            default
+                .query_pairs()
+                .find(|(key, _)| key == "agent_name_hint")
+                .unwrap()
+                .1,
+            "Pi"
+        );
+    }
+
     struct Host {
         calls: Arc<AtomicUsize>,
         url: Arc<tokio::sync::Mutex<Option<String>>>,

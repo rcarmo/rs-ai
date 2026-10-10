@@ -39,6 +39,7 @@ mod tests {
             context_window: 128000,
             max_tokens: 4096,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -54,6 +55,7 @@ mod tests {
             role: Role::Assistant,
             content,
             timestamp: 2,
+            duration_ms: None,
             api: Some("openai-completions".into()),
             provider: Some("repro-provider".into()),
             model: Some("repro-model".into()),
@@ -88,6 +90,7 @@ mod tests {
                 text_signature: None,
             }],
             timestamp: ts,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,

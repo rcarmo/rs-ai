@@ -67,6 +67,8 @@ static ENV_MAP: LazyLock<HashMap<&'static str, &'static [&'static str]>> = LazyL
         ),
         ("qwen-token-plan-cn", &["QWEN_TOKEN_PLAN_CN_API_KEY"][..]),
         ("openai", &["OPENAI_API_KEY"][..]),
+        ("azure", &["AZURE_OPENAI_API_KEY"][..]),
+        // Compatibility for caller-owned pre-v1.1.0 model records.
         ("azure-openai-responses", &["AZURE_OPENAI_API_KEY"][..]),
         ("nvidia", &["NVIDIA_API_KEY"][..]),
         ("deepseek", &["DEEPSEEK_API_KEY"][..]),
@@ -176,6 +178,25 @@ pub fn resolve_api_key(model: &Model, opts: &StreamOptions) -> Option<String> {
         if !trimmed.is_empty() {
             return Some(trimmed.to_string());
         }
+    }
+    if let Some(env) = &opts.env
+        && let Some(vars) = api_key_env_vars(&model.provider)
+    {
+        for var in vars {
+            if let Some(value) = env.get(*var) {
+                if !value.is_empty() {
+                    return Some(value.clone());
+                }
+                // An explicit empty overlay shadows that process variable.
+                continue;
+            }
+            if let Ok(value) = std::env::var(var)
+                && !value.is_empty()
+            {
+                return Some(value);
+            }
+        }
+        return None;
     }
     get_env_api_key(&model.provider)
 }

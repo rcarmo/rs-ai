@@ -34,6 +34,7 @@ pub mod api {
     pub const TYPESAFE_SYSTEM_ONE: &str = "typesafe-system-one";
     pub const CLOUDFLARE_WORKERS_AI_SYSTEM_ONE: &str = "cloudflare-workers-ai-system-one";
     pub const LLAMA_CPP_CLASSIFY: &str = "llama-cpp-classify";
+    pub const OPENAI_DECISIONS: &str = "openai-decisions";
 }
 
 /// Provider identifier.
@@ -48,7 +49,8 @@ pub mod provider_id {
     pub const ANTHROPIC: &str = "anthropic";
     pub const GOOGLE: &str = "google";
     pub const GOOGLE_VERTEX: &str = "google-vertex";
-    pub const AZURE_OPENAI: &str = "azure-openai-responses";
+    pub const AZURE_OPENAI: &str = "azure";
+    pub const AZURE: &str = "azure";
     pub const OPENAI_CODEX: &str = "openai-codex";
     pub const RADIUS: &str = "radius";
     pub const META: &str = "meta";
@@ -361,6 +363,9 @@ pub struct Message {
     pub content: Vec<ContentBlock>,
     #[serde(default)]
     pub timestamp: i64,
+    /// Monotonic elapsed time for an assistant response or executed tool attempt.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration_ms: Option<u64>,
 
     // Assistant-only fields
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -470,10 +475,22 @@ pub struct ClassifierBoolCriteria {
     pub false_value: String,
 }
 
+/// Image input to classifiers, using the upstream image-content wire shape.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClassifierImage {
+    #[serde(rename = "type")]
+    pub model_type: String,
+    pub data: String,
+    pub mime_type: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClassifierContext {
     pub state: serde_json::Map<String, serde_json::Value>,
     pub questions: indexmap::IndexMap<String, ClassifierQuestion>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub images: Vec<ClassifierImage>,
 }
 
 /// A typed classification answer.
@@ -609,6 +626,9 @@ pub struct Model {
     /// Default arbitrary sampling parameters merged into OpenAI-compatible request bodies.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sampling_params: Option<serde_json::Value>,
+    /// Sampling defaults keyed by the effective (clamped) thinking level, including `off`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sampling_params_by_thinking_level: Option<HashMap<String, serde_json::Value>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub headers: Option<HashMap<String, String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -760,6 +780,12 @@ pub struct StreamOptions {
     pub session_id: Option<String>,
     pub previous_response_id: Option<String>,
     pub headers: Option<HashMap<String, String>>,
+    /// Per-request provider environment values, overriding inherited process values.
+    pub env: Option<HashMap<String, String>>,
+    pub azure_base_url: Option<String>,
+    pub azure_resource_name: Option<String>,
+    pub azure_api_version: Option<String>,
+    pub azure_deployment_name: Option<String>,
     pub max_retry_delay_ms: Option<u64>,
     pub retry_config: Option<crate::retry::RetryConfig>,
     pub metadata: Option<HashMap<String, serde_json::Value>>,
@@ -844,6 +870,7 @@ pub fn user_message(text: &str) -> Message {
             text_signature: None,
         }],
         timestamp: 0,
+        duration_ms: None,
         api: None,
         provider: None,
         model: None,

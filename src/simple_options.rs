@@ -142,20 +142,71 @@ impl std::fmt::Display for ModelThinkingLevel {
     }
 }
 
+/// Map request reasoning to the model-level enum used for clamping and defaults.
+pub fn thinking_level_to_model_level(level: &ThinkingLevel) -> ModelThinkingLevel {
+    match level {
+        ThinkingLevel::Minimal => ModelThinkingLevel::Minimal,
+        ThinkingLevel::Low => ModelThinkingLevel::Low,
+        ThinkingLevel::Medium => ModelThinkingLevel::Medium,
+        ThinkingLevel::High => ModelThinkingLevel::High,
+        ThinkingLevel::XHigh => ModelThinkingLevel::XHigh,
+        ThinkingLevel::Max => ModelThinkingLevel::Max,
+    }
+}
+
+/// Resolve sampling defaults in model → effective thinking level → request order.
+/// Values are JSON objects on the upstream surface; absent defaults stay absent.
+pub fn resolve_sampling_params(
+    model: &Model,
+    level: &ModelThinkingLevel,
+    request: Option<&serde_json::Value>,
+) -> Option<serde_json::Value> {
+    let effective = clamp_thinking_level(model, level);
+    let by_level = model
+        .sampling_params_by_thinking_level
+        .as_ref()
+        .and_then(|params| params.get(&effective.to_string()));
+    if model.sampling_params.is_none() && by_level.is_none() && request.is_none() {
+        return None;
+    }
+    let mut merged = serde_json::Map::new();
+    for value in [model.sampling_params.as_ref(), by_level, request]
+        .into_iter()
+        .flatten()
+    {
+        if let Some(object) = value.as_object() {
+            merged.extend(
+                object
+                    .iter()
+                    .map(|(key, value)| (key.clone(), value.clone())),
+            );
+        }
+    }
+    Some(serde_json::Value::Object(merged))
+}
+
 /// Calculate cost from model pricing and usage.
 pub fn calculate_cost(model: &Model, usage: &crate::types::Usage) -> crate::types::CostBreakdown {
+    calculate_cost_from_rates(&model.cost, usage)
+}
+
+/// Shared request-wide pricing for chat and classifier usage.
+pub fn calculate_cost_from_rates(
+    rates: &crate::types::ModelCost,
+    usage: &crate::types::Usage,
+) -> crate::types::CostBreakdown {
     let m = 1_000_000.0;
     // Select the highest matching request-wide pricing tier (v0.80.6). The tier
     // whose `input_tokens_above` threshold is the largest one still exceeded by
     // total input usage applies to the entire request.
     let input_tokens =
         u64::from(usage.input) + u64::from(usage.cache_read) + u64::from(usage.cache_write);
-    let mut rate_input = model.cost.input;
-    let mut rate_output = model.cost.output;
-    let mut rate_cache_read = model.cost.cache_read;
-    let mut rate_cache_write = model.cost.cache_write;
+    let mut rate_input = rates.input;
+    let mut rate_output = rates.output;
+    let mut rate_cache_read = rates.cache_read;
+    let mut rate_cache_write = rates.cache_write;
     let mut matched_threshold: i128 = -1;
-    for tier in &model.cost.tiers {
+    for tier in &rates.tiers {
         if input_tokens > tier.input_tokens_above
             && i128::from(tier.input_tokens_above) > matched_threshold
         {

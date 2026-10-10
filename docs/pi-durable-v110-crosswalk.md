@@ -1,0 +1,240 @@
+# pi-durable v1.1.0 upgrade crosswalk
+
+Status: **IN PROGRESS — NOT ACCEPTED OR PUBLISHED**.
+
+Official range: `a7229ddc21810d6245105978033b7df645ecc2f7..abe508e1b89912adde45528136c3221eb69acdd7` (v1.0.1 → v1.1.0). Pinned npm package: `@earendil-works/pi-durable@1.1.0`, SHA-256 `a0f95b4a418e8bc219e9cbde06baedada940c62c47068829208e4fff278c07be`. Registry SHA-512 integrity matches; provenance signature/transparency has not been independently verified. npm metadata omits gitHead; the official tag supplies the source bound.
+
+Inventory: 59 changed paths; 67 source paths; 49 executable test paths; 90 total test/fixture/support paths. Exact Git shortstat: 59 files changed, 5481 insertions(+), 361 deletions(-).
+
+The previous R1 vertical is a partial baseline. Updating only package metadata or the changed upstream paths does not close existing documents/tasks/forks/events/extensions/output/deferred/compaction/subagents/environment/SQLite/cross-process gaps. The 4,747-line v1.1.0 specification and full source/test corpus form the acceptance scope.
+
+## Changed-path disposition
+
+| Status | Official path | Disposition | Native evidence |
+|---|---|---|---|
+| M | `packages/durable/CHANGELOG.md` | PENDING | Not yet accepted |
+| M | `packages/durable/README.md` | PENDING | Not yet accepted |
+| M | `packages/durable/docs/spec.md` | PENDING | Not yet accepted |
+| M | `packages/durable/package.json` | PENDING | Not yet accepted |
+| A | `packages/durable/src/env/decode.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/env/index.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/src/env/line-scan.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/src/env/node-watch.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/env/node.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/agent.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/compaction.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/context.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/generation.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/harness.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/output.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/src/harness/provider.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/scheduler.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/tool.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/types.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/view.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/index.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/session/session.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/session/transaction.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/storage/memory.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/src/storage/scan.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/src/storage/sqlite/cloudflare.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/storage/sqlite/storage.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/src/testing/env-conformance.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/testing/index.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/testing/runner.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/testing/storage-conformance.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/testing/types.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/tools/bash.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/tools/image.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/tools/index.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/tools/read.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/truncate.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/types.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/test/env-line-scan.test.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/test/env-node-conformance.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/env-node.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-compaction.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-context.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-conversations.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-generation-recovery.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-generation.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-inbox.test.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/test/harness-output-skip.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-output.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-registry.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-tasks-recovery.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-tasks.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-tools.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/harness-view.test.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/test/provider-session-cache-e2e.test.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/test/sqlite-cloudflare.test.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/test/system-order-cache-e2e.test.ts` | PENDING | Not yet accepted |
+| A | `packages/durable/test/tools-read-differential.test.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/test/tools.test.ts` | PENDING | Not yet accepted |
+
+## Full test and support corpus
+
+| Official path | Disposition | Native evidence |
+|---|---|---|
+| `packages/durable/test/chat-support.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/chord-guide.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/env-line-scan.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/env-node-conformance.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/env-node-spill.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/env-node.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/env-truncate.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/examples/00-conversation.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/01-documents.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/02-forks.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/03-owned-conversations.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/04-chord-state.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/05-watches.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/06-harness.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/07-configuration.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/08-harness-conversations.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/09-context.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/10-registry-reload.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/11-extension-state.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/12-tasks.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/13-recovery.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/14-chat.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/15-system-prompt.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/16-real-model.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/17-coding-tools.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/18-print.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/19-json.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/20-inbox.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/21-late-join.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/22-subagent-foreground.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/23-subagent-background.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/24-child-tasks.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/25-compaction.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/26-coding-agent.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/27-plan-mode.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/28-reviewer.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/29-sandbox-per-conversation.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/30-tool-override.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/examples/31-reload-and-restart.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/fixtures/delete-buffer.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/fixtures/utf8-byte-length-without-buffer.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/harness-compaction.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-context.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-conversations.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-events.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-generation-recovery.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-generation.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-inbox.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-inspect.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-lifecycle.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-live-deltas.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-output-skip.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-output.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-ownership.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-prompt.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-registry.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-structured.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-submissions.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-support.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/harness-task-graph.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-tasks-recovery.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-tasks.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-tools-recovery.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-tools.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/harness-view.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/jsonl-storage.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/memory-storage.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/provider-session-cache-e2e.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/session-checkpoints-migrations.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/session-definitions.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/session-documents.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/session-forks.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/session-states.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/session-support.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/session-tables.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/session-watches.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/spec-usage.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/sqlite-cloudflare.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/sqlite-facade.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/sqlite-migrations.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/sqlite-storage.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/storage-memory.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/storage-runtime-boundary.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/storage.bench.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/system-order-cache-e2e.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/task-support.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/tool-output-bench.ts` | INVENTORIED SUPPORT | Not yet accepted |
+| `packages/durable/test/tools-read-differential.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/tools.test.ts` | PENDING | Not yet accepted |
+| `packages/durable/test/types.test.ts` | PENDING | Not yet accepted |
+
+## Full source corpus
+
+| Official path | Disposition | Native evidence |
+|---|---|---|
+| `packages/durable/src/documents.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/entries.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/env/decode.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/env/index.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/env/line-scan.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/env/node-watch.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/env/node.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/errors.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/agent.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/compaction.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/context.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/define.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/events.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/generation.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/harness.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/inbox.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/json.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/live.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/output.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/prompt.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/provider.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/registry.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/scheduler.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/submissions.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/task-graph.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/tool.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/types.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/usage.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/util.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/harness/view.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/ids.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/index.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/session/forks.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/session/observation.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/session/session.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/session/transaction.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/jsonl/index.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/jsonl/node.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/jsonl/storage.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/memory.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/scan.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/sqlite/cloudflare.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/sqlite/database.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/sqlite/index.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/sqlite/migrations.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/sqlite/node.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/storage/sqlite/storage.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tasks.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/testing/assertions.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/testing/env-conformance.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/testing/index.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/testing/runner.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/testing/storage-benchmark.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/testing/storage-conformance.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/testing/types.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/bash.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/edit-diff.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/edit.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/env.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/file-mutation-queue.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/image.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/index.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/path-utils.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/read.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/tools/write.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/truncate.ts` | PENDING | No full-contract acceptance yet |
+| `packages/durable/src/types.ts` | PENDING | No full-contract acceptance yet |

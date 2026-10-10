@@ -43,9 +43,12 @@ pub(crate) fn build_initial_batch(
     let task_id = TaskId::new(next(snapshot.next_id)?)?;
     let submission_id = SubmissionId::new(next(task_id.get())?)?;
     let next_id = next(submission_id.get())?;
+    let (session_id, provider_document) =
+        super::provider::prepare_provider_session(snapshot, conversation_id, seq)?;
     let intent = ModelIntent {
         model,
         options,
+        provider_session_id: Some(session_id),
         offered_tools: vec![],
         system_prompt: None,
         context: vec![],
@@ -74,7 +77,7 @@ pub(crate) fn build_initial_batch(
     };
     let intent_value =
         serde_json::to_value(&intent).map_err(|error| DurableError::Rejected(error.to_string()))?;
-    let batch = CommitBatch {
+    let mut batch = CommitBatch {
         seq,
         next_id,
         next_seq: next(seq.get())?,
@@ -97,6 +100,8 @@ pub(crate) fn build_initial_batch(
             checkpoint: json!({"phase":"pending","logical_attempt":1}),
             outcome: None,
             abort_requested: false,
+            started_at: None,
+            ended_at: None,
             updated_seq: seq,
         }],
         submissions: vec![SubmissionRecord {
@@ -133,6 +138,9 @@ pub(crate) fn build_initial_batch(
             },
         ],
     };
+    if let Some(document) = provider_document {
+        batch.documents.push(document);
+    }
     Ok((
         batch,
         SubmissionHandle {

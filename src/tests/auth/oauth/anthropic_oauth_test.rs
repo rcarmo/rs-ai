@@ -222,6 +222,46 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn busy_preferred_port_uses_ephemeral_redirect_for_authorization_and_exchange() {
+        let _guard = CALLBACK_PORT_LOCK.lock().await;
+        let occupied = tokio::net::TcpListener::bind("127.0.0.1:53692")
+            .await
+            .unwrap();
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/oauth/token"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
+                "access_token":"access","refresh_token":"refresh","expires_in":3600
+            })))
+            .expect(1)
+            .mount(&server)
+            .await;
+        let urls = Arc::new(Mutex::new(Vec::new()));
+        let host = Host {
+            method: Some(AnthropicLoginMethod::Browser),
+            input: "manual-code".into(),
+            urls: urls.clone(),
+        };
+        let oauth = AnthropicOAuth {
+            token_url: Some(format!("{}/oauth/token", server.uri())),
+        };
+        oauth.login(&host, None).await.unwrap();
+        let url = url::Url::parse(&urls.lock().unwrap()[0]).unwrap();
+        let redirect = url
+            .query_pairs()
+            .find(|(key, _)| key == "redirect_uri")
+            .unwrap()
+            .1
+            .into_owned();
+        let callback = url::Url::parse(&redirect).unwrap();
+        assert_eq!(callback.host_str(), Some("localhost"));
+        assert_ne!(callback.port(), Some(53692));
+        assert!(callback.port().is_some_and(|port| port != 0));
+        assert_eq!(last_request_body(&server).await["redirect_uri"], redirect);
+        drop(occupied);
+    }
+
+    #[tokio::test]
     async fn selection_cancel_and_state_mismatch_make_no_token_request() {
         let server = MockServer::start().await;
         let oauth = AnthropicOAuth {

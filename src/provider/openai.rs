@@ -36,6 +36,9 @@ pub fn stream_openai<'a>(
 
     // Build request payload
     let mut payload = build_payload(model, context, opts, &compat);
+    if model.provider == crate::types::provider_id::AZURE {
+        payload["model"] = json!(super::azure_config::deployment(model, opts));
+    }
     if let Some(ref hook) = opts.on_payload {
         match hook(payload.clone(), model) {
             Ok(next) => payload = next,
@@ -115,6 +118,7 @@ pub fn stream_openai<'a>(
             role: Role::Assistant,
             content: Vec::new(),
             timestamp: crate::utils::now_millis(),
+            duration_ms: None,
             api: Some(model.api.clone()),
             provider: Some(model.provider.clone()),
             model: Some(model.id.clone()),
@@ -585,11 +589,16 @@ pub(crate) fn build_openai_request_parts(
     compat: &crate::compat::OpenAICompletionsCompat,
     api_key: &str,
 ) -> Result<(String, HeaderMap), String> {
-    let base = crate::utils::resolve_cloudflare_base_url(
-        model.base_url.trim_end_matches('/'),
-        &model.provider,
-    )?;
-    let url = format!("{}/chat/completions", base.trim_end_matches('/'));
+    let url = if model.provider == crate::types::provider_id::AZURE {
+        let (base, _) = super::azure_config::config(model, opts)?;
+        super::azure_config::endpoint(&base, "chat/completions", None)?
+    } else {
+        let base = crate::utils::resolve_cloudflare_base_url(
+            model.base_url.trim_end_matches('/'),
+            &model.provider,
+        )?;
+        format!("{}/chat/completions", base.trim_end_matches('/'))
+    };
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     headers.insert("Accept", HeaderValue::from_static("text/event-stream"));
@@ -1033,15 +1042,19 @@ pub(crate) fn build_payload(
     let cache_long = retention == CacheRetention::Long;
     if let Some(ref session_id) = opts.session_id {
         let on_openai = model.base_url.contains("api.openai.com");
-        if (on_openai && !cache_none)
-            || (cache_long && compat.supports_long_cache_retention != Some(false))
+        if model.provider != crate::types::provider_id::AZURE
+            && ((on_openai && !cache_none)
+                || (cache_long && compat.supports_long_cache_retention != Some(false)))
         {
             payload["prompt_cache_key"] = json!(
                 crate::prompt_cache::clamp_openai_prompt_cache_key(session_id)
             );
         }
     }
-    if cache_long && compat.supports_long_cache_retention != Some(false) {
+    if model.provider != crate::types::provider_id::AZURE
+        && cache_long
+        && compat.supports_long_cache_retention != Some(false)
+    {
         payload["prompt_cache_retention"] = json!("24h");
     }
 
@@ -1066,19 +1079,16 @@ pub(crate) fn build_payload(
         payload["temperature"] = json!(temp);
     }
 
-    // Model-level sampling params are the base; per-request sampling params merge over them.
-    let mut sampling_params = model.sampling_params.clone();
-    if let Some(request_params) = opts.sampling_params.clone() {
-        sampling_params = Some(match (sampling_params, request_params) {
-            (Some(Value::Object(mut base)), Value::Object(request)) => {
-                for (key, value) in request {
-                    base.insert(key, value);
-                }
-                Value::Object(base)
-            }
-            (_, other) => other,
-        });
-    }
+    let sampling_level = opts
+        .reasoning
+        .as_ref()
+        .map(crate::simple_options::thinking_level_to_model_level)
+        .unwrap_or(crate::types::ModelThinkingLevel::Off);
+    let sampling_params = crate::simple_options::resolve_sampling_params(
+        model,
+        &sampling_level,
+        opts.sampling_params.as_ref(),
+    );
 
     // Reasoning/thinking (clamped to the model's supported levels).
     // Mirrors upstream buildParams thinking-format handling, gated on model.reasoning.

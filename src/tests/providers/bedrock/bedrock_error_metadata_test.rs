@@ -16,6 +16,7 @@ mod tests {
                 text_signature: None,
             }],
             timestamp: 0,
+            duration_ms: None,
             api: Some("bedrock-converse-stream".into()),
             provider: Some("amazon-bedrock".into()),
             model: Some("anthropic.claude".into()),

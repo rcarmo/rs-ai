@@ -146,6 +146,9 @@ pub struct DurableMessage {
 pub struct ModelIntent {
     pub model: PinnedModel,
     pub options: PinnedOptions,
+    /// Persisted conversation identity forwarded for provider session/cache affinity.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_session_id: Option<String>,
     #[serde(default)]
     pub offered_tools: Vec<Tool>,
     pub system_prompt: Option<String>,
@@ -160,6 +163,9 @@ impl ModelIntent {
     pub fn validate(&self) -> Result<(), DurableError> {
         self.model.validate()?;
         self.options.validate()?;
+        if let Some(session_id) = &self.provider_session_id {
+            super::provider::validate_session_id(session_id)?;
+        }
         if self.context_cutoff == 0 || self.logical_attempt == 0 {
             return Err(DurableError::Rejected(
                 "invalid model intent counters".into(),
@@ -409,9 +415,10 @@ impl DurableModelRunner for RegistryModelRunner {
             let Ok(model) = intent.model.dispatch_model(&current) else {
                 return ModelRun::one(malformed("model_identity_changed"));
             };
-            let Ok(options) = intent.options.stream_options() else {
+            let Ok(mut options) = intent.options.stream_options() else {
                 return ModelRun::one(malformed("invalid_options"));
             };
+            options.session_id = intent.provider_session_id.clone();
             let context = Context {
                 system_prompt: intent.system_prompt.clone(),
                 tools: intent.offered_tools.clone(),

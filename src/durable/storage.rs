@@ -231,6 +231,14 @@ pub fn validate_batch(
         if task.version == 0 {
             return Err(DurableError::Rejected("task version must be >= 1".into()));
         }
+        if task.started_at.is_some_and(|time| time < 0)
+            || task.ended_at.is_some_and(|time| time < 0)
+            || (!task.state.terminal() && task.ended_at.is_some())
+        {
+            return Err(DurableError::Rejected(
+                "invalid task lifecycle timestamps".into(),
+            ));
+        }
         validate_json_shape("task input", &task.input, MAX_TASK_FIELD_BYTES)?;
         validate_json_shape("task checkpoint", &task.checkpoint, MAX_TASK_FIELD_BYTES)?;
         let _ = encode_limited("task input", &task.input, MAX_TASK_FIELD_BYTES)?;
@@ -250,6 +258,9 @@ pub fn validate_batch(
                 return Err(DurableError::Rejected(
                     "invalid task state transition".into(),
                 ));
+            }
+            if previous.started_at.is_some() && previous.started_at != task.started_at {
+                return Err(DurableError::Rejected("task startedAt is immutable".into()));
             }
             if previous.conversation_id != task.conversation_id
                 || previous.kind != task.kind
@@ -422,6 +433,7 @@ pub fn validate_batch(
                 "pi.checkpoint",
                 "pi.agent",
                 "pi.inbox",
+                "pi.provider",
             ],
         )?;
         if document.version == 0 {

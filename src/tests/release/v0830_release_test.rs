@@ -20,7 +20,7 @@ mod tests {
             .iter()
             .map(|m| (m.provider.as_str(), m.id.as_str()))
             .collect::<HashSet<_>>();
-        assert_eq!(pairs.len(), 1536);
+        assert_eq!(pairs.len(), 1563);
         let provider_count = all
             .iter()
             .map(|m| m.provider.as_str())
@@ -94,7 +94,7 @@ mod tests {
             .into_iter()
             .map(|m| m.id)
             .collect::<HashSet<_>>();
-        assert_eq!(ids.len(), 59);
+        assert_eq!(ids.len(), 61);
         for id in [
             "krea/krea-2-large",
             "krea/krea-2-medium",
@@ -153,6 +153,7 @@ mod tests {
             role: Role::Assistant,
             content: Vec::new(),
             timestamp: 0,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,
@@ -227,6 +228,7 @@ mod tests {
                     text_signature: None,
                 }],
                 timestamp: 0,
+                duration_ms: None,
                 api: None,
                 provider: None,
                 model: None,
@@ -555,6 +557,7 @@ mod tests {
             context_window: 10,
             max_tokens: 5,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: Default::default(),
@@ -602,6 +605,7 @@ mod tests {
             role: Role::Assistant,
             content: Vec::new(),
             timestamp: 0,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,
@@ -708,6 +712,7 @@ mod tests {
             context_window: 128000,
             max_tokens: 4096,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: Some("k".into()),
             compat: Default::default(),

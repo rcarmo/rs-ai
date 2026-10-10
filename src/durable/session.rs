@@ -178,9 +178,25 @@ async fn session_worker(
                     return storage_close(storage).await;
                 }
                 match command {
-                    SessionCommand::Commit(batch, reply) => {
+                    SessionCommand::Commit(mut batch, reply) => {
                         if reply.is_closed() { continue; }
                         if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
+                        // Stamp at mutation-line admission, before storage settlement.
+                        // Existing starts survive recovery; legacy records may be untimed.
+                        let now = crate::utils::now_millis();
+                        for task in &mut batch.tasks {
+                            if task.started_at.is_none()
+                                && let Some(previous) = state.tasks.get(&task.id)
+                            {
+                                task.started_at = previous.started_at;
+                            }
+                            if task.state == TaskState::Running && task.started_at.is_none() {
+                                task.started_at = Some(now);
+                            }
+                            if task.state.terminal() && task.ended_at.is_none() {
+                                task.ended_at = Some(now);
+                            }
+                        }
                         let (done, result) = oneshot::channel();
                         if storage.send(StorageCommand::Commit(batch, done)).await.is_err() {
                             poisoned = true;

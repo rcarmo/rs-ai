@@ -151,12 +151,13 @@ mod tests {
             .iter()
             .map(|m| m.api.as_str())
             .collect::<std::collections::HashSet<_>>();
-        assert_eq!(models.len(), 1536);
+        // Current v1.1.0 catalog; retain the v0.87.0 feature regressions above.
+        assert_eq!(models.len(), 1563);
         assert_eq!(providers.len(), 41);
         assert_eq!(apis.len(), 10);
         assert_eq!(
             crate::images::models_generated::builtin_image_models().len(),
-            59
+            61
         );
     }
 

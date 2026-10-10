@@ -132,6 +132,7 @@ pub fn stream_mistral<'a>(
             role: Role::Assistant,
             content: Vec::new(),
             timestamp: crate::utils::now_millis(),
+            duration_ms: None,
             api: Some(model.api.clone()),
             provider: Some(model.provider.clone()),
             model: Some(model.id.clone()),
@@ -759,7 +760,10 @@ fn map_mistral_finish_reason(reason: &str) -> (StopReason, Option<String>) {
         "stop" => (StopReason::Stop, None),
         "length" | "model_length" => (StopReason::Length, None),
         "tool_calls" => (StopReason::ToolUse, None),
-        "error" => (StopReason::Error, None),
+        "error" => (
+            StopReason::Error,
+            Some("Provider stopped with: error (server error)".into()),
+        ),
         _ => (StopReason::Stop, None),
     }
 }

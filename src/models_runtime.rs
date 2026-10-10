@@ -95,7 +95,8 @@ pub struct RuntimeProvider {
     pub name: String,
     pub auth: Arc<ProviderAuth>,
     baseline: Vec<Model>,
-    dynamic: Mutex<Vec<Model>>,
+    dynamic: Mutex<Option<Vec<Model>>>,
+    replace_baseline: bool,
     refresh: Option<RefreshFn>,
     generation: AtomicU64,
 }
@@ -112,7 +113,8 @@ impl RuntimeProvider {
             name: name.into(),
             auth: Arc::new(auth),
             baseline: models,
-            dynamic: Mutex::new(Vec::new()),
+            dynamic: Mutex::new(None),
+            replace_baseline: false,
             refresh: None,
             generation: AtomicU64::new(0),
         }
@@ -134,15 +136,22 @@ impl RuntimeProvider {
             name: name.into(),
             auth: Arc::new(auth),
             baseline,
-            dynamic: Mutex::new(Vec::new()),
+            dynamic: Mutex::new(None),
+            replace_baseline: false,
             refresh: Some(Arc::new(move |ctx| Box::pin(refresh(ctx)))),
             generation: AtomicU64::new(0),
         }
     }
 
     pub fn get_models(&self) -> Vec<Model> {
+        let dynamic = self.dynamic.lock().unwrap();
+        if self.replace_baseline
+            && let Some(models) = dynamic.as_ref()
+        {
+            return models.clone();
+        }
         let mut merged = self.baseline.clone();
-        for model in self.dynamic.lock().unwrap().iter().cloned() {
+        for model in dynamic.as_ref().into_iter().flatten().cloned() {
             if let Some(pos) = merged.iter().position(|m| m.id == model.id) {
                 merged[pos] = model;
             } else {
@@ -153,15 +162,14 @@ impl RuntimeProvider {
     }
 
     pub fn get_model(&self, id: &str) -> Option<Model> {
-        if let Some(model) = self
-            .dynamic
-            .lock()
-            .unwrap()
-            .iter()
-            .rev()
-            .find(|model| model.id == id)
-        {
-            return Some(model.clone());
+        let dynamic = self.dynamic.lock().unwrap();
+        if let Some(models) = dynamic.as_ref() {
+            if let Some(model) = models.iter().rev().find(|model| model.id == id) {
+                return Some(model.clone());
+            }
+            if self.replace_baseline {
+                return None;
+            }
         }
         self.baseline.iter().find(|model| model.id == id).cloned()
     }
@@ -173,7 +181,7 @@ impl RuntimeProvider {
         baseline: Vec<Model>,
     ) -> Self {
         let gateway = crate::oauth::normalize_radius_gateway_url(&gateway.into());
-        Self::dynamic(id, name, ProviderAuth::default(), baseline, move |ctx| {
+        let mut provider = Self::dynamic(id, name, ProviderAuth::default(), baseline, move |ctx| {
             let gateway = gateway.clone();
             async move {
                 let api_key = match ctx.credential.as_ref() {
@@ -235,7 +243,9 @@ impl RuntimeProvider {
                 let radius = crate::auth_providers::RadiusOAuth::new(&gateway);
                 Ok(radius.modify_models(&[], "radius", &creds))
             }
-        })
+        });
+        provider.replace_baseline = true;
+        provider
     }
 
     async fn refresh_models(&self, ctx: RefreshModelsContext) -> Result<(), ModelsError> {
@@ -252,7 +262,7 @@ impl RuntimeProvider {
                 .into_iter()
                 .filter(|m| m.provider == self.id)
                 .collect::<Vec<_>>();
-            *self.dynamic.lock().unwrap() = filtered;
+            *self.dynamic.lock().unwrap() = Some(filtered);
         }
         if !ctx.allow_network || *ctx.cancel.borrow() {
             return Ok(());
@@ -276,7 +286,7 @@ impl RuntimeProvider {
         if *ctx.cancel.borrow() || self.generation.load(Ordering::SeqCst) != generation {
             return Ok(());
         }
-        *self.dynamic.lock().unwrap() = refreshed.clone();
+        *self.dynamic.lock().unwrap() = Some(refreshed.clone());
         ctx.store
             .write(ModelsStoreEntry {
                 models: refreshed,

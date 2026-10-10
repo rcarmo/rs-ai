@@ -672,6 +672,19 @@ async fn execute(inner: Arc<Inner>, task_id: TaskId) -> Result<(), DurableError>
             return Ok(());
         }
         let seq = CommitSeq::new(snapshot.next_seq)?;
+        let (session_id, provider_document) =
+            super::provider::prepare_provider_session(&snapshot, task.conversation_id, seq)?;
+        if intent
+            .provider_session_id
+            .as_ref()
+            .is_some_and(|existing| existing != &session_id)
+        {
+            return Err(DurableError::Corrupt(
+                "model intent provider identity conflict".into(),
+            ));
+        }
+        intent.provider_session_id = Some(session_id);
+        intent.validate()?;
         let mut running = task;
         running.input = serde_json::to_value(&intent)
             .map_err(|error| DurableError::Rejected(error.to_string()))?;
@@ -687,7 +700,7 @@ async fn execute(inner: Arc<Inner>, task_id: TaskId) -> Result<(), DurableError>
                 entries: vec![],
                 tasks: vec![running],
                 submissions: vec![],
-                documents: vec![],
+                documents: provider_document.into_iter().collect(),
             })
             .await?;
         bump_revision(&inner);
@@ -1030,6 +1043,8 @@ async fn settle_tool_round(
                 checkpoint: json!({"phase":"pending"}),
                 outcome: None,
                 abort_requested: false,
+                started_at: None,
+                ended_at: None,
                 updated_seq: seq,
             });
             prepared.push((child_id, intent, false));
@@ -1143,7 +1158,10 @@ async fn settle_tool_round(
             arguments: intent.execution_arguments.clone(),
             cancel,
         };
+        let started = std::time::Instant::now();
         let terminal = registered.executor.execute(execution).await;
+        let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let mut duration_ms = Some(elapsed_ms);
         inner.tool_cancels.lock().await.remove(&child_id);
         let (value, is_error, usage, outcome) = match terminal {
             Ok(output) => match output.validate() {
@@ -1192,6 +1210,9 @@ async fn settle_tool_round(
             } else {
                 TaskState::Succeeded
             };
+            if child.abort_requested {
+                duration_ms = None;
+            }
             child.checkpoint = json!({"phase":"terminal"});
             child.outcome = Some(outcome);
             child.updated_seq = seq;
@@ -1199,7 +1220,7 @@ async fn settle_tool_round(
                 id: entry_id,
                 conversation_id: parent.conversation_id,
                 kind: "tool_result".into(),
-                value: json!({"tool_call_id":intent.provider_call_id,"tool_name":intent.name,"result":value,"is_error":is_error,"usage":usage}),
+                value: tool_result_value(&intent, &value, is_error, &usage, duration_ms),
                 by_task_id: Some(child_id),
                 created_seq: seq,
             };
@@ -1217,7 +1238,7 @@ async fn settle_tool_round(
                 .await?;
             bump_revision(inner);
         }
-        tool_messages.push(tool_result_message(&intent, value, is_error));
+        tool_messages.push(tool_result_message(&intent, value, is_error, duration_ms));
     }
 
     let current = inner.session.snapshot().await?;
@@ -1264,12 +1285,12 @@ async fn settle_tool_round(
 async fn admit_successor_provider(
     inner: &Arc<Inner>,
     parent: TaskRecord,
-    intent: ModelIntent,
+    mut intent: ModelIntent,
 ) -> Result<(), DurableError> {
     let current = {
         let _operation = inner.operations.lock().await;
         let snapshot = inner.session.snapshot().await?;
-        let current =
+        let mut current =
             snapshot.tasks.get(&parent.id).cloned().ok_or_else(|| {
                 DurableError::Corrupt("successor parent missing at admission".into())
             })?;
@@ -1279,6 +1300,38 @@ async fn admit_successor_provider(
         }
         if inner.sealed.load(Ordering::Acquire) {
             return Ok(());
+        }
+        let seq = CommitSeq::new(snapshot.next_seq)?;
+        let (session_id, provider_document) =
+            super::provider::prepare_provider_session(&snapshot, current.conversation_id, seq)?;
+        if intent
+            .provider_session_id
+            .as_ref()
+            .is_some_and(|existing| existing != &session_id)
+        {
+            return Err(DurableError::Corrupt(
+                "successor provider identity conflict".into(),
+            ));
+        }
+        if intent.provider_session_id.is_none() || provider_document.is_some() {
+            intent.provider_session_id = Some(session_id);
+            intent.validate()?;
+            current.input = serde_json::to_value(&intent)
+                .map_err(|error| DurableError::Rejected(error.to_string()))?;
+            current.updated_seq = seq;
+            inner
+                .session
+                .commit(CommitBatch {
+                    seq,
+                    next_id: snapshot.next_id,
+                    next_seq: increment(seq.get())?,
+                    entries: vec![],
+                    tasks: vec![current.clone()],
+                    submissions: vec![],
+                    documents: provider_document.into_iter().collect(),
+                })
+                .await?;
+            bump_revision(inner);
         }
         current
     };
@@ -1349,7 +1402,8 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
                 .get("is_error")
                 .and_then(Value::as_bool)
                 .unwrap_or(true);
-            messages.push(tool_result_message(&intent, value, is_error));
+            let duration_ms = entry.value.get("durationMs").and_then(Value::as_u64);
+            messages.push(tool_result_message(&intent, value, is_error, duration_ms));
             continue;
         }
         let current_parent = inner
@@ -1408,6 +1462,7 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
         }
         match replay_registration(&inner.tools, &intent) {
             Ok(registered) => {
+                let started = std::time::Instant::now();
                 let result = registered
                     .executor
                     .execute(crate::durable::tool::ToolExecution {
@@ -1417,7 +1472,16 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
                         cancel,
                     })
                     .await;
+                let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
                 inner.tool_cancels.lock().await.remove(&child.id);
+                let aborted = inner
+                    .session
+                    .snapshot()
+                    .await?
+                    .tasks
+                    .get(&child.id)
+                    .is_some_and(|task| task.abort_requested);
+                let duration_ms = (!aborted).then_some(elapsed_ms);
                 let (value, is_error, usage) = match result {
                     Ok(output) => match output.validate() {
                         Ok(()) => (output.value, false, output.usage),
@@ -1435,16 +1499,25 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
                     value.clone(),
                     is_error,
                     usage,
+                    duration_ms,
                 )
                 .await?;
-                messages.push(tool_result_message(&intent, value, is_error));
+                messages.push(tool_result_message(&intent, value, is_error, duration_ms));
             }
             Err(reason) => {
                 inner.tool_cancels.lock().await.remove(&child.id);
                 let value = crate::durable::tool::interrupted_payload(&intent, reason);
-                settle_recovered_child(&inner, child, intent.clone(), value.clone(), true, None)
-                    .await?;
-                messages.push(tool_result_message(&intent, value, true));
+                settle_recovered_child(
+                    &inner,
+                    child,
+                    intent.clone(),
+                    value.clone(),
+                    true,
+                    None,
+                    None,
+                )
+                .await?;
+                messages.push(tool_result_message(&intent, value, true, None));
             }
         }
     }
@@ -1540,6 +1613,7 @@ async fn settle_recovered_child(
     value: Value,
     is_error: bool,
     usage: Option<crate::durable::model::DurableUsage>,
+    duration_ms: Option<u64>,
 ) -> Result<(), DurableError> {
     let _operation = inner.operations.lock().await;
     let snapshot = inner.session.snapshot().await?;
@@ -1562,7 +1636,7 @@ async fn settle_recovered_child(
         id: entry_id,
         conversation_id: child.conversation_id,
         kind: "tool_result".into(),
-        value: json!({"tool_call_id":intent.provider_call_id,"tool_name":intent.name,"result":value,"is_error":is_error,"usage":usage}),
+        value: tool_result_value(&intent, &value, is_error, &usage, duration_ms),
         by_task_id: Some(child.id),
         created_seq: seq,
     };
@@ -1965,9 +2039,29 @@ fn terminal_usage_value(terminal: Option<&ModelTerminal>) -> Result<Option<Value
     }
 }
 
-fn tool_result_message(intent: &ToolIntent, value: Value, is_error: bool) -> crate::types::Message {
+fn tool_result_value(
+    intent: &ToolIntent,
+    value: &Value,
+    is_error: bool,
+    usage: &Option<crate::durable::model::DurableUsage>,
+    duration_ms: Option<u64>,
+) -> Value {
+    let mut result = json!({"tool_call_id":intent.provider_call_id,"tool_name":intent.name,"result":value,"is_error":is_error,"usage":usage});
+    if let Some(duration) = duration_ms {
+        result["durationMs"] = json!(duration);
+    }
+    result
+}
+
+fn tool_result_message(
+    intent: &ToolIntent,
+    value: Value,
+    is_error: bool,
+    duration_ms: Option<u64>,
+) -> crate::types::Message {
     let mut message = crate::types::user_message("");
     message.role = crate::types::Role::ToolResult;
+    message.duration_ms = duration_ms;
     message.content = vec![crate::types::ContentBlock::Text {
         text: value.to_string(),
         text_signature: None,

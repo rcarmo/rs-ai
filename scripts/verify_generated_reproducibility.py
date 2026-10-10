@@ -10,8 +10,8 @@ import verify_release_model_metadata as meta
 from workspace_paths import temporary_directory
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PACKAGE = "@earendil-works/pi-ai@1.0.1"
-DEFAULT_PACKAGE_SHA256 = "8a9e69b1309cf93405d87729fa123c8b11c6be7c646b16f34f8bef7b792f9138"
+DEFAULT_PACKAGE = "@earendil-works/pi-ai@1.1.0"
+DEFAULT_PACKAGE_SHA256 = "6caab33cec57480ed02c57fe37428a030a77cc2a0662814b435a5cf8932ad829"
 
 
 def generate_once(label: str, work: Path, extracted: Path) -> Path:

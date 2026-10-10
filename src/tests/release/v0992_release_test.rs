@@ -34,7 +34,8 @@ mod tests {
                 "missing signed classifier model {provider}/{id}"
             );
         }
-        assert_eq!(builtin_any_models().len(), 1615);
+        // Current v1.1.0 total; preserve the historical field-shape checks.
+        assert_eq!(builtin_any_models().len(), 1650);
     }
 
     #[tokio::test]

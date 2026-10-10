@@ -336,6 +336,13 @@ async fn classify_system_one(
             false,
         );
     }
+    if !context.images.is_empty() {
+        return error_result(
+            model,
+            format!("{} does not support image input", transport.label()),
+            false,
+        );
+    }
     let api_key = options
         .api_key
         .clone()

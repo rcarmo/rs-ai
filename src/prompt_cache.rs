@@ -46,6 +46,7 @@ mod tests {
             context_window: ctx_window,
             max_tokens: 4096,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: Default::default(),

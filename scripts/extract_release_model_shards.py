@@ -49,6 +49,8 @@ ALLOWED_BATCH_ALIASES = {
     "openrouter/anthropic/claude-fable-5:batch",
     "openrouter/anthropic/claude-fable-5.1:batch",
     "openrouter/anthropic/claude-haiku-4.5:batch",
+    # Official v1.1.0 artifact 6caab33cec57480e…; no dynamic alias discovery.
+    "openrouter/anthropic/claude-haiku-5.5:batch",
     "openrouter/anthropic/claude-opus-4.1:batch",
     "openrouter/anthropic/claude-opus-4.5:batch",
     "openrouter/anthropic/claude-opus-4.6:batch",

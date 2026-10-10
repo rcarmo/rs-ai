@@ -25,6 +25,7 @@ mod tests {
             context_window: 4096,
             max_tokens: 512,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: Some("local-key".into()),
             compat: ModelCompat::default(),
@@ -83,11 +84,142 @@ mod tests {
         let body: serde_json::Value = serde_json::from_slice(&requests[0].body).unwrap();
         assert_eq!(body["model"], "http-model");
         assert_eq!(body["options"]["maxTokens"], 333);
+        let provider_session = documents["pi.provider"]["sessionId"].as_str().unwrap();
+        assert_eq!(provider_session.len(), 36);
+        assert_eq!(body["options"]["sessionId"], provider_session);
         assert_eq!(
             body["context"]["messages"][0]["content"][0]["text"],
             "hello"
         );
         harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn provider_session_is_stable_across_turns_and_journal_reopen() {
+        struct Capture(std::sync::Mutex<Vec<String>>);
+        impl DurableModelRunner for Capture {
+            fn run<'a>(&'a self, intent: ModelIntent) -> crate::durable::model::ModelFuture<'a> {
+                self.0
+                    .lock()
+                    .unwrap()
+                    .push(intent.provider_session_id.expect("persisted identity"));
+                Box::pin(async {
+                    ModelRun::one(ModelTerminal::Answer {
+                        content: vec![],
+                        text: "ok".into(),
+                        usage: DurableUsage::default(),
+                        response_id: None,
+                        stop_reason: "stop".into(),
+                    })
+                })
+            }
+        }
+        let root = std::env::temp_dir().join(format!("rs-ai-provider-{}", crate::utils::uuidv7()));
+        std::fs::create_dir(&root).unwrap();
+        let path = root.join("journal");
+        let runner = Arc::new(Capture(std::sync::Mutex::new(Vec::new())));
+        let runtime = model(
+            "http://unused".into(),
+            "provider-session",
+            "durable-provider-session",
+        );
+        let harness = DurableHarness::open(
+            Box::new(JournalStorage::open(&path).unwrap()),
+            runner.clone(),
+            PinnedModel::from_model(&runtime).unwrap(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        for number in 0..2 {
+            let handle = harness
+                .submit(SubmitRequest {
+                    request_id: format!("turn-{number}"),
+                    content: "hello".into(),
+                })
+                .await
+                .unwrap();
+            harness.wait(handle).await.unwrap();
+        }
+        let identity = harness.inspect_documents().await.unwrap()["pi.provider"]["sessionId"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        harness.close().await.unwrap();
+        {
+            let storage = JournalStorage::open(&path).unwrap();
+            let claim = storage.claim_writer().unwrap();
+            let snapshot = storage.load(&claim).await.unwrap();
+            assert!(
+                snapshot
+                    .tasks
+                    .values()
+                    .all(|task| task.started_at.is_some() && task.ended_at.is_some())
+            );
+            for task in snapshot.tasks.values() {
+                let mut value = serde_json::to_value(task).unwrap();
+                assert!(value.get("startedAt").is_some());
+                assert!(value.get("endedAt").is_some());
+                value.as_object_mut().unwrap().remove("startedAt");
+                value.as_object_mut().unwrap().remove("endedAt");
+                let legacy: TaskRecord = serde_json::from_value(value).unwrap();
+                assert!(legacy.started_at.is_none() && legacy.ended_at.is_none());
+            }
+            storage.close(&claim).await.unwrap();
+        }
+        let reopened = DurableHarness::open(
+            Box::new(JournalStorage::open(&path).unwrap()),
+            runner.clone(),
+            PinnedModel::from_model(&runtime).unwrap(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            runner.0.lock().unwrap().len(),
+            2,
+            "open performs no provider effect"
+        );
+        assert_eq!(
+            reopened.inspect_documents().await.unwrap()["pi.provider"]["sessionId"],
+            identity
+        );
+        let handle = reopened
+            .submit(SubmitRequest {
+                request_id: "after-reopen".into(),
+                content: "hello".into(),
+            })
+            .await
+            .unwrap();
+        reopened.wait(handle).await.unwrap();
+        reopened.close().await.unwrap();
+        assert_eq!(
+            &*runner.0.lock().unwrap(),
+            &[identity.clone(), identity.clone(), identity.clone()]
+        );
+        let other = DurableHarness::open(
+            Box::new(MemoryStorage::new()),
+            runner.clone(),
+            PinnedModel::from_model(&runtime).unwrap(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        let handle = other
+            .submit(SubmitRequest {
+                request_id: "other".into(),
+                content: "hello".into(),
+            })
+            .await
+            .unwrap();
+        other.wait(handle).await.unwrap();
+        let other_identity = other.inspect_documents().await.unwrap()["pi.provider"]["sessionId"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        assert_ne!(identity, other_identity);
+        other.close().await.unwrap();
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[tokio::test]

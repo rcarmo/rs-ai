@@ -109,6 +109,9 @@ mod azure_openai_base_url_test;
 #[cfg(test)]
 #[path = "tests/providers/openai/azure_openai_responses_reasoning_replay_test.rs"]
 mod azure_openai_responses_reasoning_replay_test;
+#[cfg(test)]
+#[path = "tests/providers/openai/azure_v110_test.rs"]
+mod azure_v110_test;
 #[cfg(all(test, feature = "bedrock"))]
 #[path = "tests/providers/bedrock/bedrock_coalesce_test.rs"]
 mod bedrock_coalesce_test;
@@ -187,6 +190,9 @@ mod durable_submission_test;
 #[cfg(test)]
 #[path = "tests/durable/tool_recovery_test.rs"]
 mod durable_tool_recovery_test;
+#[cfg(test)]
+#[path = "tests/core/duration_v110_test.rs"]
+mod duration_v110_test;
 #[cfg(test)]
 #[path = "tests/providers/other/edge_case_test.rs"]
 mod edge_case_test;
@@ -326,6 +332,9 @@ mod openai_completions_tool_choice_test;
 #[path = "tests/providers/openai/openai_completions_tool_result_images_test.rs"]
 mod openai_completions_tool_result_images_test;
 #[cfg(test)]
+#[path = "tests/providers/other/openai_decisions_v110_test.rs"]
+mod openai_decisions_v110_test;
+#[cfg(test)]
 #[path = "tests/providers/openai/openai_encrypted_reasoning_test.rs"]
 mod openai_encrypted_reasoning_test;
 #[cfg(test)]
@@ -406,6 +415,9 @@ mod responses_message_id_test;
 #[cfg(test)]
 #[path = "tests/transports/retry_classify_test.rs"]
 mod retry_classify_test;
+#[cfg(test)]
+#[path = "tests/providers/openai/sampling_v110_test.rs"]
+mod sampling_v110_test;
 #[cfg(test)]
 #[path = "tests/core/simple_options_test.rs"]
 mod simple_options_test;

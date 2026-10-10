@@ -38,6 +38,7 @@ fn model(api: &str, provider: &str, compat: ModelCompat) -> Model {
         context_window: 100_000,
         max_tokens: 1_000,
         sampling_params: None,
+        sampling_params_by_thinking_level: None,
         headers: None,
         api_key: Some("test-key".into()),
         compat,

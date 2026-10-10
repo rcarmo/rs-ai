@@ -526,6 +526,13 @@ pub async fn classify_llama_cpp(
     context: &ClassifierContext,
     options: &ClassifierOptions,
 ) -> ClassifierResult {
+    if !context.images.is_empty() {
+        return error_result(
+            model,
+            "llama.cpp classification does not support image input",
+            false,
+        );
+    }
     if model.api != crate::types::api::LLAMA_CPP_CLASSIFY {
         return error_result(
             model,

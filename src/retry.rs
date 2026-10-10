@@ -169,6 +169,7 @@ mod tests {
             role: crate::types::Role::Assistant,
             content: Vec::new(),
             timestamp: 0,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,
@@ -467,19 +468,53 @@ pub async fn do_with_retry(
 }
 
 pub async fn do_with_retry_cancel(
+    client: &reqwest::Client,
+    request_builder: reqwest::RequestBuilder,
+    config: &RetryConfig,
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+) -> Result<reqwest::Response, RetryError> {
+    do_with_retry_cancel_statuses(client, request_builder, config, cancel, &[]).await
+}
+
+/// Provider-specific statuses may fail immediately despite the usual retry set.
+pub async fn do_with_retry_cancel_statuses(
     _client: &reqwest::Client,
     request_builder: reqwest::RequestBuilder,
     config: &RetryConfig,
     mut cancel: Option<tokio::sync::watch::Receiver<bool>>,
+    no_retry_statuses: &[u16],
 ) -> Result<reqwest::Response, RetryError> {
     let mut attempt = 0u32;
     let mut builder = request_builder;
 
     loop {
         let retry_builder = builder.try_clone();
-        match builder.send().await {
+        let response = if let Some(receiver) = cancel.as_mut() {
+            if *receiver.borrow() {
+                return Err(boxed_error("Request aborted"));
+            }
+            tokio::select! {
+                response = builder.send() => response,
+                _ = async {
+                    loop {
+                        if *receiver.borrow_and_update() {
+                            break;
+                        }
+                        if receiver.changed().await.is_err() {
+                            std::future::pending::<()>().await;
+                        }
+                    }
+                } => return Err(boxed_error("Request aborted")),
+            }
+        } else {
+            builder.send().await
+        };
+        match response {
             Ok(resp) => {
-                if !is_retryable_response(&resp) || attempt >= config.max_retries {
+                if no_retry_statuses.contains(&resp.status().as_u16())
+                    || !is_retryable_response(&resp)
+                    || attempt >= config.max_retries
+                {
                     return Ok(resp);
                 }
                 let delay = provider_retry_delay(&resp, attempt, config)?;
@@ -577,6 +612,8 @@ const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Plain("overloaded"),
     ErrPat::Plain("currently experiencing high demand"),
     ErrPat::Plain("model is at capacity"),
+    ErrPat::Plain("server_busy"),
+    ErrPat::Plain("servers are currently busy"),
     ErrPat::Gap(&["rate", "limit"]),
     ErrPat::Plain("too many requests"),
     ErrPat::Plain("429"),
@@ -611,6 +648,7 @@ const RETRYABLE_PROVIDER_ERROR: &[ErrPat] = &[
     ErrPat::Plain("stream ended before message_stop"),
     ErrPat::Plain("stream ended before a terminal response event"),
     ErrPat::Plain("http2 request did not get a response"),
+    ErrPat::Plain("pending stream has been canceled"),
     ErrPat::Plain("exceeded request buffer limit"),
     ErrPat::Plain("retry delay"),
     ErrPat::Plain("you can retry your request"),

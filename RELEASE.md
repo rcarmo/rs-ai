@@ -1,6 +1,20 @@
 # rs-ai upstream release parity
 
-## Current audit target: v1.0.1
+## v1.1.0 implementation checkpoints
+
+The v1.1.0 upgrade is in progress. Local checkpoints are pushed with `[skip ci]`; final hosted CI, clean-clone gates, profiling, full contract dispositions and release acceptance have not run. Existing v1.0.1 runtime tags and publication receipts are unchanged.
+
+- Official source range: `a7229ddc21810d6245105978033b7df645ecc2f7..abe508e1b89912adde45528136c3221eb69acdd7`.
+- Artifact pins and exact inventories: [pi-ai crosswalk](docs/v110-upgrade-crosswalk.md) and [pi-durable crosswalk](docs/pi-durable-v110-crosswalk.md).
+- Portable path-policy checkpoint: `c1b00a471a713140640fc58ff04799e95c87ef44`, pushed to `origin/main`. Shell syntax, Python AST, local/CI fallback resolution and invalid-override rejection passed. Runtime changes were kept separate.
+- Runtime/catalog checkpoint: Rust 1.99.0; `cargo test --locked --no-default-features --lib` passed 1,035 tests; `cargo test --locked --lib` passed 1,192 tests, with zero failures or ignored tests. Strict `cargo clippy --locked --all-targets --all-features -- -D warnings`, format and diff checks passed.
+- Pinned offline metadata comparison and double regeneration passed: 1,563 chat, 61 image and 26 classifier records; 1,650 total, 74 batch aliases. Historical regression suites still check retained behaviour; their live-catalog counts and Azure identity follow v1.1.0. Historical fixture delta expectations are unchanged.
+- Implemented slices include UTF-16 token estimates, thinking-aware sampling, retry classifications, Decisions classifier/image pricing, Azure request configuration, assistant/execution timing, Anthropic callback fallback, ChatGPT login identity, Radius replacement catalogs and durable provider-session identity/lifecycle timestamps.
+- Contract review still includes stored OAuth cancellation/rotation safety, configurable Codex transport identity, provider regressions and durable storage/context semantics. The durable R1 vertical retains its documented baseline gaps.
+
+These are development checks. No v1.1.0 release or parity acceptance is recorded.
+
+## Accepted v1.0.1 audit
 
 - Upstream package: `@earendil-works/pi-ai`
 - Current audit target: `v1.0.1`

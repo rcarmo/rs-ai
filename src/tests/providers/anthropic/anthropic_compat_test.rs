@@ -38,6 +38,7 @@ mod tests {
             context_window: 200000,
             max_tokens: 32000,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: Some("test-key".into()),
             compat,
@@ -64,6 +65,7 @@ mod tests {
                     text_signature: None,
                 }],
                 timestamp: 0,
+                duration_ms: None,
                 api: None,
                 provider: None,
                 model: None,
@@ -222,7 +224,9 @@ mod tests {
                 || id.contains("sonnet.5"));
         let fable = id.contains("fable-5") || id.contains("fable.5");
         let kimi_coding = id.starts_with("kimi-coding/");
-        opus || sonnet || fable || kimi_coding
+        let haiku =
+            id.contains("haiku-5-5") || id.contains("haiku.5.5") || id.contains("haiku-5.5");
+        opus || sonnet || fable || kimi_coding || haiku
     }
 
     // --- empty thinking signature ---
@@ -246,6 +250,7 @@ mod tests {
             context_window: 1048576,
             max_tokens: 1024,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -282,6 +287,7 @@ mod tests {
                 redacted: None,
             }],
             timestamp: 0,
+            duration_ms: None,
             api: Some("anthropic-messages".into()),
             provider: Some(provider.into()),
             model: Some(model_id.into()),
@@ -317,6 +323,7 @@ mod tests {
                         text_signature: None,
                     }],
                     timestamp: 0,
+                    duration_ms: None,
                     api: None,
                     provider: None,
                     model: None,
@@ -349,6 +356,7 @@ mod tests {
                         text_signature: None,
                     }],
                     timestamp: 0,
+                    duration_ms: None,
                     api: None,
                     provider: None,
                     model: None,

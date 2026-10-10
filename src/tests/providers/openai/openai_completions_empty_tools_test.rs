@@ -28,6 +28,7 @@ mod tests {
                 text_signature: None,
             }],
             timestamp: 0,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,
@@ -110,8 +111,7 @@ mod tests {
 
     #[test]
     fn clamps_default_max_tokens_to_remaining_context() {
-        // contextWindow=10000, "x"*8000 (2000 tokens), default maxTokens=8000.
-        // used = 2000 + 4096 = 6096; available = 3904; min(8000, 3904) = 3904.
+        // v1.1.0: ceil(8000/3.5)=2286 tokens plus 4096 headroom leaves 3618.
         let ctx = Context {
             system_prompt: None,
             tools: Vec::new(),
@@ -119,7 +119,7 @@ mod tests {
         };
         let p = clamp_payload(&ctx, &StreamOptions::default());
         assert!(p.get("max_tokens").is_none());
-        assert_eq!(p["max_completion_tokens"], serde_json::json!(3904));
+        assert_eq!(p["max_completion_tokens"], serde_json::json!(3618));
     }
 
     #[test]
@@ -136,7 +136,7 @@ mod tests {
         };
         let p = clamp_payload(&ctx, &opts);
         assert!(p.get("max_tokens").is_none());
-        assert_eq!(p["max_completion_tokens"], serde_json::json!(3904));
+        assert_eq!(p["max_completion_tokens"], serde_json::json!(3618));
     }
 
     #[test]
@@ -169,6 +169,7 @@ mod tests {
                 namespace: None,
             }],
             timestamp: 0,
+            duration_ms: None,
             api: Some("openai-completions".into()),
             provider: Some("openai".into()),
             model: Some("gpt-4o-mini".into()),
@@ -200,6 +201,7 @@ mod tests {
                 text_signature: None,
             }],
             timestamp: 0,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,

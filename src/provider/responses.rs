@@ -59,14 +59,6 @@ pub(crate) fn normalize_azure_base_url(base: &str) -> Result<String, String> {
 /// AZURE_OPENAI_BASE_URL env, else AZURE_OPENAI_RESOURCE_NAME env (→ default host),
 /// else model.baseUrl. Returns Ok(None) when none is configured. The result is
 /// normalized; an invalid URL yields Err.
-fn resolve_azure_base_url(model_base_url: &str) -> Result<Option<String>, String> {
-    resolve_azure_base_url_from(
-        std::env::var("AZURE_OPENAI_BASE_URL").ok().as_deref(),
-        std::env::var("AZURE_OPENAI_RESOURCE_NAME").ok().as_deref(),
-        model_base_url,
-    )
-}
-
 pub(crate) fn resolve_azure_base_url_from(
     base_env: Option<&str>,
     resource_env: Option<&str>,
@@ -93,15 +85,6 @@ pub(crate) fn resolve_azure_base_url_from(
 
 /// Resolve the Azure deployment name from AZURE_OPENAI_DEPLOYMENT_NAME_MAP
 /// ("modelId=deployment,..."), defaulting to the model id (mirrors resolveDeploymentName).
-fn resolve_azure_deployment(model_id: &str) -> String {
-    resolve_azure_deployment_from_map(
-        std::env::var("AZURE_OPENAI_DEPLOYMENT_NAME_MAP")
-            .ok()
-            .as_deref(),
-        model_id,
-    )
-}
-
 pub(crate) fn resolve_azure_deployment_from_map(map_str: Option<&str>, model_id: &str) -> String {
     let mut resolved: Option<String> = None;
     if let Some(map_str) = map_str {
@@ -144,7 +127,7 @@ fn stream_responses_inner<'a>(
     if is_azure {
         // Azure's request `model` field is the deployment name (mapped via
         // AZURE_OPENAI_DEPLOYMENT_NAME_MAP, else the model id). Mirrors resolveDeploymentName.
-        payload["model"] = json!(resolve_azure_deployment(&model.id));
+        payload["model"] = json!(super::azure_config::deployment(model, opts));
         // Azure buildParams does not emit service_tier (unlike the shared OpenAI builder).
         if let Some(obj) = payload.as_object_mut() {
             obj.remove("service_tier");
@@ -164,35 +147,19 @@ fn stream_responses_inner<'a>(
         }
     }
     let url = if is_azure {
-        let base = match resolve_azure_base_url(&model.base_url) {
-            Ok(Some(b)) => b,
-            Ok(None) => {
-                let err = Event::Error {
+        match super::azure_config::config(model, opts).and_then(|(base, version)| {
+            super::azure_config::endpoint(&base, "responses", Some(&version))
+        }) {
+            Ok(url) => url,
+            Err(message) => {
+                let error = Event::Error {
                     reason: StopReason::Error,
-                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(
-                        "Azure OpenAI base URL is required. Set AZURE_OPENAI_BASE_URL or AZURE_OPENAI_RESOURCE_NAME, or model.baseUrl.".to_string(),
-                    )),
+                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(message)),
                     message: None,
                 };
-                return Box::pin(stream::once(async { err }));
+                return Box::pin(stream::once(async { error }));
             }
-            Err(msg) => {
-                let err = Event::Error {
-                    reason: StopReason::Error,
-                    error: Arc::from(Box::<dyn std::error::Error + Send + Sync>::from(msg)),
-                    message: None,
-                };
-                return Box::pin(stream::once(async { err }));
-            }
-        };
-        // Upstream resolveAzureConfig uses `... || DEFAULT_AZURE_API_VERSION` (truthy),
-        // so an empty AZURE_OPENAI_API_VERSION falls back to "v1" rather than emitting
-        // an empty ?api-version=.
-        let api_version = std::env::var("AZURE_OPENAI_API_VERSION")
-            .ok()
-            .filter(|v| !v.is_empty())
-            .unwrap_or_else(|| "v1".to_string());
-        format!("{}/responses?api-version={}", base, api_version)
+        }
     } else {
         let base = match crate::utils::resolve_cloudflare_base_url(
             model.base_url.trim_end_matches('/'),
@@ -347,6 +314,7 @@ fn stream_responses_inner<'a>(
             role: Role::Assistant,
             content: Vec::new(),
             timestamp: crate::utils::now_millis(),
+            duration_ms: None,
             api: Some(model.api.clone()),
             provider: Some(model.provider.clone()),
             model: Some(model.id.clone()),
@@ -1475,18 +1443,26 @@ fn build_responses_payload_with_auth(
     if !chatgpt_sign_in && let Some(temp) = opts.temperature {
         payload["temperature"] = json!(temp);
     }
-    let mut sampling_params = model.sampling_params.clone();
-    if let Some(request_params) = opts.sampling_params.clone() {
-        sampling_params = Some(match (sampling_params, request_params) {
-            (Some(Value::Object(mut base)), Value::Object(request)) => {
-                for (key, value) in request {
-                    base.insert(key, value);
-                }
-                Value::Object(base)
+    let sampling_level = opts
+        .reasoning
+        .as_ref()
+        .map(crate::simple_options::thinking_level_to_model_level)
+        .unwrap_or_else(|| {
+            if opts
+                .reasoning_summary
+                .as_ref()
+                .is_some_and(|summary| !summary.is_empty())
+            {
+                crate::types::ModelThinkingLevel::Medium
+            } else {
+                crate::types::ModelThinkingLevel::Off
             }
-            (_, other) => other,
         });
-    }
+    let sampling_params = crate::simple_options::resolve_sampling_params(
+        model,
+        &sampling_level,
+        opts.sampling_params.as_ref(),
+    );
     if let Some(ref service_tier) = opts.service_tier {
         payload["service_tier"] = json!(service_tier);
     }

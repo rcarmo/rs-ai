@@ -1,17 +1,17 @@
-//! v1.0.1 release-pinned catalog and runtime receipts.
+//! Current v1.1.0 catalog counts and retained v1.0.1 behavioral regressions.
 
 #[cfg(test)]
 mod tests {
     use crate::{classifier_models_generated, images, models_generated};
 
     #[test]
-    fn native_version_and_exact_catalog_counts_match_v101() {
-        assert_eq!(env!("CARGO_PKG_VERSION"), "1.0.1");
-        assert_eq!(models_generated::builtin_models().len(), 1536);
-        assert_eq!(images::models_generated::builtin_image_models().len(), 59);
+    fn native_version_and_exact_catalog_counts_match_v110() {
+        assert_eq!(env!("CARGO_PKG_VERSION"), "1.1.0");
+        assert_eq!(models_generated::builtin_models().len(), 1563);
+        assert_eq!(images::models_generated::builtin_image_models().len(), 61);
         assert_eq!(
             classifier_models_generated::builtin_classifier_models().len(),
-            20
+            26
         );
     }
 

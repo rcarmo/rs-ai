@@ -11,6 +11,7 @@ mod tests {
             role: Role::Assistant,
             content: Vec::new(),
             timestamp: 0,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,
@@ -75,6 +76,11 @@ mod tests {
             "you can retry your request",
             "Model is at capacity",
             "MODEL IS AT CAPACITY; try later",
+            // v1.1.0: busy providers and stalled Bedrock HTTP/2 streams.
+            "server_busy",
+            "Servers are currently busy. Try again later.",
+            "The pending stream has been canceled",
+            "THE PENDING STREAM HAS BEEN CANCELED",
             // v0.80.5 additions.
             "524 status code (no body)",
             "The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()",
@@ -120,6 +126,16 @@ mod tests {
             Some(StopReason::Error),
         );
         assert!(!is_retryable_assistant_error(&capacity_with_quota));
+        for text in [
+            "server_busy: quota exceeded",
+            "servers are currently busy; billing issue",
+            "pending stream has been canceled: insufficient_quota",
+        ] {
+            assert!(!is_retryable_assistant_error(&err_msg(
+                Some(text),
+                Some(StopReason::Error),
+            )));
+        }
     }
 
     #[test]

@@ -29,6 +29,8 @@ mod tests {
                 checkpoint: json!({}),
                 outcome: None,
                 abort_requested: false,
+                started_at: None,
+                ended_at: None,
                 updated_seq: seq,
             }],
             submissions: vec![SubmissionRecord {

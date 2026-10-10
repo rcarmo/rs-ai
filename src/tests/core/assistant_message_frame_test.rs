@@ -35,6 +35,7 @@ fn seed() -> Message {
         }),
         stop_reason: Some(StopReason::Pending),
         timestamp: 1,
+        duration_ms: None,
         deferred: None,
         error_message: None,
         raw_stop_reason: None,

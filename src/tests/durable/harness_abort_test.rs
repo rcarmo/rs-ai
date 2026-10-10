@@ -26,6 +26,7 @@ mod tests {
             context_window: 4096,
             max_tokens: 512,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),

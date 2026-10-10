@@ -256,6 +256,10 @@ impl AnthropicOAuth {
                 let claimed = Arc::new(AtomicBool::new(false));
                 let token_url = self.token_url().to_string();
                 let verifier = pkce.verifier.clone();
+                let callback_redirect = Arc::new(std::sync::Mutex::new(
+                    crate::oauth::ANTHROPIC_REDIRECT_URI.to_owned(),
+                ));
+                let completion_redirect = callback_redirect.clone();
                 let completion_cancel = cancel.clone();
                 let completion_claimed = claimed.clone();
                 let complete: crate::oauth_callback::OAuthCompletion<OAuthCredential> =
@@ -264,6 +268,7 @@ impl AnthropicOAuth {
                         let verifier = verifier.clone();
                         let cancel = completion_cancel.clone();
                         let claimed = completion_claimed.clone();
+                        let redirect = completion_redirect.lock().unwrap().clone();
                         Box::pin(async move {
                             if claimed
                                 .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
@@ -272,36 +277,39 @@ impl AnthropicOAuth {
                                 return Err("Anthropic sign-in already handled".into());
                             }
                             crate::oauth::exchange_anthropic_code_at_with_cancel(
-                                &token_url,
-                                &code,
-                                &verifier,
-                                &verifier,
-                                crate::oauth::ANTHROPIC_REDIRECT_URI,
-                                cancel,
+                                &token_url, &code, &verifier, &verifier, &redirect, cancel,
                             )
                             .await
                             .map(AnthropicOAuth::credential)
                         })
                     });
-                let server = crate::oauth_callback::start_oauth_callback_server(
-                    crate::oauth_callback::OAuthCallbackOptions {
-                        provider_name: "Anthropic".into(),
-                        host: "127.0.0.1".into(),
-                        port: 53692,
-                        path: "/callback".into(),
-                        redirect_host: Some("localhost".into()),
-                        state: Some(pkce.verifier.clone()),
-                        complete,
-                        cancel: cancel.clone(),
-                        timeout_ms: None,
-                    },
-                )
-                .await
-                .ok();
+                let mut server = None;
+                for port in [53692, 0] {
+                    let attempt = crate::oauth_callback::start_oauth_callback_server(
+                        crate::oauth_callback::OAuthCallbackOptions {
+                            provider_name: "Anthropic".into(),
+                            host: "127.0.0.1".into(),
+                            port,
+                            path: "/callback".into(),
+                            redirect_host: Some("localhost".into()),
+                            state: Some(pkce.verifier.clone()),
+                            complete: complete.clone(),
+                            cancel: cancel.clone(),
+                            timeout_ms: None,
+                        },
+                    )
+                    .await;
+                    if let Ok(listener) = attempt {
+                        *callback_redirect.lock().unwrap() = listener.redirect_uri.clone();
+                        server = Some(listener);
+                        break;
+                    }
+                }
+                let redirect = callback_redirect.lock().unwrap().clone();
                 let url = crate::oauth::build_anthropic_authorize_url(
                     &pkce.challenge,
                     &pkce.verifier,
-                    crate::oauth::ANTHROPIC_REDIRECT_URI,
+                    &redirect,
                 );
                 cancelable_oauth_call(host.present_authorization_url(&url), cancel.clone()).await?;
                 if let Some(server) = server {
@@ -340,7 +348,7 @@ impl AnthropicOAuth {
                             self.exchange_input(
                                 &input,
                                 &pkce.verifier,
-                                crate::oauth::ANTHROPIC_REDIRECT_URI,
+                                &redirect,
                                 cancel,
                             ).await
                         }
@@ -673,6 +681,7 @@ impl RadiusOAuth {
                 context_window: model.context_window,
                 max_tokens: model.max_tokens,
                 sampling_params: None,
+                sampling_params_by_thinking_level: None,
                 headers: None,
                 api_key: None,
                 compat: Default::default(),
@@ -773,6 +782,7 @@ mod tests {
             context_window: 1000,
             max_tokens: 100,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: Default::default(),

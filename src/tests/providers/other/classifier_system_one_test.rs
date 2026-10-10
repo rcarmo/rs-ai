@@ -15,6 +15,7 @@ mod tests {
 
     fn context() -> ClassifierContext {
         ClassifierContext {
+            images: vec![],
             state: serde_json::from_value(json!({"text":"Deployment succeeded"})).unwrap(),
             questions: IndexMap::from([
                 (

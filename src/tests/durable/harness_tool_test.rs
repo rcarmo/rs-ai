@@ -26,6 +26,7 @@ mod tests {
             context_window: 4096,
             max_tokens: 512,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: Some("local".into()),
             compat: ModelCompat::default(),
@@ -114,6 +115,13 @@ mod tests {
                 .iter()
                 .any(|message| message["role"] == "toolResult")
         );
+        let tool_result = second["context"]["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|message| message["role"] == "toolResult")
+            .unwrap();
+        assert!(tool_result["durationMs"].as_u64().is_some());
         assert_eq!(seen.lock().unwrap().len(), 1);
         harness.close().await.unwrap();
     }

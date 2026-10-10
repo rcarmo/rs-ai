@@ -87,6 +87,22 @@ pub struct TaskRecord {
     pub checkpoint: Value,
     pub outcome: Option<Value>,
     pub abort_requested: bool,
+    /// First running admission, retained across waits/recovery (wall-clock milliseconds).
+    #[serde(
+        default,
+        rename = "startedAt",
+        alias = "started_at",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub started_at: Option<i64>,
+    /// Terminal settlement time; older stored records may omit it.
+    #[serde(
+        default,
+        rename = "endedAt",
+        alias = "ended_at",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub ended_at: Option<i64>,
     pub updated_seq: CommitSeq,
 }
 

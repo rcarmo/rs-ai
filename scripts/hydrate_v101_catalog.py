@@ -20,6 +20,7 @@ TARGETS = (
     Path("src/classifier_models_generated.rs"),
 )
 EXPECTED_SHA256 = "8a9e69b1309cf93405d87729fa123c8b11c6be7c646b16f34f8bef7b792f9138"
+V110_SHA256 = "6caab33cec57480ed02c57fe37428a030a77cc2a0662814b435a5cf8932ad829"
 
 
 def run(cmd: list[str], cwd: Path = ROOT) -> None:
@@ -35,9 +36,10 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def hydrate(artifact: Path, validate_only: bool = False, fault: str = "") -> None:
-    if sha256(artifact) != EXPECTED_SHA256:
-        raise RuntimeError("v1.0.1 artifact SHA-256 mismatch")
+def hydrate(artifact: Path, validate_only: bool = False, fault: str = "", version: str = "1.0.1") -> None:
+    expected = {"1.0.1": EXPECTED_SHA256, "1.1.0": V110_SHA256}.get(version)
+    if expected is None or sha256(artifact) != expected:
+        raise RuntimeError(f"v{version} artifact SHA-256 mismatch")
     before = {target: (ROOT / target).read_bytes() for target in TARGETS}
     with temporary_directory("hydrate-v101-catalog", prefix="rs-ai-v101-hydrate-") as tmp:
         work = Path(tmp)
@@ -89,12 +91,13 @@ def hydrate(artifact: Path, validate_only: bool = False, fault: str = "") -> Non
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("artifact", type=Path)
+    parser.add_argument("--version", choices=["1.0.1", "1.1.0"], default="1.0.1")
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--fault", choices=["", "render", "format"], default="")
     args = parser.parse_args()
     try:
-        hydrate(args.artifact.resolve(), args.validate_only, args.fault)
-        print("v1.0.1 catalogs validated" + (" without mutation" if args.validate_only else " and replaced"))
+        hydrate(args.artifact.resolve(), args.validate_only, args.fault, args.version)
+        print(f"v{args.version} catalogs validated" + (" without mutation" if args.validate_only else " and replaced"))
         return 0
     except Exception as error:
         print(str(error), file=sys.stderr)

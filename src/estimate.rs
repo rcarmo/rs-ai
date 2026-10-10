@@ -1,4 +1,4 @@
-//! Context token estimation — port of upstream `utils/estimate.ts` (v0.80.3).
+//! Context token estimation — port of upstream `utils/estimate.ts` (v1.1.0).
 //!
 //! Heuristic estimator used to fit `max_tokens` inside the model context window
 //! (see `simple_options::clamp_max_tokens_to_context`). Mirrors upstream's
@@ -7,7 +7,7 @@
 
 use crate::types::{ContentBlock, Context, Message, Role, StopReason, Tool, Usage};
 
-const CHARS_PER_TOKEN: usize = 4;
+// Upstream reserves 3.5 UTF-16 code units per token for unmetered content.
 const ESTIMATED_IMAGE_CHARS: usize = 4800;
 
 /// Result of estimating a context's token footprint.
@@ -29,19 +29,26 @@ pub fn calculate_context_tokens(usage: &Usage) -> u32 {
     }
 }
 
-fn ceil_div(chars: usize, by: usize) -> u32 {
-    chars.div_ceil(by) as u32
+fn tokens_from_chars(chars: usize) -> u32 {
+    // ceil(chars / 3.5), without floating-point rounding or overflow.
+    let whole = (chars / 7).saturating_mul(2);
+    let remainder = ((chars % 7) * 2).div_ceil(7);
+    u32::try_from(whole.saturating_add(remainder)).unwrap_or(u32::MAX)
+}
+
+fn text_chars(text: &str) -> usize {
+    text.encode_utf16().count()
 }
 
 pub fn estimate_text_tokens(text: &str) -> u32 {
-    ceil_div(text.len(), CHARS_PER_TOKEN)
+    tokens_from_chars(text_chars(text))
 }
 
 fn content_chars(content: &[ContentBlock]) -> usize {
     content
         .iter()
         .map(|b| match b {
-            ContentBlock::Text { text, .. } => text.len(),
+            ContentBlock::Text { text, .. } => text_chars(text),
             _ => ESTIMATED_IMAGE_CHARS,
         })
         .sum()
@@ -50,7 +57,7 @@ fn content_chars(content: &[ContentBlock]) -> usize {
 /// Text + image content tokens (used for user / toolResult messages, which carry
 /// only text/image blocks).
 pub fn estimate_text_and_image_content_tokens(content: &[ContentBlock]) -> u32 {
-    ceil_div(content_chars(content), CHARS_PER_TOKEN)
+    tokens_from_chars(content_chars(content))
 }
 
 pub fn estimate_message_tokens(message: &Message) -> u32 {
@@ -78,23 +85,38 @@ fn estimate_message_tokens_with_tools(message: &Message, tools: &[Tool]) -> u32 
         return estimate_text_and_image_content_tokens(&message.content)
             + estimate_added_tool_tokens(message, tools);
     }
+    if message.role == Role::System {
+        let mut tokens = estimate_text_and_image_content_tokens(&message.content);
+        if !message.tools_added.is_empty() {
+            tokens += estimate_text_tokens(
+                &serde_json::to_string(&message.tools_added).unwrap_or_else(|_| "undefined".into()),
+            );
+        }
+        if !message.tools_removed.is_empty() {
+            tokens += estimate_text_tokens(
+                &serde_json::to_string(&message.tools_removed)
+                    .unwrap_or_else(|_| "undefined".into()),
+            );
+        }
+        return tokens;
+    }
     let mut chars = 0usize;
     for block in &message.content {
         match block {
-            ContentBlock::Text { text, .. } => chars += text.len(),
-            ContentBlock::Thinking { thinking, .. } => chars += thinking.len(),
+            ContentBlock::Text { text, .. } => chars += text_chars(text),
+            ContentBlock::Thinking { thinking, .. } => chars += text_chars(thinking),
             ContentBlock::ToolCall {
                 name, arguments, ..
             } => {
-                chars += name.len();
-                chars += serde_json::to_string(arguments)
-                    .unwrap_or_else(|_| "undefined".into())
-                    .len();
+                chars += text_chars(name);
+                chars += text_chars(
+                    &serde_json::to_string(arguments).unwrap_or_else(|_| "undefined".into()),
+                );
             }
             ContentBlock::Image { .. } => chars += ESTIMATED_IMAGE_CHARS,
         }
     }
-    ceil_div(chars, CHARS_PER_TOKEN)
+    tokens_from_chars(chars)
 }
 
 /// Most recent *applicable* assistant message with positive usage that did not

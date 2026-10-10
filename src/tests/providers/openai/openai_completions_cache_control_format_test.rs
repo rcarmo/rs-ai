@@ -36,6 +36,7 @@ mod tests {
             context_window: 128000,
             max_tokens: 32000,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: ModelCompat {
@@ -61,6 +62,7 @@ mod tests {
                     text_signature: None,
                 }],
                 timestamp: 0,
+                duration_ms: None,
                 api: None,
                 provider: None,
                 model: None,

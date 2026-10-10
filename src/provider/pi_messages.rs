@@ -106,6 +106,7 @@ fn assistant_message(model: &Model, opts: &StreamOptions) -> Message {
         role: Role::Assistant,
         content: Vec::new(),
         timestamp: now_ms(),
+        duration_ms: None,
         api: Some(model.api.clone()),
         provider: Some(model.provider.clone()),
         model: Some(model.id.clone()),

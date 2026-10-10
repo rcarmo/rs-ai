@@ -28,6 +28,7 @@ mod tests {
                     text_signature: None,
                 }],
                 timestamp: 0,
+                duration_ms: None,
                 api: None,
                 provider: None,
                 model: None,

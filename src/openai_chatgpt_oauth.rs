@@ -33,6 +33,10 @@ pub struct ChatGptAuthorization {
 
 #[async_trait::async_trait]
 pub trait ChatGptLoginHost: Send + Sync {
+    /// Optional application identity advertised in the authorization flow.
+    fn agent_name(&self) -> Option<&str> {
+        None
+    }
     /// Return the installation's stable device UUID.
     async fn device_id(&self) -> Result<String, String>;
     /// Present or open the authorization URL. This is called only after port 1455 binds.
@@ -87,10 +91,20 @@ pub fn build_authorize_url(
     state: &str,
     nonce: &str,
 ) -> Result<String, String> {
+    build_authorize_url_with_agent_name(device_id, pkce, state, nonce, AGENT_NAME_HINT)
+}
+
+pub fn build_authorize_url_with_agent_name(
+    device_id: &str,
+    pkce: &PkceChallenge,
+    state: &str,
+    nonce: &str,
+    agent_name: &str,
+) -> Result<String, String> {
     let mut url = url::Url::parse(AUTHORIZE_URL).map_err(|error| error.to_string())?;
     url.query_pairs_mut()
         .append_pair("client_id", DYNAMIC_CLIENT_ID)
-        .append_pair("agent_name_hint", AGENT_NAME_HINT)
+        .append_pair("agent_name_hint", agent_name)
         .append_pair("ext_agent_host_id", &agent_host_id(Some(device_id))?)
         .append_pair("response_type", "code")
         .append_pair("redirect_uri", REDIRECT_URI)
@@ -395,7 +409,13 @@ async fn login_chatgpt_with_host_on_port(
 
     let result = async {
         let device_id = cancelable_host_call(host.device_id(), cancel.clone()).await?;
-        let url = build_authorize_url(&device_id, &pkce, &state, &nonce)?;
+        let url = build_authorize_url_with_agent_name(
+            &device_id,
+            &pkce,
+            &state,
+            &nonce,
+            host.agent_name().unwrap_or(AGENT_NAME_HINT),
+        )?;
         cancelable_host_call(host.present_authorization_url(&url), cancel.clone()).await?;
         let callback = guard.server.wait();
         // Caller cancellation is owned by the callback server. Its terminal result

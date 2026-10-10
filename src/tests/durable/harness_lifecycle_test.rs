@@ -26,6 +26,7 @@ mod tests {
             context_window: 4096,
             max_tokens: 512,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: ModelCompat::default(),
@@ -348,6 +349,7 @@ mod tests {
         let intent = ModelIntent {
             model: model(),
             options: PinnedOptions::default(),
+            provider_session_id: None,
             offered_tools: vec![],
             system_prompt: None,
             context: vec![DurableMessage {
@@ -384,6 +386,8 @@ mod tests {
                         checkpoint: json!({"phase":"running"}),
                         outcome: None,
                         abort_requested: false,
+                        started_at: None,
+                        ended_at: None,
                         updated_seq: seq,
                     }],
                     submissions: vec![SubmissionRecord {
@@ -411,6 +415,12 @@ mod tests {
         }
         impl DurableModelRunner for RecoveryRunner {
             fn run<'a>(&'a self, intent: ModelIntent) -> crate::durable::model::ModelFuture<'a> {
+                assert!(
+                    intent
+                        .provider_session_id
+                        .as_ref()
+                        .is_some_and(|id| id.len() == 36)
+                );
                 self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                 self.contexts.lock().unwrap().push(intent.context);
                 Box::pin(async {
@@ -441,6 +451,13 @@ mod tests {
             .unwrap();
         assert_eq!(result.status, "pending");
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+        assert!(
+            !harness
+                .inspect_documents()
+                .await
+                .unwrap()
+                .contains_key("pi.provider")
+        );
         let handle = SubmissionHandle {
             id: SubmissionId::new(3).unwrap(),
             task_id: TaskId::new(2).unwrap(),
@@ -451,6 +468,11 @@ mod tests {
             Some("resumed")
         );
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+        assert!(
+            harness.inspect_documents().await.unwrap()["pi.provider"]["sessionId"]
+                .as_str()
+                .is_some()
+        );
         assert_eq!(
             contexts.lock().unwrap()[0]
                 .iter()

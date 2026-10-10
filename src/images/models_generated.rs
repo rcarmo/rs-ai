@@ -1,7 +1,7 @@
 //! Auto-generated image model registry from @earendil-works/pi-ai. DO NOT EDIT.
 //!
-//! Source: image-models.generated.js (59 image models, 1 provider)
-//! Generated: 2026-10-03T12:25:02.573Z
+//! Source: image-models.generated.js (61 image models, 1 provider)
+//! Generated: 2026-10-07T22:01:28.515Z
 
 use crate::images::types::ImageModel;
 use crate::types::{ModelCost, ModelType};
@@ -202,6 +202,19 @@ pub fn builtin_image_models() -> Vec<ImageModel> {
             input_limits: Some(serde_json::from_str("{\"images\":{\"resize\":{\"jpegQuality\":80,\"maxBytes\":4718592,\"maxHeight\":2000,\"maxWidth\":2000}}}").unwrap()),
             output: vec!["image".into(), "text".into()],
             cost: ModelCost { input: 0.25_f64, output: 1.5_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            headers: None,
+        },
+        ImageModel {
+            model_type: ModelType::Image,
+            id: "google/gemini-nano-banana-2.1".into(),
+            name: "Google: Nano Banana 2.1".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["image".into(), "text".into()],
+            input_limits: Some(serde_json::from_str("{\"images\":{\"resize\":{\"jpegQuality\":80,\"maxBytes\":4718592,\"maxHeight\":2000,\"maxWidth\":2000}}}").unwrap()),
+            output: vec!["image".into(), "text".into()],
+            cost: ModelCost { input: 1.5_f64, output: 7.5_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
             headers: None,
         },
         ImageModel {
@@ -741,6 +754,19 @@ pub fn builtin_image_models() -> Vec<ImageModel> {
             model_type: ModelType::Image,
             id: "sourceful/riverflow-v2.5-pro".into(),
             name: "Sourceful: Riverflow V2.5 Pro".into(),
+            api: "openrouter-images".into(),
+            provider: "openrouter".into(),
+            base_url: "https://openrouter.ai/api/v1".into(),
+            input: vec!["text".into(), "image".into()],
+            input_limits: Some(serde_json::from_str("{\"images\":{\"resize\":{\"jpegQuality\":80,\"maxBytes\":4718592,\"maxHeight\":2000,\"maxWidth\":2000}}}").unwrap()),
+            output: vec!["image".into()],
+            cost: ModelCost { input: 0_f64, output: 0_f64, cache_read: 0_f64, cache_write: 0_f64, tiers: vec![] },
+            headers: None,
+        },
+        ImageModel {
+            model_type: ModelType::Image,
+            id: "tencent/hy-image-v3.5-preview".into(),
+            name: "Tencent: Hy Image 3.5 Preview".into(),
             api: "openrouter-images".into(),
             provider: "openrouter".into(),
             base_url: "https://openrouter.ai/api/v1".into(),

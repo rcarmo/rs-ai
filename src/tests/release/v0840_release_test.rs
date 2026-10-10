@@ -37,6 +37,7 @@ fn completions_model(provider: &str, id: &str) -> Model {
         context_window: 128000,
         max_tokens: 16384,
         sampling_params: None,
+        sampling_params_by_thinking_level: None,
         headers: None,
         api_key: Some("test".into()),
         compat: ModelCompat::default(),

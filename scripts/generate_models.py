@@ -127,6 +127,12 @@ def gen_model(m) -> str:
     else:
         lines.append("            sampling_params: None,")
     
+    level_sampling = m.get("samplingParamsByThinkingLevel")
+    if level_sampling is not None:
+        lines.append(f'            sampling_params_by_thinking_level: Some(serde_json::from_str({rust_string(json.dumps(level_sampling))}).unwrap()),')
+    else:
+        lines.append("            sampling_params_by_thinking_level: None,")
+
     headers = m.get("headers")
     if headers:
         entries = ", ".join(f'({rust_string(k)}.into(), {rust_string(v)}.into())' for k, v in headers.items())

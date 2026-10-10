@@ -39,6 +39,7 @@ fn tool_result_marker(added: &[&str]) -> Message {
             text_signature: None,
         }],
         timestamp: 0,
+        duration_ms: None,
         api: None,
         provider: None,
         model: None,
@@ -84,6 +85,7 @@ fn openai_model(provider: &str, base_url: &str) -> Model {
         context_window: 128000,
         max_tokens: 4096,
         sampling_params: None,
+        sampling_params_by_thinking_level: None,
         headers: None,
         api_key: Some("test".into()),
         compat: ModelCompat::default(),
@@ -199,19 +201,19 @@ fn release_pinned_catalog_counts_match_v0842() {
         .iter()
         .map(|model| model.api.as_str())
         .collect::<HashSet<_>>();
-    assert_eq!(pairs.len(), 1536);
+    assert_eq!(pairs.len(), 1563);
     assert_eq!(providers.len(), 41);
     assert_eq!(apis.len(), 10);
     assert_eq!(
         pairs.iter().filter(|(_, id)| id.contains(":batch")).count(),
-        73
+        74
     );
 
     let image_pairs = crate::images::list_image_models(None)
         .into_iter()
         .map(|model| (model.provider, model.id))
         .collect::<HashSet<_>>();
-    assert_eq!(image_pairs.len(), 59);
+    assert_eq!(image_pairs.len(), 61);
 }
 
 #[test]
@@ -348,6 +350,7 @@ fn responses_replays_namespace_only_when_additional_tools_supported() {
             namespace: Some("dynamic_tools".into()),
         }],
         timestamp: 0,
+        duration_ms: None,
         api: Some(crate::types::api::OPENAI_RESPONSES.into()),
         provider: Some("openai".into()),
         model: Some("gpt-5.4".into()),
@@ -756,6 +759,7 @@ async fn mistral_http_exact_wire_payload_matches_replay_contract() {
             redacted: None,
         }],
         timestamp: 0,
+        duration_ms: None,
         api: Some(crate::types::api::MISTRAL_CONVERSATIONS.into()),
         provider: Some("mistral".into()),
         model: Some("mistral-large-latest".into()),
@@ -843,6 +847,7 @@ fn retry_classifier_matches_request_buffer_exhaustion_wording() {
         role: Role::Assistant,
         content: Vec::new(),
         timestamp: 0,
+        duration_ms: None,
         api: None,
         provider: None,
         model: None,

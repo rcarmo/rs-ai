@@ -210,7 +210,7 @@ pub fn stream<'a>(
         providers.get(&model.api).cloned()
     };
     match provider {
-        Some(provider) => provider.stream(model, context, opts),
+        Some(provider) => time_assistant_stream(provider.stream(model, context, opts)),
         None => {
             let err = Event::Error {
                 reason: StopReason::Error,
@@ -223,6 +223,31 @@ pub fn stream<'a>(
             Box::pin(tokio_stream::once(err))
         }
     }
+}
+
+/// Apply upstream v1.1.0 monotonic response timing at stream creation.
+/// Existing measurements and responses created before this stream are preserved.
+pub fn time_assistant_stream<'a>(mut source: EventStream<'a>) -> EventStream<'a> {
+    use tokio_stream::StreamExt;
+    let started_at = crate::utils::now_millis();
+    let started = std::time::Instant::now();
+    Box::pin(async_stream::stream! {
+        let mut terminal_seen = false;
+        while let Some(mut event) = source.next().await {
+            let message = match &mut event {
+                Event::Done { message, .. } => Some(message),
+                Event::Error { message, .. } => message.as_mut(),
+                _ => None,
+            };
+            if let Some(message) = message {
+                if !terminal_seen && message.duration_ms.is_none() && message.timestamp >= started_at {
+                    message.duration_ms = Some(u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX));
+                }
+                terminal_seen = true;
+            }
+            yield event;
+        }
+    })
 }
 
 /// Simple completion dispatch surface. rs-ai's provider adapters share the same

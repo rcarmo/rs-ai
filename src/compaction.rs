@@ -22,6 +22,7 @@ pub fn compact_context(ctx: &Context, keep_recent: usize, summary: Option<&str>)
                 text_signature: None,
             }],
             timestamp: 0,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,

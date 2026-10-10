@@ -33,6 +33,7 @@ pub fn system_message(
             }]
         },
         timestamp: 0,
+        duration_ms: None,
         api: None,
         provider: None,
         model: None,

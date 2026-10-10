@@ -9,6 +9,8 @@ use std::sync::{Arc, LazyLock, Once, RwLock};
 use std::time::Duration;
 
 pub mod llama_cpp;
+pub mod openai_decisions;
+mod shared;
 pub mod system_one;
 
 pub type ClassifierPayloadHook = Arc<
@@ -156,6 +158,16 @@ pub async fn classify(
     if model.model_type != crate::types::ModelType::Classifier {
         return error_result(model, "model is not a classifier model", false);
     }
+    if !context.images.is_empty() && !model.input.iter().any(|input| input == "image") {
+        return error_result(
+            model,
+            format!(
+                "Classifier model {}/{} does not support image input",
+                model.provider, model.id
+            ),
+            false,
+        );
+    }
     let provider = CLASSIFIER_APIS.read().unwrap().get(&model.api).cloned();
     match provider {
         Some(provider) => provider.classify(model, context, options).await,
@@ -233,7 +245,25 @@ impl ClassifierApiProvider for LlamaCppProvider {
     }
 }
 
+struct OpenAIDecisionsProvider;
+impl ClassifierApiProvider for OpenAIDecisionsProvider {
+    fn api(&self) -> &str {
+        crate::types::api::OPENAI_DECISIONS
+    }
+    fn classify<'a>(
+        &'a self,
+        model: &'a ClassifierModel,
+        context: &'a ClassifierContext,
+        options: &'a ClassifierOptions,
+    ) -> Pin<Box<dyn Future<Output = ClassifierResult> + Send + 'a>> {
+        Box::pin(openai_decisions::classify_openai_decisions(
+            model, context, options,
+        ))
+    }
+}
+
 pub fn register_builtin_classifier_providers() {
+    register_classifier_api(Arc::new(OpenAIDecisionsProvider));
     register_classifier_api(Arc::new(TypeSafeProvider));
     register_classifier_api(Arc::new(CloudflareProvider));
     register_classifier_api(Arc::new(LlamaCppProvider));

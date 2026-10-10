@@ -35,6 +35,7 @@ mod tests {
             role,
             content,
             timestamp,
+            duration_ms: None,
             api: None,
             provider: None,
             model: None,
@@ -69,15 +70,72 @@ mod tests {
     }
 
     #[test]
-    fn text_tokens_ceil_div_4() {
-        assert_eq!(estimate_text_tokens("12345678"), 2);
-        assert_eq!(estimate_text_tokens("123456789"), 3); // ceil(9/4)
+    fn text_tokens_reserve_three_and_a_half_utf16_units_per_token() {
+        assert_eq!(estimate_text_tokens("1234567"), 2);
+        assert_eq!(estimate_text_tokens("12345678"), 3);
+        assert_eq!(estimate_text_tokens("123456789"), 3);
+        assert_eq!(estimate_text_tokens("éééé"), 2);
+        assert_eq!(estimate_text_tokens("😀😀"), 2);
         assert_eq!(estimate_text_tokens(""), 0);
     }
 
     #[test]
+    fn v110_large_new_input_limits_output_with_three_and_a_half_ratio() {
+        let context = Context {
+            system_prompt: None,
+            tools: Vec::new(),
+            messages: vec![
+                msg_ts(
+                    Role::Assistant,
+                    vec![text("kept")],
+                    Some(usage(2000, 0, 2000)),
+                    Some(StopReason::Stop),
+                    100,
+                ),
+                msg_ts(Role::User, vec![text(&"x".repeat(3500))], None, None, 200),
+            ],
+        };
+        assert_eq!(
+            estimate_context_tokens(&context),
+            ContextEstimate {
+                tokens: 3000,
+                usage_tokens: 2000,
+                trailing_tokens: 1000,
+                last_usage_index: Some(0),
+            }
+        );
+        let mut model =
+            crate::registry::get_model(crate::types::provider_id::OPENAI, "gpt-4o-mini")
+                .expect("built-in fixture model");
+        model.context_window = 10_000;
+        model.max_tokens = 8_000;
+        assert_eq!(
+            crate::simple_options::clamp_max_tokens_to_context(&model, &context, 8000),
+            2904
+        );
+    }
+
+    #[test]
+    fn system_messages_include_added_and_removed_tool_definitions() {
+        let mut message = msg(Role::System, vec![text("prompt")], None, None);
+        message.tools_added.push(Tool {
+            name: "echo".into(),
+            description: "Echo input".into(),
+            parameters: serde_json::json!({"type":"object"}),
+            constrained_sampling: None,
+        });
+        message
+            .tools_removed
+            .push(ToolReference { name: "old".into() });
+        let expected = estimate_text_tokens("prompt")
+            + estimate_text_tokens(&serde_json::to_string(&message.tools_added).unwrap())
+            + estimate_text_tokens(&serde_json::to_string(&message.tools_removed).unwrap());
+        assert_eq!(estimate_message_tokens(&message), expected);
+    }
+
+    #[test]
     fn content_tokens_weight_images_at_4800() {
-        // "abcd"(4) + image(4800) = 4804 -> ceil(4804/4) = 1201
+        // "abcd"(4) + image(4800) = 4804 -> ceil(4804/3.5) = 1373
         let content = vec![
             text("abcd"),
             ContentBlock::Image {
@@ -85,7 +143,7 @@ mod tests {
                 mime_type: "image/png".into(),
             },
         ];
-        assert_eq!(estimate_text_and_image_content_tokens(&content), 1201);
+        assert_eq!(estimate_text_and_image_content_tokens(&content), 1373);
     }
 
     #[test]
@@ -121,8 +179,8 @@ mod tests {
             None,
             None,
         );
-        // chars = 5 + 5 + (2 + 7) = 19 -> ceil(19/4) = 5
-        assert_eq!(estimate_message_tokens(&m), 5);
+        // chars = 5 + 5 + (2 + 7) = 19 -> ceil(19/3.5) = 6
+        assert_eq!(estimate_message_tokens(&m), 6);
     }
 
     #[test]
@@ -140,7 +198,7 @@ mod tests {
                 Some(usage(0, 0, 100)),
                 Some(StopReason::Stop),
             ),
-            msg(Role::User, vec![text("abcd")], None, None), // trailing: ceil(4/4)=1
+            msg(Role::User, vec![text("abcd")], None, None), // trailing: ceil(4/3.5)=2
         ];
         let ctx = Context {
             system_prompt: Some("sys".into()),
@@ -149,8 +207,8 @@ mod tests {
         };
         let est = estimate_context_tokens(&ctx);
         assert_eq!(est.usage_tokens, 100);
-        assert_eq!(est.trailing_tokens, 1);
-        assert_eq!(est.tokens, 101); // no prefix added when anchored
+        assert_eq!(est.trailing_tokens, 2);
+        assert_eq!(est.tokens, 102); // no prefix added when anchored
         assert_eq!(est.last_usage_index, Some(1));
     }
 
@@ -164,17 +222,17 @@ mod tests {
                 Some(usage(0, 0, 500)),
                 Some(StopReason::Aborted),
             ),
-            msg(Role::User, vec![text("abcd")], None, None), // 1 token
+            msg(Role::User, vec![text("abcd")], None, None), // 2 tokens
         ];
         let ctx = Context {
             system_prompt: Some("12345678".into()),
             tools: Vec::new(),
             messages,
-        }; // sys = 2 tokens
+        }; // sys = 3 tokens
         let est = estimate_context_tokens(&ctx);
         assert_eq!(est.last_usage_index, None);
-        // message tokens: assistant "x"=ceil(1/4)=1, user "abcd"=1 => 2; +sys 2 = 4
-        assert_eq!(est.tokens, 4);
+        // message tokens: assistant "x"=1, user "abcd"=2; +system 3 = 6
+        assert_eq!(est.tokens, 6);
         assert_eq!(est.usage_tokens, 0);
     }
 
@@ -198,9 +256,9 @@ mod tests {
         };
 
         let est = estimate_context_tokens(&context);
-        assert_eq!(est.tokens, 1005);
+        assert_eq!(est.tokens, 1149);
         assert_eq!(est.usage_tokens, 0);
-        assert_eq!(est.trailing_tokens, 1005);
+        assert_eq!(est.trailing_tokens, 1149);
         assert_eq!(est.last_usage_index, None);
 
         let mut model = crate::types::Model {
@@ -221,14 +279,15 @@ mod tests {
             context_window: 10_000,
             max_tokens: 8_000,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: Default::default(),
         };
-        // Keep the fixture exact: buildBaseOptions(model, context).maxTokens == 4_899.
+        // v1.1.0 upstream fixture: buildBaseOptions(model, context).maxTokens == 4_755.
         assert_eq!(
             crate::simple_options::clamp_max_tokens_to_context(&model, &context, model.max_tokens),
-            4899
+            4755
         );
         model.context_window = 0;
         assert_eq!(
@@ -265,9 +324,9 @@ mod tests {
         };
 
         let est = estimate_context_tokens(&context);
-        assert_eq!(est.tokens, 2001);
+        assert_eq!(est.tokens, 2002);
         assert_eq!(est.usage_tokens, 2000);
-        assert_eq!(est.trailing_tokens, 1);
+        assert_eq!(est.trailing_tokens, 2);
         assert_eq!(est.last_usage_index, Some(3));
     }
 }

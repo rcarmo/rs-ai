@@ -53,6 +53,7 @@ mod tests {
 
     fn context() -> ClassifierContext {
         ClassifierContext {
+            images: vec![],
             state: serde_json::from_value(json!({"message":"failing payouts"})).unwrap(),
             questions: IndexMap::from([(
                 "team".into(),

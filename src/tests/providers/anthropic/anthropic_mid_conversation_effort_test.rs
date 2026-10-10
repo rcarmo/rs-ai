@@ -35,6 +35,7 @@ fn managed_model(base_url: &str) -> Model {
         context_window: 200000,
         max_tokens: 4096,
         sampling_params: None,
+        sampling_params_by_thinking_level: None,
         headers: None,
         api_key: Some("test".into()),
         compat: ModelCompat {

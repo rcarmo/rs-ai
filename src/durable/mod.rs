@@ -6,6 +6,7 @@
 
 pub mod harness;
 pub mod model;
+mod provider;
 pub mod session;
 pub mod storage;
 pub mod submission;

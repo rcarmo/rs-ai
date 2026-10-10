@@ -28,7 +28,7 @@ fn supports_bedrock_prompt_caching(model: &Model) -> bool {
     }
     any("-4-") || any("claude-3-7-sonnet") || any("claude-3-5-haiku")
         // v0.80.5: Claude 5 models (fable-5, sonnet-5) support prompt caching.
-        || any("fable-5") || any("sonnet-5")
+        || any("fable-5") || any("sonnet-5") || any("haiku-5")
 }
 
 /// Build a Bedrock cache-point block with an optional 1h TTL for long retention.
@@ -495,6 +495,7 @@ pub(crate) fn bedrock_supports_adaptive_thinking(model: &Model) -> bool {
             || s.contains("sonnet-4-6")
             || s.contains("sonnet-5")
             || s.contains("fable-5")
+            || s.contains("haiku-5")
     })
 }
 
@@ -506,6 +507,7 @@ fn bedrock_supports_native_xhigh_effort(model: &Model) -> bool {
             || s.contains("opus-4-8")
             || s.contains("sonnet-5")
             || s.contains("fable-5")
+            || s.contains("haiku-5")
     })
 }
 
@@ -516,6 +518,7 @@ fn bedrock_supports_thinking_block_binding(model: &Model) -> bool {
             || s.contains("opus-5")
             || s.contains("sonnet-5")
             || s.contains("fable-5")
+            || s.contains("haiku-5")
     })
 }
 
@@ -547,10 +550,38 @@ pub(crate) fn bedrock_thinking_fields(
     model: &Model,
     opts: &StreamOptions,
 ) -> Option<(serde_json::Value, Option<u32>)> {
-    if !model.reasoning || !is_anthropic_claude_model(model) {
+    if !model.reasoning {
         return None;
     }
     let level = opts.reasoning.as_ref()?;
+    let candidates = bedrock_model_match_candidates(model);
+    if candidates.iter().any(|id| id.contains("gpt-")) {
+        let key = format!("{level:?}").to_lowercase();
+        if candidates.iter().any(|id| id.contains("gpt-oss")) {
+            let effort = match level {
+                ThinkingLevel::Minimal => "low",
+                ThinkingLevel::XHigh | ThinkingLevel::Max => "high",
+                _ => key.as_str(),
+            };
+            return Some((serde_json::json!({"reasoning_effort":effort}), None));
+        }
+        let effort = model
+            .thinking_level_map
+            .as_ref()
+            .and_then(|map| map.get(&key))
+            .and_then(|value| value.clone())
+            .unwrap_or_else(|| {
+                if *level == ThinkingLevel::Minimal {
+                    "low".into()
+                } else {
+                    key
+                }
+            });
+        return Some((serde_json::json!({"reasoning":{"effort":effort}}), None));
+    }
+    if !is_anthropic_claude_model(model) {
+        return None;
+    }
     let key = format!("{level:?}").to_lowercase();
     // GovCloud Bedrock rejects the thinking.display field, so omit it there.
     let display: Option<&str> = if is_govcloud_bedrock_target(model) {
@@ -950,6 +981,7 @@ pub fn stream_bedrock<'a>(
             role: Role::Assistant,
             content: Vec::new(),
             timestamp: crate::utils::now_millis(),
+            duration_ms: None,
             api: Some(model.api.clone()),
             provider: Some(model.provider.clone()),
             model: Some(model.id.clone()),
@@ -1235,6 +1267,7 @@ fn bedrock_error_message(model: &Model, error_message: String) -> Message {
         role: Role::Assistant,
         content: Vec::new(),
         timestamp: crate::utils::now_millis(),
+        duration_ms: None,
         api: Some(model.api.clone()),
         provider: Some(model.provider.clone()),
         model: Some(model.id.clone()),
@@ -1666,6 +1699,7 @@ mod tests {
             context_window: 0,
             max_tokens: 0,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: Default::default(),
@@ -1767,6 +1801,7 @@ mod tests {
                 context_window: 200000,
                 max_tokens: 8192,
                 sampling_params: None,
+                sampling_params_by_thinking_level: None,
                 headers: None,
                 api_key: None,
                 compat: Default::default(),
@@ -1806,6 +1841,7 @@ mod tests {
                 context_window: 200000,
                 max_tokens: 8192,
                 sampling_params: None,
+                sampling_params_by_thinking_level: None,
                 headers: None,
                 api_key: None,
                 compat: Default::default(),
@@ -1859,6 +1895,7 @@ mod tests {
                     mime_type: mime.into(),
                 }],
                 timestamp: 0,
+                duration_ms: None,
                 api: None,
                 provider: None,
                 model: None,
@@ -1924,6 +1961,7 @@ mod tests {
                 context_window: 0,
                 max_tokens: 64000,
                 sampling_params: None,
+                sampling_params_by_thinking_level: None,
                 headers: None,
                 api_key: None,
                 compat: Default::default(),
@@ -1996,6 +2034,7 @@ mod tests {
             context_window: 0,
             max_tokens: 0,
             sampling_params: None,
+            sampling_params_by_thinking_level: None,
             headers: None,
             api_key: None,
             compat: Default::default(),

@@ -532,6 +532,7 @@ fn stream_anthropic_resolved<'a>(
             role: Role::Assistant,
             content: Vec::new(),
             timestamp: crate::utils::now_millis(),
+            duration_ms: None,
             api: Some(model.api.clone()),
             provider: Some(model.provider.clone()),
             model: Some(model.id.clone()),
