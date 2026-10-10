@@ -349,6 +349,137 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn session_wide_task_and_submission_queries_preserve_filters_and_cursor_order() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let mut first = batch(1);
+        first.documents.clear();
+        session.commit(first).await.unwrap();
+        let mut second = batch(2);
+        second.next_id = 8;
+        second.documents.clear();
+        second.tasks[0].id = TaskId::new(5).unwrap();
+        second.tasks[0].conversation_id = ConversationId::new(2).unwrap();
+        second.tasks[0].abort_requested = true;
+        second.entries[0].id = EntryId::new(6).unwrap();
+        second.entries[0].conversation_id = ConversationId::new(2).unwrap();
+        second.entries[0].by_task_id = Some(TaskId::new(5).unwrap());
+        second.submissions[0].id = SubmissionId::new(7).unwrap();
+        second.submissions[0].conversation_id = ConversationId::new(2).unwrap();
+        second.submissions[0].entry_id = EntryId::new(6).unwrap();
+        session.commit(second).await.unwrap();
+        let before = session.snapshot().await.unwrap();
+        let mut page = session
+            .tasks_in(
+                None,
+                TaskQuery {
+                    scan: ScanOptions {
+                        limit: 1,
+                        order: Some(ScanOrder::Descending),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(page.items[0].id.get(), 5);
+        assert_eq!(page.cursor.unwrap().order, Some(ScanOrder::Descending));
+        page.items[0].input = json!("mutated");
+        let rest = session
+            .tasks_in(
+                None,
+                TaskQuery {
+                    scan: ScanOptions {
+                        cursor: page.cursor,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(rest.items[0].id.get(), 3);
+        assert!(rest.cursor.is_none());
+        let filtered = session
+            .tasks_in(
+                None,
+                TaskQuery {
+                    abort_requested: Some(true),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(filtered.items[0].conversation_id.get(), 2);
+        assert_eq!(filtered.items.len(), 1);
+        assert_eq!(
+            session
+                .tasks_in(Some(ConversationId::new(1).unwrap()), TaskQuery::default())
+                .await
+                .unwrap()
+                .items
+                .len(),
+            1
+        );
+        let mut page = session
+            .submissions_in(
+                None,
+                SubmissionQuery {
+                    status: Some("pending".into()),
+                    scan: ScanOptions {
+                        limit: 1,
+                        ..Default::default()
+                    },
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(page.items[0].id.get(), 4);
+        page.items[0].request_id = None;
+        let rest = session
+            .submissions_in(
+                None,
+                SubmissionQuery {
+                    scan: ScanOptions {
+                        cursor: page.cursor,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(rest.items[0].id.get(), 7);
+        assert!(rest.cursor.is_none());
+        let conflict = TaskQuery {
+            scan: ScanOptions {
+                cursor: Some(ScanCursor {
+                    after: 5,
+                    order: Some(ScanOrder::Descending),
+                }),
+                order: Some(ScanOrder::Ascending),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        assert!(session.tasks_in(None, conflict).await.is_err());
+        assert_eq!(session.snapshot().await.unwrap(), before);
+        session.close().await.unwrap();
+        assert!(matches!(
+            session.tasks_in(None, TaskQuery::default()).await,
+            Err(DurableError::Closed)
+        ));
+        assert!(matches!(
+            session
+                .submissions_in(None, SubmissionQuery::default())
+                .await,
+            Err(DurableError::Closed)
+        ));
+    }
+
+    #[tokio::test]
     async fn session_queries_filter_range_kind_state_and_status_without_snapshot_mutation() {
         let session = DurableSession::open(Box::new(MemoryStorage::new()))
             .await

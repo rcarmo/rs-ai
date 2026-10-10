@@ -513,6 +513,16 @@ mod tests {
             session.entry(conversation, EntryId::new(1).unwrap()).await,
             Err(DurableError::Poisoned)
         ));
+        assert!(matches!(
+            session.tasks_in(None, TaskQuery::default()).await,
+            Err(DurableError::Poisoned)
+        ));
+        assert!(matches!(
+            session
+                .submissions_in(None, SubmissionQuery::default())
+                .await,
+            Err(DurableError::Poisoned)
+        ));
         assert!(session.close().await.is_ok());
     }
 

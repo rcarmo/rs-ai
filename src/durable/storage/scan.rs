@@ -220,13 +220,22 @@ impl StorageSnapshot {
         conversation: ConversationId,
         query: &TaskQuery,
     ) -> Result<ScanPage<TaskRecord>, DurableError> {
+        self.query_tasks_in(Some(conversation), query)
+    }
+
+    /// None selects all native conversations; results remain detached.
+    pub fn query_tasks_in(
+        &self,
+        conversation: Option<ConversationId>,
+        query: &TaskQuery,
+    ) -> Result<ScanPage<TaskRecord>, DurableError> {
         let options = &query.scan;
         let (order, after) = start(options, ScanOrder::Ascending)?;
         let records = self
             .tasks
             .iter()
             .filter(move |(_, record)| {
-                record.conversation_id == conversation
+                conversation.is_none_or(|conversation| record.conversation_id == conversation)
                     && query.kind.as_ref().is_none_or(|kind| record.kind == *kind)
                     && query
                         .state
@@ -262,13 +271,22 @@ impl StorageSnapshot {
         conversation: ConversationId,
         query: &SubmissionQuery,
     ) -> Result<ScanPage<SubmissionRecord>, DurableError> {
+        self.query_submissions_in(Some(conversation), query)
+    }
+
+    /// None selects all native conversations, preserving exclusive cursor order.
+    pub fn query_submissions_in(
+        &self,
+        conversation: Option<ConversationId>,
+        query: &SubmissionQuery,
+    ) -> Result<ScanPage<SubmissionRecord>, DurableError> {
         let options = &query.scan;
         let (order, after) = start(options, ScanOrder::Ascending)?;
         let records = self
             .submissions
             .iter()
             .filter(move |(_, record)| {
-                record.conversation_id == conversation
+                conversation.is_none_or(|conversation| record.conversation_id == conversation)
                     && query
                         .status
                         .as_ref()

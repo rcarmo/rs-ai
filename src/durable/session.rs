@@ -65,12 +65,12 @@ enum SessionCommand {
         oneshot::Sender<Result<ScanPage<EntryRecord>, DurableError>>,
     ),
     Tasks(
-        ConversationId,
+        Option<ConversationId>,
         TaskQuery,
         oneshot::Sender<Result<ScanPage<TaskRecord>, DurableError>>,
     ),
     Submissions(
-        ConversationId,
+        Option<ConversationId>,
         SubmissionQuery,
         oneshot::Sender<Result<ScanPage<SubmissionRecord>, DurableError>>,
     ),
@@ -327,6 +327,15 @@ impl DurableSession {
         conversation: ConversationId,
         query: TaskQuery,
     ) -> Result<ScanPage<TaskRecord>, DurableError> {
+        self.tasks_in(Some(conversation), query).await
+    }
+
+    /// Query one native conversation or all conversations when omitted.
+    pub async fn tasks_in(
+        &self,
+        conversation: Option<ConversationId>,
+        query: TaskQuery,
+    ) -> Result<ScanPage<TaskRecord>, DurableError> {
         if self.sealed.load(Ordering::Acquire) {
             return Err(DurableError::Closed);
         }
@@ -341,6 +350,15 @@ impl DurableSession {
     pub async fn submissions(
         &self,
         conversation: ConversationId,
+        query: SubmissionQuery,
+    ) -> Result<ScanPage<SubmissionRecord>, DurableError> {
+        self.submissions_in(Some(conversation), query).await
+    }
+
+    /// Query one native conversation or all conversations when omitted.
+    pub async fn submissions_in(
+        &self,
+        conversation: Option<ConversationId>,
         query: SubmissionQuery,
     ) -> Result<ScanPage<SubmissionRecord>, DurableError> {
         if self.sealed.load(Ordering::Acquire) {
@@ -582,10 +600,10 @@ async fn session_worker(
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_entries(conversation, &query) });
                     }
                     SessionCommand::Tasks(conversation, query, reply) => {
-                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_tasks(conversation, &query) });
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_tasks_in(conversation, &query) });
                     }
                     SessionCommand::Submissions(conversation, query, reply) => {
-                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_submissions(conversation, &query) });
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_submissions_in(conversation, &query) });
                     }
                     SessionCommand::Context(conversation, at, reply) => {
                         if poisoned { cache.values.clear(); let _ = reply.send(Err(DurableError::Poisoned)); continue; }
