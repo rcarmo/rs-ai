@@ -23,7 +23,7 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 | M | `packages/durable/src/env/node.ts` | PENDING | Not yet accepted |
 | M | `packages/durable/src/harness/agent.ts` | PENDING | Not yet accepted |
 | M | `packages/durable/src/harness/compaction.ts` | PENDING | Not yet accepted |
-| M | `packages/durable/src/harness/context.ts` | PENDING | Not yet accepted |
+| M | `packages/durable/src/harness/context.ts` | ADAPTED native tool-message derivation; cache/edit/fork gaps | New `src/durable/context.rs` derives native entries, repairs tool-result call order, synthesizes missing results and drops duplicate/orphan results. Tool-call assistant entries persist before effects; later submissions retain prior rounds, including after recovery. `message_context({ at })` is read-only and inclusive. Tests cover missing/order/duplicates, follow-up preservation, recovery no-dispatch and FIFO queued cutoff. Full edits/head/fork/incremental cache contracts are absent. |
 | M | `packages/durable/src/harness/generation.ts` | PENDING | Not yet accepted |
 | M | `packages/durable/src/harness/harness.ts` | ADAPTED provider identity and historical text-context subset; broader gaps | `DurableHarness::context_with_options(ContextOptions { at })` cuts inclusively at a visible entry, rejects missing/foreign entries and leaves state/effects unchanged. `context()` remains compatible. Submission regression tests passive/user/answer/tail cuts and no dispatch/mutation. Native context excludes tool messages, edits, head resets and forks; those contracts are unimplemented. |
 | M | `packages/durable/src/harness/output.ts` | PENDING | Not yet accepted |

@@ -4,6 +4,7 @@
 //! generation. R1c adds owned versioned tools, conservative replay, bottom-up
 //! abort and non-aborting close drain.
 
+pub mod context;
 pub mod harness;
 pub mod model;
 pub mod models;

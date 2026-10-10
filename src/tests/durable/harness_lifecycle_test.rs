@@ -159,6 +159,88 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn queued_native_context_includes_prior_answer_allocated_after_queued_input() {
+        struct Runner {
+            calls: std::sync::atomic::AtomicUsize,
+            entered: Arc<Notify>,
+            release: Arc<Notify>,
+            seen: Arc<std::sync::Mutex<Vec<ModelIntent>>>,
+        }
+        impl DurableModelRunner for Runner {
+            fn run<'a>(&'a self, intent: ModelIntent) -> crate::durable::model::ModelFuture<'a> {
+                self.seen.lock().unwrap().push(intent);
+                let first = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) == 0;
+                Box::pin(async move {
+                    if first {
+                        self.entered.notify_one();
+                        self.release.notified().await;
+                    }
+                    ModelRun::one(ModelTerminal::Answer {
+                        content: vec![],
+                        text: "answer".into(),
+                        usage: DurableUsage::default(),
+                        response_id: None,
+                        stop_reason: "stop".into(),
+                    })
+                })
+            }
+        }
+        let entered = Arc::new(Notify::new());
+        let release = Arc::new(Notify::new());
+        let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let harness = DurableHarness::open(
+            Box::new(MemoryStorage::new()),
+            Arc::new(Runner {
+                calls: std::sync::atomic::AtomicUsize::new(0),
+                entered: entered.clone(),
+                release: release.clone(),
+                seen: seen.clone(),
+            }),
+            model(),
+            PinnedOptions::default(),
+        )
+        .await
+        .unwrap();
+        let first = harness
+            .submit(SubmitRequest {
+                request_id: "q-first".into(),
+                content: "first".into(),
+            })
+            .await
+            .unwrap();
+        entered.notified().await;
+        let second = harness
+            .submit(SubmitRequest {
+                request_id: "q-second".into(),
+                content: "second".into(),
+            })
+            .await
+            .unwrap();
+        release.notify_one();
+        harness.wait(first).await.unwrap();
+        harness.wait(second).await.unwrap();
+        {
+            let seen = seen.lock().unwrap();
+            let messages = seen[1].native_messages.as_ref().unwrap();
+            assert_eq!(
+                messages
+                    .iter()
+                    .map(|message| message.role.clone())
+                    .collect::<Vec<_>>(),
+                [
+                    crate::types::Role::User,
+                    crate::types::Role::Assistant,
+                    crate::types::Role::User
+                ]
+            );
+            assert!(
+                matches!(messages[1].content.first(), Some(crate::types::ContentBlock::Text { text, .. }) if text == "answer")
+            );
+        }
+        harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn more_than_wake_capacity_queued_admissions_do_not_deadlock() {
         let (started_tx, started_rx) = oneshot::channel();
         let release = Arc::new(Notify::new());

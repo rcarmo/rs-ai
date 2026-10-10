@@ -164,6 +164,9 @@ mod coverage_test;
 #[path = "tests/core/deferred_tools_test.rs"]
 mod deferred_tools_test;
 #[cfg(test)]
+#[path = "tests/durable/context_test.rs"]
+mod durable_context_test;
+#[cfg(test)]
 #[path = "tests/durable/harness_abort_test.rs"]
 mod durable_harness_abort_test;
 #[cfg(test)]

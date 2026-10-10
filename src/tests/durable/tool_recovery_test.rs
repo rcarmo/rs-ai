@@ -203,10 +203,38 @@ mod tests {
             0,
             "opening never dispatches recovered effects"
         );
+        let context_before = reopened
+            .message_context(ContextOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(count.load(Ordering::SeqCst), 0);
+        assert!(
+            context_before
+                .iter()
+                .any(|message| message.role == crate::types::Role::ToolResult && message.is_error)
+        );
         reopened.resume(handle.clone()).await.unwrap();
         assert_eq!(
             reopened.wait(handle).await.unwrap().answer.as_deref(),
             Some("final")
+        );
+        let context_after = reopened
+            .message_context(ContextOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(
+            context_after
+                .iter()
+                .filter(|message| message.role == crate::types::Role::ToolResult)
+                .count(),
+            1
+        );
+        assert!(
+            !context_after
+                .iter()
+                .find(|message| message.role == crate::types::Role::ToolResult)
+                .unwrap()
+                .is_error
         );
         assert_eq!(count.load(Ordering::SeqCst), 1);
         reopened.close().await.unwrap();

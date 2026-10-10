@@ -77,7 +77,9 @@ Fork traversal, conversation records, background-task filters, backend streaming
 
 `DurableHarness::context_with_options(ContextOptions { at: Some(entry_id) })` returns the native text context through a visible entry, inclusive. `at: None` matches `context()`. Unknown or foreign-conversation IDs fail; the query neither commits nor dispatches effects. Ordering follows the native `(created_seq, id)` sequence. Tests cut before a submission, at its user/answer entries and at the tail, then compare state before and after the query.
 
-The native text context includes user and assistant text only. Upstream fork ancestry, edits, head resets, tool-result repair and open-message assembly are not implemented by this helper.
+The compatibility `context()` helper includes user/assistant text only. `message_context(ContextOptions { at })` returns native messages, including persisted assistant tool calls and tool results. Calls persist atomically with pending children before effects. Results appear immediately after their assistant in call order; the first matching result before the next assistant wins, missing results are synthesized as errors, and duplicates/orphans are dropped. Result durations survive reconstruction. Legacy text-only assistant records remain readable.
+
+New submissions persist native context in their intent so prior tool rounds survive follow-up dispatch and recovery. The native FIFO cutoff includes completed prior turns even when a queued input ID predates the prior answer, then places the active input last. Reconstructed messages do not acquire new timing. Fork ancestry, edits, head resets, full open-message assembly and incremental retention caching are not implemented.
 
 ## Later required work
 

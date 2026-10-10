@@ -290,6 +290,15 @@ impl DurableHarness {
         context_from_snapshot(&snapshot, options)
     }
 
+    /// Native user/assistant/tool messages through an inclusive visible entry.
+    pub async fn message_context(
+        &self,
+        options: ContextOptions,
+    ) -> Result<Vec<crate::types::Message>, DurableError> {
+        let snapshot = self.inner.session.snapshot().await?;
+        super::context::messages(&snapshot, conversation_id()?, options.at)
+    }
+
     pub async fn entries(
         &self,
         query: super::storage::scan::EntryQuery,
@@ -737,6 +746,7 @@ async fn execute(inner: Arc<Inner>, task_id: TaskId) -> Result<(), DurableError>
             intent.context_cutoff = u32::try_from(context.len())
                 .map_err(|_| DurableError::Range("context length overflow".into()))?;
             intent.context = context;
+            intent.native_messages = Some(super::context::for_task(&snapshot, task_id)?);
         }
         if intent.offered_tools.is_empty() {
             intent.offered_tools = inner
@@ -1086,7 +1096,16 @@ async fn settle_tool_round(
         let _operation = inner.operations.lock().await;
         let snapshot = inner.session.snapshot().await?;
         let seq = CommitSeq::new(snapshot.next_seq)?;
-        let mut next_id = snapshot.next_id;
+        let assistant_id = EntryId::new(snapshot.next_id)?;
+        let assistant_entry = EntryRecord {
+            id: assistant_id,
+            conversation_id: parent.conversation_id,
+            kind: "assistant".into(),
+            value: json!({"message":assistant}),
+            by_task_id: Some(parent.id),
+            created_seq: seq,
+        };
+        let mut next_id = increment(snapshot.next_id)?;
         let mut children = Vec::new();
         for call in &calls {
             let Some(registered) = inner.tools.get(&call.name) else {
@@ -1152,7 +1171,7 @@ async fn settle_tool_round(
                 seq,
                 next_id,
                 next_seq: increment(seq.get())?,
-                entries: vec![],
+                entries: vec![assistant_entry],
                 tasks,
                 submissions: vec![],
                 documents: vec![],

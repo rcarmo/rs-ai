@@ -127,6 +127,138 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn subsequent_submission_replays_prior_tool_round_from_durable_entries() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        struct Runner(AtomicUsize, Arc<Mutex<Vec<ModelIntent>>>);
+        impl DurableModelRunner for Runner {
+            fn run<'a>(&'a self, intent: ModelIntent) -> crate::durable::model::ModelFuture<'a> {
+                self.1.lock().unwrap().push(intent);
+                let call = self.0.fetch_add(1, Ordering::SeqCst);
+                Box::pin(async move {
+                    ModelRun::one(if call == 0 {
+                        ModelTerminal::ToolCalls {
+                            calls: vec![DurableToolCall {
+                                provider_call_id: "saved-call".into(),
+                                name: "echo".into(),
+                                original_arguments: json!({"value":"x"}),
+                            }],
+                            usage: DurableUsage::default(),
+                            assistant: json!({"role":"assistant","content":[{"type":"toolCall","id":"saved-call","name":"echo","arguments":{"value":"x"}}],"timestamp":100,"api":"pi-messages","provider":"test","model":"m"}),
+                        }
+                    } else {
+                        ModelTerminal::Answer {
+                            content: vec![],
+                            text: format!("answer-{call}"),
+                            usage: DurableUsage::default(),
+                            response_id: None,
+                            stop_reason: "stop".into(),
+                        }
+                    })
+                })
+            }
+        }
+        let seen = Arc::new(Mutex::new(Vec::new()));
+        let effects = Arc::new(Mutex::new(Vec::new()));
+        let tools = Arc::new(DurableToolRegistry::default());
+        tools
+            .register(
+                definition(),
+                "echo",
+                "1",
+                ReplayPolicy::Safe,
+                Arc::new(Echo {
+                    seen: effects.clone(),
+                }),
+            )
+            .unwrap();
+        let harness = DurableHarness::open_with_tools(
+            Box::new(MemoryStorage::new()),
+            Arc::new(Runner(AtomicUsize::new(0), seen.clone())),
+            PinnedModel::from_model(&model("http://unused".into())).unwrap(),
+            PinnedOptions::default(),
+            tools,
+        )
+        .await
+        .unwrap();
+        let first = harness
+            .submit(SubmitRequest {
+                request_id: "first".into(),
+                content: "first".into(),
+            })
+            .await
+            .unwrap();
+        harness.wait(first).await.unwrap();
+        let tool_entry = harness
+            .entries(EntryQuery {
+                kind: Some("assistant".into()),
+                scan: ScanOptions {
+                    order: Some(ScanOrder::Ascending),
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+            .await
+            .unwrap()
+            .items
+            .into_iter()
+            .find(|entry| entry.value.get("message").is_some())
+            .unwrap();
+        let cut = harness
+            .message_context(ContextOptions {
+                at: Some(tool_entry.id),
+            })
+            .await
+            .unwrap();
+        assert_eq!(cut.len(), 3);
+        assert!(cut[2].is_error);
+        assert_eq!(cut[2].details.as_ref().unwrap()["reason"], "missing_result");
+        let mut all = harness
+            .message_context(ContextOptions::default())
+            .await
+            .unwrap();
+        assert_eq!(
+            all.iter()
+                .map(|message| message.role.clone())
+                .collect::<Vec<_>>(),
+            [
+                crate::types::Role::User,
+                crate::types::Role::Assistant,
+                crate::types::Role::ToolResult,
+                crate::types::Role::Assistant
+            ]
+        );
+        assert_eq!(all[2].tool_call_id.as_deref(), Some("saved-call"));
+        assert!(all[2].duration_ms.is_some());
+        all[2].tool_call_id = Some("mutated".into());
+        assert_eq!(
+            harness
+                .message_context(ContextOptions::default())
+                .await
+                .unwrap()[2]
+                .tool_call_id
+                .as_deref(),
+            Some("saved-call")
+        );
+        let second = harness
+            .follow_up(SubmitRequest {
+                request_id: "second".into(),
+                content: "second".into(),
+            })
+            .await
+            .unwrap();
+        harness.wait(second).await.unwrap();
+        {
+            let seen = seen.lock().unwrap();
+            let follow_up = seen[2].native_messages.as_ref().unwrap();
+            assert_eq!(follow_up.len(), 5);
+            assert_eq!(follow_up[2].tool_call_id.as_deref(), Some("saved-call"));
+            assert_eq!(follow_up[4].role, crate::types::Role::User);
+            assert_eq!(effects.lock().unwrap().len(), 1);
+        }
+        harness.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn tool_receives_same_injected_models_service_and_can_complete_nested_call() {
         use std::sync::atomic::{AtomicUsize, Ordering};
         struct HostModels(AtomicUsize);
