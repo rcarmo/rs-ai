@@ -110,6 +110,78 @@ mod tests {
     }
 
     #[test]
+    fn incremental_ranges_match_full_derivation_over_mixed_transcripts() {
+        use crate::durable::context::{MessageRange, messages};
+        use crate::durable::*;
+        use serde_json::json;
+        let conversation = ConversationId::new(1).unwrap();
+        let mut snapshot = StorageSnapshot::empty();
+        let mut range: Option<MessageRange> = None;
+        let mut seed = 13u64;
+        let mut call = String::from("initial");
+        for id in 1..=150u64 {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let target = if id > 1 { seed % (id - 1) + 1 } else { 1 };
+            let value = match seed % 9 {
+                0 => json!({"model":[crate::user_message(&format!("user-{id}"))]}),
+                1 => {
+                    call = format!("call-{id}");
+                    json!({"model":[assistant(&[&call]) ]})
+                }
+                2 => {
+                    json!({"model":[tool(&call,"first"),tool(&call,"duplicate"),tool("orphan","drop")]})
+                }
+                3 => {
+                    let mut system = crate::user_message("baseline");
+                    system.role = Role::System;
+                    json!({"model":[system]})
+                }
+                4 if id > 1 => {
+                    json!({"edits":[{"type":"replace","target":target,"messages":[crate::user_message("replacement"),tool("orphan","drop")]}]})
+                }
+                5 if id > 1 => json!({"edits":[{"type":"omit","target":target}]}),
+                6 => json!({"head":id,"model":[crate::user_message("self-head")]}),
+                7 if id > 1 => json!({"head":target,"model":[crate::user_message("prior-head")]}),
+                _ => {
+                    let mut excluded = assistant(&["excluded"]);
+                    excluded.stop_reason = Some(crate::types::StopReason::Aborted);
+                    json!({"model":[excluded]})
+                }
+            };
+            let entry_id = EntryId::new(id).unwrap();
+            snapshot.entries.insert(
+                entry_id,
+                EntryRecord {
+                    id: entry_id,
+                    conversation_id: conversation,
+                    kind: "mixed".into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: CommitSeq::new(id).unwrap(),
+                },
+            );
+            if let Some(range) = &mut range {
+                range.extend(&snapshot, conversation).unwrap();
+            } else {
+                range = MessageRange::build(&snapshot, conversation).unwrap();
+            }
+            let expected = messages(&snapshot, conversation, None).unwrap();
+            assert_eq!(
+                serde_json::to_value(&range.as_ref().unwrap().messages).unwrap(),
+                serde_json::to_value(expected).unwrap(),
+                "step {id}"
+            );
+            // Historical cuts must not contaminate the retained current range.
+            let before = serde_json::to_value(&range.as_ref().unwrap().messages).unwrap();
+            messages(&snapshot, conversation, Some(EntryId::new(target).unwrap())).unwrap();
+            assert_eq!(
+                serde_json::to_value(&range.as_ref().unwrap().messages).unwrap(),
+                before
+            );
+        }
+    }
+
+    #[test]
     fn results_follow_call_order_before_interleaved_users_and_drop_orphans() {
         let messages = order_tool_results(vec![
             tool("orphan", "drop"),
