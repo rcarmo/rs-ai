@@ -151,6 +151,16 @@ Ranges are pinned while any native task in their conversation is nonterminal. Th
 
 There are at most 64 active watches. Each queues at most 64 records or 32 MiB encoded commit deltas; overflow clears undelivered deltas and enqueues a fresh adopted snapshot. Snapshots can exceed that byte cap, as can their Rust object overhead. Receivers reconcile from the replacement snapshot and continue with later deltas. The native watch has no upstream `start(listener)` callback form, acquisition abort signal, transient progress or full AgentEvent run/message/tool/compaction taxonomy.
 
+## Generic document watches
+
+`DurableSession::watch_document(address)` resolves an existing live incarnation and attaches on the session line. Missing addresses reject with `document not found`. The handle's `value()` is a detached copy of its acquired record, then its last consumed replacement; queued commits do not advance it. `next()` yields one final whole-value record per adopted document commit with its `CommitSeq`. Unrelated, rejected, rolled-back and unadopted commits publish nothing.
+
+Retirement queues a replacement with `record: None`, followed by `End(Retired)` when consumed. The handle never follows a recreated address. Native document roots must be objects; null members stay ordinary data. Explicit stop, session close and poison discard queued frames; the first delivered termination reason wins. Dropping the handle detaches, and a cancelled acquisition leaves no live subscription. Cancelling `next()` keeps queued frames for the next call.
+
+The session permits 64 active generic-document watches independently of native committed-state watches. Each queue retains at most 100 pending frames and a 32 MiB conservative encoded-byte budget. Overflow clears the undelivered suffix and queues the newest exact record with `reconciled: true`; later frames follow normally. Accounting reserves six bytes per UTF-8 string byte, 32 per number and 1 KiB fixed metadata; it may reconcile early and excludes object/allocator overhead and the last consumed value. Subscribers share an internal `Arc` per published revision; public reads are detached clones.
+
+This adapts pinned `session/observation.ts` and spec section 9.2 to a pull handle. Acquisition is a deep copy; arbitrary document scopes/tokens, migrations, delta operations, callback listeners, commit `Context` and acquisition-signal cancellation are not implemented. Ten regressions cover atomic acquisition, exact frames, rollback, cancellation, overflow, retirement/recreation, nullable members, slot reclamation, stop/close, uncertain/reload failure and worker unwind.
+
 ## Later required work
 
 R1c supplies the executable tool registry, intent-before-effect, exact implementation/version/schema replay gate, generation→tool ownership, completing drain and bottom-up abort needed for the useful vertical. Same-version v1.0.1 retagging still requires local/hosted acceptance and publication authority; this document records implementation scope only.

@@ -122,15 +122,30 @@ impl Drop for DurableWatch {
 /// RAII owner closes every receiver if the session worker unwinds unexpectedly.
 pub(crate) struct WatchRegistry {
     pub(crate) values: Vec<std::sync::Weak<WatchQueue>>,
+    pub(crate) documents: Vec<std::sync::Weak<super::document_watch::DocumentQueue>>,
 }
 impl WatchRegistry {
     pub(crate) fn new() -> Self {
-        Self { values: Vec::new() }
+        Self {
+            values: Vec::new(),
+            documents: Vec::new(),
+        }
+    }
+    pub(crate) fn finish(&mut self, end: WatchEnd) {
+        finish_all(&mut self.values, end);
+        let end = match end {
+            WatchEnd::Stopped => super::document_watch::DocumentWatchEnd::Stopped,
+            WatchEnd::Closed => super::document_watch::DocumentWatchEnd::Closed,
+            WatchEnd::Poisoned => super::document_watch::DocumentWatchEnd::Poisoned,
+        };
+        for watch in self.documents.drain(..).filter_map(|watch| watch.upgrade()) {
+            watch.finish(end);
+        }
     }
 }
 impl Drop for WatchRegistry {
     fn drop(&mut self) {
-        finish_all(&mut self.values, WatchEnd::Poisoned);
+        self.finish(WatchEnd::Poisoned);
     }
 }
 

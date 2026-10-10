@@ -1,4 +1,4 @@
-use super::events::{DurableWatch, WatchEnd, WatchQueue, WatchRegistry, finish_all};
+use super::events::{DurableWatch, WatchEnd, WatchQueue, WatchRegistry};
 use crate::durable::storage::scan::{
     ConversationQuery, EntryQuery, ScanPage, SubmissionQuery, TaskQuery,
 };
@@ -118,6 +118,10 @@ enum SessionCommand {
         oneshot::Sender<Result<super::context::ContextView, DurableError>>,
     ),
     Watch(oneshot::Sender<Result<DurableWatch, DurableError>>),
+    WatchDocument(
+        super::documents::DocumentAddress,
+        oneshot::Sender<Result<super::document_watch::DocumentWatch, DurableError>>,
+    ),
     #[cfg(test)]
     CacheStats(oneshot::Sender<(usize, usize)>),
 }
@@ -607,6 +611,24 @@ impl DurableSession {
         result.await.unwrap_or(Err(DurableError::Closed))
     }
 
+    /// Acquire the live generic document and attach on the same mutation line.
+    /// Missing addresses reject; updates are detached replacements and retirement
+    /// ends this incarnation rather than following a recreated address.
+    pub async fn watch_document(
+        &self,
+        address: super::documents::DocumentAddress,
+    ) -> Result<super::document_watch::DocumentWatch, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::WatchDocument(address, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
     #[cfg(test)]
     pub(crate) async fn context_cache_stats(&self) -> (usize, usize) {
         let (reply, result) = oneshot::channel();
@@ -669,7 +691,7 @@ async fn session_worker(
     let mut watches = WatchRegistry::new();
     loop {
         if sealed.load(Ordering::Acquire) {
-            finish_all(&mut watches.values, WatchEnd::Closed);
+            watches.finish(WatchEnd::Closed);
             cache.values.clear();
             reject_unadmitted(rx);
             return storage_close(storage).await;
@@ -683,16 +705,16 @@ async fn session_worker(
             } => { cache.expire(settings.context_retention); }
             _ = close_notify.notified() => {
                 if sealed.load(Ordering::Acquire) {
-                    finish_all(&mut watches.values, WatchEnd::Closed);
+                    watches.finish(WatchEnd::Closed);
                     cache.values.clear();
                     reject_unadmitted(rx);
                     return storage_close(storage).await;
                 }
             }
             command = rx.recv() => {
-                let Some(command) = command else { finish_all(&mut watches.values, WatchEnd::Closed); cache.values.clear(); return storage_close(storage).await; };
+                let Some(command) = command else { watches.finish(WatchEnd::Closed); cache.values.clear(); return storage_close(storage).await; };
                 if sealed.load(Ordering::Acquire) {
-                    finish_all(&mut watches.values, WatchEnd::Closed);
+                    watches.finish(WatchEnd::Closed);
                     cache.values.clear();
                     reject(command);
                     reject_unadmitted(rx);
@@ -756,13 +778,17 @@ async fn session_worker(
                         let invalidate = batch.tasks.iter().filter(|task| state.tasks.get(&task.id).is_some_and(|previous| previous.input != task.input))
                             .map(|task| task.conversation_id).collect::<Vec<_>>();
                         watches.values.retain(|watch: &std::sync::Weak<WatchQueue>| watch.upgrade().is_some_and(|watch| watch.active()));
+                        watches.documents.retain(|watch| watch.upgrade().is_some_and(|watch| watch.active()));
+                        let document_ids = batch.generic_documents.iter()
+                            .filter(|record| watches.documents.iter().any(|watch| watch.upgrade().is_some_and(|watch| watch.id == record.id)))
+                            .map(|record| record.id).collect::<Vec<_>>();
                         let publication = (!watches.values.is_empty()).then(|| {
                             let size = serde_json::to_vec(&batch).map_or(MAX_COMMIT_BYTES, |bytes| bytes.len());
                             (batch.clone(), size)
                         });
                         let (done, result) = oneshot::channel();
                         if storage.send(StorageCommand::Commit(batch, done)).await.is_err() {
-                            finish_all(&mut watches.values, WatchEnd::Poisoned);
+                            watches.finish(WatchEnd::Poisoned);
                             cache.values.clear();
                             poisoned = true;
                             let _ = reply.send(Err(DurableError::Poisoned));
@@ -783,12 +809,21 @@ async fn session_worker(
                                     watches.values.retain(|watch: &std::sync::Weak<WatchQueue>| {
                                         if let Some(watch) = watch.upgrade() { if let Some((batch, size)) = &publication { watch.publish(batch, &state, *size); } true } else { false }
                                     });
+                                    for id in document_ids {
+                                        if let Some(record) = state.generic_documents.get(&id) {
+                                            let size = super::document_watch::record_size(record);
+                                            let record = Arc::new(record.clone());
+                                            for watch in watches.documents.iter().filter_map(|watch| watch.upgrade()).filter(|watch| watch.id == id) {
+                                                watch.publish(record.clone(), size);
+                                            }
+                                        }
+                                    }
                                     reply.adopted(&state);
                                 }
-                                Err(error) => { finish_all(&mut watches.values, WatchEnd::Poisoned); cache.values.clear(); poisoned = true; let _ = reply.send(Err(error)); }
+                                Err(error) => { watches.finish(WatchEnd::Poisoned); cache.values.clear(); poisoned = true; let _ = reply.send(Err(error)); }
                             },
                             Err(DurableError::Uncertain(error)) => {
-                                finish_all(&mut watches.values, WatchEnd::Poisoned);
+                                watches.finish(WatchEnd::Poisoned);
                                 cache.values.clear();
                                 poisoned = true;
                                 let _ = reply.send(Err(DurableError::Uncertain(error)));
@@ -871,7 +906,23 @@ async fn session_worker(
                             else { super::context::view(&state, conversation, at) };
                         let _ = reply.send(result);
                     }
+                    SessionCommand::WatchDocument(address, reply) => {
+                        if reply.is_closed() { continue; }
+                        if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
+                        watches.documents.retain(|watch| watch.upgrade().is_some_and(|watch| watch.active()));
+                        if watches.documents.len() >= 64 { let _ = reply.send(Err(DurableError::Rejected("too many active document watches".into()))); continue; }
+                        match state.document(&address, super::documents::DocumentPoint::Current) {
+                            Ok(Some(record)) => {
+                                let queue = super::document_watch::DocumentQueue::new(record);
+                                watches.documents.push(Arc::downgrade(&queue));
+                                let _ = reply.send(Ok(super::document_watch::DocumentWatch { queue }));
+                            }
+                            Ok(None) => { let _ = reply.send(Err(DurableError::Rejected("document not found".into()))); }
+                            Err(error) => { let _ = reply.send(Err(error)); }
+                        }
+                    }
                     SessionCommand::Watch(reply) => {
+                        if reply.is_closed() { continue; }
                         if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
                         watches.values.retain(|watch| watch.upgrade().is_some_and(|watch| watch.active()));
                         if watches.values.len() >= 64 { let _ = reply.send(Err(DurableError::Rejected("too many active watches".into()))); continue; }
@@ -932,6 +983,9 @@ fn reject(command: SessionCommand) {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Watch(reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::WatchDocument(_, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }
         #[cfg(test)]

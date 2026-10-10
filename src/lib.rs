@@ -170,6 +170,9 @@ mod durable_context_test;
 #[path = "tests/durable/conversations_test.rs"]
 mod durable_conversations_test;
 #[cfg(test)]
+#[path = "tests/durable/document_watch_test.rs"]
+mod durable_document_watch_test;
+#[cfg(test)]
 #[path = "tests/durable/documents_test.rs"]
 mod durable_documents_test;
 #[cfg(test)]
