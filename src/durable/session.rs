@@ -305,13 +305,39 @@ impl DurableSession {
         + Send
         + 'static,
     ) -> Result<T, DurableError> {
+        self.transact_entries_scoped(None, callback).await
+    }
+
+    /// Attribute staged entries to a nonterminal native task. Appends outside
+    /// that task's conversation reject; missing/terminal scopes never run callbacks.
+    pub async fn transact_task_entries<T: Send + 'static>(
+        &self,
+        task_id: TaskId,
+        callback: impl for<'a> FnOnce(
+            &mut super::transaction::EntryTransaction<'a>,
+        ) -> Result<T, DurableError>
+        + Send
+        + 'static,
+    ) -> Result<T, DurableError> {
+        self.transact_entries_scoped(Some(task_id), callback).await
+    }
+
+    async fn transact_entries_scoped<T: Send + 'static>(
+        &self,
+        task_id: Option<TaskId>,
+        callback: impl for<'a> FnOnce(
+            &mut super::transaction::EntryTransaction<'a>,
+        ) -> Result<T, DurableError>
+        + Send
+        + 'static,
+    ) -> Result<T, DurableError> {
         if self.sealed.load(Ordering::Acquire) {
             return Err(DurableError::Closed);
         }
         let (reply, mut result) = oneshot::channel();
         let (error_tx, mut errors) = oneshot::channel();
         let operation: TransactionCallback = Box::new(move |state| {
-            let mut transaction = super::transaction::EntryTransaction::new(state)?;
+            let mut transaction = super::transaction::EntryTransaction::new(state, task_id)?;
             let value = callback(&mut transaction)?;
             let batch = transaction.finish()?;
             let complete: TransactionReply = Box::new(move |settled| {

@@ -103,7 +103,7 @@ Conversation existence/fork visibility, scoped task attribution, full task/docum
 
 Callback errors, caught staging failures, invalid final references and unwinding panics discard the whole batch without consuming IDs. Panics become rejected transactions; aborting-process panic handlers cannot be recovered. Staging enforces JSON shape/entry size and aggregate byte limits, followed by final storage validation. One adopted batch publishes after settlement. Cancellation before dequeue skips the callback; admitted settlement survives caller drop, close waits for it, and uncertainty poisons later operations.
 
-Callbacks must be short, nonblocking and must not reenter their session. The borrowed handle cannot escape; external effects are the caller's responsibility and cannot be rolled back. Async callbacks, pending-operation drains, task/document/conversation writes and transaction task-attribution are absent. This is a native entry-only transaction API, separate from upstream's full Tx contract.
+Callbacks must be short, nonblocking and must not reenter their session. The borrowed handle cannot escape; external effects are the caller's responsibility and cannot be rolled back. `transact_task_entries(task_id, callback)` validates a nonterminal task at admission and stamps its identity on every staged entry; cross-conversation appends reject. Missing/terminal tasks reject before invoking the callback. Host access is trusted; this scope supplies attribution, not an authorisation boundary. Async callbacks, pending-operation drains and task/document/conversation writes are absent. This is a native entry-only transaction API, separate from upstream's full Tx contract.
 
 ## Native context views
 

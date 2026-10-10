@@ -214,6 +214,104 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn task_scoped_transactions_stamp_entries_and_reject_invalid_scopes() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        let task_id = TaskId::new(1).unwrap();
+        let seq = CommitSeq::new(1).unwrap();
+        let task = TaskRecord {
+            id: task_id,
+            conversation_id: conversation,
+            kind: "generation".into(),
+            version: 1,
+            owner_task_id: None,
+            state: TaskState::Pending,
+            input: json!({}),
+            checkpoint: json!({}),
+            outcome: None,
+            abort_requested: false,
+            started_at: None,
+            ended_at: None,
+            updated_seq: seq,
+        };
+        session
+            .commit(CommitBatch {
+                seq,
+                next_id: 2,
+                next_seq: 2,
+                tasks: vec![task],
+                entries: vec![],
+                submissions: vec![],
+                documents: vec![],
+            })
+            .await
+            .unwrap();
+        let entry = session
+            .transact_task_entries(task_id, move |tx| {
+                tx.append_entry(conversation, EntryDraft::new("task.note"))
+            })
+            .await
+            .unwrap();
+        assert_eq!(entry.by_task_id, Some(task_id));
+        let before = session.snapshot().await.unwrap();
+        assert!(
+            session
+                .transact_task_entries(task_id, |tx| tx
+                    .append_entry(ConversationId::new(2)?, EntryDraft::new("foreign")))
+                .await
+                .is_err()
+        );
+        assert_eq!(session.snapshot().await.unwrap(), before);
+        let called = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let callback_called = called.clone();
+        assert!(
+            session
+                .transact_task_entries::<()>(TaskId::new(999).unwrap(), move |_| {
+                    callback_called.store(true, std::sync::atomic::Ordering::SeqCst);
+                    Ok(())
+                })
+                .await
+                .is_err()
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+        for state in [TaskState::Running, TaskState::Succeeded] {
+            let snapshot = session.snapshot().await.unwrap();
+            let mut task = snapshot.tasks[&task_id].clone();
+            task.state = state;
+            if task.state.terminal() {
+                task.outcome = Some(json!({}));
+            }
+            task.updated_seq = CommitSeq::new(snapshot.next_seq).unwrap();
+            session
+                .commit(CommitBatch {
+                    seq: task.updated_seq,
+                    next_id: snapshot.next_id,
+                    next_seq: snapshot.next_seq + 1,
+                    tasks: vec![task],
+                    entries: vec![],
+                    submissions: vec![],
+                    documents: vec![],
+                })
+                .await
+                .unwrap();
+        }
+        let callback_called = called.clone();
+        assert!(
+            session
+                .transact_task_entries::<()>(task_id, move |_| {
+                    callback_called.store(true, std::sync::atomic::Ordering::SeqCst);
+                    Ok(())
+                })
+                .await
+                .is_err()
+        );
+        assert!(!called.load(std::sync::atomic::Ordering::SeqCst));
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn entry_transaction_journal_reopens_whole_batch_and_read_only_does_not_write() {
         let root = std::env::temp_dir().join(format!(
             "rs-ai-entry-transaction-{}",

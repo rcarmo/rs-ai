@@ -13,9 +13,27 @@ pub struct EntryTransaction<'a> {
     writing: bool,
     failure: Option<DurableError>,
     staged_bytes: usize,
+    task_scope: Option<(TaskId, ConversationId)>,
 }
 impl<'a> EntryTransaction<'a> {
-    pub(crate) fn new(state: &'a StorageSnapshot) -> Result<Self, DurableError> {
+    pub(crate) fn new(
+        state: &'a StorageSnapshot,
+        task_id: Option<TaskId>,
+    ) -> Result<Self, DurableError> {
+        let task_scope = task_id
+            .map(|id| {
+                let task = state
+                    .tasks
+                    .get(&id)
+                    .ok_or_else(|| DurableError::Rejected("transaction task missing".into()))?;
+                if task.state.terminal() {
+                    return Err(DurableError::Rejected(
+                        "transaction task is terminal".into(),
+                    ));
+                }
+                Ok((id, task.conversation_id))
+            })
+            .transpose()?;
         Ok(Self {
             state,
             batch: CommitBatch {
@@ -30,6 +48,7 @@ impl<'a> EntryTransaction<'a> {
             writing: false,
             failure: None,
             staged_bytes: 0,
+            task_scope,
         })
     }
     fn read(&self) -> Result<(), DurableError> {
@@ -88,13 +107,22 @@ impl<'a> EntryTransaction<'a> {
             return Err(error.clone());
         }
         let result = (|| {
+            if self
+                .task_scope
+                .is_some_and(|(_, scope)| scope != conversation)
+            {
+                return Err(DurableError::Rejected(
+                    "entry outside transaction task conversation".into(),
+                ));
+            }
             let id = EntryId::new(self.batch.next_id)?;
             let next_id = id
                 .get()
                 .checked_add(1)
                 .filter(|id| *id <= MAX_ID)
                 .ok_or_else(|| DurableError::Range("next_id overflow".into()))?;
-            let entry = draft.into_record(conversation, id, self.batch.seq)?;
+            let mut entry = draft.into_record(conversation, id, self.batch.seq)?;
+            entry.by_task_id = self.task_scope.map(|(task, _)| task);
             validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
             let encoded = super::storage::encode_limited("entry", &entry, MAX_ENTRY_BYTES)?;
             let bytes = self.staged_bytes.saturating_add(encoded.len());
