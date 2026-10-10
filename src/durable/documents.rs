@@ -48,6 +48,26 @@ pub struct GenericDocumentRecord {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub retired_seq: Option<CommitSeq>,
 }
+#[derive(Clone, Debug)]
+pub struct DocumentQuery {
+    pub conversation_id: ConversationId,
+    pub kind: Option<String>,
+    pub fork: Option<DocumentFork>,
+    pub point: DocumentPoint,
+    pub scan: super::storage::scan::ScanOptions,
+}
+impl DocumentQuery {
+    pub fn current(conversation_id: ConversationId) -> Self {
+        Self {
+            conversation_id,
+            kind: None,
+            fork: None,
+            point: DocumentPoint::Current,
+            scan: Default::default(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum DocumentPoint {
     Current,
@@ -133,11 +153,47 @@ impl GenericDocumentRecord {
     }
 }
 impl StorageSnapshot {
-    pub fn document(
+    pub fn query_documents(
         &self,
-        address: &DocumentAddress,
-        point: DocumentPoint,
-    ) -> Result<Option<GenericDocumentRecord>, DurableError> {
+        query: &DocumentQuery,
+    ) -> Result<super::storage::scan::ScanPage<GenericDocumentRecord>, DurableError> {
+        use super::storage::scan::{ScanCursor, ScanOrder, ScanPage, start};
+        self.check_document_point(query.point)?;
+        let (order, after) = start(&query.scan, ScanOrder::Ascending)?;
+        let matches = |record: &&GenericDocumentRecord| {
+            record.address.conversation_id == query.conversation_id
+                && query
+                    .kind
+                    .as_ref()
+                    .is_none_or(|kind| record.address.kind == *kind)
+                && query.fork.is_none_or(|fork| record.fork == fork)
+                && record.alive(query.point)
+                && after.is_none_or(|after| match order {
+                    ScanOrder::Ascending => record.id.get() > after,
+                    ScanOrder::Descending => record.id.get() < after,
+                })
+        };
+        let mut records: Box<dyn Iterator<Item = &GenericDocumentRecord> + '_> = match order {
+            ScanOrder::Ascending => Box::new(self.generic_documents.values().filter(matches)),
+            ScanOrder::Descending => {
+                Box::new(self.generic_documents.values().rev().filter(matches))
+            }
+        };
+        let mut items = Vec::new();
+        for record in records.by_ref().take(query.scan.limit) {
+            items.push(self.document_value(record, query.point)?);
+        }
+        let cursor = if records.next().is_some() {
+            items.last().map(|record| ScanCursor {
+                after: record.id.get(),
+                order: Some(order),
+            })
+        } else {
+            None
+        };
+        Ok(ScanPage { items, cursor })
+    }
+    fn check_document_point(&self, point: DocumentPoint) -> Result<(), DurableError> {
         if let DocumentPoint::At(seq) = point
             && self.last_seq.is_none_or(|last| seq > last)
         {
@@ -145,6 +201,14 @@ impl StorageSnapshot {
                 "document point exceeds committed history".into(),
             ));
         }
+        Ok(())
+    }
+    pub fn document(
+        &self,
+        address: &DocumentAddress,
+        point: DocumentPoint,
+    ) -> Result<Option<GenericDocumentRecord>, DurableError> {
+        self.check_document_point(point)?;
         let record = self
             .generic_documents
             .values()

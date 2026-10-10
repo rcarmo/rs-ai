@@ -70,7 +70,7 @@ pub struct ScanPage<T> {
     pub cursor: Option<ScanCursor>,
 }
 
-fn start(
+pub(crate) fn start(
     options: &ScanOptions,
     fallback: ScanOrder,
 ) -> Result<(ScanOrder, Option<u64>), DurableError> {

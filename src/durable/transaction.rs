@@ -292,6 +292,16 @@ impl<'a> EntryTransaction<'a> {
         result
     }
 
+    /// Scan committed document membership before writes. Direct document access
+    /// remains available after writes and observes staged values.
+    pub fn documents(
+        &self,
+        query: &DocumentQuery,
+    ) -> Result<ScanPage<GenericDocumentRecord>, DurableError> {
+        self.read()?;
+        self.state.query_documents(query)
+    }
+
     /// Documents are available after table writes; reads prefer staged values.
     pub fn document(
         &self,

@@ -819,6 +819,12 @@ mod tests {
         ));
         assert!(matches!(
             session
+                .documents(DocumentQuery::current(conversation))
+                .await,
+            Err(DurableError::Poisoned)
+        ));
+        assert!(matches!(
+            session
                 .create_conversation(ConversationOwnership::Ownerless)
                 .await,
             Err(DurableError::Poisoned)

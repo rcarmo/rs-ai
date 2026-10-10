@@ -75,6 +75,10 @@ enum SessionCommand {
         super::documents::DocumentPoint,
         oneshot::Sender<Result<Option<super::documents::GenericDocumentRecord>, DurableError>>,
     ),
+    Documents(
+        super::documents::DocumentQuery,
+        oneshot::Sender<Result<ScanPage<super::documents::GenericDocumentRecord>, DurableError>>,
+    ),
     Conversation(
         ConversationId,
         oneshot::Sender<Result<Option<ConversationRecord>, DurableError>>,
@@ -422,6 +426,21 @@ impl DurableSession {
         let (reply, result) = oneshot::channel();
         self.tx
             .send(SessionCommand::Conversations(query, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
+    pub async fn documents(
+        &self,
+        query: super::documents::DocumentQuery,
+    ) -> Result<ScanPage<super::documents::GenericDocumentRecord>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Documents(query, reply))
             .await
             .map_err(|_| DurableError::Closed)?;
         result.await.unwrap_or(Err(DurableError::Closed))
@@ -780,6 +799,9 @@ async fn session_worker(
                     SessionCommand::Snapshot(reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { Ok(state.clone()) });
                     }
+                    SessionCommand::Documents(query, reply) => {
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_documents(&query) });
+                    }
                     SessionCommand::Document(address, point, reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.document(&address, point) });
                     }
@@ -877,6 +899,9 @@ fn reject(command: SessionCommand) {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Snapshot(reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Documents(_, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Document(_, _, reply) => {

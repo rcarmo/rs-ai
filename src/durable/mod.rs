@@ -21,7 +21,7 @@ pub mod types;
 
 pub use context::{ContextEdit, ContextHead, ContextMarker, ContextUpdate, ContextView, SelfHead};
 pub use documents::{
-    DocumentAddress, DocumentDraft, DocumentFork, DocumentHistory, DocumentPoint,
+    DocumentAddress, DocumentDraft, DocumentFork, DocumentHistory, DocumentPoint, DocumentQuery,
     GenericDocumentRecord,
 };
 pub use entries::{DurableEntries, EntryDefinition, EntryDraft, EntryFuture};

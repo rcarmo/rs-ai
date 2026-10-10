@@ -455,6 +455,91 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn document_pages_filter_membership_and_preserve_historical_cursor_direction() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let root = ConversationId::new(1).unwrap();
+        let records = session
+            .transact_entries(move |tx| {
+                let mut records = vec![];
+                for index in 0..3 {
+                    let mut value = draft(
+                        root,
+                        "family",
+                        index,
+                        DocumentHistory::Rewindable,
+                        DocumentFork::AsOf,
+                    );
+                    value.address.key = Some(index.to_string());
+                    records.push(tx.put_document(value)?);
+                }
+                Ok(records)
+            })
+            .await
+            .unwrap();
+        let first_seq = records[0].created_seq;
+        let mut query = DocumentQuery::current(root);
+        query.kind = Some("family".into());
+        query.fork = Some(DocumentFork::AsOf);
+        query.scan.limit = 1;
+        query.scan.order = Some(ScanOrder::Descending);
+        let mut page = session.documents(query.clone()).await.unwrap();
+        assert_eq!(page.items[0].id, records[2].id);
+        page.items[0].value = json!(null);
+        query.scan.cursor = page.cursor;
+        query.scan.order = None;
+        query.scan.limit = 10;
+        assert_eq!(
+            session
+                .documents(query.clone())
+                .await
+                .unwrap()
+                .items
+                .iter()
+                .map(|record| record.id)
+                .collect::<Vec<_>>(),
+            [records[1].id, records[0].id]
+        );
+        query.scan.order = Some(ScanOrder::Ascending);
+        assert!(session.documents(query).await.is_err());
+        let retired = records[1].address.clone();
+        session
+            .transact_entries(move |tx| tx.retire_document(&retired))
+            .await
+            .unwrap();
+        let mut history = DocumentQuery::current(root);
+        history.point = DocumentPoint::At(first_seq);
+        assert_eq!(session.documents(history).await.unwrap().items.len(), 3);
+        assert_eq!(
+            session
+                .documents(DocumentQuery::current(root))
+                .await
+                .unwrap()
+                .items
+                .len(),
+            2
+        );
+        let mut missing = DocumentQuery::current(root);
+        missing.fork = Some(DocumentFork::Initial);
+        assert!(session.documents(missing).await.unwrap().items.is_empty());
+        session
+            .transact_entries(move |tx| {
+                assert_eq!(tx.documents(&DocumentQuery::current(root))?.items.len(), 2);
+                tx.append_entry(root, EntryDraft::new("write"))?;
+                assert!(tx.documents(&DocumentQuery::current(root)).is_err());
+                Ok(())
+            })
+            .await
+            .unwrap();
+        session.close().await.unwrap();
+        assert!(matches!(
+            session.documents(DocumentQuery::current(root)).await,
+            Err(DurableError::Closed)
+        ));
+    }
+
+    #[tokio::test]
     async fn caught_invalid_definition_and_raw_identity_changes_are_atomic() {
         let session = DurableSession::open(Box::new(MemoryStorage::new()))
             .await

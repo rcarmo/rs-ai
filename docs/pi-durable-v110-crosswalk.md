@@ -171,7 +171,7 @@ The previous R1 vertical is a partial baseline. Updating only package metadata o
 
 | Official path | Disposition | Native evidence |
 |---|---|---|
-| `packages/durable/src/documents.ts` | ADAPTED whole-value conversation document subset | `src/durable/documents.rs` plus six tests in `src/tests/durable/documents_test.rs` cover incarnation IDs/keys, current/historical reads, atomic updates/retirement/recreation, definition identity rejection and native fork policies. Definitions/migrations/tracked deltas, other scopes and observers remain gaps. |
+| `packages/durable/src/documents.ts` | ADAPTED whole-value conversation document subset | `src/durable/documents.rs` plus seven tests in `src/tests/durable/documents_test.rs` cover incarnation IDs/keys, current/historical reads and directional filtered scans, atomic updates/retirement/recreation, definition identity rejection and native fork policies. Definitions/migrations/tracked deltas, other scopes and observers remain gaps. |
 | `packages/durable/src/entries.ts` | ADAPTED generic passive draft subset | `src/durable/entries.rs` accepts custom kinds, optional data/model, resolved self heads and edits; `src/tests/durable/entries_test.rs` covers wire omission/null, model-less entries, contributions and recovery. `EntryDefinition<D>` adapts unregistered kind tokens, required typed draft data, kind-only matching and Serde decoding. A regression covers equal-kind tokens, cloning without data Clone, malformed/missing/null data and no persistent definitions. Flat upstream record encoding is absent. |
 | `packages/durable/src/env/decode.ts` | PENDING | No full-contract acceptance yet |
 | `packages/durable/src/env/index.ts` | PENDING | No full-contract acceptance yet |
