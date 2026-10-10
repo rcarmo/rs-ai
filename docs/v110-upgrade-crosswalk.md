@@ -49,7 +49,7 @@ Pinned catalog: 1563 chat, 61 image, 26 classifier records; 1650 total, 42 provi
 | A | `packages/ai/src/providers/azure.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/providers/faux.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/providers/openai.ts` | PENDING | Not yet accepted |
-| M | `packages/ai/src/providers/radius.ts` | PENDING | Not yet accepted |
+| M | `packages/ai/src/providers/radius.ts` | IMPLEMENTED catalog replacement delta | `RuntimeProvider::radius` replaces shipped models with remote/cached organization models; `Some(empty)` is distinct from no catalog. HTTP empty-list and offline cached empty/nonempty regressions verify removed defaults are unavailable. Twenty-six runtime-refresh tests pass. |
 | M | `packages/ai/src/types.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/utils/estimate.ts` | PENDING | Not yet accepted |
 | M | `packages/ai/src/utils/event-stream.ts` | PENDING | Not yet accepted |

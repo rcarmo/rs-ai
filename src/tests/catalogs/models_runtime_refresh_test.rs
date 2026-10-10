@@ -871,6 +871,109 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn radius_remote_and_cached_catalogs_replace_shipped_defaults_even_when_empty() {
+        for cached in [false, true] {
+            let server = MockServer::start().await;
+            if !cached {
+                Mock::given(method("GET"))
+                    .and(path("/v1/config"))
+                    .respond_with(
+                        ResponseTemplate::new(200).set_body_json(radius_config(&server.uri(), &[])),
+                    )
+                    .mount(&server)
+                    .await;
+            }
+            let store = Arc::new(InMemoryModelsStore::new());
+            if cached {
+                store
+                    .write(
+                        "radius",
+                        ModelsStoreEntry {
+                            models: vec![],
+                            last_modified: None,
+                            checked_at: Some(1),
+                            etag: None,
+                        },
+                    )
+                    .await
+                    .unwrap();
+            }
+            let runtime = ModelsRuntime::with_models_store(store.clone());
+            runtime.set_provider(RuntimeProvider::radius(
+                "radius",
+                "Radius",
+                server.uri(),
+                vec![model("radius", "shipped-default")],
+            ));
+            assert!(runtime.get_model("radius", "shipped-default").is_some());
+            let result = runtime
+                .refresh(RefreshOptions {
+                    allow_network: !cached,
+                    ..Default::default()
+                })
+                .await;
+            assert!(result.errors.is_empty());
+            assert!(
+                runtime.get_models(Some("radius")).is_empty(),
+                "empty organization catalog replaces shipped defaults"
+            );
+            assert!(runtime.get_model("radius", "shipped-default").is_none());
+            assert!(
+                store
+                    .read("radius")
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .models
+                    .is_empty()
+            );
+            if cached {
+                assert!(server.received_requests().await.unwrap().is_empty());
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn radius_cached_organization_catalog_excludes_unconfigured_defaults() {
+        let store = Arc::new(InMemoryModelsStore::new());
+        store
+            .write(
+                "radius",
+                ModelsStoreEntry {
+                    models: vec![model("radius", "organization-only")],
+                    last_modified: None,
+                    checked_at: Some(1),
+                    etag: None,
+                },
+            )
+            .await
+            .unwrap();
+        let runtime = ModelsRuntime::with_models_store(store);
+        runtime.set_provider(RuntimeProvider::radius(
+            "radius",
+            "Radius",
+            "http://127.0.0.1:9",
+            vec![model("radius", "shipped-default")],
+        ));
+        assert!(
+            runtime
+                .refresh(RefreshOptions::default())
+                .await
+                .errors
+                .is_empty()
+        );
+        assert_eq!(
+            runtime
+                .get_models(Some("radius"))
+                .iter()
+                .map(|model| model.id.as_str())
+                .collect::<Vec<_>>(),
+            ["organization-only"]
+        );
+        assert!(runtime.get_model("radius", "shipped-default").is_none());
+    }
+
+    #[tokio::test]
     async fn radius_gateway_config_is_wired_as_dynamic_provider_catalog() {
         let runtime = ModelsRuntime::new();
         let captured = Arc::new(Mutex::new(None::<Credential>));
