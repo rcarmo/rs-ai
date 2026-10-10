@@ -271,6 +271,74 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn busy_ranges_survive_zero_and_short_retention_until_terminal_settlement() {
+        for retention in [
+            std::time::Duration::ZERO,
+            std::time::Duration::from_millis(20),
+        ] {
+            let session = DurableSession::open_with_settings(
+                Box::new(MemoryStorage::new()),
+                Arc::new(|| 100),
+                SessionSettings {
+                    context_retention: retention,
+                },
+            )
+            .await
+            .unwrap();
+            let conversation = ConversationId::new(1).unwrap();
+            session
+                .commit(task_batch(1, TaskState::Pending, None))
+                .await
+                .unwrap();
+            let mut draft = EntryDraft::new("note");
+            draft.model = Some(vec![crate::user_message("busy")]);
+            session.append_entry(conversation, draft).await.unwrap();
+            session.message_context(conversation, None).await.unwrap();
+            assert_eq!(session.context_cache_stats().await, (1, 1));
+            tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+            session.message_context(conversation, None).await.unwrap();
+            assert_eq!(session.context_cache_stats().await, (1, 1));
+            let mut running = task_batch(3, TaskState::Running, None);
+            running.next_id = 3;
+            session.commit(running).await.unwrap();
+            let mut terminal = task_batch(4, TaskState::Succeeded, None);
+            terminal.next_id = 3;
+            session.commit(terminal).await.unwrap();
+            if retention.is_zero() {
+                assert_eq!(session.context_cache_stats().await, (0, 1));
+            } else {
+                assert_eq!(session.context_cache_stats().await, (1, 1));
+                tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+                assert_eq!(session.context_cache_stats().await, (0, 1));
+            }
+            session.close().await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn idle_reads_do_not_slide_retention_deadline() {
+        let session = DurableSession::open_with_settings(
+            Box::new(MemoryStorage::new()),
+            Arc::new(|| 100),
+            SessionSettings {
+                context_retention: std::time::Duration::from_millis(200),
+            },
+        )
+        .await
+        .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        let mut draft = EntryDraft::new("note");
+        draft.model = Some(vec![crate::user_message("idle")]);
+        session.append_entry(conversation, draft).await.unwrap();
+        session.message_context(conversation, None).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(120)).await;
+        session.message_context(conversation, None).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(110)).await;
+        assert_eq!(session.context_cache_stats().await.0, 0);
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
     async fn context_retention_expiry_and_zero_mode_drop_cached_messages() {
         for retention in [
             std::time::Duration::ZERO,

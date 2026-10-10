@@ -94,7 +94,8 @@ pub type LifecycleClock = Arc<dyn Fn() -> i64 + Send + Sync>;
 
 #[derive(Clone, Debug)]
 pub struct SessionSettings {
-    /// Idle retention for native current-message ranges. Zero disables caching.
+    /// Retention after a native conversation becomes idle. Zero drops idle
+    /// ranges immediately; bounded reuse still applies while tasks are busy.
     pub context_retention: Duration,
 }
 impl Default for SessionSettings {
@@ -106,7 +107,7 @@ impl Default for SessionSettings {
 }
 
 struct ContextCache {
-    values: HashMap<ConversationId, (Instant, super::context::MessageRange, usize)>,
+    values: HashMap<ConversationId, (Option<Instant>, super::context::MessageRange, usize)>,
     #[cfg(test)]
     derivations: usize,
 }
@@ -119,9 +120,26 @@ impl ContextCache {
         }
     }
     fn expire(&mut self, retention: Duration) {
-        self.values
-            .retain(|_, (used, _, _)| used.elapsed() < retention);
+        self.values.retain(|_, (idle_since, _, _)| {
+            idle_since.is_none_or(|idle_since| idle_since.elapsed() < retention)
+        });
     }
+    fn reconcile(&mut self, state: &StorageSnapshot, retention: Duration) {
+        self.expire(retention);
+        let now = Instant::now();
+        self.values.retain(|conversation, (idle_since, _, _)| {
+            if busy(state, *conversation) {
+                *idle_since = None;
+                true
+            } else if retention.is_zero() {
+                false
+            } else {
+                idle_since.get_or_insert(now);
+                true
+            }
+        });
+    }
+
     fn retained_bytes(&self) -> usize {
         self.values
             .values()
@@ -131,9 +149,18 @@ impl ContextCache {
     fn deadline(&self, retention: Duration) -> Option<Instant> {
         self.values
             .values()
-            .filter_map(|(used, _, _)| used.checked_add(retention))
+            .filter_map(|(idle_since, _, _)| {
+                idle_since.and_then(|since| since.checked_add(retention))
+            })
             .min()
     }
+}
+
+fn busy(state: &StorageSnapshot, conversation: ConversationId) -> bool {
+    state
+        .tasks
+        .values()
+        .any(|task| task.conversation_id == conversation && !task.state.terminal())
 }
 
 pub struct DurableSession {
@@ -556,6 +583,7 @@ async fn session_worker(
                                 Ok(adopted) => {
                                     state = adopted;
                                     for conversation in invalidate { cache.values.remove(&conversation); }
+                                    cache.reconcile(&state, settings.context_retention);
                                     watches.values.retain(|watch: &std::sync::Weak<WatchQueue>| {
                                         if let Some(watch) = watch.upgrade() { if let Some((batch, size)) = &publication { watch.publish(batch, &state, *size); } true } else { false }
                                     });
@@ -592,12 +620,14 @@ async fn session_worker(
                     SessionCommand::Context(conversation, at, reply) => {
                         if poisoned { cache.values.clear(); let _ = reply.send(Err(DurableError::Poisoned)); continue; }
                         cache.expire(settings.context_retention);
-                        if at.is_some() || settings.context_retention.is_zero() {
+                        let is_busy = busy(&state, conversation);
+                        if at.is_some() || (settings.context_retention.is_zero() && !is_busy) {
                             #[cfg(test)] { cache.derivations += 1; }
                             let _ = reply.send(super::context::messages(&state, conversation, at));
                             continue;
                         }
                         let retained = cache.values.remove(&conversation);
+                        let idle_since = if is_busy { None } else { Some(retained.as_ref().and_then(|(since, _, _)| *since).unwrap_or_else(Instant::now)) };
                         let result = if let Some((_, mut range, bytes)) = retained {
                             match range.extend(&state, conversation) {
                                 Ok(changed) => {
@@ -620,7 +650,7 @@ async fn session_worker(
                                 if !messages.is_empty() && cache.values.len() < 64 && let Some(bytes) = bytes
                                     && cache.retained_bytes().saturating_add(bytes) <= MAX_COMMIT_BYTES
                                 {
-                                    cache.values.insert(conversation, (Instant::now(), range, bytes));
+                                    cache.values.insert(conversation, (idle_since, range, bytes));
                                 }
                                 let _ = reply.send(Ok(messages));
                             }
