@@ -661,19 +661,32 @@ pub fn validate_batch(
         }
     }
     let mut generic_ids = HashSet::new();
-    let mut addresses = HashSet::new();
+    // Interpret final per-incarnation records in lifecycle order. A retired
+    // incarnation releases its logical address before a later creation. This
+    // permits empty lifetimes while rejecting multiple live owners/reordering.
+    let mut document_lifetimes = HashMap::new();
     for record in &batch.generic_documents {
         record.shape()?;
         let _ = encode_limited("document", &record.value, MAX_DOCUMENT_BYTES)?;
         if record.updated_seq != batch.seq
             || !generic_ids.insert(record.id)
-            || !addresses.insert(record.address.clone())
             || record.retired_seq.is_some_and(|seq| seq != batch.seq)
         {
             return Err(DurableError::Rejected(
                 "invalid document update sequence/duplicates".into(),
             ));
         }
+        let live = document_lifetimes
+            .entry(record.address.clone())
+            .or_insert_with(|| {
+                snapshot
+                    .generic_documents
+                    .values()
+                    .find(|previous| {
+                        previous.address == record.address && previous.retired_seq.is_none()
+                    })
+                    .map(|previous| previous.id)
+            });
         if let Some(previous) = snapshot.generic_documents.get(&record.id) {
             if previous.retired_seq.is_some()
                 || previous.address != record.address
@@ -686,9 +699,13 @@ pub fn validate_batch(
                     "document identity/retirement is immutable".into(),
                 ));
             }
+            if *live != Some(record.id) {
+                return Err(DurableError::Rejected(
+                    "document lifecycle out of order".into(),
+                ));
+            }
         } else {
             if record.created_seq != batch.seq
-                || record.retired_seq.is_some()
                 || record.id.get() < snapshot.next_id
                 || !allocated_ids.insert(record.id.get())
             {
@@ -697,14 +714,13 @@ pub fn validate_batch(
                 ));
             }
             max_new_id = max_new_id.max(record.id.get());
-            if snapshot.generic_documents.values().any(|previous| {
-                previous.address == record.address && previous.retired_seq.is_none()
-            }) {
+            if live.is_some() {
                 return Err(DurableError::Rejected(
                     "document address already alive".into(),
                 ));
             }
         }
+        *live = record.retired_seq.is_none().then_some(record.id);
         if !(snapshot
             .conversations
             .contains_key(&record.address.conversation_id)

@@ -318,7 +318,7 @@ impl<'a> EntryTransaction<'a> {
             .batch
             .generic_documents
             .iter()
-            .find(|record| record.address == *address)
+            .rfind(|record| record.address == *address)
         {
             return record.retired_seq.is_none().then_some(record);
         }
@@ -422,17 +422,7 @@ impl<'a> EntryTransaction<'a> {
             }
             // Borrow only identity metadata; replacement never needs a clone
             // of the previous whole JSON value.
-            let current = self
-                .batch
-                .generic_documents
-                .iter()
-                .find(|record| record.address == draft.address)
-                .or_else(|| {
-                    self.state.generic_documents.values().find(|record| {
-                        record.address == draft.address && record.retired_seq.is_none()
-                    })
-                })
-                .filter(|record| record.retired_seq.is_none());
+            let current = self.current_document(&draft.address);
             let record = if let Some(current) = current {
                 if (current.version != draft.version
                     && !(migrating && current.version < draft.version))
@@ -455,16 +445,6 @@ impl<'a> EntryTransaction<'a> {
                     retired_seq: None,
                 }
             } else {
-                if self
-                    .batch
-                    .generic_documents
-                    .iter()
-                    .any(|record| record.address == draft.address)
-                {
-                    return Err(DurableError::Rejected(
-                        "recreation in retirement transaction unsupported".into(),
-                    ));
-                }
                 let id = DocumentId::new(self.batch.next_id)?;
                 self.batch.next_id = id
                     .get()
@@ -532,17 +512,15 @@ impl<'a> EntryTransaction<'a> {
             let Some(mut record) = self.document(address, DocumentPoint::Current)? else {
                 return Ok(false);
             };
-            if record.created_seq == self.batch.seq {
-                return Err(DurableError::Rejected(
-                    "retire newly staged document unsupported".into(),
-                ));
-            }
             if !self
                 .batch
                 .generic_documents
                 .iter()
                 .any(|previous| previous.id == record.id)
             {
+                if self.batch.generic_documents.len() >= 4096 {
+                    return Err(DurableError::Rejected("too many staged documents".into()));
+                }
                 let total = self
                     .document_bytes
                     .saturating_add(super::documents::validate_size(&record.value)?);
