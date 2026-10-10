@@ -346,6 +346,16 @@ mod tests {
             serde_json::to_value(current).unwrap()
         );
         let before = harness.test_snapshot().await.unwrap();
+        assert!(matches!(harness.update_context(ContextUpdate {
+            head: Some(ContextHead::Entry(first)), ..Default::default()
+        }).await, Err(DurableError::Rejected(error)) if error == "stale context head"));
+        assert_eq!(harness.test_snapshot().await.unwrap(), before);
+        let mut stale = EntryDraft::new("summary");
+        stale.head = Some(ContextHead::Entry(second));
+        assert!(
+            matches!(harness.append_entry(stale).await, Err(DurableError::Rejected(error)) if error == "stale context head")
+        );
+        assert_eq!(harness.test_snapshot().await.unwrap(), before);
         assert!(
             harness
                 .update_context(ContextUpdate {
@@ -358,6 +368,17 @@ mod tests {
                 .is_err()
         );
         assert_eq!(harness.test_snapshot().await.unwrap(), before);
+        // Equality is not stale; self heads never restore dropped history.
+        let mut equal = EntryDraft::new("summary");
+        equal.head = Some(ContextHead::Entry(reset));
+        harness.append_entry(equal).await.unwrap();
+        harness
+            .update_context(ContextUpdate {
+                head: Some(ContextHead::SelfEntry(SelfHead::SelfEntry)),
+                ..Default::default()
+            })
+            .await
+            .unwrap();
         assert_eq!(*calls.lock().unwrap(), 0);
         harness.close().await.unwrap();
     }

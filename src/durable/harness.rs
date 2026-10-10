@@ -416,6 +416,7 @@ impl DurableHarness {
         {
             return Err(DurableError::Rejected("conversation busy".into()));
         }
+        super::context::validate_harness_head(&snapshot, conversation_id()?, update.head)?;
         let id = EntryId::new(snapshot.next_id)?;
         let seq = CommitSeq::new(snapshot.next_seq)?;
         let value = serde_json::to_value(update)
@@ -460,6 +461,7 @@ impl DurableHarness {
         {
             return Err(DurableError::Rejected("conversation busy".into()));
         }
+        super::context::validate_harness_head(&snapshot, conversation_id()?, draft.head)?;
         let entry = self
             .inner
             .session

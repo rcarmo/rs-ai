@@ -96,6 +96,47 @@ pub(crate) fn validate_contribution(
     Ok(())
 }
 
+/// Harness write admission must not restore history discarded by a newer head.
+/// Raw session batches are history construction and do not use this policy.
+pub(crate) fn validate_harness_head(
+    snapshot: &StorageSnapshot,
+    conversation: ConversationId,
+    head: Option<ContextHead>,
+) -> Result<(), DurableError> {
+    let Some(ContextHead::Entry(target)) = head else {
+        return Ok(());
+    };
+    for entry in snapshot
+        .entries
+        .values()
+        .rev()
+        .filter(|entry| entry.conversation_id == conversation)
+    {
+        let update = if entry.kind == "context" {
+            serde_json::from_value::<ContextUpdate>(entry.value.clone())
+                .map_err(|_| DurableError::Corrupt("invalid persisted context update".into()))?
+        } else if !super::entries::native_kind(&entry.kind) {
+            super::entries::EntryPayload::decode(&entry.value)
+                .map_err(|_| DurableError::Corrupt("invalid persisted generic entry".into()))?
+                .context()
+        } else {
+            continue;
+        };
+        if let Some(head) = update.head {
+            let lower = match head {
+                ContextHead::Entry(id) => id,
+                ContextHead::SelfEntry(_) => entry.id,
+            };
+            return if target < lower {
+                Err(DurableError::Rejected("stale context head".into()))
+            } else {
+                Ok(())
+            };
+        }
+    }
+    Ok(())
+}
+
 /// The newest native head marker and its resolved retained lower bound.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ContextMarker {
