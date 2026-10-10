@@ -250,29 +250,21 @@ fn derive<'a>(
             });
     }
     let mut result = Vec::new();
-    // Reuse the contribution buffer even for messages-only reads. A fresh Vec
-    // per text entry would undo the earlier context-allocation optimisation.
-    let mut contributed = Vec::new();
     for entry in active {
+        let start = result.len();
+        // Append directly to the final buffer. Full-view callers additionally
+        // detach the contributed slice; messages-only readers need no scratch.
         contribution(
             snapshot,
             entry,
             updates.get(&entry.id),
             edits.get(&entry.id),
-            &mut contributed,
+            &mut result,
         )?;
-        contributed.retain(|message| {
-            message.role != Role::Assistant
-                || !matches!(
-                    message.stop_reason,
-                    Some(StopReason::Aborted | StopReason::Error | StopReason::Deferred)
-                )
-        });
         if collect_view {
             view.entries.push(entry.clone());
-            view.contributions.push(contributed.clone());
+            view.contributions.push(result[start..].to_vec());
         }
-        result.append(&mut contributed);
     }
     // Repair results before testing the leading-system prefix: orphan results
     // can otherwise hide a baseline system message behind earlier user inputs.
@@ -290,6 +282,14 @@ fn derive<'a>(
     Ok(view)
 }
 
+fn included(message: &Message) -> bool {
+    message.role != Role::Assistant
+        || !matches!(
+            message.stop_reason,
+            Some(StopReason::Aborted | StopReason::Error | StopReason::Deferred)
+        )
+}
+
 fn contribution(
     snapshot: &StorageSnapshot,
     entry: &EntryRecord,
@@ -299,12 +299,18 @@ fn contribution(
 ) -> Result<(), DurableError> {
     if let Some(edit) = edit {
         if let ContextEdit::Replace { messages, .. } = edit {
-            result.extend(messages.iter().cloned());
+            result.extend(messages.iter().filter(|message| included(message)).cloned());
         }
         return Ok(());
     }
     if let Some(update) = update {
-        result.extend(update.messages.iter().cloned());
+        result.extend(
+            update
+                .messages
+                .iter()
+                .filter(|message| included(message))
+                .cloned(),
+        );
         return Ok(());
     }
     let mut message = match entry.kind.as_str() {
@@ -413,7 +419,9 @@ fn contribution(
     if entry.value.get("message").is_none() {
         message.timestamp = 0;
     }
-    result.push(message);
+    if included(&message) {
+        result.push(message);
+    }
     Ok(())
 }
 
