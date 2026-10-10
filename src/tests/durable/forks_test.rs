@@ -178,6 +178,99 @@ mod tests {
         reopened.close().await.unwrap();
         std::fs::remove_dir_all(root_dir).unwrap();
     }
+    #[test]
+    fn malformed_history_cycle_and_missing_parent_fail_closed() {
+        let mut snapshot = StorageSnapshot::empty();
+        let root = ConversationId::new(1).unwrap();
+        let child = ConversationId::new(2).unwrap();
+        snapshot.conversations.insert(
+            child,
+            ConversationRecord {
+                id: child,
+                parent: Some(ConversationParent {
+                    conversation_id: root,
+                    at: EntryId::new(1).unwrap(),
+                }),
+                owner: None,
+                created_seq: None,
+            },
+        );
+        snapshot.conversations.get_mut(&root).unwrap().parent = Some(ConversationParent {
+            conversation_id: child,
+            at: EntryId::new(1).unwrap(),
+        });
+        assert!(matches!(
+            snapshot.query_entries(child, &EntryQuery::default()),
+            Err(DurableError::Corrupt(_))
+        ));
+        snapshot.conversations.get_mut(&root).unwrap().parent = None;
+        snapshot
+            .conversations
+            .get_mut(&child)
+            .unwrap()
+            .parent
+            .as_mut()
+            .unwrap()
+            .conversation_id = ConversationId::new(999).unwrap();
+        assert!(matches!(
+            crate::durable::context::messages(&snapshot, child, None),
+            Err(DurableError::Corrupt(_))
+        ));
+    }
+
+    #[tokio::test]
+    async fn inherited_heads_and_tool_results_obey_fork_cut_not_parent_tail() {
+        use crate::types::{ContentBlock, Role};
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let root = ConversationId::new(1).unwrap();
+        append(&session, root, "old").await;
+        let mut reset = EntryDraft::new("reset");
+        reset.head = Some(ContextHead::SelfEntry(SelfHead::SelfEntry));
+        reset.model = Some(vec![crate::user_message("handoff")]);
+        session.append_entry(root, reset).await.unwrap();
+        let mut assistant = crate::user_message("");
+        assistant.role = Role::Assistant;
+        assistant.content = vec![ContentBlock::ToolCall {
+            id: "call".into(),
+            name: "tool".into(),
+            arguments: std::collections::HashMap::new(),
+            thought_signature: None,
+            namespace: None,
+        }];
+        let mut draft = EntryDraft::new("assistant.note");
+        draft.model = Some(vec![assistant]);
+        let call = session.append_entry(root, draft).await.unwrap();
+        let child = session
+            .fork_conversation(root, call.id, ConversationOwnership::Ownerless)
+            .await
+            .unwrap();
+        let current = session.message_context(child.id, None).await.unwrap();
+        assert_eq!(current.len(), 3);
+        assert!(current[2].is_error);
+        let mut result = crate::user_message("done");
+        result.role = Role::ToolResult;
+        result.tool_call_id = Some("call".into());
+        result.tool_name = Some("tool".into());
+        let mut draft = EntryDraft::new("result.note");
+        draft.model = Some(vec![result.clone()]);
+        session.append_entry(root, draft).await.unwrap();
+        assert!(session.message_context(child.id, None).await.unwrap()[2].is_error);
+        let mut draft = EntryDraft::new("result.note");
+        draft.model = Some(vec![result]);
+        session.append_entry(child.id, draft).await.unwrap();
+        assert!(!session.message_context(child.id, None).await.unwrap()[2].is_error);
+        assert!(
+            session
+                .message_context(child.id, Some(call.id))
+                .await
+                .unwrap()[2]
+                .is_error
+        );
+        session.close().await.unwrap();
+    }
+
     #[tokio::test]
     async fn invalid_fork_cutoffs_and_foreign_context_references_reject_atomically() {
         let session = DurableSession::open(Box::new(MemoryStorage::new()))

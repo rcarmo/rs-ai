@@ -88,6 +88,11 @@ impl StorageSnapshot {
             else {
                 break;
             };
+            if !self.conversations.contains_key(&parent.conversation_id) {
+                return Err(DurableError::Corrupt(
+                    "conversation history parent missing".into(),
+                ));
+            }
             upper = upper.min(parent.at.get());
             current = parent.conversation_id;
         }
