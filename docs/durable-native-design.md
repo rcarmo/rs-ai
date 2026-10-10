@@ -71,7 +71,7 @@ The host owns credentials, cancellation/options and nested-call accounting. Nest
 
 `EntryQuery` adds inclusive ID bounds and kind filtering; `TaskQuery` adds kind/state/abort filtering; `SubmissionQuery` adds status filtering. `DurableSession::entries/tasks/submissions` evaluate these on the mutation queue and clone only returned page records; the harness exposes root-conversation counterparts. Session `tasks_in`/`submissions_in` accept an optional conversation; None selects all native conversations, while existing task/submission methods and harness wrappers stay scoped. Filters, default/cursor direction and exclusive page boundaries apply to the combined ID order. Entry pagination seeks into the BTreeMap range before filtering. Reads wait for admitted commits, reject after close and fail when storage settlement has poisoned the session.
 
-Conversation records and owner-filtered scans are adapted below. Fork traversal, background-task filters, backend streaming and SQLite storage are absent. Rust cursor IDs use the existing positive-i64 contract, including zero as an exclusive boundary; upstream uses JavaScript safe integers. Regressions cover ordering, ranges, filters, pagination, isolation, detached values, read/commit ordering, poison/close and rejected-commit snapshot atomicity.
+Conversation records and owner-filtered scans are adapted below. Native fork transcript traversal is adapted below; background-task filters, backend streaming and SQLite storage are absent. Rust cursor IDs use the existing positive-i64 contract, including zero as an exclusive boundary; upstream uses JavaScript safe integers. Regressions cover ordering, ranges, filters, pagination, isolation, detached values, read/commit ordering, poison/close and rejected-commit snapshot atomicity.
 
 ## v1.1.0 historical text context
 
@@ -95,7 +95,7 @@ Generic records keep their custom kind and store draft fields inside native `Ent
 
 `EntryDefinition<D>` is a process-local kind token: `draft(data)` builds a generic draft with required Serde-serializable data, `matches` tests only kind identity, and `decode` reads typed data or returns None for missing/foreign records. Matching malformed or absent data returns an error; nullable data uses `Option<D>`. Definitions require no registry and persist no schema. Use an untyped EntryDraft for model-only records without data.
 
-Strict conversation existence/fork visibility, full task/document transactions and queued busy-boundary writes are unimplemented. The native session accepts legacy implicit scopes and materialises them as ownerless conversation records; the harness restricts its generation work to the root.
+Strict conversation existence, full task/document transactions and queued busy-boundary writes are unimplemented. The native session accepts legacy implicit scopes and materialises them as ownerless conversation records; the harness restricts its generation work to the root.
 
 ## Native conversation membership
 
@@ -145,4 +145,4 @@ There are at most 64 active watches. Each queues at most 64 records or 32 MiB en
 
 R1c supplies the executable tool registry, intent-before-effect, exact implementation/version/schema replay gate, generation→tool ownership, completing drain and bottom-up abort needed for the useful vertical. Same-version v1.0.1 retagging still requires local/hosted acceptance and publication authority; this document records implementation scope only.
 
-Generic documents/tasks, forks, inbox modes, watches/events, extensions/hooks, durable partial output, deferred polling, compaction, subagents, remote storage, SQLite and cross-process leases belong to later cycles.
+Generic documents/tasks, fork document copying and child execution, inbox modes, full watches/events, extensions/hooks, durable partial output, deferred polling, compaction, subagents, remote storage, SQLite and cross-process leases belong to later cycles.
