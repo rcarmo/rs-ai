@@ -17,9 +17,15 @@ mod tests {
             assert!(tx.tasks(None, &TaskQuery::default())?.items.is_empty());
             assert!(tx.submissions(None, &SubmissionQuery::default())?.items.is_empty());
             assert!(tx.entry(conversation, EntryId::new(1)?)?.is_none());
+            assert!(tx.task(TaskId::new(1)?)?.is_none());
+            assert!(tx.submission(SubmissionId::new(1)?)?.is_none());
+            assert!(tx.submission_by_request(conversation,"missing")?.is_none());
             let mut draft = EntryDraft::new("note"); draft.data = Some(json!({"text":"detached"})); draft.model = Some(vec![crate::user_message("original")]);
             let first = tx.append_entry(conversation, draft)?;
             assert!(matches!(tx.entry(conversation, first.id), Err(DurableError::Rejected(error)) if error == "table read after write"));
+            assert!(tx.task(TaskId::new(1)?).is_err());
+            assert!(tx.submission(SubmissionId::new(1)?).is_err());
+            assert!(tx.submission_by_request(conversation,"missing").is_err());
             let mut second = EntryDraft::new("summary"); second.head = Some(ContextHead::Entry(first.id));
             second.model = Some(vec![crate::user_message("summary")]);
             second.edits = vec![ContextEdit::Replace { target:first.id, messages:vec![crate::user_message("replacement")] }];

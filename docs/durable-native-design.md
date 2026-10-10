@@ -99,7 +99,7 @@ Conversation existence/fork visibility, scoped task attribution, full task/docum
 
 ## Atomic entry transactions
 
-`DurableSession::transact_entries` runs a synchronous `FnOnce` on the session mutation line and returns its value after storage settlement. `EntryTransaction` borrows the admitted state, allows detached entry/task/submission table reads before writing, and stages generic appends with assigned IDs. The first append starts the write phase; later table reads reject with `table read after write`. Later appends may refer to earlier staged entries. Read-only callbacks consume no sequence and publish nothing.
+`DurableSession::transact_entries` runs a synchronous `FnOnce` on the session mutation line and returns its value after storage settlement. `EntryTransaction` borrows the admitted state, allows detached entry/task/submission direct and scan reads before writing (including conversation-scoped request-ID lookup), and stages generic appends with assigned IDs. The first append starts the write phase; later table reads reject with `table read after write`. Later appends may refer to earlier staged entries. Read-only callbacks consume no sequence and publish nothing.
 
 Callback errors, caught staging failures, invalid final references and unwinding panics discard the whole batch without consuming IDs. Panics become rejected transactions; aborting-process panic handlers cannot be recovered. Staging enforces JSON shape/entry size and aggregate byte limits, followed by final storage validation. One adopted batch publishes after settlement. Cancellation before dequeue skips the callback; admitted settlement survives caller drop, close waits for it, and uncertainty poisons later operations.
 

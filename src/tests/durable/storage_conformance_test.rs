@@ -485,6 +485,24 @@ mod tests {
             .await
             .unwrap();
         session.commit(batch(1)).await.unwrap();
+        session
+            .transact_entries(|tx| {
+                let task = tx.task(TaskId::new(3)?)?.unwrap();
+                let submission = tx.submission(SubmissionId::new(4)?)?.unwrap();
+                assert_eq!(task.conversation_id.get(), 1);
+                assert_eq!(
+                    tx.submission_by_request(ConversationId::new(1)?, "request-1")?
+                        .unwrap(),
+                    submission
+                );
+                assert!(
+                    tx.submission_by_request(ConversationId::new(2)?, "request-1")?
+                        .is_none()
+                );
+                Ok(())
+            })
+            .await
+            .unwrap();
         let seq = CommitSeq::new(2).unwrap();
         session
             .commit(CommitBatch {

@@ -140,6 +140,27 @@ impl<'a> EntryTransaction<'a> {
         self.read()?;
         self.state.query_entries(conversation, query)
     }
+    pub fn task(&self, id: TaskId) -> Result<Option<TaskRecord>, DurableError> {
+        self.read()?;
+        Ok(self.state.tasks.get(&id).cloned())
+    }
+    pub fn submission(&self, id: SubmissionId) -> Result<Option<SubmissionRecord>, DurableError> {
+        self.read()?;
+        Ok(self.state.submissions.get(&id).cloned())
+    }
+    pub fn submission_by_request(
+        &self,
+        conversation: ConversationId,
+        request_id: &str,
+    ) -> Result<Option<SubmissionRecord>, DurableError> {
+        self.read()?;
+        Ok(self
+            .state
+            .request_ids
+            .get(&(conversation, request_id.to_owned()))
+            .and_then(|id| self.state.submissions.get(id))
+            .cloned())
+    }
     pub fn tasks(
         &self,
         conversation: Option<ConversationId>,
