@@ -77,6 +77,8 @@ pub struct EntryTransaction<'a> {
     staged_bytes: usize,
     document_bytes: usize,
     task_scope: Option<(TaskId, ConversationId)>,
+    fork_sources: std::collections::HashSet<DocumentId>,
+    fork_parents: std::collections::HashSet<ConversationId>,
 }
 impl<'a> EntryTransaction<'a> {
     pub(crate) fn new(
@@ -115,6 +117,8 @@ impl<'a> EntryTransaction<'a> {
             staged_bytes: 0,
             document_bytes: 0,
             task_scope,
+            fork_sources: std::collections::HashSet::new(),
+            fork_parents: std::collections::HashSet::new(),
         })
     }
     fn read(&self) -> Result<(), DurableError> {
@@ -266,8 +270,10 @@ impl<'a> EntryTransaction<'a> {
                     }
                     copies.push((document.id, point));
                 }
+                self.fork_parents.insert(parent.conversation_id);
                 let mut addresses = std::collections::HashSet::new();
                 for (source_id, point) in copies {
+                    self.fork_sources.insert(source_id);
                     let source = self
                         .state
                         .document_value(&self.state.generic_documents[&source_id], point)?;
@@ -705,6 +711,24 @@ impl<'a> EntryTransaction<'a> {
             && self.batch.generic_documents.is_empty()
         {
             return Ok(None);
+        }
+        // Forks read committed source revisions. Reject writes regardless of
+        // callback ordering, including retirement/recreation and version-only
+        // migrations. Newly created current-policy documents conflict too.
+        for document in &self.batch.generic_documents {
+            if self.fork_sources.contains(&document.id) {
+                return Err(DurableError::Rejected(
+                    "cannot change fork source document in fork transaction".into(),
+                ));
+            }
+            if let DocumentScope::Conversation { conversation_id } = document.address.scope
+                && self.fork_parents.contains(&conversation_id)
+                && document.fork == DocumentFork::Current
+            {
+                return Err(DurableError::Rejected(
+                    "cannot fork while changing current-policy documents".into(),
+                ));
+            }
         }
         self.batch.next_seq = self
             .batch

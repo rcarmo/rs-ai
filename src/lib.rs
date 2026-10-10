@@ -194,6 +194,9 @@ mod durable_entries_test;
 #[path = "tests/durable/events_test.rs"]
 mod durable_events_test;
 #[cfg(test)]
+#[path = "tests/durable/fork_transaction_test.rs"]
+mod durable_fork_transaction_test;
+#[cfg(test)]
 #[path = "tests/durable/forks_test.rs"]
 mod durable_forks_test;
 #[cfg(test)]
