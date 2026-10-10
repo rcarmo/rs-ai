@@ -281,6 +281,24 @@ mod tests {
             .unwrap();
         assert_eq!(
             reopened
+                .document(address(root, "asof"), DocumentPoint::At(cutoff.created_seq))
+                .await
+                .unwrap()
+                .unwrap()
+                .value["value"],
+            1
+        );
+        assert_eq!(
+            reopened
+                .document(address(root, "asof"), DocumentPoint::Current)
+                .await
+                .unwrap()
+                .unwrap()
+                .value["value"],
+            2
+        );
+        assert_eq!(
+            reopened
                 .document(address(nested.id, "asof"), DocumentPoint::Current)
                 .await
                 .unwrap()

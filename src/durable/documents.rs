@@ -107,6 +107,23 @@ pub(crate) fn validate_size(value: &Value) -> Result<usize, DurableError> {
     Ok(counter.0)
 }
 
+#[cfg(test)]
+mod size_tests {
+    use super::*;
+    #[test]
+    fn counted_document_bytes_match_escaped_json_and_enforce_limit() {
+        let value = serde_json::json!({"text":"quotes\"\n\t\\ unicode 𐐀"});
+        assert_eq!(
+            validate_size(&value).unwrap(),
+            serde_json::to_vec(&value).unwrap().len()
+        );
+        assert!(matches!(
+            validate_size(&serde_json::json!({"text":"x".repeat(MAX_DOCUMENT_BYTES)})),
+            Err(DurableError::TooLarge { .. })
+        ));
+    }
+}
+
 impl GenericDocumentRecord {
     pub(crate) fn alive(&self, point: DocumentPoint) -> bool {
         match point {
