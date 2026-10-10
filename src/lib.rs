@@ -176,6 +176,9 @@ mod durable_entries_test;
 #[path = "tests/durable/events_test.rs"]
 mod durable_events_test;
 #[cfg(test)]
+#[path = "tests/durable/forks_test.rs"]
+mod durable_forks_test;
+#[cfg(test)]
 #[path = "tests/durable/harness_abort_test.rs"]
 mod durable_harness_abort_test;
 #[cfg(test)]

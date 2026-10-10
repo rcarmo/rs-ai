@@ -139,6 +139,29 @@ impl<'a> EntryTransaction<'a> {
         &mut self,
         ownership: ConversationOwnership,
     ) -> Result<ConversationRecord, DurableError> {
+        self.create_membership(ownership, None)
+    }
+    /// Fork committed visible history through an inclusive cutoff. Native
+    /// document copying and newly-staged parent cutoffs are not implemented.
+    pub fn fork_conversation(
+        &mut self,
+        parent: ConversationId,
+        at: EntryId,
+        ownership: ConversationOwnership,
+    ) -> Result<ConversationRecord, DurableError> {
+        self.create_membership(
+            ownership,
+            Some(ConversationParent {
+                conversation_id: parent,
+                at,
+            }),
+        )
+    }
+    fn create_membership(
+        &mut self,
+        ownership: ConversationOwnership,
+        parent: Option<ConversationParent>,
+    ) -> Result<ConversationRecord, DurableError> {
         self.writing = true;
         if let Some(error) = &self.failure {
             return Err(error.clone());
@@ -147,6 +170,20 @@ impl<'a> EntryTransaction<'a> {
             if self.batch.conversations.len() >= 4096 {
                 return Err(DurableError::Rejected(
                     "too many staged conversations".into(),
+                ));
+            }
+            if let Some(parent) = &parent
+                && (!self
+                    .state
+                    .conversations
+                    .contains_key(&parent.conversation_id)
+                    || self
+                        .state
+                        .visible_entry(parent.conversation_id, parent.at)?
+                        .is_none())
+            {
+                return Err(DurableError::Rejected(
+                    "invalid conversation fork parent/cutoff".into(),
                 ));
             }
             let owner = match ownership {
@@ -184,6 +221,7 @@ impl<'a> EntryTransaction<'a> {
                 .ok_or_else(|| DurableError::Range("next_id overflow".into()))?;
             let record = ConversationRecord {
                 id,
+                parent,
                 owner,
                 created_seq: Some(self.batch.seq),
             };
@@ -203,12 +241,7 @@ impl<'a> EntryTransaction<'a> {
         id: EntryId,
     ) -> Result<Option<EntryRecord>, DurableError> {
         self.read()?;
-        Ok(self
-            .state
-            .entries
-            .get(&id)
-            .filter(|entry| entry.conversation_id == conversation)
-            .cloned())
+        Ok(self.state.visible_entry(conversation, id)?.cloned())
     }
     pub fn entries(
         &self,

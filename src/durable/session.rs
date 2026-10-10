@@ -384,6 +384,15 @@ impl DurableSession {
         self.transact_entries(move |tx| tx.create_conversation(ownership))
             .await
     }
+    pub async fn fork_conversation(
+        &self,
+        parent: ConversationId,
+        at: EntryId,
+        ownership: ConversationOwnership,
+    ) -> Result<ConversationRecord, DurableError> {
+        self.transact_entries(move |tx| tx.fork_conversation(parent, at, ownership))
+            .await
+    }
     pub async fn conversation(
         &self,
         id: ConversationId,
@@ -755,7 +764,7 @@ async fn session_worker(
                     }
                     SessionCommand::Entry(conversation, id, reply) => {
                         let result = if poisoned { Err(DurableError::Poisoned) }
-                            else { Ok(state.entries.get(&id).filter(|entry| entry.conversation_id == conversation).cloned()) };
+                            else { state.visible_entry(conversation, id).map(|entry| entry.cloned()) };
                         let _ = reply.send(result);
                     }
                     SessionCommand::Entries(conversation, query, reply) => {

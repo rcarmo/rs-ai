@@ -244,6 +244,7 @@ mod tests {
         let seq = CommitSeq::new(1).unwrap();
         let record = ConversationRecord {
             id: ConversationId::new(2).unwrap(),
+            parent: None,
             owner: None,
             created_seq: Some(seq),
         };
@@ -282,6 +283,7 @@ mod tests {
             conversations: vec![
                 ConversationRecord {
                     id: ConversationId::new(2).unwrap(),
+                    parent: None,
                     owner: Some(ConversationOwner {
                         conversation_id: ConversationId::new(3).unwrap(),
                         task_id: TaskId::new(5).unwrap(),
@@ -290,6 +292,7 @@ mod tests {
                 },
                 ConversationRecord {
                     id: ConversationId::new(3).unwrap(),
+                    parent: None,
                     owner: Some(ConversationOwner {
                         conversation_id: ConversationId::new(2).unwrap(),
                         task_id: TaskId::new(4).unwrap(),

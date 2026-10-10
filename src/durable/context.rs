@@ -1,5 +1,5 @@
-//! Native durable message reconstruction for the single-conversation entry log.
-//! Native context-update entries adapt heads/edits; fork ancestry remains absent.
+//! Native durable message reconstruction across immutable fork ancestry.
+//! Native context-update and generic entries adapt heads/edits.
 use super::model::{DurableContent, DurableMessage, ModelIntent, to_message_for_durable};
 use super::storage::StorageSnapshot;
 use super::types::*;
@@ -177,20 +177,21 @@ fn read(
     collect_view: bool,
 ) -> Result<ContextView, DurableError> {
     if let Some(at) = at
-        && !snapshot
-            .entries
-            .get(&at)
-            .is_some_and(|entry| entry.conversation_id == conversation)
+        && snapshot.visible_entry(conversation, at)?.is_none()
     {
         return Err(DurableError::Rejected(format!(
             "entry {} is not visible in this conversation",
             at.get()
         )));
     }
+    let history = snapshot.history_bounds(conversation)?;
     derive(
         snapshot,
         snapshot.entries.values().filter(|entry| {
-            entry.conversation_id == conversation && at.is_none_or(|at| entry.id <= at)
+            history
+                .get(&entry.conversation_id)
+                .is_some_and(|upper| entry.id.get() <= *upper)
+                && at.is_none_or(|at| entry.id <= at)
         }),
         collect_view,
     )
@@ -365,24 +366,22 @@ impl MessageRange {
         snapshot: &StorageSnapshot,
         conversation: ConversationId,
     ) -> Result<Option<Self>, DurableError> {
+        let history = snapshot.history_bounds(conversation)?;
+        let visible = |entry: &&EntryRecord| {
+            history
+                .get(&entry.conversation_id)
+                .is_some_and(|upper| entry.id.get() <= *upper)
+        };
         let Some(tail) = snapshot
             .entries
             .values()
             .rev()
-            .find(|entry| entry.conversation_id == conversation)
+            .find(visible)
             .map(|entry| entry.id)
         else {
             return Ok(None);
         };
-        let raw = derive_raw(
-            snapshot,
-            snapshot
-                .entries
-                .values()
-                .filter(|entry| entry.conversation_id == conversation),
-            false,
-        )?
-        .messages;
+        let raw = derive_raw(snapshot, snapshot.entries.values().filter(visible), false)?.messages;
         let retained_budget = retention_cost(&raw);
         let mut range = Self {
             tail,
@@ -391,11 +390,7 @@ impl MessageRange {
             retained_budget,
             messages: Vec::new(),
             #[cfg(test)]
-            decoded_entries: snapshot
-                .entries
-                .values()
-                .filter(|entry| entry.conversation_id == conversation)
-                .count(),
+            decoded_entries: snapshot.entries.values().filter(visible).count(),
         };
         range.settle();
         Ok(Some(range))
@@ -409,11 +404,16 @@ impl MessageRange {
         conversation: ConversationId,
     ) -> Result<bool, DurableError> {
         use std::ops::Bound::{Excluded, Unbounded};
+        let history = snapshot.history_bounds(conversation)?;
         let added = snapshot
             .entries
             .range((Excluded(self.tail), Unbounded))
             .map(|(_, entry)| entry)
-            .filter(|entry| entry.conversation_id == conversation)
+            .filter(|entry| {
+                history
+                    .get(&entry.conversation_id)
+                    .is_some_and(|upper| entry.id.get() <= *upper)
+            })
             .collect::<Vec<_>>();
         if added.is_empty() {
             return Ok(false);

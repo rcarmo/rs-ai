@@ -103,7 +103,13 @@ Session `create_conversation(ConversationOwnership)` and transaction `create_con
 
 Session/transaction `conversation` and `conversations(ConversationQuery)` return detached records on the mutation line. Owner-conversation/task filters combine; scans default ascending and preserve exclusive cursor direction. Reads after the transaction's first write reject. Native records add `created_seq`; None denotes the reserved root or an ownerless scope inferred from old entries/tasks/submissions/documents. Empty conversation batches omit the new field, preserving old journal encoding. Reopen reconstructs legacy scopes without rewriting or reallocating existing records.
 
-Compatibility permits raw writes and passive appends to implicit scopes; strict existence admission is absent. These records have no fork parent, subtree execution/abort/wait semantics, initial-document hooks or harness conversation handles yet. Ownership metadata alone does not implement those contracts.
+Compatibility permits raw writes and passive appends to implicit scopes; strict existence admission is absent. Native fork parents supply inherited transcript history as described below. Subtree execution/abort/wait semantics, initial-document hooks and harness conversation handles are absent. Ownership metadata alone does not implement those contracts.
+
+## Native fork transcript history
+
+Session/transaction `fork_conversation(parent, at, ownership)` creates an immutable parent edge through one committed visible entry, inclusive. Nested ancestry intersects cutoffs; later parent and sibling entries are invisible. Fork-aware session/transaction entry lookup, scans, message context and ContextView preserve the ancestor record's original conversation ID. Child context edits may target visible ancestor entries without changing parent history. Current-message ranges respect ancestry when choosing/extending their tail. Owner edges never grant transcript visibility; malformed history cycles fail closed.
+
+A transaction can create a child and append its head/edit contribution atomically, but cannot fork at an entry/parent newly staged in that transaction. Forks copy no documents: upstream asOf/current/initial document selection, provider-document identity hooks, harness generation in children and subtree scheduling/abort/idle remain unimplemented. The API supplies native transcript history only.
 
 ## Atomic entry transactions
 

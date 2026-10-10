@@ -78,11 +78,19 @@ pub struct ConversationOwner {
     pub task_id: TaskId,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ConversationParent {
+    pub conversation_id: ConversationId,
+    pub at: EntryId,
+}
+
 /// Native conversation membership. None creation sequence marks the reserved
 /// root or an ownerless scope inferred from a pre-table journal.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ConversationRecord {
     pub id: ConversationId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent: Option<ConversationParent>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub owner: Option<ConversationOwner>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

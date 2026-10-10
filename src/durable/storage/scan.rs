@@ -222,11 +222,14 @@ impl StorageSnapshot {
         let upper = max
             .map(|id| Included(EntryId::new(id).expect("validated bound")))
             .unwrap_or(Unbounded);
+        let history = self.history_bounds(conversation)?;
         let records = self
             .entries
             .range((lower, upper))
             .filter(move |(_, record)| {
-                record.conversation_id == conversation
+                history
+                    .get(&record.conversation_id)
+                    .is_some_and(|upper| record.id.get() <= *upper)
                     && query.kind.as_ref().is_none_or(|kind| record.kind == *kind)
             })
             .map(|(id, record)| (id.get(), record));

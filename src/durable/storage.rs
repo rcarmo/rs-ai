@@ -34,6 +34,7 @@ impl StorageSnapshot {
                 root,
                 ConversationRecord {
                     id: root,
+                    parent: None,
                     owner: None,
                     created_seq: None,
                 },
@@ -60,10 +61,49 @@ impl StorageSnapshot {
         for id in ids {
             self.conversations.entry(id).or_insert(ConversationRecord {
                 id,
+                parent: None,
                 owner: None,
                 created_seq: None,
             });
         }
+    }
+
+    /// Native ancestry bounds, including each immutable fork cutoff. Ownership
+    /// edges never grant history visibility. Corrupt cycles fail closed.
+    pub(crate) fn history_bounds(
+        &self,
+        conversation: ConversationId,
+    ) -> Result<BTreeMap<ConversationId, u64>, DurableError> {
+        let mut bounds = BTreeMap::new();
+        let mut current = conversation;
+        let mut upper = MAX_ID;
+        loop {
+            if bounds.insert(current, upper).is_some() {
+                return Err(DurableError::Corrupt("conversation history cycle".into()));
+            }
+            let Some(parent) = self
+                .conversations
+                .get(&current)
+                .and_then(|record| record.parent.as_ref())
+            else {
+                break;
+            };
+            upper = upper.min(parent.at.get());
+            current = parent.conversation_id;
+        }
+        Ok(bounds)
+    }
+    pub(crate) fn visible_entry(
+        &self,
+        conversation: ConversationId,
+        id: EntryId,
+    ) -> Result<Option<&EntryRecord>, DurableError> {
+        let bounds = self.history_bounds(conversation)?;
+        Ok(self.entries.get(&id).filter(|entry| {
+            bounds
+                .get(&entry.conversation_id)
+                .is_some_and(|upper| id.get() <= *upper)
+        }))
     }
 
     pub fn apply(&mut self, batch: &CommitBatch) -> Result<(), DurableError> {
@@ -114,6 +154,7 @@ impl StorageSnapshot {
         {
             self.conversations.entry(id).or_insert(ConversationRecord {
                 id,
+                parent: None,
                 owner: None,
                 created_seq: None,
             });
@@ -274,6 +315,17 @@ pub fn validate_batch(
     let mut max_new_id = 0u64;
     let mut new_conversations = HashSet::new();
     for conversation in &batch.conversations {
+        if let Some(parent) = &conversation.parent
+            && (conversation.id == parent.conversation_id
+                || !snapshot.conversations.contains_key(&parent.conversation_id)
+                || snapshot
+                    .visible_entry(parent.conversation_id, parent.at)?
+                    .is_none())
+        {
+            return Err(DurableError::Rejected(
+                "invalid conversation fork parent/cutoff".into(),
+            ));
+        }
         if conversation.created_seq != Some(batch.seq)
             || conversation.id.get() < snapshot.next_id
             || conversation.id.get() == 1
@@ -303,11 +355,28 @@ pub fn validate_batch(
         // Reject excessive JSON before cloning/deserializing context payloads.
         validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
         let _ = encode_limited("entry", &entry.value, MAX_ENTRY_BYTES)?;
+        let history = if let Some(parent) = batch
+            .conversations
+            .iter()
+            .find(|record| record.id == entry.conversation_id)
+            .and_then(|record| record.parent.as_ref())
+        {
+            let mut bounds = snapshot.history_bounds(parent.conversation_id)?;
+            for upper in bounds.values_mut() {
+                *upper = (*upper).min(parent.at.get());
+            }
+            bounds.insert(entry.conversation_id, MAX_ID);
+            bounds
+        } else {
+            snapshot.history_bounds(entry.conversation_id)?
+        };
         let visible = |target: EntryId| {
-            snapshot
-                .entries
+            snapshot.entries.get(&target).is_some_and(|prior| {
+                history
+                    .get(&prior.conversation_id)
+                    .is_some_and(|upper| target.get() <= *upper)
+            }) || batch_prior_entries
                 .get(&target)
-                .or_else(|| batch_prior_entries.get(&target).copied())
                 .is_some_and(|prior| prior.conversation_id == entry.conversation_id)
         };
         if entry.kind == "context" {
