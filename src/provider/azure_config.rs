@@ -18,6 +18,7 @@ pub(crate) fn config(model: &Model, options: &StreamOptions) -> Result<(String, 
     let resource = options
         .azure_resource_name
         .as_deref()
+        .map(str::trim)
         .filter(|name| !name.is_empty())
         .map(str::to_owned)
         .or_else(|| env(options, "AZURE_OPENAI_RESOURCE_NAME"));
@@ -26,9 +27,14 @@ pub(crate) fn config(model: &Model, options: &StreamOptions) -> Result<(String, 
     let version = options
         .azure_api_version
         .as_deref()
+        .map(str::trim)
         .filter(|version| !version.is_empty())
         .map(str::to_owned)
-        .or_else(|| env(options, "AZURE_OPENAI_API_VERSION").filter(|version| !version.is_empty()))
+        .or_else(|| {
+            env(options, "AZURE_OPENAI_API_VERSION")
+                .map(|version| version.trim().to_owned())
+                .filter(|version| !version.is_empty())
+        })
         .unwrap_or_else(|| "v1".into());
     Ok((base, version))
 }
@@ -37,6 +43,7 @@ pub(crate) fn deployment(model: &Model, options: &StreamOptions) -> String {
     if let Some(name) = options
         .azure_deployment_name
         .as_deref()
+        .map(str::trim)
         .filter(|name| !name.is_empty())
     {
         return name.to_owned();

@@ -140,6 +140,51 @@ fn per_request_azure_options_override_environment_without_global_mutation() {
     );
 }
 
+#[test]
+fn azure_config_trims_explicit_values_and_falls_back_on_blank_options() {
+    let model = model();
+    let mut options = StreamOptions {
+        azure_resource_name: Some("   ".into()),
+        azure_api_version: Some("   ".into()),
+        azure_deployment_name: Some("   ".into()),
+        env: Some(HashMap::from([
+            ("AZURE_OPENAI_BASE_URL".into(), "".into()),
+            ("AZURE_OPENAI_RESOURCE_NAME".into(), " fallback ".into()),
+            ("AZURE_OPENAI_API_VERSION".into(), " 2026-02-01 ".into()),
+            (
+                "AZURE_OPENAI_DEPLOYMENT_NAME_MAP".into(),
+                " gpt-4o-mini = mapped ".into(),
+            ),
+        ])),
+        ..Default::default()
+    };
+    assert_eq!(
+        crate::provider::azure_config::config(&model, &options).unwrap(),
+        (
+            "https://fallback.openai.azure.com/openai/v1".into(),
+            "2026-02-01".into()
+        )
+    );
+    assert_eq!(
+        crate::provider::azure_config::deployment(&model, &options),
+        "mapped"
+    );
+    options.azure_resource_name = Some(" explicit ".into());
+    options.azure_api_version = Some(" v1 ".into());
+    options.azure_deployment_name = Some(" deployment ".into());
+    assert_eq!(
+        crate::provider::azure_config::config(&model, &options).unwrap(),
+        (
+            "https://explicit.openai.azure.com/openai/v1".into(),
+            "v1".into()
+        )
+    );
+    assert_eq!(
+        crate::provider::azure_config::deployment(&model, &options),
+        "deployment"
+    );
+}
+
 #[tokio::test]
 async fn azure_responses_uses_api_key_version_and_request_deployment_overlays() {
     let server = MockServer::start().await;
