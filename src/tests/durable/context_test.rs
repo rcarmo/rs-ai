@@ -30,6 +30,86 @@ mod tests {
     }
 
     #[test]
+    fn retained_range_decodes_only_appends_and_rebuilds_on_edits_or_heads() {
+        use crate::durable::context::{MessageRange, messages};
+        use crate::durable::*;
+        use serde_json::json;
+        let conversation = ConversationId::new(1).unwrap();
+        let mut snapshot = StorageSnapshot::empty();
+        let insert = |snapshot: &mut StorageSnapshot, id, value| {
+            let id = EntryId::new(id).unwrap();
+            snapshot.entries.insert(
+                id,
+                EntryRecord {
+                    id,
+                    conversation_id: conversation,
+                    kind: "custom".into(),
+                    value,
+                    by_task_id: None,
+                    created_seq: CommitSeq::new(1).unwrap(),
+                },
+            );
+        };
+        insert(
+            &mut snapshot,
+            1,
+            json!({"model":[crate::user_message("input"), assistant(&["a","b"])]}),
+        );
+        let mut range = MessageRange::build(&snapshot, conversation)
+            .unwrap()
+            .unwrap();
+        assert_eq!(range.decoded_entries, 1);
+        assert!(range.messages[2].is_error);
+        assert!(range.messages[3].is_error);
+        assert!(!range.extend(&snapshot, conversation).unwrap());
+        for (id, value) in [
+            (
+                2,
+                json!({"model":[tool("b","second"),crate::user_message("interleaved")]}),
+            ),
+            (
+                3,
+                json!({"model":[tool("a","first"),tool("a","duplicate"),tool("orphan","drop")]}),
+            ),
+            (4, json!({"model":[assistant(&["c"])]})),
+            (5, json!({"model":[tool("c","third")]})),
+        ] {
+            insert(&mut snapshot, id, value);
+            range.extend(&snapshot, conversation).unwrap();
+            assert_eq!(range.decoded_entries, id as usize);
+            assert_eq!(
+                serde_json::to_value(&range.messages).unwrap(),
+                serde_json::to_value(messages(&snapshot, conversation, None).unwrap()).unwrap()
+            );
+        }
+        let historical = messages(&snapshot, conversation, Some(EntryId::new(1).unwrap())).unwrap();
+        assert!(historical[2].is_error);
+        assert!(historical[3].is_error);
+        insert(
+            &mut snapshot,
+            6,
+            json!({"edits":[{"type":"omit","target":1}]}),
+        );
+        range.extend(&snapshot, conversation).unwrap();
+        assert_eq!(range.decoded_entries, 6); // full rebuild
+        assert_eq!(
+            serde_json::to_value(&range.messages).unwrap(),
+            serde_json::to_value(messages(&snapshot, conversation, None).unwrap()).unwrap()
+        );
+        insert(
+            &mut snapshot,
+            7,
+            json!({"head":7,"model":[crate::user_message("reset")]}),
+        );
+        range.extend(&snapshot, conversation).unwrap();
+        assert_eq!(range.messages.len(), 1);
+        assert_eq!(
+            serde_json::to_value(&range.messages).unwrap(),
+            serde_json::to_value(messages(&snapshot, conversation, None).unwrap()).unwrap()
+        );
+    }
+
+    #[test]
     fn results_follow_call_order_before_interleaved_users_and_drop_orphans() {
         let messages = order_tool_results(vec![
             tool("orphan", "drop"),

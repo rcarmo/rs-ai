@@ -94,7 +94,7 @@ pub type LifecycleClock = Arc<dyn Fn() -> i64 + Send + Sync>;
 
 #[derive(Clone, Debug)]
 pub struct SessionSettings {
-    /// Idle retention for same-revision native context. Zero disables caching.
+    /// Idle retention for native current-message ranges. Zero disables caching.
     pub context_retention: Duration,
 }
 impl Default for SessionSettings {
@@ -105,31 +105,8 @@ impl Default for SessionSettings {
     }
 }
 
-struct ContextSize(usize);
-impl std::io::Write for ContextSize {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        let size = self.0.saturating_add(bytes.len());
-        if size > MAX_TASK_FIELD_BYTES {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::FileTooLarge,
-                "context cache limit",
-            ));
-        }
-        self.0 = size;
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-fn context_size(messages: &[crate::types::Message]) -> Option<usize> {
-    let mut size = ContextSize(0);
-    serde_json::to_writer(&mut size, messages).ok()?;
-    Some(size.0)
-}
-
 struct ContextCache {
-    values: HashMap<ConversationId, (Instant, Vec<crate::types::Message>, usize)>,
+    values: HashMap<ConversationId, (Instant, super::context::MessageRange, usize)>,
     #[cfg(test)]
     derivations: usize,
 }
@@ -372,8 +349,8 @@ impl DurableSession {
         result.await.unwrap_or(Err(DurableError::Closed))
     }
 
-    /// Derive native messages on the session line; full-current reads reuse a
-    /// detached cache until idle expiry or any successfully committed mutation.
+    /// Derive native messages on the session line; current reads extend retained
+    /// ranges after adoption. Historical reads never replace the current cache.
     pub async fn message_context(
         &self,
         conversation: ConversationId,
@@ -554,6 +531,11 @@ async fn session_worker(
                                 task.ended_at = Some(now());
                             }
                         }
+                        // Native legacy assistants derive model identity from
+                        // task.input. Preserve ranges only while that input is
+                        // unchanged; lifecycle/checkpoint-only writes are safe.
+                        let invalidate = batch.tasks.iter().filter(|task| state.tasks.get(&task.id).is_some_and(|previous| previous.input != task.input))
+                            .map(|task| task.conversation_id).collect::<Vec<_>>();
                         watches.values.retain(|watch: &std::sync::Weak<WatchQueue>| watch.upgrade().is_some_and(|watch| watch.active()));
                         let publication = (!watches.values.is_empty()).then(|| {
                             let size = serde_json::to_vec(&batch).map_or(MAX_COMMIT_BYTES, |bytes| bytes.len());
@@ -562,6 +544,7 @@ async fn session_worker(
                         let (done, result) = oneshot::channel();
                         if storage.send(StorageCommand::Commit(batch, done)).await.is_err() {
                             finish_all(&mut watches.values, WatchEnd::Poisoned);
+                            cache.values.clear();
                             poisoned = true;
                             let _ = reply.send(Err(DurableError::Poisoned));
                             continue;
@@ -571,7 +554,8 @@ async fn session_worker(
                         match result.await.unwrap_or(Err(DurableError::Uncertain("storage worker stopped".into()))) {
                             Ok(()) => match storage_load(storage).await {
                                 Ok(adopted) => {
-                                    state = adopted; cache.values.clear();
+                                    state = adopted;
+                                    for conversation in invalidate { cache.values.remove(&conversation); }
                                     watches.values.retain(|watch: &std::sync::Weak<WatchQueue>| {
                                         if let Some(watch) = watch.upgrade() { if let Some((batch, size)) = &publication { watch.publish(batch, &state, *size); } true } else { false }
                                     });
@@ -608,21 +592,41 @@ async fn session_worker(
                     SessionCommand::Context(conversation, at, reply) => {
                         if poisoned { cache.values.clear(); let _ = reply.send(Err(DurableError::Poisoned)); continue; }
                         cache.expire(settings.context_retention);
-                        if at.is_none() && let Some((used, messages, _)) = cache.values.get_mut(&conversation) {
-                            *used = Instant::now();
-                            let _ = reply.send(Ok(messages.clone()));
+                        if at.is_some() || settings.context_retention.is_zero() {
+                            #[cfg(test)] { cache.derivations += 1; }
+                            let _ = reply.send(super::context::messages(&state, conversation, at));
                             continue;
                         }
-                        #[cfg(test)] { cache.derivations += 1; }
-                        let result = super::context::messages(&state, conversation, at);
-                        if at.is_none() && !settings.context_retention.is_zero() && let Ok(messages) = &result
-                            && !messages.is_empty() && cache.values.len() < 64
-                            && let Some(bytes) = context_size(messages)
-                            && cache.retained_bytes().saturating_add(bytes) <= MAX_COMMIT_BYTES
-                        {
-                            cache.values.insert(conversation, (Instant::now(), messages.clone(), bytes));
+                        let retained = cache.values.remove(&conversation);
+                        let result = if let Some((_, mut range, bytes)) = retained {
+                            match range.extend(&state, conversation) {
+                                Ok(changed) => {
+                                    #[cfg(test)] { if changed { cache.derivations += 1; } }
+                                    let bytes = if changed { range.retained_bytes() } else { Some(bytes) };
+                                    Ok(Some((range, bytes)))
+                                }
+                                Err(error) => Err(error),
+                            }
+                        } else {
+                            #[cfg(test)] { cache.derivations += 1; }
+                            super::context::MessageRange::build(&state, conversation).map(|range| range.map(|range| {
+                                let bytes = range.retained_bytes();
+                                (range, bytes)
+                            }))
+                        };
+                        match result {
+                            Ok(Some((range, bytes))) => {
+                                let messages = range.messages.clone();
+                                if !messages.is_empty() && cache.values.len() < 64 && let Some(bytes) = bytes
+                                    && cache.retained_bytes().saturating_add(bytes) <= MAX_COMMIT_BYTES
+                                {
+                                    cache.values.insert(conversation, (Instant::now(), range, bytes));
+                                }
+                                let _ = reply.send(Ok(messages));
+                            }
+                            Ok(None) => { let _ = reply.send(Ok(Vec::new())); }
+                            Err(error) => { let _ = reply.send(Err(error)); }
                         }
-                        let _ = reply.send(result);
                     }
                     SessionCommand::ContextView(conversation, at, reply) => {
                         let result = if poisoned { Err(DurableError::Poisoned) }

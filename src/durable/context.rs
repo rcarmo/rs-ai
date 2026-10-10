@@ -239,6 +239,16 @@ fn derive<'a>(
     entries: impl Iterator<Item = &'a EntryRecord>,
     collect_view: bool,
 ) -> Result<ContextView, DurableError> {
+    let mut view = derive_raw(snapshot, entries, collect_view)?;
+    view.messages = assemble(view.messages);
+    Ok(view)
+}
+
+fn derive_raw<'a>(
+    snapshot: &StorageSnapshot,
+    entries: impl Iterator<Item = &'a EntryRecord>,
+    collect_view: bool,
+) -> Result<ContextView, DurableError> {
     let entries = entries.collect::<Vec<_>>();
     let mut head = None;
     let mut marker = None;
@@ -315,9 +325,17 @@ fn derive<'a>(
             view.contributions.push(result[start..].to_vec());
         }
     }
+    view.messages = result;
+    Ok(view)
+}
+
+fn assemble(result: Vec<Message>) -> Vec<Message> {
+    lead_with_system(order_tool_results(result))
+}
+
+fn lead_with_system(mut result: Vec<Message>) -> Vec<Message> {
     // Repair results before testing the leading-system prefix: orphan results
     // can otherwise hide a baseline system message behind earlier user inputs.
-    let mut result = order_tool_results(result);
     // Lead with baseline system metadata only while preceding messages are user
     // inputs, matching upstream provider prompt/cache prefix ordering.
     if let Some(index) = result.iter().position(|message| message.role != Role::User)
@@ -327,8 +345,179 @@ fn derive<'a>(
         let system = result.remove(index);
         result.insert(0, system);
     }
-    view.messages = result;
-    Ok(view)
+    result
+}
+
+/// Retained current-message range. Settled messages end before the last
+/// assistant; the open suffix keeps raw results so late arrivals can replace
+/// synthesized errors. Never cache repaired-only tool history.
+pub(crate) struct MessageRange {
+    tail: EntryId,
+    settled: Vec<Message>,
+    open: Vec<Message>,
+    pub(crate) messages: Vec<Message>,
+    retained_budget: usize,
+    #[cfg(test)]
+    pub(crate) decoded_entries: usize,
+}
+impl MessageRange {
+    pub(crate) fn build(
+        snapshot: &StorageSnapshot,
+        conversation: ConversationId,
+    ) -> Result<Option<Self>, DurableError> {
+        let Some(tail) = snapshot
+            .entries
+            .values()
+            .rev()
+            .find(|entry| entry.conversation_id == conversation)
+            .map(|entry| entry.id)
+        else {
+            return Ok(None);
+        };
+        let raw = derive_raw(
+            snapshot,
+            snapshot
+                .entries
+                .values()
+                .filter(|entry| entry.conversation_id == conversation),
+            false,
+        )?
+        .messages;
+        let retained_budget = retention_cost(&raw);
+        let mut range = Self {
+            tail,
+            settled: Vec::new(),
+            open: raw,
+            retained_budget,
+            messages: Vec::new(),
+            #[cfg(test)]
+            decoded_entries: snapshot
+                .entries
+                .values()
+                .filter(|entry| entry.conversation_id == conversation)
+                .count(),
+        };
+        range.settle();
+        Ok(Some(range))
+    }
+
+    /// Only new entries are decoded. Structural updates trigger a conservative
+    /// rebuild; native task model-identity changes invalidate at adoption.
+    pub(crate) fn extend(
+        &mut self,
+        snapshot: &StorageSnapshot,
+        conversation: ConversationId,
+    ) -> Result<bool, DurableError> {
+        use std::ops::Bound::{Excluded, Unbounded};
+        let added = snapshot
+            .entries
+            .range((Excluded(self.tail), Unbounded))
+            .map(|(_, entry)| entry)
+            .filter(|entry| entry.conversation_id == conversation)
+            .collect::<Vec<_>>();
+        if added.is_empty() {
+            return Ok(false);
+        }
+        let mut messages = Vec::new();
+        for entry in &added {
+            let update = if entry.kind == "context" {
+                Some(
+                    serde_json::from_value::<ContextUpdate>(entry.value.clone()).map_err(|_| {
+                        DurableError::Corrupt("invalid persisted context update".into())
+                    })?,
+                )
+            } else if !super::entries::native_kind(&entry.kind) {
+                Some(
+                    super::entries::EntryPayload::decode(&entry.value)
+                        .map_err(|_| {
+                            DurableError::Corrupt("invalid persisted generic entry".into())
+                        })?
+                        .context(),
+                )
+            } else {
+                None
+            };
+            if update
+                .as_ref()
+                .is_some_and(|update| update.head.is_some() || !update.edits.is_empty())
+            {
+                *self =
+                    Self::build(snapshot, conversation)?.expect("appended entry establishes tail");
+                return Ok(true);
+            }
+            contribution(snapshot, entry, update.as_ref(), None, &mut messages)?;
+        }
+        #[cfg(test)]
+        {
+            self.decoded_entries += added.len();
+        }
+        self.tail = added.last().expect("nonempty additions").id;
+        self.retained_budget = self
+            .retained_budget
+            .saturating_add(retention_cost(&messages));
+        self.open.extend(messages);
+        self.settle();
+        Ok(true)
+    }
+
+    fn settle(&mut self) {
+        if let Some(last) = self
+            .open
+            .iter()
+            .rposition(|message| message.role == Role::Assistant)
+            && last > 0
+        {
+            let suffix = self.open.split_off(last);
+            self.settled.extend(order_tool_results(std::mem::replace(
+                &mut self.open,
+                suffix,
+            )));
+        }
+        let mut messages = self.settled.clone();
+        messages.extend(order_tool_results(self.open.clone()));
+        self.messages = lead_with_system(messages);
+    }
+
+    pub(crate) fn retained_bytes(&self) -> Option<usize> {
+        (self.retained_budget <= MAX_TASK_FIELD_BYTES).then_some(self.retained_budget)
+    }
+}
+
+// A conservative encoded retention budget, not measured live heap. Reserve
+// 3x raw serialized messages plus space for Message/Vec and synthesized results.
+// Rust object/allocator overhead can exceed this estimate and is additional.
+fn retention_cost(messages: &[Message]) -> usize {
+    struct Budget(usize);
+    impl std::io::Write for Budget {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0 = self.0.saturating_add(bytes.len());
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut budget = Budget(0);
+    if serde_json::to_writer(&mut budget, messages).is_err() {
+        return usize::MAX;
+    }
+    let calls = messages
+        .iter()
+        .map(|message| {
+            message
+                .content
+                .iter()
+                .filter(|block| matches!(block, ContentBlock::ToolCall { .. }))
+                .count()
+        })
+        .sum::<usize>();
+    budget.0.saturating_mul(3).saturating_add(
+        messages.len().saturating_add(calls).saturating_mul(
+            std::mem::size_of::<Message>()
+                .saturating_mul(3)
+                .saturating_add(1024),
+        ),
+    )
 }
 
 fn included(message: &Message) -> bool {

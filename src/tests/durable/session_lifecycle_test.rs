@@ -122,7 +122,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn native_context_cache_reuses_detached_reads_and_invalidates_on_commit() {
+    async fn native_context_cache_reuses_detached_reads_and_extends_after_commit() {
         let session = DurableSession::open(Box::new(MemoryStorage::new()))
             .await
             .unwrap();
@@ -149,7 +149,7 @@ mod tests {
         second.entries[0].value = json!({"text":"second"});
         second.next_id = 3;
         session.commit(second).await.unwrap();
-        assert_eq!(session.context_cache_stats().await, (0, 1));
+        assert_eq!(session.context_cache_stats().await, (1, 1));
         assert_eq!(
             session
                 .message_context(conversation, None)
@@ -177,6 +177,97 @@ mod tests {
             session.message_context(conversation, None).await,
             Err(DurableError::Closed)
         ));
+    }
+
+    #[tokio::test]
+    async fn retained_context_survives_unrelated_commits_but_task_input_changes_invalidate() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        session
+            .commit(task_batch(1, TaskState::Pending, None))
+            .await
+            .unwrap();
+        let mut draft = EntryDraft::new("note");
+        draft.model = Some(vec![crate::user_message("kept")]);
+        session.append_entry(conversation, draft).await.unwrap();
+        session.message_context(conversation, None).await.unwrap();
+        assert_eq!(session.context_cache_stats().await, (1, 1));
+        session
+            .append_entry(ConversationId::new(2).unwrap(), EntryDraft::new("foreign"))
+            .await
+            .unwrap();
+        session.message_context(conversation, None).await.unwrap();
+        assert_eq!(session.context_cache_stats().await, (1, 1));
+        let state = session.snapshot().await.unwrap();
+        let mut task = state.tasks[&TaskId::new(1).unwrap()].clone();
+        task.checkpoint = json!({"changed":true});
+        task.updated_seq = CommitSeq::new(state.next_seq).unwrap();
+        session
+            .commit(CommitBatch {
+                seq: task.updated_seq,
+                next_id: state.next_id,
+                next_seq: state.next_seq + 1,
+                tasks: vec![task],
+                entries: vec![],
+                submissions: vec![],
+                documents: vec![],
+            })
+            .await
+            .unwrap();
+        session.message_context(conversation, None).await.unwrap();
+        assert_eq!(session.context_cache_stats().await, (1, 1));
+        let state = session.snapshot().await.unwrap();
+        let mut task = state.tasks[&TaskId::new(1).unwrap()].clone();
+        task.input = json!({"changed":"model identity"});
+        task.updated_seq = CommitSeq::new(state.next_seq).unwrap();
+        session
+            .commit(CommitBatch {
+                seq: task.updated_seq,
+                next_id: state.next_id,
+                next_seq: state.next_seq + 1,
+                tasks: vec![task],
+                entries: vec![],
+                submissions: vec![],
+                documents: vec![],
+            })
+            .await
+            .unwrap();
+        assert_eq!(session.context_cache_stats().await, (0, 1));
+        session.message_context(conversation, None).await.unwrap();
+        assert_eq!(session.context_cache_stats().await, (1, 2));
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn retention_budget_overflow_returns_context_without_retaining_range() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        let mut draft = EntryDraft::new("large-context");
+        draft.model = Some(vec![crate::user_message("small"); 4096]);
+        session.append_entry(conversation, draft).await.unwrap();
+        assert_eq!(
+            session
+                .message_context(conversation, None)
+                .await
+                .unwrap()
+                .len(),
+            4096
+        );
+        assert_eq!(session.context_cache_stats().await, (0, 1));
+        assert_eq!(
+            session
+                .message_context(conversation, None)
+                .await
+                .unwrap()
+                .len(),
+            4096
+        );
+        assert_eq!(session.context_cache_stats().await, (0, 2));
+        session.close().await.unwrap();
     }
 
     #[tokio::test]
@@ -256,6 +347,23 @@ mod tests {
             session.context_cache_stats().await.1,
             if retention.is_zero() { 64 } else { 1 }
         );
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn growing_native_context_reads_incremental_workload() {
+        let session = DurableSession::open(Box::new(MemoryStorage::new()))
+            .await
+            .unwrap();
+        let conversation = ConversationId::new(1).unwrap();
+        for id in 1..=128 {
+            let mut draft = EntryDraft::new("note");
+            draft.model = Some(vec![crate::user_message(&"x".repeat(256))]);
+            session.append_entry(conversation, draft).await.unwrap();
+            let messages = session.message_context(conversation, None).await.unwrap();
+            assert_eq!(messages.len(), id);
+        }
+        assert_eq!(session.context_cache_stats().await, (1, 128));
         session.close().await.unwrap();
     }
 
