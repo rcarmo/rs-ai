@@ -209,6 +209,10 @@ pub fn validate_batch(
     let mut max_new_id = 0u64;
     // Entry writes are ordered within a transaction. Later writes can refer to
     // an earlier entry in this batch, but never a forward/foreign entry.
+    let has_context_references = batch
+        .entries
+        .iter()
+        .any(|entry| entry.kind == "context" || !super::entries::native_kind(&entry.kind));
     let mut batch_prior_entries = HashMap::<EntryId, &EntryRecord>::new();
 
     for entry in &batch.entries {
@@ -248,7 +252,9 @@ pub fn validate_batch(
         if entry.created_seq != batch.seq {
             return Err(DurableError::Rejected("entry sequence mismatch".into()));
         }
-        batch_prior_entries.insert(entry.id, entry);
+        if has_context_references {
+            batch_prior_entries.insert(entry.id, entry);
+        }
     }
 
     let mut task_ids = snapshot.tasks.keys().copied().collect::<HashSet<_>>();
