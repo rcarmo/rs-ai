@@ -8,6 +8,38 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 use tokio::sync::{Notify, mpsc, oneshot, watch};
 
+enum CommitReply {
+    Snapshot(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
+    Entry(
+        EntryRecord,
+        oneshot::Sender<Result<EntryRecord, DurableError>>,
+    ),
+}
+impl CommitReply {
+    fn is_closed(&self) -> bool {
+        match self {
+            Self::Snapshot(reply) => reply.is_closed(),
+            Self::Entry(_, reply) => reply.is_closed(),
+        }
+    }
+    fn adopted(self, state: &StorageSnapshot) {
+        match self {
+            Self::Snapshot(reply) => {
+                let _ = reply.send(Ok(state.clone()));
+            }
+            Self::Entry(entry, reply) => {
+                let _ = reply.send(Ok(entry));
+            }
+        }
+    }
+    fn send(self, result: Result<StorageSnapshot, DurableError>) -> Result<(), ()> {
+        match self {
+            Self::Snapshot(reply) => reply.send(result).map_err(|_| ()),
+            Self::Entry(entry, reply) => reply.send(result.map(|_| entry)).map_err(|_| ()),
+        }
+    }
+}
+
 enum StorageCommand {
     Load(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
     Commit(CommitBatch, oneshot::Sender<Result<(), DurableError>>),
@@ -15,9 +47,11 @@ enum StorageCommand {
 }
 
 enum SessionCommand {
-    Commit(
-        CommitBatch,
-        oneshot::Sender<Result<StorageSnapshot, DurableError>>,
+    Commit(CommitBatch, CommitReply),
+    Append(
+        ConversationId,
+        super::entries::EntryDraft,
+        oneshot::Sender<Result<EntryRecord, DurableError>>,
     ),
     Snapshot(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
     Entries(
@@ -212,7 +246,26 @@ impl DurableSession {
         }
         let (reply, result) = oneshot::channel();
         self.tx
-            .send(SessionCommand::Commit(batch, reply))
+            .send(SessionCommand::Commit(batch, CommitReply::Snapshot(reply)))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+
+    /// Allocate and append a passive generic entry on the session mutation line.
+    /// Caller cancellation before admission tombstones the request; afterwards
+    /// storage settlement and publication survive caller drop.
+    pub async fn append_entry(
+        &self,
+        conversation: ConversationId,
+        draft: super::entries::EntryDraft,
+    ) -> Result<EntryRecord, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Append(conversation, draft, reply))
             .await
             .map_err(|_| DurableError::Closed)?;
         result.await.unwrap_or(Err(DurableError::Closed))
@@ -418,7 +471,30 @@ async fn session_worker(
                     reject_unadmitted(rx);
                     return storage_close(storage).await;
                 }
+                // Assign generic identities on the same line as adoption, never
+                // from a caller snapshot that concurrent appends could stale.
+                let command = match command {
+                    SessionCommand::Append(conversation, draft, reply) => {
+                        if reply.is_closed() { continue; }
+                        if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
+                        let record = (|| {
+                            let id = EntryId::new(state.next_id)?;
+                            let seq = CommitSeq::new(state.next_seq)?;
+                            let next_id = id.get().checked_add(1).filter(|id| *id <= MAX_ID).ok_or_else(|| DurableError::Range("next_id overflow".into()))?;
+                            let next_seq = seq.get().checked_add(1).filter(|seq| *seq <= MAX_ID).ok_or_else(|| DurableError::Range("next_seq overflow".into()))?;
+                            Ok((draft.into_record(conversation, id, seq)?, next_id, next_seq))
+                        })();
+                        match record {
+                            Ok((entry, next_id, next_seq)) => SessionCommand::Commit(CommitBatch {
+                                seq: entry.created_seq, next_id, next_seq, entries: vec![entry.clone()], tasks: vec![], submissions: vec![], documents: vec![],
+                            }, CommitReply::Entry(entry, reply)),
+                            Err(error) => { let _ = reply.send(Err(error)); continue; }
+                        }
+                    }
+                    command => command,
+                };
                 match command {
+                    SessionCommand::Append(_, _, _) => unreachable!("append normalized to commit"),
                     SessionCommand::Commit(mut batch, reply) => {
                         if reply.is_closed() { continue; }
                         if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
@@ -458,7 +534,7 @@ async fn session_worker(
                                     watches.values.retain(|watch: &std::sync::Weak<WatchQueue>| {
                                         if let Some(watch) = watch.upgrade() { if let Some((batch, size)) = &publication { watch.publish(batch, &state, *size); } true } else { false }
                                     });
-                                    let _ = reply.send(Ok(state.clone()));
+                                    reply.adopted(&state);
                                 }
                                 Err(error) => { finish_all(&mut watches.values, WatchEnd::Poisoned); cache.values.clear(); poisoned = true; let _ = reply.send(Err(error)); }
                             },
@@ -525,6 +601,9 @@ async fn session_worker(
 
 fn reject(command: SessionCommand) {
     match command {
+        SessionCommand::Append(_, _, reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
         SessionCommand::Commit(_, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }

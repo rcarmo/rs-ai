@@ -60,6 +60,16 @@ pub(crate) fn validate_update(
 ) -> Result<(), DurableError> {
     let update: ContextUpdate = serde_json::from_value(value.clone())
         .map_err(|_| DurableError::Rejected("invalid native context update".into()))?;
+    validate_contribution(snapshot, conversation, id, &update, false)
+}
+
+pub(crate) fn validate_contribution(
+    snapshot: &StorageSnapshot,
+    conversation: ConversationId,
+    id: EntryId,
+    update: &ContextUpdate,
+    allow_self: bool,
+) -> Result<(), DurableError> {
     if update.messages.len() > 4096 || update.edits.len() > 4096 {
         return Err(DurableError::Rejected(
             "too many context messages/edits".into(),
@@ -72,7 +82,7 @@ pub(crate) fn validate_update(
             .is_some_and(|entry| target < id && entry.conversation_id == conversation)
     };
     if let Some(ContextHead::Entry(target)) = update.head
-        && !visible(target)
+        && !(visible(target) || (allow_self && target == id))
     {
         return Err(DurableError::Rejected(
             "context head is not a visible prior entry".into(),
@@ -201,11 +211,16 @@ fn derive<'a>(
     let mut edits = HashMap::new();
     let mut updates = HashMap::new();
     for entry in &entries {
-        if entry.kind != "context" {
+        let update: ContextUpdate = if entry.kind == "context" {
+            serde_json::from_value(entry.value.clone())
+                .map_err(|_| DurableError::Corrupt("invalid persisted context update".into()))?
+        } else if !super::entries::native_kind(&entry.kind) {
+            super::entries::EntryPayload::decode(&entry.value)
+                .map_err(|_| DurableError::Corrupt("invalid persisted generic entry".into()))?
+                .context()
+        } else {
             continue;
-        }
-        let update: ContextUpdate = serde_json::from_value(entry.value.clone())
-            .map_err(|_| DurableError::Corrupt("invalid persisted context update".into()))?;
+        };
         if let Some(value) = update.head {
             head = Some(match value {
                 ContextHead::Entry(id) => id,

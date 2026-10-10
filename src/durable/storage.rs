@@ -209,14 +209,13 @@ pub fn validate_batch(
     let mut max_new_id = 0u64;
 
     for entry in &batch.entries {
-        require_kind(
-            "entry kind",
-            &entry.kind,
-            &["user", "assistant", "tool_result", "model_error", "context"],
-        )?;
+        super::entries::validate_kind(&entry.kind)?;
         if entry.conversation_id.get() > MAX_ID {
             return Err(DurableError::Range("conversation id outside range".into()));
         }
+        // Reject excessive JSON before cloning/deserializing context payloads.
+        validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
+        let _ = encode_limited("entry", &entry.value, MAX_ENTRY_BYTES)?;
         if entry.kind == "context" {
             super::context::validate_update(
                 snapshot,
@@ -225,8 +224,21 @@ pub fn validate_batch(
                 &entry.value,
             )?;
         }
-        validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
-        let _ = encode_limited("entry", &entry.value, MAX_ENTRY_BYTES)?;
+        if !super::entries::native_kind(&entry.kind) {
+            let update = super::entries::EntryPayload::decode(&entry.value)?.context();
+            if matches!(update.head, Some(super::context::ContextHead::SelfEntry(_))) {
+                return Err(DurableError::Rejected(
+                    "generic stored head must be resolved".into(),
+                ));
+            }
+            super::context::validate_contribution(
+                snapshot,
+                entry.conversation_id,
+                entry.id,
+                &update,
+                true,
+            )?;
+        }
         if entry.id.get() < snapshot.next_id {
             return Err(DurableError::Rejected("entry id is below next_id".into()));
         }

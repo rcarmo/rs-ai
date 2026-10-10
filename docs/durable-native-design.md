@@ -85,7 +85,15 @@ New submissions persist native context in their intent so prior tool rounds surv
 
 `update_context(ContextUpdate)` writes a native `context` entry while idle. Its optional head points to a visible prior entry or `ContextHead::SelfEntry(SelfHead::SelfEntry)`; omit/replace edits target earlier entries in the same conversation. Validation rejects future/foreign/non-entry targets, invalid edit shapes and oversized message/edit lists before mutation. A replacement contributes its message sequence at the target's position; latest visible edits win, including those recorded in older head markers. Only the newest visible head marker contributes messages, before the retained non-head entries; historical cuts apply only updates at/before their cutoff. Edits before the retained lower bound do not participate. After tool-result repair, a leading system contribution moves ahead of preceding user-only messages.
 
-Both native provider context and the text-runner compatibility view apply these rules. Reads never dispatch. Reopen preserves updates, and cache invalidation follows successful commits. Updates during pending work reject; upstream boundary scheduling, forks and generic entry drafts are absent. The native journal kind/schema is an adaptation, not upstream's generic EntryDraft wire format.
+Both native provider context and the text-runner compatibility view apply these rules. Reads never dispatch. Reopen preserves updates, and cache invalidation follows successful commits. Updates during pending work reject; upstream boundary scheduling and forks are absent. The native journal kind/schema is an adaptation of upstream's flat EntryRecord wire format.
+
+## Generic passive entries
+
+`DurableSession::append_entry(conversation, EntryDraft)` allocates identity and sequence on the session mutation line. `DurableHarness::append_entry` exposes idle-only root-conversation writes. Drafts carry a non-empty kind (at most 64 UTF-8 bytes), optional JSON `data`, optional `model` messages, head and omit/replace edits. Native execution kinds are reserved; custom and upstream `pi.*` kinds are allowed. Missing data and explicit JSON null round-trip separately. `head: "self"` resolves to the assigned entry ID before persistence.
+
+Generic records keep their custom kind and store draft fields inside native `EntryRecord.value`. They contribute context through the same head/edit/result-repair derivation, while model-less records remain visible with empty contributions. Storage validates JSON shape/size, model/edit counts, resolved heads and prior same-conversation edit references before mutation. Rejected/dropped-before-admission writes consume no IDs; admitted writes settle and publish even after caller drop. Appends create no submission/task and journal reopen dispatches nothing.
+
+Conversation existence/fork visibility, typed entry-definition tokens, scoped task attribution, generic transactions and queued busy-boundary writes are unimplemented. The native session still accepts explicit conversation IDs without a conversation table; the harness restricts writes to its root.
 
 ## Native context views
 

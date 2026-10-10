@@ -323,6 +323,81 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn generic_append_dropped_before_dequeue_does_not_consume_identity() {
+        let (storage, admitted, release, commits) = BarrierStorage::new(false);
+        let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());
+        let writer = session.clone();
+        let first = tokio::spawn(async move {
+            writer
+                .append_entry(ConversationId::new(1).unwrap(), EntryDraft::new("first"))
+                .await
+        });
+        admitted.notified().await;
+        let mut queued = Box::pin(session.append_entry(
+            ConversationId::new(1).unwrap(),
+            EntryDraft::new("cancelled"),
+        ));
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(10), &mut queued)
+                .await
+                .is_err()
+        );
+        drop(queued);
+        release.notify_waiters();
+        assert_eq!(first.await.unwrap().unwrap().id.get(), 1);
+        let snapshot = session.snapshot().await.unwrap();
+        assert_eq!(snapshot.entries.len(), 1);
+        assert_eq!(snapshot.next_id, 2);
+        assert_eq!(snapshot.next_seq, 2);
+        assert_eq!(*commits.lock().unwrap(), 1);
+        session.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn generic_append_survives_admitted_caller_drop_and_poison_rejects_later_appends() {
+        for uncertain in [false, true] {
+            let (storage, admitted, release, commits) = BarrierStorage::new(uncertain);
+            let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());
+            let mut watch = session.watch().await.unwrap();
+            watch.next().await.unwrap();
+            let writer = session.clone();
+            let append = tokio::spawn(async move {
+                writer
+                    .append_entry(ConversationId::new(1).unwrap(), EntryDraft::new("note"))
+                    .await
+            });
+            admitted.notified().await;
+            append.abort();
+            let _ = append.await;
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_millis(10), watch.next())
+                    .await
+                    .is_err()
+            );
+            release.notify_waiters();
+            if uncertain {
+                assert_eq!(
+                    watch.next().await,
+                    Some(DurableEvent::End(WatchEnd::Poisoned))
+                );
+                assert!(matches!(
+                    session
+                        .append_entry(ConversationId::new(1).unwrap(), EntryDraft::new("later"))
+                        .await,
+                    Err(DurableError::Poisoned)
+                ));
+            } else {
+                assert!(
+                    matches!(watch.next().await, Some(DurableEvent::Commit(batch)) if batch.entries[0].kind == "note")
+                );
+                assert_eq!(session.snapshot().await.unwrap().entries.len(), 1);
+            }
+            assert_eq!(*commits.lock().unwrap(), 1);
+            session.close().await.unwrap();
+        }
+    }
+
+    #[tokio::test]
     async fn caller_drop_after_admission_does_not_abandon_settlement_or_ordering() {
         let (storage, admitted, release, commits) = BarrierStorage::new(false);
         let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());

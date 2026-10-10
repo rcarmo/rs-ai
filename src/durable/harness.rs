@@ -443,6 +443,32 @@ impl DurableHarness {
         Ok(id)
     }
 
+    /// Append a host-defined passive entry while idle; this never creates a
+    /// submission or generation. Busy-boundary admission remains a separate API.
+    pub async fn append_entry(
+        &self,
+        draft: super::entries::EntryDraft,
+    ) -> Result<EntryRecord, DurableError> {
+        self.ensure_open()?;
+        let _operation = self.inner.operations.lock().await;
+        self.ensure_open()?;
+        let snapshot = self.inner.session.snapshot().await?;
+        if snapshot
+            .submissions
+            .values()
+            .any(|submission| submission.status == "pending")
+        {
+            return Err(DurableError::Rejected("conversation busy".into()));
+        }
+        let entry = self
+            .inner
+            .session
+            .append_entry(conversation_id()?, draft)
+            .await?;
+        bump_revision(&self.inner);
+        Ok(entry)
+    }
+
     pub async fn passive_write(&self, content: String) -> Result<EntryId, DurableError> {
         self.ensure_open()?;
         if content.is_empty() || content.len() > MAX_SUBMISSION_BYTES {
