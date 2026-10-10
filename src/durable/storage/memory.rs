@@ -61,9 +61,7 @@ impl DurableStorage for MemoryStorage {
         Box::pin(async move {
             let mut inner = self.state.lock().unwrap();
             Self::check(&inner, claim)?;
-            let mut staged = inner.snapshot.clone();
-            staged.apply(&batch)?;
-            inner.snapshot = staged;
+            inner.snapshot.apply(&batch)?;
             Ok(())
         })
     }

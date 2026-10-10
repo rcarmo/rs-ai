@@ -80,6 +80,16 @@ mod tests {
             storage.commit(&claim, batch(1)).await,
             Err(DurableError::Rejected(_))
         ));
+        let mut invalid = batch(2);
+        invalid.entries[0].id = EntryId::new(5).unwrap();
+        invalid.next_id = 6;
+        invalid.documents[0].kind = "invalid-last-record".into();
+        assert!(matches!(
+            storage.commit(&claim, invalid).await,
+            Err(DurableError::Rejected(_))
+        ));
+        assert_eq!(storage.load(&claim).await.unwrap(), state);
+        storage.close(&claim).await.unwrap();
     }
 
     #[tokio::test]
@@ -97,6 +107,60 @@ mod tests {
         ))
         .await;
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    async fn growing_commit_workload(storage: Box<dyn DurableStorage>) {
+        let claim = storage.claim_writer().unwrap();
+        for id in 1..=128 {
+            let seq = CommitSeq::new(id).unwrap();
+            storage
+                .commit(
+                    &claim,
+                    CommitBatch {
+                        seq,
+                        next_id: id + 1,
+                        next_seq: id + 1,
+                        entries: vec![EntryRecord {
+                            id: EntryId::new(id).unwrap(),
+                            conversation_id: ConversationId::new(1).unwrap(),
+                            kind: "user".into(),
+                            value: json!({"text":"x".repeat(256)}),
+                            by_task_id: None,
+                            created_seq: seq,
+                        }],
+                        tasks: vec![],
+                        submissions: vec![],
+                        documents: vec![],
+                    },
+                )
+                .await
+                .unwrap();
+        }
+        let state = storage.load(&claim).await.unwrap();
+        assert_eq!(state.entries.len(), 128);
+        assert_eq!(state.next_id, 129);
+        assert_eq!(
+            state.entries[&EntryId::new(128).unwrap()].value["text"],
+            "x".repeat(256)
+        );
+        storage.close(&claim).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn growing_memory_commits_preserve_all_records() {
+        growing_commit_workload(Box::new(MemoryStorage::new())).await;
+    }
+
+    #[tokio::test]
+    async fn growing_journal_commits_preserve_all_records() {
+        let dir =
+            std::env::temp_dir().join(format!("rs-ai-growing-journal-{}", std::process::id()));
+        assert!(!dir.exists(), "fixture already exists");
+        growing_commit_workload(Box::new(
+            JournalStorage::open(dir.join("state.durable")).unwrap(),
+        ))
+        .await;
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

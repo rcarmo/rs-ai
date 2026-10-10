@@ -227,9 +227,9 @@ impl DurableStorage for JournalStorage {
                     "injected acknowledgement loss".into(),
                 ));
             }
-            let mut staged = inner.snapshot.clone();
-            staged.apply(&batch)?;
-            inner.snapshot = staged;
+            // Validation preceded append/sync under the same lock. Avoid cloning
+            // all prior records or validating the already-settled batch twice.
+            inner.snapshot.apply_validated(&batch);
             inner.last_hash = Sha256::digest(&frame).into();
             Ok(())
         })

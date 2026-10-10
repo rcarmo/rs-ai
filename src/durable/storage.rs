@@ -34,6 +34,13 @@ impl StorageSnapshot {
 
     pub fn apply(&mut self, batch: &CommitBatch) -> Result<(), DurableError> {
         validate_batch(self, batch)?;
+        self.apply_validated(batch);
+        Ok(())
+    }
+
+    /// Call only after validation against this unchanged snapshot. Insertion is
+    /// infallible at the Result boundary, so rejected batches never mutate state.
+    pub(super) fn apply_validated(&mut self, batch: &CommitBatch) {
         for record in &batch.entries {
             self.entries.insert(record.id, record.clone());
         }
@@ -56,7 +63,6 @@ impl StorageSnapshot {
         self.next_id = batch.next_id;
         self.next_seq = batch.next_seq;
         self.last_seq = Some(batch.seq);
-        Ok(())
     }
 }
 
