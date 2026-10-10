@@ -385,13 +385,28 @@ mod tests {
         let (storage, admitted, release, _) = BarrierStorage::new(true);
         let session = Arc::new(DurableSession::open(Box::new(storage)).await.unwrap());
         let s = session.clone();
+        let mut watch = session.watch().await.unwrap();
+        assert!(matches!(
+            watch.next().await,
+            Some(DurableEvent::Snapshot(_))
+        ));
         let task = tokio::spawn(async move { s.commit(batch(1)).await });
         admitted.notified().await;
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(10), watch.next())
+                .await
+                .is_err()
+        );
         release.notify_waiters();
         assert!(matches!(
             task.await.unwrap(),
             Err(DurableError::Uncertain(_))
         ));
+        assert_eq!(
+            watch.next().await,
+            Some(DurableEvent::End(WatchEnd::Poisoned))
+        );
+        assert!(matches!(session.watch().await, Err(DurableError::Poisoned)));
         assert!(matches!(
             session.snapshot().await,
             Err(DurableError::Poisoned)

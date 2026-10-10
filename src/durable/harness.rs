@@ -318,6 +318,10 @@ impl DurableHarness {
         }
     }
 
+    pub async fn watch(&self) -> Result<super::events::DurableWatch, DurableError> {
+        self.inner.session.watch().await
+    }
+
     pub async fn inspect(&self, id: SubmissionId) -> Result<SubmissionView, DurableError> {
         let snapshot = self.inner.session.snapshot().await?;
         view(&snapshot, conversation_id()?, id)

@@ -5,6 +5,7 @@
 //! abort and non-aborting close drain.
 
 pub mod context;
+pub mod events;
 pub mod harness;
 pub mod model;
 pub mod models;
@@ -16,6 +17,7 @@ pub mod tool;
 pub mod types;
 
 pub use context::{ContextEdit, ContextHead, ContextUpdate, SelfHead};
+pub use events::{DurableEvent, DurableWatch, WatchEnd};
 pub use harness::{ContextOptions, DurableHarness, HarnessServices};
 pub use model::{
     DurableContent, DurableMessage, DurableModelRunner, DurableUsage, ModelIntent, ModelRun,

@@ -167,6 +167,9 @@ mod deferred_tools_test;
 #[path = "tests/durable/context_test.rs"]
 mod durable_context_test;
 #[cfg(test)]
+#[path = "tests/durable/events_test.rs"]
+mod durable_events_test;
+#[cfg(test)]
 #[path = "tests/durable/harness_abort_test.rs"]
 mod durable_harness_abort_test;
 #[cfg(test)]

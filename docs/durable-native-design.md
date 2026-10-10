@@ -93,6 +93,12 @@ Both native provider context and the text-runner compatibility view apply these 
 
 `DurableHarness::open_with_services` accepts `HarnessServices` containing the host tools, model service, lifecycle clock and session settings. Existing constructors keep their defaults. This cache reuses unchanged snapshots; it does not scan only appended ranges, retain while tasks are busy, or implement upstream head/edit/fork invalidation.
 
+## Native committed-state watches
+
+`DurableSession::watch` (and the harness wrapper) atomically acquires a detached snapshot and subscribes on the session queue. `DurableWatch::next` yields `Snapshot`, adopted `CommitBatch` and terminal `End`. No event appears before storage settlement/adoption; rejected commits publish nothing. Close and uncertain settlement end watches with `Closed` or `Poisoned`; `stop`/drop release slots without affecting durable work.
+
+There are at most 64 active watches. Each queues at most 64 records or 32 MiB encoded commit deltas; overflow clears undelivered deltas and enqueues a fresh adopted snapshot. Snapshots can exceed that byte cap, as can their Rust object overhead. Receivers reconcile from the replacement snapshot and continue with later deltas. The native watch has no upstream `start(listener)` callback form, acquisition abort signal, transient progress or full AgentEvent run/message/tool/compaction taxonomy.
+
 ## Later required work
 
 R1c supplies the executable tool registry, intent-before-effect, exact implementation/version/schema replay gate, generation→tool ownership, completing drain and bottom-up abort needed for the useful vertical. Same-version v1.0.1 retagging still requires local/hosted acceptance and publication authority; this document records implementation scope only.
