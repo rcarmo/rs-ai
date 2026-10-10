@@ -198,8 +198,12 @@ mod tests {
         session.append_entry(conversation, draft).await.unwrap();
         session.message_context(conversation, None).await.unwrap();
         assert_eq!(session.context_cache_stats().await, (1, 1));
+        let foreign = session
+            .create_conversation(ConversationOwnership::Ownerless)
+            .await
+            .unwrap();
         session
-            .append_entry(ConversationId::new(2).unwrap(), EntryDraft::new("foreign"))
+            .append_entry(foreign.id, EntryDraft::new("foreign"))
             .await
             .unwrap();
         session.message_context(conversation, None).await.unwrap();

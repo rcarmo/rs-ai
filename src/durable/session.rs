@@ -775,6 +775,7 @@ async fn session_worker(
                         if reply.is_closed() { continue; }
                         if poisoned { let _ = reply.send(Err(DurableError::Poisoned)); continue; }
                         let record = (|| {
+                            if !state.conversations.contains_key(&conversation) { return Err(DurableError::Rejected("conversation missing".into())); }
                             let id = EntryId::new(state.next_id)?;
                             let seq = CommitSeq::new(state.next_seq)?;
                             let next_id = id.get().checked_add(1).filter(|id| *id <= MAX_ID).ok_or_else(|| DurableError::Range("next_id overflow".into()))?;

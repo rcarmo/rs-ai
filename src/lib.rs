@@ -167,6 +167,9 @@ mod deferred_tools_test;
 #[path = "tests/durable/context_test.rs"]
 mod durable_context_test;
 #[cfg(test)]
+#[path = "tests/durable/conversation_admission_test.rs"]
+mod durable_conversation_admission_test;
+#[cfg(test)]
 #[path = "tests/durable/conversations_test.rs"]
 mod durable_conversations_test;
 #[cfg(test)]

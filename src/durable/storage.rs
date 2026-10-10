@@ -530,6 +530,8 @@ pub fn validate_batch(
                 .get(&owner.task_id)
                 .ok_or_else(|| DurableError::Rejected("conversation owner task missing".into()))?;
             if task.state.terminal()
+                || task.state == TaskState::Completing
+                || task.abort_requested
                 || task.conversation_id != owner.conversation_id
                 || owner.conversation_id == conversation.id
                 || !(snapshot.conversations.contains_key(&owner.conversation_id)

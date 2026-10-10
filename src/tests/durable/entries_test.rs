@@ -248,8 +248,12 @@ mod tests {
             .await
             .unwrap();
         let conversation = ConversationId::new(1).unwrap();
+        let foreign_conversation = session
+            .create_conversation(ConversationOwnership::Ownerless)
+            .await
+            .unwrap();
         let foreign = session
-            .append_entry(ConversationId::new(2).unwrap(), EntryDraft::new("note"))
+            .append_entry(foreign_conversation.id, EntryDraft::new("note"))
             .await
             .unwrap();
         let mut watch = session.watch().await.unwrap();

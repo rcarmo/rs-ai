@@ -200,9 +200,12 @@ impl<'a> EntryTransaction<'a> {
                     let task = self.state.tasks.get(&task_id).ok_or_else(|| {
                         DurableError::Rejected("conversation owner task missing".into())
                     })?;
-                    if task.state.terminal() {
+                    if task.state.terminal()
+                        || task.state == TaskState::Completing
+                        || task.abort_requested
+                    {
                         return Err(DurableError::Rejected(
-                            "conversation owner task is terminal".into(),
+                            "conversation owner task is not live".into(),
                         ));
                     }
                     Some(ConversationOwner {
@@ -540,7 +543,22 @@ impl<'a> EntryTransaction<'a> {
         }
         result
     }
+    fn require_conversation(&self, conversation: ConversationId) -> Result<(), DurableError> {
+        if !self.state.conversations.contains_key(&conversation)
+            && !self
+                .batch
+                .conversations
+                .iter()
+                .any(|record| record.id == conversation)
+        {
+            return Err(DurableError::Rejected("conversation missing".into()));
+        }
+        Ok(())
+    }
     fn check_document_owner(&self, scope: DocumentScope) -> Result<(), DurableError> {
+        if let DocumentScope::Conversation { conversation_id } = scope {
+            self.require_conversation(conversation_id)?;
+        }
         if let DocumentScope::Task { task_id } = scope {
             let task = self
                 .state
@@ -674,6 +692,7 @@ impl<'a> EntryTransaction<'a> {
                     "entry outside transaction task conversation".into(),
                 ));
             }
+            self.require_conversation(conversation)?;
             let id = EntryId::new(self.batch.next_id)?;
             let next_id = id
                 .get()
