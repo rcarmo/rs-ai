@@ -287,6 +287,7 @@ mod tests {
             let seq = CommitSeq::new(id).unwrap();
             session
                 .commit(CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: id + 1,
                     next_seq: id + 1,

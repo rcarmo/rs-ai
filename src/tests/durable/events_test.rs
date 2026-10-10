@@ -6,6 +6,7 @@ mod tests {
     fn batch(id: u64) -> CommitBatch {
         let seq = CommitSeq::new(id).unwrap();
         CommitBatch {
+            conversations: vec![],
             seq,
             next_id: id + 1,
             next_seq: id + 1,
@@ -88,6 +89,7 @@ mod tests {
         assert!(
             session
                 .commit(CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: 2,
                     next_seq: 2,

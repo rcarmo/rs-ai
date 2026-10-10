@@ -17,6 +17,7 @@ pub struct StorageSnapshot {
     pub next_seq: u64,
     pub last_seq: Option<CommitSeq>,
     pub entries: BTreeMap<EntryId, EntryRecord>,
+    pub conversations: BTreeMap<ConversationId, ConversationRecord>,
     pub tasks: BTreeMap<TaskId, TaskRecord>,
     pub submissions: BTreeMap<SubmissionId, SubmissionRecord>,
     pub documents: BTreeMap<(ConversationId, String), DocumentRecord>,
@@ -25,10 +26,43 @@ pub struct StorageSnapshot {
 
 impl StorageSnapshot {
     pub fn empty() -> Self {
+        let root = ConversationId::new(1).expect("reserved root");
         Self {
             next_id: 1,
             next_seq: 1,
+            conversations: BTreeMap::from([(
+                root,
+                ConversationRecord {
+                    id: root,
+                    owner: None,
+                    created_seq: None,
+                },
+            )]),
             ..Self::default()
+        }
+    }
+
+    /// Legacy scopes are reconstructed without allocating or rewriting IDs.
+    pub(crate) fn infer_conversations(&mut self) {
+        let ids = std::iter::once(ConversationId::new(1).expect("root"))
+            .chain(self.entries.values().map(|entry| entry.conversation_id))
+            .chain(self.tasks.values().map(|task| task.conversation_id))
+            .chain(
+                self.submissions
+                    .values()
+                    .map(|submission| submission.conversation_id),
+            )
+            .chain(
+                self.documents
+                    .values()
+                    .map(|document| document.conversation_id),
+            );
+        for id in ids {
+            self.conversations.entry(id).or_insert(ConversationRecord {
+                id,
+                owner: None,
+                created_seq: None,
+            });
         }
     }
 
@@ -41,6 +75,9 @@ impl StorageSnapshot {
     /// Call only after validation against this unchanged snapshot. Insertion is
     /// infallible at the Result boundary, so rejected batches never mutate state.
     pub(super) fn apply_validated(&mut self, batch: &CommitBatch) {
+        for record in &batch.conversations {
+            self.conversations.insert(record.id, record.clone());
+        }
         for record in &batch.entries {
             self.entries.insert(record.id, record.clone());
         }
@@ -59,6 +96,27 @@ impl StorageSnapshot {
                 (record.conversation_id, record.kind.clone()),
                 record.clone(),
             );
+        }
+        // Reconstruct only newly mentioned legacy scopes, not the entire log
+        // on every adoption. Explicit creations were installed above.
+        for id in batch
+            .entries
+            .iter()
+            .map(|record| record.conversation_id)
+            .chain(batch.tasks.iter().map(|record| record.conversation_id))
+            .chain(
+                batch
+                    .submissions
+                    .iter()
+                    .map(|record| record.conversation_id),
+            )
+            .chain(batch.documents.iter().map(|record| record.conversation_id))
+        {
+            self.conversations.entry(id).or_insert(ConversationRecord {
+                id,
+                owner: None,
+                created_seq: None,
+            });
         }
         self.next_id = batch.next_id;
         self.next_seq = batch.next_seq;
@@ -205,8 +263,30 @@ pub fn validate_batch(
         .map(|id| id.get())
         .chain(snapshot.tasks.keys().map(|id| id.get()))
         .chain(snapshot.submissions.keys().map(|id| id.get()))
+        .chain(
+            snapshot
+                .conversations
+                .values()
+                .filter(|record| record.created_seq.is_some())
+                .map(|record| record.id.get()),
+        )
         .collect::<HashSet<_>>();
     let mut max_new_id = 0u64;
+    let mut new_conversations = HashSet::new();
+    for conversation in &batch.conversations {
+        if conversation.created_seq != Some(batch.seq)
+            || conversation.id.get() < snapshot.next_id
+            || conversation.id.get() == 1
+            || snapshot.conversations.contains_key(&conversation.id)
+            || !new_conversations.insert(conversation.id)
+            || !allocated_ids.insert(conversation.id.get())
+        {
+            return Err(DurableError::Rejected(
+                "invalid or duplicate conversation creation".into(),
+            ));
+        }
+        max_new_id = max_new_id.max(conversation.id.get());
+    }
     // Entry writes are ordered within a transaction. Later writes can refer to
     // an earlier entry in this batch, but never a forward/foreign entry.
     let has_context_references = batch
@@ -329,6 +409,36 @@ pub fn validate_batch(
         .map(|(id, task)| (*id, task))
         .chain(batch.tasks.iter().map(|task| (task.id, task)))
         .collect::<HashMap<_, _>>();
+    for conversation in &batch.conversations {
+        if let Some(owner) = &conversation.owner {
+            let task = tasks_by_id
+                .get(&owner.task_id)
+                .ok_or_else(|| DurableError::Rejected("conversation owner task missing".into()))?;
+            if task.state.terminal()
+                || task.conversation_id != owner.conversation_id
+                || owner.conversation_id == conversation.id
+                || !(snapshot.conversations.contains_key(&owner.conversation_id)
+                    || new_conversations.contains(&owner.conversation_id))
+            {
+                return Err(DurableError::Rejected("invalid conversation owner".into()));
+            }
+            let mut seen = HashSet::from([conversation.id]);
+            let mut ancestor = Some(owner.conversation_id);
+            while let Some(id) = ancestor {
+                if !seen.insert(id) {
+                    return Err(DurableError::Rejected(
+                        "conversation ownership cycle".into(),
+                    ));
+                }
+                ancestor = batch
+                    .conversations
+                    .iter()
+                    .find(|record| record.id == id)
+                    .or_else(|| snapshot.conversations.get(&id))
+                    .and_then(|record| record.owner.as_ref().map(|owner| owner.conversation_id));
+            }
+        }
+    }
     for entry in &batch.entries {
         if let Some(task_id) = entry.by_task_id {
             let task = tasks_by_id

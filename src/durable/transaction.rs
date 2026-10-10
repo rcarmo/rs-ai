@@ -98,6 +98,7 @@ impl<'a> EntryTransaction<'a> {
         Ok(Self {
             state,
             batch: CommitBatch {
+                conversations: vec![],
                 seq: CommitSeq::new(state.next_seq)?,
                 next_id: state.next_id,
                 next_seq: state.next_seq,
@@ -119,6 +120,83 @@ impl<'a> EntryTransaction<'a> {
             Ok(())
         }
     }
+    pub fn conversation(
+        &self,
+        id: ConversationId,
+    ) -> Result<Option<ConversationRecord>, DurableError> {
+        self.read()?;
+        Ok(self.state.conversations.get(&id).cloned())
+    }
+    pub fn conversations(
+        &self,
+        query: &ConversationQuery,
+    ) -> Result<ScanPage<ConversationRecord>, DurableError> {
+        self.read()?;
+        self.state.query_conversations(query)
+    }
+    /// Create an immutable native membership record in this atomic batch.
+    pub fn create_conversation(
+        &mut self,
+        ownership: ConversationOwnership,
+    ) -> Result<ConversationRecord, DurableError> {
+        self.writing = true;
+        if let Some(error) = &self.failure {
+            return Err(error.clone());
+        }
+        let result = (|| {
+            if self.batch.conversations.len() >= 4096 {
+                return Err(DurableError::Rejected(
+                    "too many staged conversations".into(),
+                ));
+            }
+            let owner = match ownership {
+                ConversationOwnership::Ownerless => None,
+                ConversationOwnership::Task { task_id } => {
+                    let task = self.state.tasks.get(&task_id).ok_or_else(|| {
+                        DurableError::Rejected("conversation owner task missing".into())
+                    })?;
+                    if task.state.terminal() {
+                        return Err(DurableError::Rejected(
+                            "conversation owner task is terminal".into(),
+                        ));
+                    }
+                    Some(ConversationOwner {
+                        conversation_id: task.conversation_id,
+                        task_id,
+                    })
+                }
+            };
+            let mut next = self.batch.next_id.max(2);
+            while self
+                .state
+                .conversations
+                .contains_key(&ConversationId::new(next)?)
+            {
+                next = next
+                    .checked_add(1)
+                    .filter(|id| *id <= MAX_ID)
+                    .ok_or_else(|| DurableError::Range("conversation id overflow".into()))?;
+            }
+            let id = ConversationId::new(next)?;
+            let next_id = next
+                .checked_add(1)
+                .filter(|id| *id <= MAX_ID)
+                .ok_or_else(|| DurableError::Range("next_id overflow".into()))?;
+            let record = ConversationRecord {
+                id,
+                owner,
+                created_seq: Some(self.batch.seq),
+            };
+            self.batch.next_id = next_id;
+            self.batch.conversations.push(record.clone());
+            Ok(record)
+        })();
+        if let Err(error) = &result {
+            self.failure = Some(error.clone());
+        }
+        result
+    }
+
     pub fn entry(
         &self,
         conversation: ConversationId,
@@ -229,7 +307,7 @@ impl<'a> EntryTransaction<'a> {
         if let Some(error) = self.failure {
             return Err(error);
         }
-        if self.batch.entries.is_empty() {
+        if self.batch.entries.is_empty() && self.batch.conversations.is_empty() {
             return Ok(None);
         }
         self.batch.next_seq = self

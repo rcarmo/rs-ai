@@ -1,5 +1,7 @@
 use super::events::{DurableWatch, WatchEnd, WatchQueue, WatchRegistry, finish_all};
-use crate::durable::storage::scan::{EntryQuery, ScanPage, SubmissionQuery, TaskQuery};
+use crate::durable::storage::scan::{
+    ConversationQuery, EntryQuery, ScanPage, SubmissionQuery, TaskQuery,
+};
 use crate::durable::storage::{DurableStorage, StorageSnapshot, WriterClaim};
 use crate::durable::types::*;
 use std::collections::HashMap;
@@ -68,6 +70,14 @@ enum SessionCommand {
         oneshot::Sender<Result<EntryRecord, DurableError>>,
     ),
     Snapshot(oneshot::Sender<Result<StorageSnapshot, DurableError>>),
+    Conversation(
+        ConversationId,
+        oneshot::Sender<Result<Option<ConversationRecord>, DurableError>>,
+    ),
+    Conversations(
+        ConversationQuery,
+        oneshot::Sender<Result<ScanPage<ConversationRecord>, DurableError>>,
+    ),
     Entry(
         ConversationId,
         EntryId,
@@ -207,7 +217,10 @@ impl DurableSession {
             storage_worker(storage, claim, &mut storage_rx).await;
         });
         let snapshot = match storage_load(&storage_tx).await {
-            Ok(snapshot) => snapshot,
+            Ok(mut snapshot) => {
+                snapshot.infer_conversations();
+                snapshot
+            }
             Err(error) => {
                 let (reply, result) = oneshot::channel();
                 let _ = storage_tx.send(StorageCommand::Close(reply)).await;
@@ -362,6 +375,42 @@ impl DurableSession {
                 Err(_) => Err(errors.await.unwrap_or(DurableError::Closed)),
             },
         }
+    }
+
+    pub async fn create_conversation(
+        &self,
+        ownership: ConversationOwnership,
+    ) -> Result<ConversationRecord, DurableError> {
+        self.transact_entries(move |tx| tx.create_conversation(ownership))
+            .await
+    }
+    pub async fn conversation(
+        &self,
+        id: ConversationId,
+    ) -> Result<Option<ConversationRecord>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Conversation(id, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
+    }
+    pub async fn conversations(
+        &self,
+        query: ConversationQuery,
+    ) -> Result<ScanPage<ConversationRecord>, DurableError> {
+        if self.sealed.load(Ordering::Acquire) {
+            return Err(DurableError::Closed);
+        }
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(SessionCommand::Conversations(query, reply))
+            .await
+            .map_err(|_| DurableError::Closed)?;
+        result.await.unwrap_or(Err(DurableError::Closed))
     }
 
     pub async fn snapshot(&self) -> Result<StorageSnapshot, DurableError> {
@@ -624,7 +673,7 @@ async fn session_worker(
                             Ok((draft.into_record(conversation, id, seq)?, next_id, next_seq))
                         })();
                         match record {
-                            Ok((entry, next_id, next_seq)) => SessionCommand::Commit(CommitBatch {
+                            Ok((entry, next_id, next_seq)) => SessionCommand::Commit(CommitBatch { conversations: vec![],
                                 seq: entry.created_seq, next_id, next_seq, entries: vec![entry.clone()], tasks: vec![], submissions: vec![], documents: vec![],
                             }, CommitReply::Entry(entry, reply)),
                             Err(error) => { let _ = reply.send(Err(error)); continue; }
@@ -676,6 +725,7 @@ async fn session_worker(
                             Ok(()) => match storage_load(storage).await {
                                 Ok(adopted) => {
                                     state = adopted;
+                                    state.infer_conversations();
                                     for conversation in invalidate { cache.values.remove(&conversation); }
                                     cache.reconcile(&state, settings.context_retention);
                                     watches.values.retain(|watch: &std::sync::Weak<WatchQueue>| {
@@ -696,6 +746,12 @@ async fn session_worker(
                     }
                     SessionCommand::Snapshot(reply) => {
                         let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { Ok(state.clone()) });
+                    }
+                    SessionCommand::Conversation(id, reply) => {
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { Ok(state.conversations.get(&id).cloned()) });
+                    }
+                    SessionCommand::Conversations(query, reply) => {
+                        let _ = reply.send(if poisoned { Err(DurableError::Poisoned) } else { state.query_conversations(&query) });
                     }
                     SessionCommand::Entry(conversation, id, reply) => {
                         let result = if poisoned { Err(DurableError::Poisoned) }
@@ -785,6 +841,12 @@ fn reject(command: SessionCommand) {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Snapshot(reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Conversation(_, reply) => {
+            let _ = reply.send(Err(DurableError::Closed));
+        }
+        SessionCommand::Conversations(_, reply) => {
             let _ = reply.send(Err(DurableError::Closed));
         }
         SessionCommand::Entry(_, _, reply) => {

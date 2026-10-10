@@ -65,6 +65,30 @@ impl TaskState {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase", deny_unknown_fields)]
+pub enum ConversationOwnership {
+    Ownerless,
+    Task { task_id: TaskId },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ConversationOwner {
+    pub conversation_id: ConversationId,
+    pub task_id: TaskId,
+}
+
+/// Native conversation membership. None creation sequence marks the reserved
+/// root or an ownerless scope inferred from a pre-table journal.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ConversationRecord {
+    pub id: ConversationId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner: Option<ConversationOwner>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_seq: Option<CommitSeq>,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EntryRecord {
     pub id: EntryId,
@@ -129,6 +153,9 @@ pub struct DocumentRecord {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitBatch {
+    /// Empty omitted to preserve pre-conversation journal encoding.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub conversations: Vec<ConversationRecord>,
     pub seq: CommitSeq,
     pub next_id: u64,
     pub next_seq: u64,

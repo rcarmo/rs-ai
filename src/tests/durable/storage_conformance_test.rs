@@ -7,6 +7,7 @@ mod tests {
         let seq = CommitSeq::new(seq).unwrap();
         let conversation = ConversationId::new(1).unwrap();
         CommitBatch {
+            conversations: vec![],
             seq,
             next_id: 5,
             next_seq: seq.get() + 1,
@@ -117,6 +118,7 @@ mod tests {
                 .commit(
                     &claim,
                     CommitBatch {
+                        conversations: vec![],
                         seq,
                         next_id: id + 1,
                         next_seq: id + 1,
@@ -506,6 +508,7 @@ mod tests {
         let seq = CommitSeq::new(2).unwrap();
         session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id: 8,
                 next_seq: 3,
@@ -731,6 +734,7 @@ mod tests {
         ] {
             let seq = CommitSeq::new(2).unwrap();
             let update = CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id: 6,
                 next_seq: 3,
@@ -751,6 +755,7 @@ mod tests {
         }
         let seq = CommitSeq::new(2).unwrap();
         let foreign = CommitBatch {
+            conversations: vec![],
             seq,
             next_id: 6,
             next_seq: 3,
@@ -830,6 +835,7 @@ mod tests {
         state.apply(&initial).unwrap();
         let seq = CommitSeq::new(2).unwrap();
         let terminal_mutation = CommitBatch {
+            conversations: vec![],
             seq,
             next_id: 5,
             next_seq: 3,

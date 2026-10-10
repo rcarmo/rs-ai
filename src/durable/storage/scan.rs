@@ -34,6 +34,13 @@ impl Default for ScanOptions {
     }
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct ConversationQuery {
+    pub owner_conversation_id: Option<ConversationId>,
+    pub owner_task_id: Option<TaskId>,
+    pub scan: ScanOptions,
+}
+
 /// Inclusive entry bounds within one native conversation.
 #[derive(Clone, Debug, Default)]
 pub struct EntryQuery {
@@ -124,6 +131,34 @@ fn page<'a, T: Clone + 'a>(
 }
 
 impl StorageSnapshot {
+    pub fn query_conversations(
+        &self,
+        query: &ConversationQuery,
+    ) -> Result<ScanPage<ConversationRecord>, DurableError> {
+        let (order, after) = start(&query.scan, ScanOrder::Ascending)?;
+        let records = self
+            .conversations
+            .iter()
+            .filter(|(_, record)| {
+                query.owner_conversation_id.is_none_or(|owner| {
+                    record
+                        .owner
+                        .as_ref()
+                        .is_some_and(|record| record.conversation_id == owner)
+                }) && query.owner_task_id.is_none_or(|owner| {
+                    record
+                        .owner
+                        .as_ref()
+                        .is_some_and(|record| record.task_id == owner)
+                })
+            })
+            .map(|(id, record)| (id.get(), record));
+        Ok(match order {
+            ScanOrder::Ascending => page(records, &query.scan, order, after),
+            ScanOrder::Descending => page(records.rev(), &query.scan, order, after),
+        })
+    }
+
     /// Entries default to descending ID order. Results own their JSON values.
     pub fn scan_entries(
         &self,

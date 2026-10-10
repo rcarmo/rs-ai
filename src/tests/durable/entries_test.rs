@@ -131,6 +131,7 @@ mod tests {
             let conversation = ConversationId::new(1).unwrap();
             let seq = CommitSeq::new(1).unwrap();
             let batch = CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id: 4,
                 next_seq: 2,
@@ -383,6 +384,7 @@ mod tests {
             json!({"edits":[{"type":"replace","target":1}]}),
         ] {
             let batch = CommitBatch {
+                conversations: vec![],
                 seq: CommitSeq::new(1).unwrap(),
                 next_id: 2,
                 next_seq: 2,

@@ -9,6 +9,7 @@ mod tests {
     fn batch(seq: u64) -> CommitBatch {
         let s = CommitSeq::new(seq).unwrap();
         CommitBatch {
+            conversations: vec![],
             seq: s,
             next_id: 2,
             next_seq: seq + 1,
@@ -30,6 +31,7 @@ mod tests {
         let commit_seq = CommitSeq::new(seq).unwrap();
         let terminal = state.terminal();
         CommitBatch {
+            conversations: vec![],
             seq: commit_seq,
             next_id: 2,
             next_seq: seq + 1,
@@ -206,6 +208,7 @@ mod tests {
         task.updated_seq = CommitSeq::new(state.next_seq).unwrap();
         session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq: task.updated_seq,
                 next_id: state.next_id,
                 next_seq: state.next_seq + 1,
@@ -224,6 +227,7 @@ mod tests {
         task.updated_seq = CommitSeq::new(state.next_seq).unwrap();
         session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq: task.updated_seq,
                 next_id: state.next_id,
                 next_seq: state.next_seq + 1,
@@ -394,6 +398,7 @@ mod tests {
             .collect();
         session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id: 129,
                 next_seq: 2,
@@ -784,6 +789,20 @@ mod tests {
         ));
         assert!(matches!(
             session.tasks_in(None, TaskQuery::default()).await,
+            Err(DurableError::Poisoned)
+        ));
+        assert!(matches!(
+            session.conversation(conversation).await,
+            Err(DurableError::Poisoned)
+        ));
+        assert!(matches!(
+            session.conversations(ConversationQuery::default()).await,
+            Err(DurableError::Poisoned)
+        ));
+        assert!(matches!(
+            session
+                .create_conversation(ConversationOwnership::Ownerless)
+                .await,
             Err(DurableError::Poisoned)
         ));
         assert!(matches!(

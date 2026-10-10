@@ -456,6 +456,7 @@ mod tests {
             .commit(
                 &claim,
                 CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: 4,
                     next_seq: 2,

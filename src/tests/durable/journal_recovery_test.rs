@@ -9,6 +9,7 @@ mod tests {
         let seq = CommitSeq::new(1).unwrap();
         let conversation = ConversationId::new(1).unwrap();
         CommitBatch {
+            conversations: vec![],
             seq,
             next_id: 3,
             next_seq: 2,

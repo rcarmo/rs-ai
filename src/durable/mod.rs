@@ -31,7 +31,8 @@ pub use session::{DurableSession, LifecycleClock, SessionSettings};
 pub use storage::journal::JournalStorage;
 pub use storage::memory::MemoryStorage;
 pub use storage::scan::{
-    EntryQuery, ScanCursor, ScanOptions, ScanOrder, ScanPage, SubmissionQuery, TaskQuery,
+    ConversationQuery, EntryQuery, ScanCursor, ScanOptions, ScanOrder, ScanPage, SubmissionQuery,
+    TaskQuery,
 };
 pub use storage::{DurableStorage, StorageSnapshot};
 pub use submission::{SubmissionHandle, SubmissionView, SubmitRequest};

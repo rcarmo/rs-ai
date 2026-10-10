@@ -518,6 +518,7 @@ impl DurableHarness {
         self.inner
             .session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id: increment(id.get())?,
                 next_seq: increment(seq.get())?,
@@ -585,6 +586,7 @@ impl DurableHarness {
         self.inner
             .session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id: increment(id.get())?,
                 next_seq: increment(seq.get())?,
@@ -723,6 +725,7 @@ async fn abort_owned(inner: Arc<Inner>, handle: SubmissionHandle) -> Result<(), 
         inner
             .session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id: snapshot.next_id,
                 next_seq: increment(seq.get())?,
@@ -1013,6 +1016,7 @@ async fn execute(inner: Arc<Inner>, task_id: TaskId) -> Result<(), DurableError>
         inner
             .session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id: snapshot.next_id,
                 next_seq: increment(seq.get())?,
@@ -1196,7 +1200,7 @@ async fn settle(inner: &Arc<Inner>, task_id: TaskId, run: ModelRun) -> Result<()
     );
     inner
         .session
-        .commit(CommitBatch {
+        .commit(CommitBatch { conversations: vec![],
             seq,
             next_id,
             next_seq: increment(seq.get())?,
@@ -1297,6 +1301,7 @@ async fn settle_model_rejection(
     inner
         .session
         .commit(CommitBatch {
+            conversations: vec![],
             seq,
             next_id: snapshot.next_id,
             next_seq: increment(seq.get())?,
@@ -1403,6 +1408,7 @@ async fn settle_tool_round(
         inner
             .session
             .commit(CommitBatch {
+                conversations: vec![],
                 seq,
                 next_id,
                 next_seq: increment(seq.get())?,
@@ -1474,6 +1480,7 @@ async fn settle_tool_round(
             inner
                 .session
                 .commit(CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: snapshot.next_id,
                     next_seq: increment(seq.get())?,
@@ -1570,6 +1577,7 @@ async fn settle_tool_round(
             inner
                 .session
                 .commit(CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: increment(entry_id.get())?,
                     next_seq: increment(seq.get())?,
@@ -1665,6 +1673,7 @@ async fn admit_successor_provider(
             inner
                 .session
                 .commit(CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: snapshot.next_id,
                     next_seq: increment(seq.get())?,
@@ -1792,6 +1801,7 @@ async fn resume_completing(inner: Arc<Inner>, parent_id: TaskId) -> Result<(), D
             inner
                 .session
                 .commit(CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: current.next_id,
                     next_seq: increment(seq.get())?,
@@ -1946,6 +1956,7 @@ async fn persist_successor_intent(
     inner
         .session
         .commit(CommitBatch {
+            conversations: vec![],
             seq,
             next_id: snapshot.next_id,
             next_seq: increment(seq.get())?,
@@ -1996,6 +2007,7 @@ async fn settle_recovered_child(
     inner
         .session
         .commit(CommitBatch {
+            conversations: vec![],
             seq,
             next_id: increment(entry_id.get())?,
             next_seq: increment(seq.get())?,
@@ -2095,6 +2107,7 @@ async fn abort_pending_generation(
     inner
         .session
         .commit(CommitBatch {
+            conversations: vec![],
             seq,
             next_id: snapshot.next_id,
             next_seq: increment(seq.get())?,
@@ -2172,6 +2185,7 @@ async fn abort_completing_with_usage(
     inner
         .session
         .commit(CommitBatch {
+            conversations: vec![],
             seq,
             next_id: snapshot.next_id,
             next_seq: increment(seq.get())?,
@@ -2300,6 +2314,7 @@ async fn settle_completing(
             inner
                 .session
                 .commit(CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: increment(answer_id.get())?,
                     next_seq: increment(seq.get())?,
@@ -2366,6 +2381,7 @@ async fn settle_completing(
             inner
                 .session
                 .commit(CommitBatch {
+                    conversations: vec![],
                     seq,
                     next_id: snapshot.next_id,
                     next_seq: increment(seq.get())?,
@@ -2452,6 +2468,7 @@ async fn reconcile_running(session: &Arc<DurableSession>) -> Result<(), DurableE
         .collect();
     session
         .commit(CommitBatch {
+            conversations: vec![],
             seq,
             next_id: snapshot.next_id,
             next_seq: increment(seq.get())?,
