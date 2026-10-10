@@ -55,6 +55,12 @@ On reopen, a legal partial final-frame prefix is ignored and truncated after exc
 
 Sizes use encoded JSON bytes. There is no truncation.
 
+## v1.1.0 snapshot scans
+
+`StorageSnapshot::scan_entries`, `scan_tasks` and `scan_submissions` return owned pages filtered by conversation. Entries default to descending ID order; tasks and submissions default to ascending. `ScanCursor` stores the exclusive last ID and direction. Continuations can omit order, but a conflicting order fails. Legacy cursors without direction use the record type's default. Limits must be positive; page values are detached from snapshot JSON.
+
+These methods operate on an already-loaded snapshot. They do not add backend query/streaming APIs, conversation records, kind/range filters, fork traversal or SQLite storage. Rust cursor IDs use the existing positive-i64 contract, including zero as an exclusive boundary; upstream uses JavaScript safe integers. Conformance regressions cover both directions, defaults, pagination, isolation, detached values, cursor errors and rejected-commit snapshot atomicity.
+
 ## Later required work
 
 R1c supplies the executable tool registry, intent-before-effect, exact implementation/version/schema replay gate, generation→tool ownership, completing drain and bottom-up abort needed for the useful vertical. Same-version v1.0.1 retagging still requires local/hosted acceptance and publication authority; this document records implementation scope only.

@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 pub mod journal;
 pub mod memory;
+pub mod scan;
 
 pub type StorageFuture<'a, T> = Pin<Box<dyn Future<Output = Result<T, DurableError>> + Send + 'a>>;
 
