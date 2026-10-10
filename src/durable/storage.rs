@@ -360,7 +360,11 @@ pub fn validate_batch(
         // Reject excessive JSON before cloning/deserializing context payloads.
         validate_json_shape("entry", &entry.value, MAX_ENTRY_BYTES)?;
         let _ = encode_limited("entry", &entry.value, MAX_ENTRY_BYTES)?;
-        let history = if let Some(parent) = batch
+        let history = if entry.kind != "context" && super::entries::native_kind(&entry.kind) {
+            // Native text/result records carry no head/edit references. Keep
+            // shape/identity checks, but avoid allocating unused ancestry.
+            None
+        } else if let Some(parent) = batch
             .conversations
             .iter()
             .find(|record| record.id == entry.conversation_id)
@@ -371,14 +375,15 @@ pub fn validate_batch(
                 *upper = (*upper).min(parent.at.get());
             }
             bounds.insert(entry.conversation_id, MAX_ID);
-            bounds
+            Some(bounds)
         } else {
-            snapshot.history_bounds(entry.conversation_id)?
+            Some(snapshot.history_bounds(entry.conversation_id)?)
         };
         let visible = |target: EntryId| {
             snapshot.entries.get(&target).is_some_and(|prior| {
                 history
-                    .get(&prior.conversation_id)
+                    .as_ref()
+                    .and_then(|history| history.get(&prior.conversation_id))
                     .is_some_and(|upper| target.get() <= *upper)
             }) || batch_prior_entries
                 .get(&target)
